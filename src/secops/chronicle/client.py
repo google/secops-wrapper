@@ -746,7 +746,7 @@ class ChronicleClient:
         poll_interval: float = 1.0
     ) -> dict:
         """Get alerts within a time range.
-        
+
         Args:
             start_time: Start time for alerts search
             end_time: End time for alerts search
@@ -756,10 +756,10 @@ class ChronicleClient:
             enable_cache: Whether to use caching for the request
             max_attempts: Maximum number of polling attempts
             poll_interval: Polling interval in seconds
-            
+
         Returns:
             Dict containing the alerts response
-            
+
         Raises:
             APIError: If the API request fails or response parsing fails
         """
@@ -773,7 +773,7 @@ class ChronicleClient:
             "enableCache": "ALERTS_FEATURE_PREFERENCE_ENABLED" if enable_cache else "ALERTS_FEATURE_PREFERENCE_DISABLED",
             "fieldAggregationOptions.maxValuesPerField": 60
         }
-        
+
         if baseline_query:
             params["baselineQuery"] = baseline_query
 
@@ -783,50 +783,50 @@ class ChronicleClient:
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache'
         }
-        
+
         # Create an accumulator for all updates
         final_response = {
             'progress': 0,
             'alerts': {'alerts': []},
             'complete': False
         }
-        
+
         # Poll until complete or max attempts
         attempt = 0
         while attempt < max_attempts:
             attempt += 1
-            
+
             # Make the request
             response = self.session.get(url, params=params, headers=headers, stream=True)
-            
+
             if response.status_code != 200:
                 raise APIError(f"Failed to get alerts: {response.text}")
-                
+
             # Process this response
             updates = self._process_alerts_response(response)
-            
+
             # Merge the updates into our accumulator
             self._merge_alert_updates(final_response, updates)
-            
+
             # Check if we're done
             if final_response.get('complete'):
                 break
-                
+
             # If not complete and we have more attempts, wait and try again
             if attempt < max_attempts:
                 time.sleep(poll_interval)
-        
+
         return final_response
-        
+
     def _process_alerts_response(self, response) -> list:
         """Process streaming response from alerts API.
-        
+
         Args:
             response: HTTP response with streaming data
-            
+
         Returns:
             List of parsed JSON updates
-            
+
         Raises:
             APIError: If parsing fails and no valid updates were found
         """
@@ -834,44 +834,44 @@ class ChronicleClient:
         # or an array of objects, or a mix of both
         line_buffer = []
         updates = []
-        
+
         for line in response.iter_lines():
             if not line:
                 continue
-                
+
             line_str = line.decode('utf-8').strip()
             if not line_str:
                 continue
-                
+
             line_buffer.append(line_str)
-            
+
             # Try to parse what we have so far
             current_buffer = ''.join(line_buffer)
-            
+
             # Handle case where response starts with an array bracket
             if current_buffer.startswith('[') and not current_buffer.endswith(']'):
                 # Not a complete array yet, continue collecting
                 continue
-                
+
             # Fix any JSON formatting issues
             current_buffer = self._fix_json_formatting(current_buffer)
-            
+
             try:
                 # Try parsing it as a complete object or array
                 parsed_data = json.loads(current_buffer)
-                
+
                 # Handle the case where parsed_data is an array of updates
                 if isinstance(parsed_data, list):
                     updates.extend(parsed_data)
                 else:
                     updates.append(parsed_data)
-                    
+
                 # Clear the buffer after successful parsing
                 line_buffer = []
             except json.JSONDecodeError:
                 # If it fails, it might be incomplete. Continue to the next line
                 pass
-        
+
         # If we have leftover data, try once more with aggressive fix-ups
         if line_buffer:
             try:
@@ -881,7 +881,7 @@ class ChronicleClient:
                     current_buffer += ']'
                 # Fix potential trailing commas
                 current_buffer = self._fix_json_formatting(current_buffer)
-                
+
                 parsed_data = json.loads(current_buffer)
                 if isinstance(parsed_data, list):
                     updates.extend(parsed_data)
@@ -891,15 +891,15 @@ class ChronicleClient:
                 # If we can't parse the remaining data, log but don't fail if we have some updates
                 if not updates:
                     raise APIError(f"Failed to parse alerts response: {str(e)} - Data: {current_buffer}")
-        
+
         if not updates:
             raise APIError("No valid data received from alerts API")
             
         return updates
-        
+
     def _merge_alert_updates(self, target: dict, updates: list) -> None:
         """Merge alerts updates into the target dictionary.
-        
+
         Args:
             target: Target dictionary to update
             updates: List of updates to merge in
@@ -925,10 +925,10 @@ class ChronicleClient:
                 # For all other fields, take the latest value
                 else:
                     target[key] = value
-        
+
     def _fix_json_formatting(self, json_str: str) -> str:
         """Fix common JSON formatting issues.
-        
+
         Args:
             json_str: JSON string to fix
             
@@ -938,4 +938,64 @@ class ChronicleClient:
         # Replace trailing commas in arrays and objects which cause JSON parsing to fail
         # This regex finds commas followed by a closing bracket
         json_str = re.sub(r',\s*([\]}])', r'\1', json_str)
-        return json_str 
+        return json_str
+
+
+    def get_detections(
+            self,
+            rule_id: str,
+            start_time: datetime,
+            end_time: datetime,
+            alert_state: AlertState = AlertState.UNSPECIFIED,
+            list_basis: ListBasis = ListBasis.LIST_BASIS_UNSPECIFIED,
+            page_size: int = 1000,
+            page_token: str = None,
+            max_resp_size_bytes: int = 0,
+            include_nested_detections: bool = False
+    ) -> dict:
+        """Get detections for a given rule ID within a time range."""
+        url = f"{self.base_url}/{self.instance_id}/legacy:legacySearchDetections"
+
+        params = {
+            "ruleId": rule_id,
+            "alertState": alert_state.value,
+            "startTime": start_time.isoformat(),
+            "endTime": end_time.isoformat(),
+            "listBasis": list_basis.value,
+            "pageSize": page_size,
+            "pageToken": page_token,
+            "maxRespSizeBytes": max_resp_size_bytes,
+            "includeNestedDetections": include_nested_detections
+        }
+
+        headers = {
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36'
+        }
+
+        print("\nDebug - Initial Request:")
+        print(f"URL: {url}")
+        print("Parameters:", json.dumps(params, indent=2))
+
+        response = self.session.get(url, params=params, headers=headers, stream=True)
+
+        if response.status_code != 200:
+            print("Error Response:", response.text)
+            raise APIError(f"Failed to get alerts: {response.text}")
+
+        print("\nCollecting response data...")
+
+        try:
+            # Parse the array of detections
+            response_content = json.loads(response.content)
+            return response_content
+
+        except json.JSONDecodeError as e:
+            print(f"\nError parsing JSON: {str(e)}")
+            print("Error location:", e.pos)
+            print("Line:", e.lineno, "Column:", e.colno)
+            print("Context:", full_response[max(0, e.pos-50):min(len(full_response), e.pos+50)])
+            raise APIError(f"Failed to parse alerts response: {str(e)}")
