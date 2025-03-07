@@ -16,6 +16,7 @@
 from dataclasses import dataclass
 from typing import List, Dict, Optional
 from datetime import datetime
+from enum import Enum
 
 @dataclass
 class TimeInterval:
@@ -79,6 +80,22 @@ class AlertCount:
     """Alert count for a rule."""
     rule: str
     count: int
+
+class AlertState(Enum):
+    UNSPECIFIED = 'UNSPECIFIED'
+    NOT_ALERTING = 'NOT_ALERTING'
+    ALERTING = 'ALERTING'
+
+class ListBasis(Enum):
+    LIST_BASIS_UNSPECIFIED = "LIST_BASIS_UNSPECIFIED"
+    DETECTION_TIME = "DETECTION_TIME"
+    CREATED_TIME = "CREATED_TIME"
+
+class RuleView(Enum):
+    RULE_VIEW_UNSPECIFIED = "RULE_VIEW_UNSPECIFIED"
+    BASIC = "BASIC"
+    FULL = "FULL"
+    REVISION_METADATA_ONLY = "REVISION_METADATA_ONLY"
 
 @dataclass
 class EntitySummary:
