@@ -124,14 +124,14 @@ class SoarPlatformInfo:
 class Case:
     """Represents a Chronicle case."""
     def __init__(
-            self,
-            id: str,
-            display_name: str,
-            stage: str,
-            priority: str,
-            status: str,
-            soar_platform_info: SoarPlatformInfo = None,
-            alert_ids: list[str] = None
+        self,
+        id: str,
+        display_name: str,
+        stage: str,
+        priority: str,
+        status: str,
+        soar_platform_info: SoarPlatformInfo = None,
+        alert_ids: list[str] = None
     ):
         self.id = id
         self.display_name = display_name
