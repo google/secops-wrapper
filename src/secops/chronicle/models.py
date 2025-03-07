@@ -91,6 +91,12 @@ class ListBasis(Enum):
     DETECTION_TIME = "DETECTION_TIME"
     CREATED_TIME = "CREATED_TIME"
 
+class RuleView(Enum):
+    RULE_VIEW_UNSPECIFIED = "RULE_VIEW_UNSPECIFIED"
+    BASIC = "BASIC"
+    FULL = "FULL"
+    REVISION_METADATA_ONLY = "REVISION_METADATA_ONLY"
+
 @dataclass
 class EntitySummary:
     """Complete entity summary response."""
@@ -118,14 +124,14 @@ class SoarPlatformInfo:
 class Case:
     """Represents a Chronicle case."""
     def __init__(
-        self,
-        id: str,
-        display_name: str,
-        stage: str,
-        priority: str,
-        status: str,
-        soar_platform_info: SoarPlatformInfo = None,
-        alert_ids: list[str] = None
+            self,
+            id: str,
+            display_name: str,
+            stage: str,
+            priority: str,
+            status: str,
+            soar_platform_info: SoarPlatformInfo = None,
+            alert_ids: list[str] = None
     ):
         self.id = id
         self.display_name = display_name

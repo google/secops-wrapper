@@ -16,13 +16,18 @@
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 import json
-import re
 import time
+import logging
 from google.auth.transport import requests as google_auth_requests
 from secops.auth import SecOpsAuth
 from secops.exceptions import APIError
-from secops.chronicle.models import Entity, EntityMetadata, EntityMetrics, TimeInterval, TimelineBucket, Timeline, WidgetMetadata, EntitySummary, AlertCount, CaseList
+from secops.chronicle.models import Entity, EntityMetadata, EntityMetrics, TimeInterval, TimelineBucket, Timeline, WidgetMetadata, EntitySummary, AlertCount, AlertState, ListBasis, CaseList, RuleView
+import re
 from enum import Enum
+
+
+LOGGER = logging.getLogger(__name__)
+
 
 class ValueType(Enum):
     """Chronicle API value types."""
@@ -931,7 +936,7 @@ class ChronicleClient:
 
         Args:
             json_str: JSON string to fix
-            
+
         Returns:
             Fixed JSON string
         """
@@ -976,17 +981,17 @@ class ChronicleClient:
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36'
         }
 
-        print("\nDebug - Initial Request:")
-        print(f"URL: {url}")
-        print("Parameters:", json.dumps(params, indent=2))
+        logging.debug("\nDebug - Initial Request:")
+        logging.debug(f"URL: {url}")
+        logging.debug("Parameters:", json.dumps(params, indent=2))
 
         response = self.session.get(url, params=params, headers=headers, stream=True)
 
         if response.status_code != 200:
-            print("Error Response:", response.text)
+            logging.error("Error Response:", response.text)
             raise APIError(f"Failed to get alerts: {response.text}")
 
-        print("\nCollecting response data...")
+        logging.debug("\nCollecting response data...")
 
         try:
             # Parse the array of detections
@@ -994,8 +999,126 @@ class ChronicleClient:
             return response_content
 
         except json.JSONDecodeError as e:
-            print(f"\nError parsing JSON: {str(e)}")
-            print("Error location:", e.pos)
-            print("Line:", e.lineno, "Column:", e.colno)
-            print("Context:", full_response[max(0, e.pos-50):min(len(full_response), e.pos+50)])
+            logging.error(f"\nError parsing JSON: {str(e)}")
+            logging.error("Error location:", e.pos)
+            logging.error("Line:", e.lineno, "Column:", e.colno)
+            raise APIError(f"Failed to parse alerts response: {str(e)}")
+
+
+    def import_logs(
+            self,
+            log_type: str,
+            logs: list(),
+            forwarder: str,
+            source_filename: str = None
+    ) -> dict:
+        """Get alerts within a time range."""
+        url = f"{self.base_url}/{self.instance_id}/logTypes/{log_type}/logs:import"
+
+        body = {
+            "inline_source": {
+                "logs": logs,
+                "forwarder": f"{self.base_url}/{self.instance_id}/forwarders/{forwarder}",
+                "source_filename": source_filename
+            }
+        }
+
+        headers = {
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36'
+        }
+
+        logging.debug("\nDebug - Initial Request:")
+        logging.debug(f"URL: {url}")
+        logging.debug("Body:", json.dumps(body, indent=2))
+
+        response = self.session.post(url, json=body, headers=headers)
+
+        if response.status_code != 200:
+            LOGGER.error("Error Response:", response.text)
+            raise APIError(f"Failed to get alerts: {response.text}")
+
+    def list_rules(
+            self,
+            filter: str = "",
+            page_size: int = 100,
+            page_token: str = None,
+            view: RuleView = RuleView.BASIC
+    ) -> dict:
+        """Get alerts within a time range."""
+        url = f"{self.base_url}/{self.instance_id}/rules"
+
+        params = {
+            "filter": filter,
+            "pageSize": page_size,
+            "pageToken": page_token,
+            "view": view.value
+        }
+
+        headers = {
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36'
+        }
+
+        logging.debug("\nDebug - Initial Request:")
+        logging.debug(f"URL: {url}")
+        logging.debug("Parameters:", json.dumps(params, indent=2))
+
+        response = self.session.get(url, params=params, headers=headers)
+
+        if response.status_code != 200:
+            LOGGER.error("Error Response:", response.text)
+            raise APIError(f"Failed to get alerts: {response.text}")
+
+        try:
+            # Parse the array of detections
+            response_content = json.loads(response.content)
+            return response_content
+
+        except json.JSONDecodeError as e:
+            LOGGER.error(f"\nError parsing JSON: {str(e)}")
+            LOGGER.error("Error location:", e.pos)
+            LOGGER.error("Line:", e.lineno, "Column:", e.colno)
+            raise APIError(f"Failed to parse alerts response: {str(e)}")
+
+    def get_rule(
+            self,
+            name: str,
+            view: RuleView = RuleView.BASIC
+    ) -> dict:
+        """Get alerts within a time range."""
+        url = f"{self.base_url}/{self.instance_id}/rules/{name}"
+
+        headers = {
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36'
+        }
+
+        logging.debug("\nDebug - Initial Request:")
+        logging.debug(f"URL: {url}")
+
+        response = self.session.get(url, headers=headers)
+
+        if response.status_code != 200:
+            LOGGER.error("Error Response:", response.text)
+            raise APIError(f"Failed to get alerts: {response.text}")
+
+        try:
+            # Parse the array of detections
+            response_content = json.loads(response.content)
+            return response_content
+
+        except json.JSONDecodeError as e:
+            LOGGER.error(f"\nError parsing JSON: {str(e)}")
+            LOGGER.error("Error location:", e.pos)
+            LOGGER.error("Line:", e.lineno, "Column:", e.colno)
             raise APIError(f"Failed to parse alerts response: {str(e)}")
