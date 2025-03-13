@@ -569,6 +569,44 @@ You can filter alerts using the snapshot query parameter, which supports fields 
 - feedback_summary.severity_display
 - feedback_summary.status
 
+
+## Rules management
+
+You can list rules or get rule from rule ID:
+
+```python
+from secops import SecOpsClient
+
+client = SecOpsClient()
+chronicle = client.chronicle(
+  customer_id="your-customer-id",
+  project_id="your-project-id"
+)
+
+rule_id = "ru_1e678f34-xxxxxx"
+
+# Get SecOps rule using rule ID
+rule = chronicle.get_rule(name=rule_id)
+print(f"Rule: {rule.display_name}")
+print(f"Priority: {rule.priority}")
+print(f"Severity: {rule.severity}")
+print(f"Type: {rule.type}")
+
+# List rules in secops with pagination
+rules = chronicle.list_rules()
+
+for rule in rules["rules"]:
+  # Print rule details
+  print(f"Rule: {rule.display_name}")
+  print(f"Priority: {rule.priority}")
+  print(f"Severity: {rule.severity}")
+  print(f"Type: {rule.type}")
+```
+
+## License
+
+This project is licensed under the Apache License 2.0 - see the LICENSE file for details.
+
 ## License
 
 This project is licensed under the Apache License 2.0 - see the LICENSE file for details.
