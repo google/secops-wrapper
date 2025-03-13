@@ -184,8 +184,7 @@ class ChronicleClient:
             "caseInsensitive": case_insensitive,
         }
 
-        response = self.session.post(
-            url, json=search_query, headers={"Accept": "*/*"})
+        response = self.session.post(url, json=search_query, headers={"Accept": "*/*"})
 
         if response.status_code != 200:
             raise APIError(f"Chronicle API request failed: {response.text}")
@@ -263,8 +262,7 @@ class ChronicleClient:
             if isinstance(operation, list):
                 operation_id = operation[0].get("operation")
             else:
-                operation_id = operation.get(
-                    "operation") or operation.get("name")
+                operation_id = operation.get("operation") or operation.get("name")
         except Exception as e:
             raise APIError(
                 f"Error extracting operation ID. Response: {operation}, Error: {str(e)}"
@@ -280,8 +278,7 @@ class ChronicleClient:
         while attempt < max_attempts:
             results_response = self.session.get(results_url)
             if results_response.status_code != 200:
-                raise APIError(
-                    f"Error fetching results: {results_response.text}")
+                raise APIError(f"Error fetching results: {results_response.text}")
 
             results = results_response.json()
 
@@ -415,8 +412,7 @@ class ChronicleClient:
             if isinstance(operation, list):
                 operation_id = operation[0].get("operation")
             else:
-                operation_id = operation.get(
-                    "operation") or operation.get("name")
+                operation_id = operation.get("operation") or operation.get("name")
         except Exception as e:
             raise APIError(
                 f"Error extracting operation ID. Response: {operation}, Error: {str(e)}"
@@ -432,8 +428,7 @@ class ChronicleClient:
         while attempt < max_attempts:
             results_response = self.session.get(results_url)
             if results_response.status_code != 200:
-                raise APIError(
-                    f"Error fetching results: {results_response.text}")
+                raise APIError(f"Error fetching results: {results_response.text}")
 
             results = results_response.json()
 
@@ -520,8 +515,7 @@ class ChronicleClient:
             params["entityId"] = entity_id
         else:
             # Auto-detect type if not explicitly provided
-            detected_field_path, detected_value_type = _detect_value_type(
-                value)
+            detected_field_path, detected_value_type = _detect_value_type(value)
 
             # Use explicit values if provided, otherwise use detected values
             final_field_path = field_path or detected_field_path
@@ -562,8 +556,7 @@ class ChronicleClient:
                         entity_type=metadata.get("entityType", ""),
                         interval=TimeInterval(
                             start_time=datetime.fromisoformat(
-                                interval.get("startTime").replace(
-                                    "Z", "+00:00")
+                                interval.get("startTime").replace("Z", "+00:00")
                             ),
                             end_time=datetime.fromisoformat(
                                 interval.get("endTime").replace("Z", "+00:00")
@@ -682,12 +675,10 @@ class ChronicleClient:
                             entity_type=metadata.get("entityType", ""),
                             interval=TimeInterval(
                                 start_time=datetime.fromisoformat(
-                                    interval.get("startTime").replace(
-                                        "Z", "+00:00")
+                                    interval.get("startTime").replace("Z", "+00:00")
                                 ),
                                 end_time=datetime.fromisoformat(
-                                    interval.get("endTime").replace(
-                                        "Z", "+00:00")
+                                    interval.get("endTime").replace("Z", "+00:00")
                                 ),
                             ),
                         ),
@@ -713,8 +704,7 @@ class ChronicleClient:
             return summaries
 
         except Exception as e:
-            raise APIError(
-                f"Error parsing entity summaries response: {str(e)}")
+            raise APIError(f"Error parsing entity summaries response: {str(e)}")
 
     def list_iocs(
         self,
@@ -799,8 +789,7 @@ class ChronicleClient:
             ValueError: If more than 1000 case IDs are requested
         """
         if len(case_ids) > 1000:
-            raise ValueError(
-                "Maximum of 1000 cases can be retrieved in a batch")
+            raise ValueError("Maximum of 1000 cases can be retrieved in a batch")
 
         url = f"{self.base_url}/{self.instance_id}/legacy:legacyBatchGetCases"
 
@@ -868,8 +857,7 @@ class ChronicleClient:
         }
 
         # Create an accumulator for all updates
-        final_response = {"progress": 0, "alerts": {
-            "alerts": []}, "complete": False}
+        final_response = {"progress": 0, "alerts": {"alerts": []}, "complete": False}
 
         # Poll until complete or max attempts
         attempt = 0
@@ -1060,8 +1048,7 @@ class ChronicleClient:
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36",
         }
 
-        response = self.session.get(
-            url, params=params, headers=headers, stream=True)
+        response = self.session.get(url, params=params, headers=headers, stream=True)
 
         if response.status_code != 200:
             LOGGER.error("Error Response:", response.text)
@@ -1214,5 +1201,4 @@ class ChronicleClient:
             logging.error(f"\nError parsing JSON: {str(e)}")
             logging.error("Error location:", e.pos)
             logging.error("Line:", e.lineno, "Column:", e.colno)
-            raise Exception(
-                f"Failed to parse rule verification response: {str(e)}")
+            raise Exception(f"Failed to parse rule verification response: {str(e)}")
