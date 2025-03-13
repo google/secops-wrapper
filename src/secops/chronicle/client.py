@@ -43,10 +43,10 @@ class ValueType(Enum):
 
 def _detect_value_type(value: str) -> tuple[Optional[str], Optional[str]]:
     """Detect the type of value and return appropriate field path or value type.
-    
+
     Args:
         value: The value to analyze
-        
+
     Returns:
         Tuple of (field_path, value_type)
     """
@@ -54,56 +54,56 @@ def _detect_value_type(value: str) -> tuple[Optional[str], Optional[str]]:
     ipv4_pattern = r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
     if re.match(ipv4_pattern, value):
         return ("principal.ip", None)  # Use field_path for IPs
-        
+
     # MD5 pattern (32 hex chars)
     md5_pattern = r'^[a-fA-F0-9]{32}$'
     if re.match(md5_pattern, value):
         return ("target.file.md5", None)  # Use field_path for file hashes
-        
+
     # SHA1 pattern (40 hex chars)
     sha1_pattern = r'^[a-fA-F0-9]{40}$'
     if re.match(sha1_pattern, value):
         return ("target.file.sha1", None)
-        
+
     # SHA256 pattern (64 hex chars)
     sha256_pattern = r'^[a-fA-F0-9]{64}$'
     if re.match(sha256_pattern, value):
         return ("target.file.sha256", None)
-        
+
     # Domain pattern
     domain_pattern = r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$'
     if re.match(domain_pattern, value):
         return (None, ValueType.DOMAIN_NAME.value)
-        
+
     # Email pattern
     email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     if re.match(email_pattern, value):
         return (None, ValueType.EMAIL.value)
-        
+
     # MAC address pattern
     mac_pattern = r'^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$'
     if re.match(mac_pattern, value):
         return (None, ValueType.MAC.value)
-        
+
     # Default to hostname if it looks like one
     hostname_pattern = r'^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$'
     if re.match(hostname_pattern, value):
         return (None, ValueType.HOSTNAME.value)
-        
+
     return (None, None)
 
 class ChronicleClient:
     """Client for interacting with Chronicle API."""
 
     def __init__(
-        self,
-        customer_id: str,
-        project_id: str,
-        region: str = "us",
-        auth: Optional[SecOpsAuth] = None
+            self,
+            customer_id: str,
+            project_id: str,
+            region: str = "us",
+            auth: Optional[SecOpsAuth] = None
     ):
         """Initialize Chronicle client.
-        
+
         Args:
             customer_id: Chronicle customer ID
             project_id: GCP project ID
@@ -114,7 +114,7 @@ class ChronicleClient:
         self.project_id = project_id
         self.region = region
         self.auth = auth or SecOpsAuth()
-        
+
         self.instance_id = f"projects/{project_id}/locations/{region}/instances/{customer_id}"
         self.base_url = f"https://{region}-chronicle.googleapis.com/v1alpha"
         self._session = None
@@ -127,30 +127,30 @@ class ChronicleClient:
         return self._session
 
     def fetch_udm_search_csv(
-        self,
-        query: str,
-        start_time: datetime,
-        end_time: datetime,
-        fields: list[str],
-        case_insensitive: bool = True
+            self,
+            query: str,
+            start_time: datetime,
+            end_time: datetime,
+            fields: list[str],
+            case_insensitive: bool = True
     ) -> str:
         """Fetch UDM search results in CSV format.
-        
+
         Args:
             query: Chronicle search query
             start_time: Search start time
             end_time: Search end time
             fields: List of fields to include in results
             case_insensitive: Whether to perform case-insensitive search
-            
+
         Returns:
             CSV formatted string of results
-            
+
         Raises:
             APIError: If the API request fails
         """
         url = f"{self.base_url}/{self.instance_id}/legacy:legacyFetchUdmSearchCsv"
-        
+
         search_query = {
             "baselineQuery": query,
             "baselineTimeRange": {
@@ -172,25 +172,25 @@ class ChronicleClient:
         if response.status_code != 200:
             raise APIError(f"Chronicle API request failed: {response.text}")
 
-        return response.text 
+        return response.text
 
     def validate_query(self, query: str) -> Dict[str, Any]:
         """Validate a UDM search query.
-        
+
         Args:
             query: The query to validate
-            
+
         Returns:
             Dict containing validation results
-            
+
         Raises:
             APIError: If validation fails
         """
         url = f"{self.base_url}/{self.instance_id}:validateQuery"
-        
+
         # Replace special characters with Unicode escapes
         encoded_query = query.replace('!', '\u0021')
-        
+
         params = {
             "rawQuery": encoded_query,
             "dialect": "DIALECT_UDM_SEARCH",
@@ -198,21 +198,21 @@ class ChronicleClient:
         }
 
         response = self.session.get(url, params=params)
-        
+
         if response.status_code != 200:
             raise APIError(f"Query validation failed: {response.text}")
-            
+
         return response.json()
 
     def get_stats(
-        self,
-        query: str,
-        start_time: datetime,
-        end_time: datetime,
-        max_values: int = 60,
-        max_events: int = 10000,
-        case_insensitive: bool = True,
-        max_attempts: int = 30
+            self,
+            query: str,
+            start_time: datetime,
+            end_time: datetime,
+            max_values: int = 60,
+            max_events: int = 10000,
+            case_insensitive: bool = True,
+            max_attempts: int = 30
     ) -> Dict[str, Any]:
         """Perform a UDM stats search query."""
         url = f"{self.base_url}/{self.instance_id}/legacy:legacyFetchUdmSearchView"
@@ -261,7 +261,7 @@ class ChronicleClient:
         # Poll for results using the full operation ID path
         results_url = f"{self.base_url}/{operation_id}:streamSearch"
         attempt = 0
-        
+
         while attempt < max_attempts:
             results_response = self.session.get(results_url)
             if results_response.status_code != 200:
@@ -274,16 +274,16 @@ class ChronicleClient:
 
             # Check both possible paths for completion status
             done = (
-                results.get("done") or  # Check top level
-                results.get("operation", {}).get("done") or  # Check under operation
-                results.get("response", {}).get("complete")  # Check under response
+                    results.get("done") or  # Check top level
+                    results.get("operation", {}).get("done") or  # Check under operation
+                    results.get("response", {}).get("complete")  # Check under response
             )
 
             if done:
                 # Check both possible paths for stats
                 stats = (
-                    results.get("response", {}).get("stats") or  # Check under response
-                    results.get("operation", {}).get("response", {}).get("stats")  # Check under operation.response
+                        results.get("response", {}).get("stats") or  # Check under response
+                        results.get("operation", {}).get("response", {}).get("stats")  # Check under operation.response
                 )
                 if stats:
                     return self._process_stats_results({"response": {"stats": stats}})
@@ -292,15 +292,15 @@ class ChronicleClient:
 
             attempt += 1
             time.sleep(1)
-        
+
         raise APIError(f"Search timed out after {max_attempts} attempts")
 
     def _process_stats_results(self, results: Dict[str, Any]) -> Dict[str, Any]:
         """Process and format stats search results.
-        
+
         Args:
             results: Raw API response
-            
+
         Returns:
             Processed results with formatted rows
         """
@@ -320,13 +320,13 @@ class ChronicleClient:
             if stats.get("results"):
                 first_col = stats["results"][0]
                 num_rows = len(first_col.get("values", []))
-                
+
                 for i in range(num_rows):
                     row = {}
                     for col in stats["results"]:
                         col_name = col["column"]
                         value = col["values"][i]["value"]
-                        
+
                         # Handle different value types
                         if "stringVal" in value:
                             row[col_name] = value["stringVal"]
@@ -334,7 +334,7 @@ class ChronicleClient:
                             row[col_name] = int(value["int64Val"])
                         else:
                             row[col_name] = None
-                            
+
                     rows.append(row)
 
             return {
@@ -342,21 +342,21 @@ class ChronicleClient:
                 "rows": rows,
                 "total_rows": len(rows)
             }
-            
+
         except Exception as e:
             raise APIError(f"Error processing stats results: {str(e)}")
 
     def search_udm(
-        self,
-        query: str,
-        start_time: datetime,
-        end_time: datetime,
-        max_events: int = 10000,
-        case_insensitive: bool = True,
-        max_attempts: int = 30
+            self,
+            query: str,
+            start_time: datetime,
+            end_time: datetime,
+            max_events: int = 10000,
+            case_insensitive: bool = True,
+            max_attempts: int = 30
     ) -> Dict[str, Any]:
         """Perform a UDM search query.
-        
+
         Args:
             query: The UDM search query
             start_time: Search start time
@@ -364,7 +364,7 @@ class ChronicleClient:
             max_events: Maximum events to return
             case_insensitive: Whether to perform case-insensitive search
             max_attempts: Maximum number of polling attempts (default: 30)
-            
+
         Returns:
             Dict containing the search results with events
         """
@@ -410,7 +410,7 @@ class ChronicleClient:
         # Poll for results using the full operation ID path
         results_url = f"{self.base_url}/{operation_id}:streamSearch"
         attempt = 0
-        
+
         while attempt < max_attempts:
             results_response = self.session.get(results_url)
             if results_response.status_code != 200:
@@ -423,40 +423,40 @@ class ChronicleClient:
 
             # Check both possible paths for completion status
             done = (
-                results.get("done") or  # Check top level
-                results.get("operation", {}).get("done") or  # Check under operation
-                results.get("response", {}).get("complete")  # Check under response
+                    results.get("done") or  # Check top level
+                    results.get("operation", {}).get("done") or  # Check under operation
+                    results.get("response", {}).get("complete")  # Check under response
             )
 
             if done:
                 events = (
-                    results.get("response", {}).get("events", {}).get("events", []) or
-                    results.get("operation", {}).get("response", {}).get("events", {}).get("events", [])
+                        results.get("response", {}).get("events", {}).get("events", []) or
+                        results.get("operation", {}).get("response", {}).get("events", {}).get("events", [])
                 )
                 return {"events": events, "total_events": len(events)}
 
             attempt += 1
             time.sleep(1)
-        
-        raise APIError(f"Search timed out after {max_attempts} attempts") 
+
+        raise APIError(f"Search timed out after {max_attempts} attempts")
 
     def summarize_entity(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        value: str,
-        field_path: Optional[str] = None,
-        value_type: Optional[str] = None,
-        entity_id: Optional[str] = None,
-        entity_namespace: Optional[str] = None,
-        return_alerts: bool = True,
-        return_prevalence: bool = False,
-        include_all_udm_types: bool = True,
-        page_size: int = 1000,
-        page_token: Optional[str] = None
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            value: str,
+            field_path: Optional[str] = None,
+            value_type: Optional[str] = None,
+            entity_id: Optional[str] = None,
+            entity_namespace: Optional[str] = None,
+            return_alerts: bool = True,
+            return_prevalence: bool = False,
+            include_all_udm_types: bool = True,
+            page_size: int = 1000,
+            page_token: Optional[str] = None
     ) -> EntitySummary:
         """Get summary information about an entity.
-        
+
         Args:
             start_time: Start time for the summary
             end_time: End time for the summary
@@ -470,15 +470,15 @@ class ChronicleClient:
             include_all_udm_types: Whether to include all UDM event types
             page_size: Maximum number of results per page
             page_token: Token for pagination
-            
+
         Returns:
             EntitySummary object containing the results
-            
+
         Raises:
             APIError: If the API request fails
         """
         url = f"{self.base_url}/{self.instance_id}:summarizeEntity"
-        
+
         params = {
             "timeRange.startTime": start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             "timeRange.endTime": end_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
@@ -491,17 +491,17 @@ class ChronicleClient:
         # Add optional parameters
         if page_token:
             params["pageToken"] = page_token
-        
+
         if entity_id:
             params["entityId"] = entity_id
         else:
             # Auto-detect type if not explicitly provided
             detected_field_path, detected_value_type = _detect_value_type(value)
-            
+
             # Use explicit values if provided, otherwise use detected values
             final_field_path = field_path or detected_field_path
             final_value_type = value_type or detected_value_type
-            
+
             if final_field_path:
                 params["fieldAndValue.fieldPath"] = final_field_path
                 params["fieldAndValue.value"] = value
@@ -513,24 +513,24 @@ class ChronicleClient:
                     f"Could not determine type for value: {value}. "
                     "Please specify field_path or value_type explicitly."
                 )
-                
+
             if entity_namespace:
                 params["fieldAndValue.entityNamespace"] = entity_namespace
 
         response = self.session.get(url, params=params)
-        
+
         if response.status_code != 200:
             raise APIError(f"Error getting entity summary: {response.text}")
-        
+
         try:
             data = response.json()
-            
+
             # Parse entities
             entities = []
             for entity_data in data.get("entities", []):
                 metadata = entity_data.get("metadata", {})
                 interval = metadata.get("interval", {})
-                
+
                 entity = Entity(
                     name=entity_data.get("name", ""),
                     metadata=EntityMetadata(
@@ -547,7 +547,7 @@ class ChronicleClient:
                     entity=entity_data.get("entity", {})
                 )
                 entities.append(entity)
-                
+
             # Parse alert counts
             alert_counts = []
             for alert_data in data.get("alertCounts", []):
@@ -555,14 +555,14 @@ class ChronicleClient:
                     rule=alert_data.get("rule", ""),
                     count=int(alert_data.get("count", 0))
                 ))
-                
+
             # Parse timeline
             timeline_data = data.get("timeline", {})
             timeline = Timeline(
                 buckets=[TimelineBucket(**bucket) for bucket in timeline_data.get("buckets", [])],
                 bucket_size=timeline_data.get("bucketSize", "")
             ) if timeline_data else None
-            
+
             # Parse widget metadata
             widget_data = data.get("widgetMetadata")
             widget_metadata = WidgetMetadata(
@@ -570,7 +570,7 @@ class ChronicleClient:
                 detections=widget_data.get("detections", 0),
                 total=widget_data.get("total", 0)
             ) if widget_data else None
-            
+
             return EntitySummary(
                 entities=entities,
                 alert_counts=alert_counts,
@@ -579,31 +579,31 @@ class ChronicleClient:
                 has_more_alerts=data.get("hasMoreAlerts", False),
                 next_page_token=data.get("nextPageToken")
             )
-            
+
         except Exception as e:
-            raise APIError(f"Error parsing entity summary response: {str(e)}") 
+            raise APIError(f"Error parsing entity summary response: {str(e)}")
 
     def summarize_entities_from_query(
-        self,
-        query: str,
-        start_time: datetime,
-        end_time: datetime,
+            self,
+            query: str,
+            start_time: datetime,
+            end_time: datetime,
     ) -> List[EntitySummary]:
         """Get entity summaries from a UDM query.
-        
+
         Args:
             query: UDM query to find entities
             start_time: Start time for the summary
             end_time: End time for the summary
-            
+
         Returns:
             List of EntitySummary objects containing the results
-            
+
         Raises:
             APIError: If the API request fails
         """
         url = f"{self.base_url}/{self.instance_id}:summarizeEntitiesFromQuery"
-        
+
         params = {
             "query": query,
             "timeRange.startTime": start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
@@ -611,20 +611,20 @@ class ChronicleClient:
         }
 
         response = self.session.get(url, params=params)
-        
+
         if response.status_code != 200:
             raise APIError(f"Error getting entity summaries: {response.text}")
-        
+
         try:
             data = response.json()
             summaries = []
-            
+
             for summary_data in data.get("entitySummaries", []):
                 entities = []
                 for entity_data in summary_data.get("entity", []):
                     metadata = entity_data.get("metadata", {})
                     interval = metadata.get("interval", {})
-                    
+
                     entity = Entity(
                         name=entity_data.get("name", ""),
                         metadata=EntityMetadata(
@@ -641,22 +641,22 @@ class ChronicleClient:
                         entity=entity_data.get("entity", {})
                     )
                     entities.append(entity)
-                    
+
                 summary = EntitySummary(entities=entities)
                 summaries.append(summary)
-                
+
             return summaries
-            
+
         except Exception as e:
-            raise APIError(f"Error parsing entity summaries response: {str(e)}") 
+            raise APIError(f"Error parsing entity summaries response: {str(e)}")
 
     def list_iocs(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        max_matches: int = 1000,
-        add_mandiant_attributes: bool = True,
-        prioritized_only: bool = False,
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            max_matches: int = 1000,
+            add_mandiant_attributes: bool = True,
+            prioritized_only: bool = False,
     ) -> dict:
         """List IoC matches against ingested events."""
         url = f"{self.base_url}/{self.instance_id}/legacy:legacySearchEnterpriseWideIoCs"
@@ -670,13 +670,13 @@ class ChronicleClient:
         }
 
         response = self.session.get(url, params=params)
-        
+
         if response.status_code != 200:
             raise APIError(f"Failed to list IoCs: {response.text}")
 
         try:
             data = response.json()
-            
+
             # Process each IoC match to ensure consistent field names
             if "matches" in data:
                 for match in data["matches"]:
@@ -684,7 +684,7 @@ class ChronicleClient:
                     for ts_field in ["iocIngestTimestamp", "firstSeenTimestamp", "lastSeenTimestamp"]:
                         if ts_field in match:
                             match[ts_field] = match[ts_field].rstrip("Z")
-                    
+
                     # Ensure consistent field names
                     if "filterProperties" in match and "stringProperties" in match["filterProperties"]:
                         props = match["filterProperties"]["stringProperties"]
@@ -692,7 +692,7 @@ class ChronicleClient:
                             k: [v["rawValue"] for v in values["values"]]
                             for k, values in props.items()
                         }
-                    
+
                     # Process associations
                     if "associationIdentifier" in match:
                         # Remove duplicate associations (some have same name but different regionCode)
@@ -706,7 +706,7 @@ class ChronicleClient:
                         match["associationIdentifier"] = unique_associations
 
             return data
-            
+
         except Exception as e:
             raise APIError(f"Failed to process IoCs response: {str(e)}")
 
@@ -727,28 +727,28 @@ class ChronicleClient:
             raise ValueError("Maximum of 1000 cases can be retrieved in a batch")
 
         url = f"{self.base_url}/{self.instance_id}/legacy:legacyBatchGetCases"
-        
+
         params = {
             "names": case_ids
         }
 
         response = self.session.get(url, params=params)
-        
+
         if response.status_code != 200:
             raise APIError(f"Failed to get cases: {response.text}")
-            
-        return CaseList.from_dict(response.json()) 
+
+        return CaseList.from_dict(response.json())
 
     def get_alerts(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        snapshot_query: str = "feedback_summary.status != \"CLOSED\"",
-        baseline_query: str = None,
-        max_alerts: int = 1000,
-        enable_cache: bool = True,
-        max_attempts: int = 30,
-        poll_interval: float = 1.0
+            self,
+            start_time: datetime,
+            end_time: datetime,
+            snapshot_query: str = "feedback_summary.status != \"CLOSED\"",
+            baseline_query: str = None,
+            max_alerts: int = 1000,
+            enable_cache: bool = True,
+            max_attempts: int = 30,
+            poll_interval: float = 1.0
     ) -> dict:
         """Get alerts within a time range.
 
@@ -769,7 +769,7 @@ class ChronicleClient:
             APIError: If the API request fails or response parsing fails
         """
         url = f"{self.base_url}/{self.instance_id}/legacy:legacyFetchAlertsView"
-        
+
         params = {
             "timeRange.startTime": start_time.isoformat(),
             "timeRange.endTime": end_time.isoformat(),
@@ -899,7 +899,7 @@ class ChronicleClient:
 
         if not updates:
             raise APIError("No valid data received from alerts API")
-            
+
         return updates
 
     def _merge_alert_updates(self, target: dict, updates: list) -> None:
@@ -908,7 +908,7 @@ class ChronicleClient:
         Args:
             target: Target dictionary to update
             updates: List of updates to merge in
-            
+
         This method modifies the target dictionary in place.
         """
         for update in updates:
@@ -944,7 +944,6 @@ class ChronicleClient:
         # This regex finds commas followed by a closing bracket
         json_str = re.sub(r',\s*([\]}])', r'\1', json_str)
         return json_str
-
 
     def get_detections(
             self,
