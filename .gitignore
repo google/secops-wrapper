@@ -12,3 +12,5 @@ dist/
 build/
 *.egg-info/
 support/
+/.idea/
+/secops-wrapper.iml
