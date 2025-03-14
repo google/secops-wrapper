@@ -569,38 +569,195 @@ You can filter alerts using the snapshot query parameter, which supports fields 
 - feedback_summary.severity_display
 - feedback_summary.status
 
+## Ingesting Logs
+
+You can ingest raw logs in SecOps as per the following example:
+
+```python
+from datetime import datetime, timedelta, timezone
+from secops import SecOpsClient
+import base64
+
+client = SecOpsClient()
+chronicle = client.chronicle(
+  customer_id="xxxxx-xxxx-xxxx-xxxxxx",
+  project_id="xxxxxxx",
+  region="eu"
+)
+
+log = """
+{
+   "insertId":"15webflfvq37ji",
+   "jsonPayload":{
+      "instance":{
+         "vm_name":"win-adfs",
+         "zone":"us-central1-a",
+         "region":"us-central1",
+         "project_id":"certain-router-352114"
+      },
+      "disposition":"ALLOWED",
+      "connection":{
+         "src_port":63271.0,
+         "protocol":6.0,
+         "dest_ip":"10.128.0.10",
+         "dest_port":10514.0,
+         "src_ip":"10.128.0.21"
+      },
+      "remote_instance":{
+         "zone":"us-central1-a",
+         "vm_name":"chronicle-forwarder-us-central",
+         "project_id":"certain-router-352114",
+         "region":"us-central1"
+      },
+      "vpc":{
+         "vpc_name":"default",
+         "project_id":"certain-router-352114",
+         "subnetwork_name":"default"
+      },
+      "rule_details":{
+         "direction":"EGRESS",
+         "reference":"network:default/firewall:out-to-world",
+         "ip_port_info":[
+            {
+               "ip_protocol":"ALL"
+            }
+         ],
+         "action":"ALLOW",
+         "priority":1000.0,
+         "destination_range":[
+            "0.0.0.0/0"
+         ]
+      },
+      "remote_vpc":{
+         "subnetwork_name":"default",
+         "project_id":"certain-router-352114",
+         "vpc_name":"default"
+      }
+   },
+   "resource":{
+      "type":"gce_subnetwork",
+      "labels":{
+         "location":"us-central1-a",
+         "project_id":"certain-router-352114",
+         "subnetwork_name":"default",
+         "subnetwork_id":"5843008348836787152"
+      }
+   },
+   "timestamp":"2025-03-14T13:26:13.717215782Z",
+   "logName":"projects/certain-router-352114/logs/compute.googleapis.com%2Ffirewall",
+   "receiveTimestamp":"2025-03-14T13:26:21.857273778Z"
+}
+"""
+
+log_type = "GCP_FIREWALL"
+log = {
+  "data": base64.b64encode(log.encode()).decode(),
+  "log_entry_time": datetime.now(timezone.utc).isoformat(),
+  "collection_time": (datetime.now(timezone.utc) + timedelta(seconds=10)).isoformat(),
+  "labels": {},
+  "additionals": {}
+}
+logs = [log]
+# ingest log in SecOps
+chronicle.import_logs(log_type=log_type,logs=logs, forwarder="xxxxxxxxx")
+```
 
 ## Rules management
 
-You can list rules or get rule from rule ID:
+You can list rules, get rule from rule ID, get detections for a rule in a specific time frame or even verify syntax for YARA-L rule:
 
 ```python
+from datetime import datetime, timedelta, timezone
 from secops import SecOpsClient
 
 client = SecOpsClient()
 chronicle = client.chronicle(
-  customer_id="your-customer-id",
-  project_id="your-project-id"
+  customer_id="xxxxx-xxxx-xxxx-xxxxxx",
+  project_id="xxxxxxx",
+  region="eu"
 )
 
-rule_id = "ru_1e678f34-xxxxxx"
+rule_id = "ru_xxxxxxxxx"
 
 # Get SecOps rule using rule ID
 rule = chronicle.get_rule(name=rule_id)
 print(f"Rule: {rule.display_name}")
-print(f"Priority: {rule.priority}")
 print(f"Severity: {rule.severity}")
 print(f"Type: {rule.type}")
 
 # List rules in secops with pagination
 rules = chronicle.list_rules()
 
-for rule in rules["rules"]:
+for rule in rules.rules:
   # Print rule details
   print(f"Rule: {rule.display_name}")
-  print(f"Priority: {rule.priority}")
   print(f"Severity: {rule.severity}")
   print(f"Type: {rule.type}")
+
+# Set time range of get detections for last 24 hours
+end_time = datetime.now(timezone.utc)
+start_time = end_time - timedelta(hours=24)
+
+detections = chronicle.get_detections(
+  rule_id=rule_id,
+  start_time=start_time,
+  end_time=end_time
+)
+print(f"Rule with ID: {rule.display_name} has {len(detections.detections)} detections in the last 24 hours")
+
+
+# content of new rule to be verified
+rule_text = """
+rule google_workspace_mfa_disabled {
+
+  meta:
+    author = "Google Cloud Security"
+    description = "Identifies when multi-factor authentication (MFA) is disabled for a Google Workspace organization. Security teams can monitor for changes to MFA configuration that may weaken the organization's security posture."
+    rule_id = "mr_63139204-0d18-4410-b4c4-839bc9ccd456"
+    rule_name = "Google Workspace MFA Disabled"
+    mitre_attack_tactic = "Persistence"
+    mitre_attack_technique = "Modify Authentication Process"
+    mitre_attack_url = "https://attack.mitre.org/techniques/T1556/"
+    mitre_attack_version = "v13.1"
+    type = "Alert"
+    data_source = "Workspace Activity"
+    severity = "High"
+    priority = "High"
+
+  events:
+    $ws.metadata.vendor_name = "Google Workspace"
+    $ws.metadata.product_name = "admin"
+    ($ws.metadata.product_event_type = "ENFORCE_STRONG_AUTHENTICATION" or
+    $ws.metadata.product_event_type =  "ALLOW_STRONG_AUTHENTICATION")
+    $ws.target.labels["new_value"] = "false"
+
+  outcome:
+    $risk_score = max(70)
+    $mitre_attack_tactic = "Persistence"
+    $mitre_attack_technique = "Modify Authentication Process"
+    $mitre_attack_technique_id = "T1556"
+    $event_count = count_distinct($ws.metadata.id)
+    $principal_ip = array_distinct($ws.principal.ip)
+    $principal_country = array_distinct($ws.principal.ip_geo_artifact.location.country_or_region)
+    $principal_state = array_distinct($ws.principal.ip_geo_artifact.location.state)
+    $principal_user_emails = array_distinct($ws.principal.user.email_addresses)
+    $target_user_emails = array_distinct($ws.target.user.email_addresses)
+    $principal_user_id = $ws.principal.user.userid
+
+  condition:
+    $ws
+}
+"""
+
+result = chronicle.verify_rule(rule_text=rule_text)
+if result.success:
+  print(f"Rule successfully verified")
+else:
+  print(f"Rule failed verification.")
+  for diagnostic in result.compilation_diagnostics:
+    print(f"Error Message: {diagnostic.message}")
+    print(f"Position: {diagnostic.position}")
+    print(f"Severity: {diagnostic.severity}")
 ```
 
 ## License

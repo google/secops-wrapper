@@ -34,9 +34,11 @@ from secops.chronicle.models import (
     AlertState,
     ListBasis,
     CaseList,
+    LegacySearchDetectionsResponse,
     RuleView,
     CompilationResult,
     Rule,
+    ListRulesResponse
 )
 import re
 from enum import Enum
@@ -1066,9 +1068,9 @@ class ChronicleClient:
             raise APIError(f"Failed to parse alerts response: {str(e)}")
 
     def import_logs(
-        self, log_type: str, logs: list(), forwarder: str, source_filename: str = None
-    ) -> dict:
-        """Get alerts within a time range."""
+        self, log_type: str, logs: list, forwarder: str, source_filename: str = None
+    ) -> None:
+        """Import logs in SecOps."""
         url = f"{self.base_url}/{self.instance_id}/logTypes/{log_type}/logs:import"
 
         body = {
@@ -1100,7 +1102,7 @@ class ChronicleClient:
         page_token: str = None,
         view: RuleView = RuleView.BASIC,
     ) -> dict:
-        """Get alerts within a time range."""
+        """List SecOps tenant detection rules."""
         url = f"{self.base_url}/{self.instance_id}/rules"
 
         params = {
@@ -1136,7 +1138,7 @@ class ChronicleClient:
             raise APIError(f"Failed to parse alerts response: {str(e)}")
 
     def get_rule(self, name: str, view: RuleView = RuleView.BASIC) -> Rule:
-        """Get alerts within a time range."""
+        """Get rule by rule ID."""
         url = f"{self.base_url}/{self.instance_id}/rules/{name}"
 
         headers = {
@@ -1154,7 +1156,7 @@ class ChronicleClient:
 
         if response.status_code != 200:
             LOGGER.error("Error Response:", response.text)
-            raise APIError(f"Failed to get alerts: {response.text}")
+            raise APIError(f"Failed to get rule: {response.text}")
 
         try:
             # Parse the JSON response and create a CompilationResult object

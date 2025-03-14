@@ -58,7 +58,7 @@ class SecOpsAuth:
         """Get credentials from various sources."""
         try:
             if credentials:
-                return credentials.with_scopes(self.scopes)
+                return credentials
             
             if service_account_info:
                 return service_account.Credentials.from_service_account_info(
