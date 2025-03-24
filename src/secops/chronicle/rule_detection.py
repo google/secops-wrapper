@@ -16,6 +16,8 @@
 
 from typing import Dict, Any, Optional
 from secops.exceptions import APIError
+#from datetime import datetime
+import datetime as dt
 
 
 def list_detections(
@@ -112,3 +114,93 @@ def list_errors(
         raise APIError(f"Failed to list rule errors: {response.text}")
     
     return response.json() 
+
+
+def get_detection(
+    client,
+    rule_id: str,
+    detection_id: str,
+) -> dict:
+    """Get details on a specific detection.
+    
+    Args:
+        client: ChronicleClient instance
+        rule_id: Rule ID associated with a detection.
+        detection_id: Detection ID. 
+    
+    Returns:
+        Dictionary containing detection information
+        
+    Raises:
+        APIError: If the API request fails
+    """
+    url = f"{client.base_url}/{client.instance_id}/legacy:legacyGetDetection"
+
+    params = {
+        "ruleId": rule_id,
+        'detectionId': detection_id,
+    }
+
+    response = client.session.get(url, params=params, stream=True)
+
+    if response.status_code != 200:
+        raise APIError(f"Failed to get alerts: {response.text}")
+
+    return response.json()
+
+def get_detection_events(
+    client,
+    rule_id: str,
+    detection_id: str,
+    max_events: int = 100,
+) -> dict:
+    """Get (search) for all the events associated with a detection
+    
+    Args:
+        client: ChronicleClient instance
+        rule_id: Rule ID associated with a detection.
+        detection_id: Detection ID. 
+        max_events: The maximun number of events to return.  Default value is 100.  Maximum
+          value is 10,000.
+    
+    Returns:
+        Dictionary containing event samples associated with a detection.
+        
+    Raises:
+        APIError: If the API request fails
+    """
+
+    url = f"{client.base_url}/{client.instance_id}/legacy:legacySearchRuleDetectionEvents"
+
+
+    #
+    # Note:  The API requires a rule version, but this can be determined from a call to get_detection (legacyGetDetection)
+    # so in all cases we'll derive the rule version from the response
+    #
+    d = get_detection(client, rule_id, detection_id)
+    if d is None or d.get('detection', None) is None or len(d['detection']) == 0:
+        raise APIError(f"Failed to get detection: {d}")
+    
+    version = d['detection'][0]['ruleVersion']
+
+    # hacky parsing rule version is in the form <rule_id>@v_<seconds>_<nanos>
+    timestamp_parts = version.split('@')[-1]
+    v, seconds, ms = timestamp_parts.split('_')
+    ts = dt.datetime.fromtimestamp(int(seconds), dt.UTC).strftime('%Y-%m-%dT%H:%M:%S')
+
+    # note: precision of version timestamp is only microseconds
+    ts = "{}.{}Z".format(ts, ms[:6])
+
+    params = {
+        "ruleId": rule_id,
+        'versionTimestamp': ts,
+        'detectionId': detection_id,
+        'maxEvents': max_events,
+    }
+
+    response = client.session.get(url, params=params, stream=True)
+
+    if response.status_code != 200:
+        raise APIError(f"Failed to get alerts: {response.text}")
+
+    return response.json()        

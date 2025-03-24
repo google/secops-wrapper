@@ -36,8 +36,6 @@ from secops.chronicle.entity import (
 from secops.chronicle.ioc import list_iocs as _list_iocs
 from secops.chronicle.case import get_cases_from_list
 from secops.chronicle.alert import get_alerts as _get_alerts
-from secops.chronicle.log_ingest import ingest_log as _ingest_log, get_or_create_forwarder as _get_or_create_forwarder
-from secops.chronicle.log_types import get_all_log_types as _get_all_log_types, is_valid_log_type as _is_valid_log_type, get_log_type_description as _get_log_type_description, search_log_types as _search_log_types, LogType
 
 # Import rule functions
 from secops.chronicle.rule import (
@@ -46,7 +44,7 @@ from secops.chronicle.rule import (
     list_rules as _list_rules,
     update_rule as _update_rule,
     delete_rule as _delete_rule,
-    enable_rule as _enable_rule
+    enable_rule as _enable_rule,
 )
 from secops.chronicle.rule_alert import (
     get_alert as _get_alert,
@@ -56,7 +54,9 @@ from secops.chronicle.rule_alert import (
 )
 from secops.chronicle.rule_detection import (
     list_detections as _list_detections,
-    list_errors as _list_errors
+    list_errors as _list_errors,
+    get_detection as _get_detection,
+    get_detection_events as _get_detection_events
 )
 from secops.chronicle.rule_retrohunt import (
     create_retrohunt as _create_retrohunt,
@@ -79,8 +79,6 @@ from secops.chronicle.models import (
     AlertCount,
     CaseList
 )
-
-from secops.chronicle.nl_search import translate_nl_to_udm, nl_search as _nl_search
 
 class ValueType(Enum):
     """Chronicle API value types."""
@@ -1030,157 +1028,21 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _validate_rule(self, rule_text)
+        return _validate_rule(self, rule_text) 
 
-    def translate_nl_to_udm(self, text: str) -> str:
-        """Translate natural language query to UDM search syntax.
+    def get_detection(
+        self,
+        rule_id: str,
+        detection_id: str,
+    ) -> dict:
         
-        Args:
-            text: Natural language query text
-            
-        Returns:
-            UDM search query string
-            
-        Raises:
-            APIError: If the API request fails or no valid query can be generated
-        """
-        return translate_nl_to_udm(self, text)
+        return _get_detection(self, rule_id, detection_id)
     
-    def nl_search(
+    def get_detection_events(
         self,
-        text: str,
-        start_time: datetime,
-        end_time: datetime,
-        max_events: int = 10000,
-        case_insensitive: bool = True,
-        max_attempts: int = 30
-    ) -> Dict[str, Any]:
-        """Perform a search using natural language that is translated to UDM.
-        
-        Args:
-            text: Natural language query text
-            start_time: Search start time
-            end_time: Search end time
-            max_events: Maximum events to return
-            case_insensitive: Whether to perform case-insensitive search
-            max_attempts: Maximum number of polling attempts
-            
-        Returns:
-            Dict containing the search results with events
-            
-        Raises:
-            APIError: If the API request fails
-        """
-        return _nl_search(
-            self,
-            text=text,
-            start_time=start_time,
-            end_time=end_time,
-            max_events=max_events,
-            case_insensitive=case_insensitive,
-            max_attempts=max_attempts
-        )
+        rule_id: str,
+        detection_id: str,
+        max_events: int = 100,
+    ) -> dict:
 
-    def ingest_log(
-        self,
-        log_type: str,
-        log_message: str,
-        log_entry_time: Optional[datetime] = None,
-        collection_time: Optional[datetime] = None,
-        forwarder_id: Optional[str] = None,
-        force_log_type: bool = False
-    ) -> Dict[str, Any]:
-        """Ingest a log into Chronicle.
-        
-        Args:
-            log_type: Chronicle log type (e.g., "OKTA", "WINDOWS", etc.)
-            log_message: The raw log message to ingest
-            log_entry_time: The time the log entry was created (defaults to current time)
-            collection_time: The time the log was collected (defaults to current time)
-            forwarder_id: ID of the forwarder to use (creates or uses default if None)
-            force_log_type: Whether to force using the log type even if not in the valid list
-            
-        Returns:
-            Dictionary containing the operation details for the ingestion
-            
-        Raises:
-            ValueError: If the log type is invalid or timestamps are invalid
-            APIError: If the API request fails
-        """
-        return _ingest_log(
-            self,
-            log_type=log_type,
-            log_message=log_message,
-            log_entry_time=log_entry_time,
-            collection_time=collection_time,
-            forwarder_id=forwarder_id,
-            force_log_type=force_log_type
-        )
-
-    def get_or_create_forwarder(
-        self,
-        display_name: str = "Wrapper-SDK-Forwarder"
-    ) -> Dict[str, Any]:
-        """Get an existing forwarder by name or create a new one if none exists.
-        
-        Args:
-            display_name: Name of the forwarder to find or create
-            
-        Returns:
-            Dictionary containing the forwarder details
-            
-        Raises:
-            APIError: If the API request fails
-        """
-        return _get_or_create_forwarder(
-            self,
-            display_name=display_name
-        )
-
-    def get_all_log_types(self) -> List[LogType]:
-        """Get all available Chronicle log types.
-        
-        Returns:
-            List of LogType objects representing all available log types
-        """
-        return _get_all_log_types()
-        
-    def is_valid_log_type(self, log_type_id: str) -> bool:
-        """Check if a log type ID is valid.
-        
-        Args:
-            log_type_id: The log type ID to validate
-            
-        Returns:
-            True if the log type exists, False otherwise
-        """
-        return _is_valid_log_type(log_type_id)
-        
-    def get_log_type_description(self, log_type_id: str) -> Optional[str]:
-        """Get the description for a log type ID.
-        
-        Args:
-            log_type_id: The log type ID to get the description for
-            
-        Returns:
-            Description string if the log type exists, None otherwise
-        """
-        return _get_log_type_description(log_type_id)
-        
-    def search_log_types(
-        self,
-        search_term: str,
-        case_sensitive: bool = False,
-        search_in_description: bool = True
-    ) -> List[LogType]:
-        """Search log types by ID or description.
-        
-        Args:
-            search_term: Term to search for
-            case_sensitive: Whether the search should be case sensitive
-            search_in_description: Whether to search in descriptions as well as IDs
-            
-        Returns:
-            List of matching LogType objects
-        """
-        return _search_log_types(search_term, case_sensitive, search_in_description) 
+       return _get_detection_events(self, rule_id, detection_id, max_events)
