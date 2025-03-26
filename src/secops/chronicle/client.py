@@ -56,7 +56,9 @@ from secops.chronicle.rule_alert import (
 )
 from secops.chronicle.rule_detection import (
     list_detections as _list_detections,
-    list_errors as _list_errors
+    list_errors as _list_errors,
+    get_detection as _get_detection,
+    get_detection_events as _get_detection_events
 )
 from secops.chronicle.rule_retrohunt import (
     create_retrohunt as _create_retrohunt,
@@ -945,6 +947,24 @@ class ChronicleClient:
         """
         return _list_errors(self, rule_id)
     
+
+    def get_detection(
+        self,
+        rule_id: str,
+        detection_id: str,
+    ) -> dict:
+        
+        return _get_detection(self, rule_id, detection_id)
+    
+    def get_detection_events(
+        self,
+        rule_id: str,
+        detection_id: str,
+        max_events: int = 100,
+    ) -> dict:
+
+       return _get_detection_events(self, rule_id, detection_id, max_events)
+
     # Rule Retrohunt methods
     
     def create_retrohunt(
