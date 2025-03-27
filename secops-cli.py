@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,12 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""Google SecOps SDK for Python."""
+"""Command-line runner for Google SecOps SDK CLI."""
 
-__version__ = "0.1.2"
+import os
+import sys
 
-from secops.client import SecOpsClient
-from secops.auth import SecOpsAuth
+# Add the src directory to the Python path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+
+# Import the CLI function
 from secops.cli import cli
 
-__all__ = ["SecOpsClient", "SecOpsAuth", "cli"] 
+if __name__ == "__main__":
+    # Run the CLI
+    cli(obj={})
