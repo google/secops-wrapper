@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,20 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""Pytest configuration and fixtures."""
+"""Command-line runner for Google SecOps SDK CLI."""
+
 import os
 import sys
-import pytest
 
-# Add tests directory to Python path
-TEST_DIR = os.path.dirname(__file__)
-SRC_DIR = os.path.dirname(TEST_DIR)
-SECOPS_DIR = os.path.join(SRC_DIR, "src")
-sys.path.insert(0, SECOPS_DIR)
+# Add the src directory to the Python path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from secops import SecOpsClient
+# Import the CLI function
+from secops.cli import cli
 
-@pytest.fixture
-def client():
-    """Create a SecOps client for testing."""
-    return SecOpsClient()
+if __name__ == "__main__":
+    # Run the CLI
+    cli(obj={})

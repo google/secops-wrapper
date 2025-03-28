@@ -9,6 +9,43 @@ This wraps the API for common use cases, including UDM searches, entity lookups,
 pip install secops
 ```
 
+## Running Locally Without Installation
+
+To use the module directly from source without installing via pip:
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/google/secops-wrapper.git
+   cd secops-wrapper
+   ```
+
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Add the source directory to your Python path:
+   ```python
+   import sys
+   import os
+   
+   # Add the src directory to the Python path
+   sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+   
+   # Now you can import the module
+   from secops import SecOpsClient
+   
+   # Initialize with default credentials
+   client = SecOpsClient()
+   ```
+
+Alternatively, you can use the PYTHONPATH environment variable:
+
+```bash
+# From the root of the secops-wrapper directory
+PYTHONPATH=$PYTHONPATH:$(pwd)/src python your_script.py
+```
+
 ## Authentication
 
 The SDK supports two main authentication methods:
@@ -316,6 +353,209 @@ process_event = {
 # Ingest multiple UDM events in a single call
 result = chronicle.ingest_udm(udm_events=[network_event, process_event])
 print("Multiple events ingested successfully")
+
+## Using the Command Line Interface (CLI)
+
+The SecOps SDK includes a command-line interface (CLI) that allows you to interact with Google SecOps services without writing Python code.
+
+### Installation
+
+The CLI is automatically installed when you install the SecOps SDK:
+
+```bash
+pip install secops
+```
+
+After installation, you can use the `secops` command directly from your terminal.
+
+### Running Without Installation
+
+For development or testing purposes, you can run the CLI directly from the source code without installing the package. The repository includes two scripts for this purpose:
+
+#### Using the Python Script
+
+```bash
+# From the secops-wrapper directory
+./secops-cli.py chronicle search --query "principal.ip = \"192.168.1.1\"" --start-time "1d"
+```
+
+#### Using the Shell Script
+
+```bash
+# From the secops-wrapper directory
+./secops-cli.sh chronicle search --query "principal.ip = \"192.168.1.1\"" --start-time "1d"
+```
+
+Both scripts automatically add the `src` directory to the Python path, allowing you to run the CLI without installing the package. This is particularly useful during development when you're making changes to the CLI code and want to test them immediately.
+
+### Authentication
+
+The CLI supports the same authentication methods as the Python SDK. You can authenticate using the following methods:
+
+1. **Application Default Credentials (ADC)** - This is the default method when no service account path is specified:
+
+```bash
+# Login and set up application-default credentials
+gcloud auth application-default login
+
+# Then run the CLI with just project and customer IDs
+# Note: Global options (--project-id, --customer-id) must come BEFORE the subcommand
+secops --project-id="your-project-id" --customer-id="your-customer-id" \
+       chronicle search --query "principal.ip = \"192.168.1.1\"" --start-time "1d"
+```
+
+2. **Using environment variables**:
+
+```bash
+# Optional: Set service account path (if not using ADC)
+export SECOPS_SERVICE_ACCOUNT_PATH="/path/to/service-account.json"
+
+# Required parameters
+export SECOPS_PROJECT_ID="your-project-id"
+export SECOPS_CUSTOMER_ID="your-customer-id"
+export SECOPS_REGION="us"  # Optional, defaults to "us"
+```
+
+3. **Using command-line options**:
+
+```bash
+# With service account (optional if using ADC)
+# Note: Global options must come BEFORE the subcommand
+secops --service-account-path="/path/to/service-account.json" \
+       --project-id="your-project-id" --customer-id="your-customer-id" --region="us" \
+       <command> <subcommand> [options]
+
+# With application default credentials
+secops --project-id="your-project-id" --customer-id="your-customer-id" \
+       <command> <subcommand> [options]
+```
+
+3. Using a .env file:
+
+Create a `.env` file with your configuration:
+
+```
+# Google SecOps CLI Configuration
+SECOPS_SERVICE_ACCOUNT_PATH=/path/to/service-account.json
+SECOPS_PROJECT_ID=your-project-id
+SECOPS_CUSTOMER_ID=your-customer-id
+SECOPS_REGION=us
+```
+
+Then use the `--dotenv` option to specify the path to your .env file:
+
+```bash
+# Note: The --dotenv option is a global option and must come BEFORE the subcommand
+secops --dotenv=.env chronicle search --query "principal.ip = \"192.168.1.1\"" --start-time "1d"
+```
+
+For convenience, the included `secops-cli.sh` script automatically looks for a `.env` file in the repository root directory and uses it if found:
+
+```bash
+# This will automatically use .env if it exists in the repository root
+# Note: All command-line options for the main CLI must come AFTER ./secops-cli.sh and BEFORE the subcommand
+./secops-cli.sh chronicle search --query "principal.ip = \"192.168.1.1\"" --start-time "1d"
+```
+
+A template `.env.template` file is provided in the repository that you can copy and customize:
+
+```bash
+cp .env.template .env
+# Edit .env with your configuration
+```
+
+### Available Commands
+
+The CLI is organized into groups of commands. Currently, the main group is `chronicle`, which contains commands for interacting with Chronicle:
+
+#### Search UDM Events
+
+```bash
+# Basic search with a time range
+secops chronicle search --query "principal.ip = \"192.168.1.1\"" --start-time "1d"
+
+# Search with specific time range and output as JSON
+secops chronicle search \
+  --query "principal.ip = \"192.168.1.1\"" \
+  --start-time "2023-03-20T00:00:00" \
+  --end-time "2023-03-27T00:00:00" \
+  --max-events 100 \
+  --output json
+```
+
+#### Entity Summary
+
+```bash
+# Get summary for an IP address
+secops chronicle entity --value "192.168.1.1" --start-time "1d"
+
+# Get summary for a file hash
+secops chronicle entity \
+  --value "e17dd4eef8b4978673791ef4672f4f6a" \
+  --start-time "7d" \
+  --output json
+```
+
+#### Validate Query
+
+```bash
+# Validate a Chronicle search query
+secops chronicle validate-query --query "principal.ip = \"192.168.1.1\""
+```
+
+#### List Rules
+
+```bash
+# List detection rules
+secops chronicle list-rules
+
+# List rules with JSON output
+secops chronicle list-rules --output json
+```
+
+#### Get Rule
+
+```bash
+# Get a specific rule by ID
+secops chronicle get-rule --rule-id "ru_12345678-1234-1234-1234-123456789012"
+
+# Get a specific rule version
+secops chronicle get-rule \
+  --rule-id "ru_12345678-1234-1234-1234-123456789012" \
+  --version-id "rv_12345678-1234-1234-1234-123456789012" \
+  --output json
+```
+
+#### Natural Language Search
+
+```bash
+# Search using natural language
+secops chronicle nl-search \
+  --query "Show me all failed login attempts in the last 24 hours" \
+  --start-time "1d"
+```
+
+### Time Format
+
+The CLI supports both ISO format and relative time formats:
+
+- ISO format: `YYYY-MM-DDTHH:MM:SS` (e.g., `2023-03-27T12:00:00`)
+- Relative format: 
+  - `Nd` for N days ago (e.g., `1d` for 1 day ago)
+  - `Nh` for N hours ago (e.g., `12h` for 12 hours ago)
+
+### Output Formats
+
+Most commands support two output formats:
+
+- `table`: Human-readable tabular format (default)
+- `json`: JSON format for programmatic processing
+
+Specify the output format using the `--output` option:
+
+```bash
+secops chronicle search --query "..." --start-time "1d" --output json
+```
 ```
 
 
