@@ -502,7 +502,7 @@ def nl_search(ctx, query, start_time, end_time, max_events, output):
     
     try:
         results = ctx.obj["chronicle"].nl_search(
-            query=query,
+            text=query,
             start_time=start_time,
             end_time=end_time,
             max_events=max_events
