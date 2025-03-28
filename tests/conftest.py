@@ -16,13 +16,16 @@
 import os
 import sys
 import pytest
-from secops import SecOpsClient
 
 # Add tests directory to Python path
-TEST_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, TEST_DIR)
+TEST_DIR = os.path.dirname(__file__)
+SRC_DIR = os.path.dirname(TEST_DIR)
+SECOPS_DIR = os.path.join(SRC_DIR, "src")
+sys.path.insert(0, SECOPS_DIR)
+
+from secops import SecOpsClient
 
 @pytest.fixture
 def client():
     """Create a SecOps client for testing."""
-    return SecOpsClient() 
+    return SecOpsClient()
