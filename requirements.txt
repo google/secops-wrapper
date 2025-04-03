@@ -1,2 +1,13 @@
-pytest
-pytest-cov
+google-auth>=2.22.0
+google-auth-httplib2>=0.1.0
+google-api-python-client>=2.100.0
+google-api-core>=2.11.0
+googleapis-common-protos>=1.60.0
+protobuf>=4.23.0
+proto-plus>=1.22.0
+requests>=2.31.0
+python-dateutil>=2.8.2
+ipaddress>=1.0.23
+pyyaml>=6.0
+click>=8.0.0
+python-dotenv>=1.0.0

@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,20 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""Pytest configuration and fixtures."""
-import os
-import sys
-import pytest
 
-# Add tests directory to Python path
-TEST_DIR = os.path.dirname(__file__)
-SRC_DIR = os.path.dirname(TEST_DIR)
-SECOPS_DIR = os.path.join(SRC_DIR, "src")
-sys.path.insert(0, SECOPS_DIR)
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-from secops import SecOpsClient
+# Add the src directory to PYTHONPATH
+export PYTHONPATH="$SCRIPT_DIR/src:$PYTHONPATH"
 
-@pytest.fixture
-def client():
-    """Create a SecOps client for testing."""
-    return SecOpsClient()
+# Check if .env file exists in the current directory
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    DOTENV_ARG="--dotenv=$SCRIPT_DIR/.env"
+    echo "Using .env file found in $SCRIPT_DIR"
+else
+    DOTENV_ARG=""
+fi
+
+# Run the CLI module directly with the dotenv argument if available
+python3 -c "from secops.cli import cli; cli(obj={})" $DOTENV_ARG "$@"
