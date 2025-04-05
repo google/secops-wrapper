@@ -84,7 +84,7 @@ def parse_datetime(ctx, param, value):
 @click.pass_context
 def cli(ctx, service_account_path, project_id, customer_id, region, dotenv):
     """Google SecOps CLI.
-    
+
     Command-line interface for interacting with Google SecOps services.
     """
     # Load environment variables from specified .env file if provided
@@ -103,16 +103,16 @@ def cli(ctx, service_account_path, project_id, customer_id, region, dotenv):
                 region = os.environ.get("SECOPS_REGION")
         except ImportError:
             click.echo("Warning: python-dotenv package is not installed. Cannot load .env file.", err=True)
-    
+
     # Initialize the context object
     ctx.ensure_object(dict)
-    
+
     # Store configuration in context
     ctx.obj["service_account_path"] = service_account_path
     ctx.obj["project_id"] = project_id
     ctx.obj["customer_id"] = customer_id
     ctx.obj["region"] = region
-    
+
     # Create SecOps client if required parameters are provided
     if all([project_id, customer_id]):
         # Use service_account_path if provided, otherwise use application default credentials
@@ -120,7 +120,7 @@ def cli(ctx, service_account_path, project_id, customer_id, region, dotenv):
             client = SecOpsClient(service_account_path=service_account_path)
         else:
             client = SecOpsClient()  # Will use application default credentials
-        
+
         ctx.obj["client"] = client
         ctx.obj["chronicle"] = client.chronicle(
             customer_id=customer_id,
@@ -144,14 +144,14 @@ def chronicle(ctx):
                 "--project-id and --customer-id options or set the corresponding "
                 "environment variables."
             )
-        
+
         # Create the client if not already created
         service_account_path = ctx.obj.get("service_account_path")
         if service_account_path:
             client = SecOpsClient(service_account_path=service_account_path)
         else:
             client = SecOpsClient()  # Will use application default credentials
-            
+
         ctx.obj["client"] = client
         ctx.obj["chronicle"] = client.chronicle(
             customer_id=ctx.obj["customer_id"],
@@ -205,7 +205,7 @@ def search_udm(ctx, query, start_time, end_time, max_events, case_insensitive, o
     # Set default end time to now if not provided
     if not end_time:
         end_time = datetime.now()
-    
+
     try:
         results = ctx.obj["chronicle"].search_udm(
             query=query,
@@ -214,7 +214,7 @@ def search_udm(ctx, query, start_time, end_time, max_events, case_insensitive, o
             max_events=max_events,
             case_insensitive=case_insensitive
         )
-        
+
         if output == "json":
             click.echo(json.dumps(results, default=str, indent=2))
         else:
@@ -222,10 +222,10 @@ def search_udm(ctx, query, start_time, end_time, max_events, case_insensitive, o
             if not results.get("events"):
                 click.echo("No events found.")
                 return
-            
+
             # Print summary
             click.echo(f"Found {len(results.get('events', []))} events.")
-            
+
             # Print events in a tabular format
             for i, event in enumerate(results.get("events", [])):
                 click.echo(f"\nEvent {i+1}:")
@@ -236,7 +236,7 @@ def search_udm(ctx, query, start_time, end_time, max_events, case_insensitive, o
                             click.echo(f"    {sub_key}: {sub_value}")
                     else:
                         click.echo(f"  {key}: {value}")
-    
+
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
         sys.exit(1)
@@ -290,7 +290,7 @@ def entity_summary(ctx, value, start_time, end_time, field_path, value_type, ret
     # Set default end time to now if not provided
     if not end_time:
         end_time = datetime.now()
-    
+
     try:
         summary = ctx.obj["chronicle"].summarize_entity(
             value=value,
@@ -300,7 +300,7 @@ def entity_summary(ctx, value, start_time, end_time, field_path, value_type, ret
             value_type=value_type,
             return_alerts=return_alerts
         )
-        
+
         if output == "json":
             # Convert to dictionary for JSON serialization
             summary_dict = {
@@ -320,14 +320,14 @@ def entity_summary(ctx, value, start_time, end_time, field_path, value_type, ret
                     click.echo("  Metadata:")
                     for key, value in summary.entity.metadata.items():
                         click.echo(f"    {key}: {value}")
-            
+
             if summary.metrics:
                 click.echo("\nMetrics:")
                 click.echo(f"  First Seen: {summary.metrics.first_seen}")
                 click.echo(f"  Last Seen: {summary.metrics.last_seen}")
                 click.echo(f"  Alert Count: {summary.metrics.alert_count}")
                 click.echo(f"  Event Count: {summary.metrics.event_count}")
-            
+
             if summary.alerts:
                 click.echo(f"\nAlerts ({len(summary.alerts)}):")
                 for i, alert in enumerate(summary.alerts):
@@ -335,7 +335,7 @@ def entity_summary(ctx, value, start_time, end_time, field_path, value_type, ret
                     click.echo(f"    Name: {alert.name}")
                     click.echo(f"    Severity: {alert.severity}")
                     click.echo(f"    Time: {alert.timestamp}")
-    
+
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
         sys.exit(1)
@@ -353,14 +353,14 @@ def validate_query(ctx, query):
     """Validate a Chronicle search query."""
     try:
         result = ctx.obj["chronicle"].validate_query(query)
-        
+
         if result.get("valid", False):
             click.echo("Query is valid.")
         else:
             click.echo("Query is invalid:")
             for error in result.get("errors", []):
                 click.echo(f"  - {error}")
-    
+
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
         sys.exit(1)
@@ -386,7 +386,7 @@ def list_rules(ctx, page_size, output):
     """List detection rules in Chronicle."""
     try:
         rules = ctx.obj["chronicle"].list_rules(page_size=page_size)
-        
+
         if output == "json":
             click.echo(json.dumps(rules, default=str, indent=2))
         else:
@@ -394,7 +394,7 @@ def list_rules(ctx, page_size, output):
             if not rules.get("rules"):
                 click.echo("No rules found.")
                 return
-            
+
             click.echo(f"Found {len(rules.get('rules', []))} rules:")
             for i, rule in enumerate(rules.get("rules", [])):
                 click.echo(f"\nRule {i+1}:")
@@ -403,7 +403,7 @@ def list_rules(ctx, page_size, output):
                 click.echo(f"  Enabled: {rule.get('enabled', False)}")
                 click.echo(f"  Version ID: {rule.get('versionId', 'N/A')}")
                 click.echo(f"  Rule Type: {rule.get('ruleType', 'N/A')}")
-    
+
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
         sys.exit(1)
@@ -433,7 +433,7 @@ def get_rule(ctx, rule_id, version_id, output):
     """Get a specific detection rule from Chronicle."""
     try:
         rule = ctx.obj["chronicle"].get_rule(rule_id=rule_id, version_id=version_id)
-        
+
         if output == "json":
             click.echo(json.dumps(rule, default=str, indent=2))
         else:
@@ -444,16 +444,16 @@ def get_rule(ctx, rule_id, version_id, output):
             click.echo(f"  Enabled: {rule.get('enabled', False)}")
             click.echo(f"  Version ID: {rule.get('versionId', 'N/A')}")
             click.echo(f"  Rule Type: {rule.get('ruleType', 'N/A')}")
-            
+
             if "metadata" in rule:
                 click.echo("\nMetadata:")
                 for key, value in rule["metadata"].items():
                     click.echo(f"  {key}: {value}")
-            
+
             if "rule" in rule:
                 click.echo("\nRule Content:")
                 click.echo(f"  {rule['rule']}")
-    
+
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
         sys.exit(1)
@@ -499,7 +499,7 @@ def nl_search(ctx, query, start_time, end_time, max_events, output):
     # Set default end time to now if not provided
     if not end_time:
         end_time = datetime.now()
-    
+
     try:
         results = ctx.obj["chronicle"].nl_search(
             text=query,
@@ -507,21 +507,21 @@ def nl_search(ctx, query, start_time, end_time, max_events, output):
             end_time=end_time,
             max_events=max_events
         )
-        
+
         if output == "json":
             click.echo(json.dumps(results, default=str, indent=2))
         else:
             # Table output
             if "udmSearchQuery" in results:
                 click.echo(f"Translated UDM query: {results['udmSearchQuery']}")
-            
+
             if not results.get("events"):
                 click.echo("No events found.")
                 return
-            
+
             # Print summary
             click.echo(f"Found {len(results.get('events', []))} events.")
-            
+
             # Print events in a tabular format
             for i, event in enumerate(results.get("events", [])):
                 click.echo(f"\nEvent {i+1}:")
@@ -532,7 +532,7 @@ def nl_search(ctx, query, start_time, end_time, max_events, output):
                             click.echo(f"    {sub_key}: {sub_value}")
                     else:
                         click.echo(f"  {key}: {value}")
-    
+
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
         sys.exit(1)
