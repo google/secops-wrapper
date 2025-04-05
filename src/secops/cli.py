@@ -444,6 +444,7 @@ def get_rule(ctx, rule_id, version_id, output):
             click.echo(f"  Enabled: {rule.get('enabled', False)}")
             click.echo(f"  Version ID: {rule.get('versionId', 'N/A')}")
             click.echo(f"  Rule Type: {rule.get('ruleType', 'N/A')}")
+            click.echo(f"  Rule Text: {rule.get('text', 'N/A')}")
 
             if "metadata" in rule:
                 click.echo("\nMetadata:")

@@ -14,6 +14,7 @@
 #
 """Rule management functionality for Chronicle."""
 
+import json
 from typing import Dict, Any, Optional
 from secops.exceptions import APIError
 
@@ -50,7 +51,8 @@ def create_rule(
 
 def get_rule(
     client,
-    rule_id: str
+    rule_id: str,
+    version_id=None
 ) -> Dict[str, Any]:
     """Get a rule by ID.
 
@@ -72,7 +74,7 @@ def get_rule(
 
     if response.status_code != 200:
         raise APIError(f"Failed to get rule: {response.text}")
-
+    # print(json.dumps(response.json(), indent=2))
     return response.json()
 
 

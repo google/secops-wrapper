@@ -651,7 +651,7 @@ class ChronicleClient:
         """
         return _create_rule(self, rule_text)
 
-    def get_rule(self, rule_id: str) -> Dict[str, Any]:
+    def get_rule(self, rule_id: str, version_id=None) -> Dict[str, Any]:
         """Get a rule by ID.
 
         Args:
@@ -665,7 +665,7 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _get_rule(self, rule_id)
+        return _get_rule(self, rule_id, version_id)
 
     def list_rules(self, page_size: int=None) -> Dict[str, Any]:
         """Gets a list of rules.
