@@ -52,7 +52,19 @@ def example_udm_search(chronicle):
         print(f"\nFound {events['total_events']} events")
         if events['events']:
             print("\nFirst event details:")
-            pprint(events['events'][0])
+            event = events['events'][0]
+            print(f"Event name: {event.get('name', 'N/A')}")
+            # Extract metadata from UDM
+            metadata = event.get('udm', {}).get('metadata', {})
+            print(f"Event type: {metadata.get('eventType', 'N/A')}")
+            print(f"Event timestamp: {metadata.get('eventTimestamp', 'N/A')}")
+            
+            # Show IP information if available
+            principal_ip = event.get('udm', {}).get('principal', {}).get('ip', ['N/A'])[0]
+            target_ip = event.get('udm', {}).get('target', {}).get('ip', ['N/A'])[0]
+            print(f"Connection: {principal_ip} -> {target_ip}")
+            
+            print(f"\nMore data available: {events.get('more_data_available', False)}")
     except Exception as e:
         print(f"Error performing UDM search: {e}")
 
@@ -82,31 +94,76 @@ order:
         print(f"Error performing stats query: {e}")
 
 def example_entity_summary(chronicle):
-    """Example 3: Entity Summary."""
+    """Example 3: Entity Summary (IP, Domain, Hash)."""
     print("\n=== Example 3: Entity Summary ===")
     start_time, end_time = get_time_range()
     
-    try:
-        file_summary = chronicle.summarize_entity(
-            start_time=start_time,
-            end_time=end_time,
-            field_path="target.file.md5",
-            value="e17dd4eef8b4978673791ef4672f4f6a"
-        )
-        
-        print("\nFile Entity Summary:")
-        for entity in file_summary.entities:
-            print(f"Entity Type: {entity.metadata.entity_type}")
-            print(f"First Seen: {entity.metric.first_seen}")
-            print(f"Last Seen: {entity.metric.last_seen}")
-            
-        if file_summary.alert_counts:
-            print("\nAlert Counts:")
-            for alert in file_summary.alert_counts:
-                print(f"Rule: {alert.rule}")
-                print(f"Count: {alert.count}")
-    except APIError as e:
-        print(f"Error: {str(e)}")
+    entities_to_summarize = {
+        "IP Address": "8.8.8.8",
+        "Domain": "google.com",
+        "File Hash (SHA256)": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" # Empty file hash
+    }
+
+    for entity_type, value in entities_to_summarize.items():
+        print(f"\n--- Summarizing {entity_type}: {value} ---")
+        try:
+            summary = chronicle.summarize_entity(
+                value=value,
+                start_time=start_time,
+                end_time=end_time,
+            )
+
+            if summary.primary_entity:
+                print("\nPrimary Entity:")
+                print(f"  Type: {summary.primary_entity.metadata.entity_type}")
+                if summary.primary_entity.metric:
+                    print(f"  First Seen: {summary.primary_entity.metric.first_seen}")
+                    print(f"  Last Seen: {summary.primary_entity.metric.last_seen}")
+                # Print specific entity details
+                if "ip" in summary.primary_entity.entity.get("asset", {}):
+                    print(f"  IPs: {summary.primary_entity.entity['asset']['ip']}")
+                elif "name" in summary.primary_entity.entity.get("domain", {}):
+                    print(f"  Domain Name: {summary.primary_entity.entity['domain']['name']}")
+                elif "md5" in summary.primary_entity.entity.get("file", {}):
+                    print(f"  MD5: {summary.primary_entity.entity['file']['md5']}")
+                elif "sha256" in summary.primary_entity.entity.get("file", {}):
+                     print(f"  SHA256: {summary.primary_entity.entity['file']['sha256']}")
+            else:
+                 print("\nNo primary entity found.")
+
+            if summary.related_entities:
+                print(f"\nRelated Entities ({len(summary.related_entities)} found):")
+                for rel_entity in summary.related_entities[:3]: # Show first 3
+                    print(f"  - Type: {rel_entity.metadata.entity_type}")
+
+            if summary.alert_counts:
+                print("\nAlert Counts:")
+                for alert in summary.alert_counts:
+                    print(f"  Rule: {alert.rule}, Count: {alert.count}")
+
+            if summary.timeline:
+                print(f"\nTimeline: {len(summary.timeline.buckets)} buckets (size: {summary.timeline.bucket_size})")
+
+            if summary.prevalence:
+                print(f"\nPrevalence ({len(summary.prevalence)} entries):")
+                # Show first entry
+                print(f"  Time: {summary.prevalence[0].prevalence_time}, Count: {summary.prevalence[0].count}")
+
+            if summary.file_metadata_and_properties:
+                print("\nFile Properties:")
+                if summary.file_metadata_and_properties.metadata:
+                    print("  Metadata:")
+                    for prop in summary.file_metadata_and_properties.metadata[:2]: # Show first 2
+                        print(f"    {prop.key}: {prop.value}")
+                if summary.file_metadata_and_properties.properties:
+                     print("  Properties:")
+                     for group in summary.file_metadata_and_properties.properties:
+                         print(f"    {group.title}:")
+                         for prop in group.properties[:2]: # Show first 2 per group
+                             print(f"      {prop.key}: {prop.value}")
+
+        except APIError as e:
+            print(f"Error summarizing {entity_type} ({value}): {str(e)}")
 
 def example_csv_export(chronicle):
     """Example 4: CSV Export."""
@@ -329,130 +386,6 @@ order:
         print(f"Full response: {result}")
     except APIError as e:
         print(f"Error validating query: {str(e)}")
-
-def example_entities_from_query(chronicle):
-    """Example 8: Entities from Query."""
-    print("\n=== Example 8: Entities from Query ===")
-    start_time, end_time = get_time_range()
-    
-    try:
-        # Use a specific file hash search that's more likely to find entity data
-        print("\nFinding entities related to a specific file hash:")
-        
-        # MD5 hash to search for
-        md5_hash = "e17dd4eef8b4978673791ef4672f4f6a"
-        
-        # Search for this hash across multiple UDM fields where it might appear
-        # This is a more comprehensive search that will find the file regardless of context
-        query = (
-            f'principal.file.md5 = "{md5_hash}" OR '
-            f'principal.process.file.md5 = "{md5_hash}" OR '
-            f'target.file.md5 = "{md5_hash}" OR '
-            f'target.process.file.md5 = "{md5_hash}" OR '
-            f'security_result.about.file.md5 = "{md5_hash}"'
-        )
-        
-        print(f"MD5 Hash: {md5_hash}")
-        print(f"Query: {query}")
-        print(f"Time range: {start_time.isoformat()} to {end_time.isoformat()}")
-        
-        print("\nWhat is summarize_entities_from_query?")
-        print("This method takes a search query and finds entities mentioned in matching events.")
-        print("It then provides summary information about these entities, such as:")
-        print("- Entity types (files, IPs, hosts, users, etc.)")
-        print("- First and last seen times")
-        print("- Event counts")
-        print("- Related alerts")
-        print("\nThis is useful for threat hunting and investigation to get a quick overview")
-        print("of entities related to potentially suspicious behavior.")
-        
-        print("\nSending API request to summarize entities...")
-        entity_summaries = chronicle.summarize_entities_from_query(
-            query=query,
-            start_time=start_time,
-            end_time=end_time
-        )
-        
-        print(f"\nFound {len(entity_summaries)} entity summaries")
-        
-        if entity_summaries:
-            # Show the first few entities
-            max_display = min(3, len(entity_summaries))
-            print(f"\nShowing details for first {max_display} entities:")
-            
-            for i, summary in enumerate(entity_summaries[:max_display]):
-                print(f"\nEntity {i+1}:")
-                
-                for entity in summary.entities:
-                    print(f"Entity Type: {entity.metadata.entity_type}")
-                    
-                    # Try to extract and display the hash if this is a file entity
-                    if hasattr(entity, 'entity') and hasattr(entity.entity, 'file'):
-                        file_data = entity.entity.file
-                        if hasattr(file_data, 'md5'):
-                            print(f"MD5: {file_data.md5}")
-                        if hasattr(file_data, 'sha1'):
-                            print(f"SHA1: {file_data.sha1}")
-                        if hasattr(file_data, 'sha256'):
-                            print(f"SHA256: {file_data.sha256}")
-                        if hasattr(file_data, 'filename'):
-                            print(f"Filename: {file_data.filename}")
-                    
-                    print(f"First Seen: {entity.metric.first_seen}")
-                    print(f"Last Seen: {entity.metric.last_seen}")
-                    
-                    # Remove the event_count attribute which doesn't exist
-                    # Print available metric attributes instead
-                    print("\nAvailable metric attributes:")
-                    for attr_name in dir(entity.metric):
-                        # Skip private attributes (those starting with underscore)
-                        if not attr_name.startswith('_'):
-                            attr_value = getattr(entity.metric, attr_name)
-                            # Only print if it's not a method or function
-                            if not callable(attr_value):
-                                print(f"  - {attr_name}: {attr_value}")
-                
-                # Show alert information if available
-                if summary.alert_counts:
-                    print("\nAlerts associated with this entity:")
-                    for alert in summary.alert_counts:
-                        print(f"  - Rule: {alert.rule}")
-                        print(f"    Count: {alert.count}")
-                        
-                # Print full entity structure for debugging
-                print("\nDebug - Entity structure:")
-                print("This is the full entity object structure to help understand available attributes")
-                try:
-                    # Attempt to get all attributes of the entity object
-                    for entity in summary.entities:
-                        for attr_name in dir(entity):
-                            if not attr_name.startswith('_'):  # Skip private attrs
-                                print(f"{attr_name}")
-                except Exception as e:
-                    print(f"Error examining entity structure: {e}")
-        else:
-            print("\nNo entity summaries found. This could be because:")
-            print("1. No events match the query criteria in the time range")
-            print("2. The specific file hash doesn't exist in your Chronicle data")
-            print("3. The API might not be returning entity data for this query")
-            print("\nTry a different time range or a different entity (hash, IP, etc.)")
-            
-            # Attempt a regular search to see if data exists
-            print("\nChecking if any events match the file hash...")
-            events = chronicle.search_udm(
-                query=query,
-                start_time=start_time,
-                end_time=end_time,
-                max_events=5
-            )
-            print(f"UDM search found {events.get('total_events', 0)} matching events")
-            
-            # Suggest trying a regular entity lookup instead
-            print("\nYou could also try looking up this hash directly using summarize_entity:")
-            print("chronicle.summarize_entity(value=\"e17dd4eef8b4978673791ef4672f4f6a\", start_time=start_time, end_time=end_time)")
-            
-    except APIError as e:
-        print(f"Error in entity query: {str(e)}")
 
 def example_nl_search(chronicle):
     """Example 9: Natural Language Search."""
@@ -824,6 +757,175 @@ def example_udm_ingestion(chronicle):
     except APIError as e:
         print(f"\nError during UDM ingestion: {e}")
 
+def example_gemini(chronicle):
+    """Example 11: Chronicle Gemini AI."""
+    print("\n=== Example 11: Chronicle Gemini AI ===")
+    
+    try:
+        # First, explicitly opt-in to Gemini (optional, as gemini() will do this automatically)
+        print("\nPart 1: Opting in to Gemini")
+        try:
+            opt_in_result = chronicle.opt_in_to_gemini()
+            if opt_in_result:
+                print("Successfully opted in to Gemini")
+            else:
+                print("Unable to opt-in due to permission issues (will try automatically later)")
+        except Exception as e:
+            print(f"Error during opt-in: {e}")
+            print("Will continue and let gemini() handle opt-in automatically")
+    
+        print("\nPart 2: Ask a security question")
+        print("Asking: What is Windows event ID 4625?")
+        
+        try:
+            # Query Gemini with a security question
+            response = chronicle.gemini("What is Windows event ID 4625?")
+            print(f"\nResponse object: {response}")
+            
+            # Display raw response information
+            print("\nAccessing raw API response:")
+            raw_response = response.get_raw_response()
+            if raw_response:
+                print(f"- Raw response contains {len(raw_response.keys())} top-level keys")
+                if "responses" in raw_response:
+                    response_blocks = sum(len(resp.get("blocks", [])) for resp in raw_response["responses"])
+                    print(f"- Total blocks in raw response: {response_blocks}")
+            
+            if hasattr(response, 'raw_response'):
+                print("\nRaw API response (first 1000 chars):")
+                raw_str = str(response.raw_response)
+                print(raw_str[:1000] + ('...' if len(raw_str) > 1000 else ''))
+            
+            # Display the types of content blocks received
+            print(f"\nReceived {len(response.blocks)} content blocks")
+            block_types = [block.block_type for block in response.blocks]
+            print(f"Block types in response: {block_types}")
+            
+            # Print details for each block
+            print("\nDetailed block information:")
+            for i, block in enumerate(response.blocks):
+                print(f"  Block {i+1}:")
+                print(f"    Type: {block.block_type}")
+                print(f"    Title: {block.title}")
+                print(f"    Content length: {len(block.content)} chars")
+                print(f"    Content preview: {block.content[:100]}..." if len(block.content) > 100 
+                      else f"    Content: {block.content}")
+            
+            # Display text content
+            text_content = response.get_text_content()
+            if text_content:
+                print("\nText explanation (from both TEXT and HTML blocks):")
+                # Truncate long responses for display
+                max_length = 300
+                if len(text_content) > max_length:
+                    print(f"{text_content[:max_length]}... (truncated)")
+                else:
+                    print(text_content)
+            
+            # Display HTML content (if present)
+            html_blocks = response.get_html_blocks()
+            if html_blocks:
+                print(f"\nFound {len(html_blocks)} HTML blocks (HTML tags included here)")
+                for i, block in enumerate(html_blocks):
+                    print(f"  HTML Block {i+1} preview: {block.content[:100]}..." if len(block.content) > 100 
+                          else f"  HTML Block {i+1}: {block.content}")
+            
+            # Display references (if present)
+            if response.references:
+                print(f"\nFound {len(response.references)} references")
+                for i, ref in enumerate(response.references):
+                    print(f"  Reference {i+1} type: {ref.block_type}")
+                    print(f"  Reference {i+1} preview: {ref.content[:100]}..." if len(ref.content) > 100 
+                          else f"  Reference {i+1}: {ref.content}")
+            
+            # Part 3: Generate a detection rule
+            print("\nPart 3: Generate a detection rule")
+            print("Asking: Write a rule to detect powershell downloading a file called gdp.zip")
+            
+            rule_response = chronicle.gemini("Write a rule to detect powershell downloading a file called gdp.zip")
+            print(f"\nRule generation response object: {rule_response}")
+            
+            # Print detailed info about rule response blocks
+            print(f"\nReceived {len(rule_response.blocks)} content blocks in rule response")
+            rule_block_types = [block.block_type for block in rule_response.blocks]
+            print(f"Block types in rule response: {rule_block_types}")
+            
+            # Print details for each rule response block
+            print("\nDetailed rule response block information:")
+            for i, block in enumerate(rule_response.blocks):
+                print(f"  Block {i+1}:")
+                print(f"    Type: {block.block_type}")
+                print(f"    Title: {block.title}")
+                print(f"    Content length: {len(block.content)} chars")
+                content_preview = block.content[:100] + '...' if len(block.content) > 100 else block.content
+                print(f"    Content preview: {content_preview}")
+                if block.block_type == "CODE" or "rule" in str(block.content).lower():
+                    print(f"    Full content:\n{block.content}")
+            
+            # Get code blocks that contain the rule
+            code_blocks = rule_response.get_code_blocks()
+            if code_blocks:
+                print(f"\nFound {len(code_blocks)} code blocks")
+                
+                # Display the first code block (the rule)
+                rule_block = code_blocks[0]
+                if rule_block.title:
+                    print(f"\nRule title: {rule_block.title}")
+                
+                print("\nGenerated rule:")
+                print(rule_block.content)
+            else:
+                print("\nNo dedicated code blocks found in the response")
+                # Try to find rule content in other blocks
+                for block in rule_response.blocks:
+                    if "rule" in block.content.lower() and "events:" in block.content.lower():
+                        print(f"\nPossible rule found in {block.block_type} block:")
+                        print(block.content)
+                        break
+            
+            # Display suggested actions (if present)
+            if rule_response.suggested_actions:
+                print(f"\nFound {len(rule_response.suggested_actions)} suggested actions:")
+                for action in rule_response.suggested_actions:
+                    print(f"  - {action.display_text} ({action.action_type})")
+                    if action.navigation:
+                        print(f"    Target: {action.navigation.target_uri}")
+            
+            # Part 4: Ask about a CVE
+            print("\nPart 4: Ask about a CVE")
+            print("Asking: tell me about CVE 2025 3310")
+            
+            cve_response = chronicle.gemini("tell me about CVE 2025 3310")
+            
+            # Display text content
+            cve_text = cve_response.get_text_content()
+            if cve_text:
+                print("\nCVE Information (from both TEXT and HTML blocks):")
+                # Truncate long responses for display
+                max_length = 300
+                if len(cve_text) > max_length:
+                    print(f"{cve_text[:max_length]}... (truncated)")
+                else:
+                    print(cve_text)
+                
+            print("\nThe Gemini API provides structured responses with different content types:")
+            print("- TEXT: Plain text for explanations and answers")
+            print("- CODE: Code blocks for rules, scripts, and examples")
+            print("- HTML: Formatted HTML content with rich formatting")
+            print("- get_text_content() combines TEXT blocks and strips HTML from HTML blocks")
+            print("It also provides references, suggested actions, and more.")
+        
+        except Exception as e:
+            if "users must opt-in before using Gemini" in str(e):
+                print("\nERROR: User account has not been opted-in to Gemini.")
+                print("You must enable Gemini in Chronicle settings before using this feature.")
+                print("Please check your Chronicle settings to opt-in to Gemini.")
+            else:
+                raise
+        
+    except Exception as e:
+        print(f"\nError using Gemini API: {e}")
+
 # Map of example functions
 EXAMPLES = {
     '1': example_udm_search,
@@ -833,10 +935,10 @@ EXAMPLES = {
     '5': example_list_iocs,
     '6': example_alerts_and_cases,
     '7': example_validate_query,
-    '8': example_entities_from_query,
-    '9': example_nl_search,
-    '10': example_log_ingestion,
-    '11': example_udm_ingestion,
+    '8': example_nl_search,
+    '9': example_log_ingestion,
+    '10': example_udm_ingestion,
+    '11': example_gemini,
 }
 
 def main():

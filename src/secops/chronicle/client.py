@@ -30,14 +30,20 @@ from secops.chronicle.validate import validate_query as _validate_query
 from secops.chronicle.stats import get_stats as _get_stats
 from secops.chronicle.search import search_udm as _search_udm
 from secops.chronicle.entity import (
-    summarize_entity as _summarize_entity,
-    summarize_entities_from_query as _summarize_entities_from_query
+    summarize_entity as _summarize_entity
 )
 from secops.chronicle.ioc import list_iocs as _list_iocs
 from secops.chronicle.case import get_cases_from_list
 from secops.chronicle.alert import get_alerts as _get_alerts
 from secops.chronicle.log_ingest import ingest_log as _ingest_log, get_or_create_forwarder as _get_or_create_forwarder, ingest_udm as _ingest_udm
 from secops.chronicle.log_types import get_all_log_types as _get_all_log_types, is_valid_log_type as _is_valid_log_type, get_log_type_description as _get_log_type_description, search_log_types as _search_log_types, LogType
+from secops.chronicle.data_export import (
+    get_data_export as _get_data_export,
+    create_data_export as _create_data_export,
+    cancel_data_export as _cancel_data_export,
+    fetch_available_log_types as _fetch_available_log_types,
+    AvailableLogType
+)
 
 # Import rule functions
 from secops.chronicle.rule import (
@@ -81,6 +87,7 @@ from secops.chronicle.models import (
 )
 
 from secops.chronicle.nl_search import translate_nl_to_udm, nl_search as _nl_search
+from secops.chronicle.gemini import query_gemini as _query_gemini, opt_in_to_gemini as _opt_in_to_gemini, GeminiResponse
 
 class ValueType(Enum):
     """Chronicle API value types."""
@@ -260,19 +267,22 @@ class ChronicleClient:
         """Get statistics from a Chronicle search query.
 
         Args:
-            query: Chronicle search query
+            query: Chronicle search query in stats format
             start_time: Search start time
             end_time: Search end time
             max_values: Maximum number of values to return per field
             max_events: Maximum number of events to process
             case_insensitive: Whether to perform case-insensitive search
-            max_attempts: Maximum number of attempts to poll for results
-
+            max_attempts: Maximum number of polling attempts (deprecated)
+            
         Returns:
-            Dictionary with search statistics
-
+            Dictionary with search statistics containing:
+            - columns: List of column names
+            - rows: List of dictionaries with row data
+            - total_rows: Total number of rows
+            
         Raises:
-            APIError: If the API request fails or times out
+            APIError: If the API request fails
         """
         return _get_stats(
             self,
@@ -355,7 +365,9 @@ class ChronicleClient:
         end_time: datetime,
         max_events: int = 10000,
         case_insensitive: bool = True,
-        max_attempts: int = 30
+        max_attempts: int = 30,
+        timeout: int = 30,
+        debug: bool = False
     ) -> Dict[str, Any]:
         """Search UDM events in Chronicle.
 
@@ -363,15 +375,20 @@ class ChronicleClient:
             query: Chronicle search query
             start_time: Search start time
             end_time: Search end time
-            max_events: Maximum number of events to return
+            max_events: Maximum events to return
             case_insensitive: Whether to perform case-insensitive search
-            max_attempts: Maximum number of attempts to poll for results
-
+            max_attempts: Maximum number of polling attempts (default: 30)
+            timeout: Timeout in seconds for each API request (default: 30)
+            debug: Print debug information during execution
+            
         Returns:
-            Dictionary with search results
-
+            Dictionary with search results containing:
+            - events: List of UDM events with 'name' and 'udm' fields
+            - total_events: Number of events returned
+            - more_data_available: Boolean indicating if more results are available
+            
         Raises:
-            APIError: If the API request fails or times out
+            APIError: If the API request fails
         """
         return _search_udm(
             self,
@@ -380,87 +397,57 @@ class ChronicleClient:
             end_time,
             max_events,
             case_insensitive,
-            max_attempts
+            max_attempts,
+            timeout,
+            debug
         )
 
     def summarize_entity(
         self,
+        value: str,
         start_time: datetime,
         end_time: datetime,
-        value: str,
-        field_path: Optional[str] = None,
-        value_type: Optional[str] = None,
-        entity_id: Optional[str] = None,
-        entity_namespace: Optional[str] = None,
-        return_alerts: bool = True,
-        return_prevalence: bool = False,
+        preferred_entity_type: Optional[str] = None,
         include_all_udm_types: bool = True,
         page_size: int = 1000,
         page_token: Optional[str] = None
     ) -> EntitySummary:
-        """Get entity summary from Chronicle.
+        """Get comprehensive summary information about an entity (IP, domain, file hash, etc.).
+
+        This function mimics the Chronicle UI behavior:
+        1. It first calls `summarizeEntitiesFromQuery` using a query derived from the value.
+        2. It identifies a 'primary' entity from the results (preferring ASSET for IPs/MACs/Hostnames,
+           FILE for hashes, DOMAIN_NAME for domains, USER for emails).
+        3. If a primary entity is found, it makes subsequent calls to `summarizeEntity` using the
+           primary entity's ID to fetch details like alerts, timeline, and prevalence.
+        4. It combines all information into a single EntitySummary object.
 
         Args:
-            start_time: Start time for the summary
-            end_time: End time for the summary
-            value: Entity value to summarize
-            field_path: Field path for the entity
-            value_type: Entity value type
-            entity_id: Entity ID
-            entity_namespace: Entity namespace
-            return_alerts: Whether to return alerts
-            return_prevalence: Whether to return prevalence
-            include_all_udm_types: Whether to include all UDM types
-            page_size: Page size for results
-            page_token: Page token for pagination
+            value: The entity value to search for (e.g., "8.8.8.8", "google.com", hash).
+            start_time: Start time for the summary data range.
+            end_time: End time for the summary data range.
+            preferred_entity_type: Optionally hint the preferred type ("ASSET", "FILE", "DOMAIN_NAME", "USER").
+                                   If None, the function attempts to autodetect.
+            include_all_udm_types: Whether to include all UDM event types for first/last seen times.
+            page_size: Maximum number of results per page (primarily for alerts).
+            page_token: Token for pagination (primarily for alerts).
 
         Returns:
-            Entity summary
+            An EntitySummary object containing the combined results.
 
         Raises:
-            APIError: If the API request fails
-            ValueError: If entity type cannot be determined
+            APIError: If any API request fails or returns unexpected data.
+            ValueError: If the input value cannot be mapped to a query.
         """
         return _summarize_entity(
-            self,
-            start_time,
-            end_time,
-            value,
-            field_path,
-            value_type,
-            entity_id,
-            entity_namespace,
-            return_alerts,
-            return_prevalence,
-            include_all_udm_types,
-            page_size,
-            page_token
-        )
-
-    def summarize_entities_from_query(
-        self,
-        query: str,
-        start_time: datetime,
-        end_time: datetime,
-    ) -> List[EntitySummary]:
-        """Get entity summaries from a query.
-
-        Args:
-            query: Chronicle search query
-            start_time: Start time for the search
-            end_time: End time for the search
-
-        Returns:
-            List of entity summaries
-
-        Raises:
-            APIError: If the API request fails
-        """
-        return _summarize_entities_from_query(
-            self,
-            query,
-            start_time,
-            end_time
+            client=self,
+            value=value,
+            start_time=start_time,
+            end_time=end_time,
+            preferred_entity_type=preferred_entity_type,
+            include_all_udm_types=include_all_udm_types,
+            page_size=page_size,
+            page_token=page_token
         )
 
     def list_iocs(
@@ -1045,7 +1032,81 @@ class ChronicleClient:
             APIError: If the API request fails or no valid query can be generated
         """
         return translate_nl_to_udm(self, text)
-
+    
+    def gemini(
+        self,
+        query: str,
+        conversation_id: Optional[str] = None,
+        context_uri: str = "/search",
+        context_body: Optional[Dict[str, Any]] = None
+    ) -> GeminiResponse:
+        """Query Chronicle Gemini with a prompt.
+        
+        This method provides access to Chronicle's Gemini conversational AI interface,
+        which can answer security questions, generate detection rules, explain 
+        CVEs, and provide other security insights.
+        
+        Args:
+            query: The text query to send to Gemini
+            conversation_id: Optional conversation ID. If not provided, a new conversation will be created
+            context_uri: URI context for the query (default: "/search")
+            context_body: Optional additional context as a dictionary
+            
+        Returns:
+            A GeminiResponse object with structured content blocks (text, code, HTML) and
+            suggested actions if applicable
+            
+        Raises:
+            APIError: If the API request fails
+            
+        Example:
+            ```python
+            # Ask about a security concept
+            response = chronicle.gemini("What is Windows event ID 4625?")
+            
+            # Get explanatory text
+            print(response.get_text_content())
+            
+            # Get code blocks separately (for rule generation, etc.)
+            for code_block in response.get_code_blocks():
+                print(f"Code: {code_block.content}")
+            ```
+        """
+        return _query_gemini(
+            self,
+            query=query,
+            conversation_id=conversation_id,
+            context_uri=context_uri,
+            context_body=context_body
+        )
+    
+    def opt_in_to_gemini(self) -> bool:
+        """Opt the user into Gemini (Duet AI) in Chronicle.
+        
+        This method updates the user's preferences to enable Duet AI chat,
+        which is required before using the Gemini functionality. The Gemini method
+        will attempt to do this automatically if needed, but this method
+        allows for explicit opt-in.
+        
+        Returns:
+            True if successful, False if permission error
+            
+        Raises:
+            APIError: If the API request fails for a reason other than permissions
+            
+        Example:
+            ```python
+            # Explicitly opt in to Gemini before using it
+            chronicle.opt_in_to_gemini()
+            
+            # Now use Gemini
+            response = chronicle.gemini("What is Windows event ID 4625?")
+            ```
+        """
+        # Set the opt-in attempted flag
+        self._gemini_opt_in_attempted = True
+        return _opt_in_to_gemini(self)
+    
     def nl_search(
         self,
         text: str,
@@ -1208,3 +1269,150 @@ class ChronicleClient:
             udm_events=udm_events,
             add_missing_ids=add_missing_ids
         )
+
+    def get_data_export(self, data_export_id: str) -> Dict[str, Any]:
+        """Get information about a specific data export.
+        
+        Args:
+            data_export_id: ID of the data export to retrieve
+            
+        Returns:
+            Dictionary containing data export details
+            
+        Raises:
+            APIError: If the API request fails
+            
+        Example:
+            ```python
+            export = chronicle.get_data_export("export123")
+            print(f"Export status: {export['data_export_status']['stage']}")
+            ```
+        """
+        return _get_data_export(self, data_export_id)
+
+    def create_data_export(
+        self,
+        gcs_bucket: str,
+        start_time: datetime,
+        end_time: datetime,
+        log_type: Optional[str] = None,
+        export_all_logs: bool = False
+    ) -> Dict[str, Any]:
+        """Create a new data export job.
+        
+        Args:
+            gcs_bucket: GCS bucket path in format "projects/{project}/buckets/{bucket}"
+            start_time: Start time for the export (inclusive)
+            end_time: End time for the export (exclusive)
+            log_type: Optional specific log type to export. If None and export_all_logs is False,
+                    no logs will be exported
+            export_all_logs: Whether to export all log types
+            
+        Returns:
+            Dictionary containing details of the created data export
+            
+        Raises:
+            APIError: If the API request fails
+            ValueError: If invalid parameters are provided
+            
+        Example:
+            ```python
+            from datetime import datetime, timedelta
+            
+            end_time = datetime.now()
+            start_time = end_time - timedelta(days=1)
+            
+            # Export a specific log type
+            export = chronicle.create_data_export(
+                gcs_bucket="projects/my-project/buckets/my-bucket",
+                start_time=start_time,
+                end_time=end_time,
+                log_type="WINDOWS"
+            )
+            
+            # Export all logs
+            export = chronicle.create_data_export(
+                gcs_bucket="projects/my-project/buckets/my-bucket",
+                start_time=start_time,
+                end_time=end_time,
+                export_all_logs=True
+            )
+            ```
+        """
+        return _create_data_export(
+            self,
+            gcs_bucket=gcs_bucket,
+            start_time=start_time,
+            end_time=end_time,
+            log_type=log_type,
+            export_all_logs=export_all_logs
+        )
+
+    def cancel_data_export(self, data_export_id: str) -> Dict[str, Any]:
+        """Cancel an in-progress data export.
+        
+        Args:
+            data_export_id: ID of the data export to cancel
+            
+        Returns:
+            Dictionary containing details of the cancelled data export
+            
+        Raises:
+            APIError: If the API request fails
+            
+        Example:
+            ```python
+            result = chronicle.cancel_data_export("export123")
+            print("Export cancellation request submitted")
+            ```
+        """
+        return _cancel_data_export(self, data_export_id)
+
+    def fetch_available_log_types(
+        self,
+        start_time: datetime,
+        end_time: datetime,
+        page_size: Optional[int] = None,
+        page_token: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Fetch available log types for export within a time range.
+        
+        Args:
+            start_time: Start time for the time range (inclusive)
+            end_time: End time for the time range (exclusive)
+            page_size: Optional maximum number of results to return
+            page_token: Optional page token for pagination
+            
+        Returns:
+            Dictionary containing:
+                - available_log_types: List of AvailableLogType objects
+                - next_page_token: Token for fetching the next page of results
+            
+        Raises:
+            APIError: If the API request fails
+            ValueError: If invalid parameters are provided
+            
+        Example:
+            ```python
+            from datetime import datetime, timedelta
+            
+            end_time = datetime.now()
+            start_time = end_time - timedelta(days=7)
+            
+            result = chronicle.fetch_available_log_types(
+                start_time=start_time,
+                end_time=end_time
+            )
+            
+            for log_type in result["available_log_types"]:
+                print(f"{log_type.display_name} ({log_type.log_type})")
+                print(f"  Available from {log_type.start_time} to {log_type.end_time}")
+            ```
+        """
+        return _fetch_available_log_types(
+            self,
+            start_time=start_time,
+            end_time=end_time,
+            page_size=page_size,
+            page_token=page_token
+        ) 

@@ -15,8 +15,8 @@
 """Tests for Chronicle API client."""
 from datetime import datetime, timezone
 import pytest
-from unittest.mock import Mock, patch
-from secops.chronicle.client import ChronicleClient, _detect_value_type, ValueType
+from unittest.mock import Mock, patch, call
+from secops.chronicle.client import ChronicleClient
 from secops.chronicle.models import (
     Entity, 
     EntityMetadata, 
@@ -25,6 +25,8 @@ from secops.chronicle.models import (
     TimelineBucket, 
     Timeline, 
     WidgetMetadata, 
+    PrevalenceData,
+    FileMetadataAndProperties,
     EntitySummary,
     AlertCount,
     CaseList
@@ -113,37 +115,25 @@ def test_validate_query(chronicle_client):
 
 def test_get_stats(chronicle_client):
     """Test stats search functionality."""
-    # Mock the initial search request
-    mock_search_response = Mock()
-    mock_search_response.status_code = 200
-    mock_search_response.json.return_value = {
-        "name": "projects/test-project/locations/us/instances/test-instance/operations/test-operation"
-    }
-
-    # Mock the results polling
-    mock_results_response = Mock()
-    mock_results_response.status_code = 200
-    mock_results_response.json.return_value = {
-        "done": True,
-        "response": {
-            "stats": {
-                "results": [
-                    {
-                        "column": "count",
-                        "values": [{"value": {"int64Val": "42"}}]
-                    },
-                    {
-                        "column": "hostname",
-                        "values": [{"value": {"stringVal": "test-host"}}]
-                    }
-                ]
-            }
+    # Mock the search request
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "stats": {
+            "results": [
+                {
+                    "column": "count",
+                    "values": [{"value": {"int64Val": "42"}}]
+                },
+                {
+                    "column": "hostname",
+                    "values": [{"value": {"stringVal": "test-host"}}]
+                }
+            ]
         }
     }
 
-    with patch.object(chronicle_client.session, 'post', return_value=mock_search_response), \
-         patch.object(chronicle_client.session, 'get', return_value=mock_results_response):
-
+    with patch.object(chronicle_client.session, 'get', return_value=mock_response):
         result = chronicle_client.get_stats(
             query="""target.ip != ""
 match:
@@ -165,42 +155,29 @@ order:
 
 def test_search_udm(chronicle_client):
     """Test UDM search functionality."""
-    # Mock the initial search request
-    mock_search_response = Mock()
-    mock_search_response.status_code = 200
-    mock_search_response.json.return_value = [{
-        "operation": "projects/test-project/locations/us/instances/test-instance/operations/test-operation"
-    }]
-
-    # Mock the results polling
-    mock_results_response = Mock()
-    mock_results_response.status_code = 200
-    mock_results_response.json.return_value = [{
-        "operation": {
-            "done": True,
-            "response": {
-                "complete": True,
-                "events": {
-                    "events": [{
-                        "event": {
-                            "metadata": {
-                                "eventTimestamp": "2024-01-01T00:00:00Z",
-                                "eventType": "NETWORK_CONNECTION"
-                            },
-                            "target": {
-                                "ip": "192.168.1.1",
-                                "hostname": "test-host"
-                            }
-                        }
-                    }]
+    # Mock the search request
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "events": [
+            {
+                "name": "projects/test-project/locations/us/instances/test-instance/events/event1",
+                "udm": {
+                    "metadata": {
+                        "eventTimestamp": "2024-01-01T00:00:00Z",
+                        "eventType": "NETWORK_CONNECTION"
+                    },
+                    "target": {
+                        "ip": "192.168.1.1",
+                        "hostname": "test-host"
+                    }
                 }
             }
-        }
-    }]
+        ],
+        "moreDataAvailable": False
+    }
 
-    with patch.object(chronicle_client.session, 'post', return_value=mock_search_response), \
-         patch.object(chronicle_client.session, 'get', return_value=mock_results_response):
-        
+    with patch.object(chronicle_client.session, 'get', return_value=mock_response):
         result = chronicle_client.search_udm(
             query='target.ip != ""',
             start_time=datetime(2024, 1, 1, tzinfo=timezone.utc),
@@ -211,348 +188,119 @@ def test_search_udm(chronicle_client):
         assert "events" in result
         assert "total_events" in result
         assert result["total_events"] == 1
-        assert result["events"][0]["event"]["target"]["ip"] == "192.168.1.1"
+        assert result["events"][0]["udm"]["target"]["ip"] == "192.168.1.1"
 
-def test_summarize_entity(chronicle_client):
-    """Test entity summary functionality."""
-    mock_response = Mock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {
-        "entities": [{
-            "name": "test-entity",
-            "metadata": {
-                "entityType": "DOMAIN_NAME",
-                "interval": {
-                    "startTime": "2024-01-01T00:00:00Z",
-                    "endTime": "2024-01-02T00:00:00Z"
-                }
+@patch('secops.chronicle.entity._detect_value_type_for_query')
+@patch('secops.chronicle.entity._summarize_entity_by_id')
+def test_summarize_entity_ip(mock_summarize_by_id, mock_detect, chronicle_client):
+    """Test summarize_entity for an IP address."""
+    mock_detect.return_value = ('ip = "8.8.8.8"', "ASSET")
+
+    # Mock response for summarizeEntitiesFromQuery
+    mock_query_response = Mock()
+    mock_query_response.status_code = 200
+    mock_query_response.json.return_value = {
+        "entitySummaries": [
+            {
+                "entity": [
+                    {
+                        "name": "projects/p/locations/l/instances/i/entities/ip-entity-id",
+                        "metadata": {"entityType": "IP_ADDRESS"},
+                        "metric": {"firstSeen": "2024-01-01T00:00:00Z", "lastSeen": "2024-01-02T00:00:00Z"},
+                        "entity": {"artifact": {"ip": "8.8.8.8"}}
+                    }
+                ]
             },
-            "entity": {
-                "domain": {
-                    "name": "test.com",
-                    "firstSeenTime": "2024-01-01T00:00:00Z",
-                    "lastSeenTime": "2024-01-02T00:00:00Z"
-                }
-            },
-            "metric": {
-                "firstSeen": "2024-01-01T00:00:00Z",
-                "lastSeen": "2024-01-02T00:00:00Z"
+            {
+                "entity": [
+                    {
+                        "name": "projects/p/locations/l/instances/i/entities/asset-entity-id",
+                        "metadata": {"entityType": "ASSET"},
+                        "metric": {"firstSeen": "2024-01-01T01:00:00Z", "lastSeen": "2024-01-02T01:00:00Z"},
+                        "entity": {"asset": {"ip": ["8.8.8.8"]}}
+                    }
+                ]
             }
-        }],
-        "timeline": {
-            "buckets": [{}],
-            "bucketSize": "3600s"
-        },
-        "widgetMetadata": {
-            "uri": "test-uri",
-            "detections": 1,
-            "total": 100
-        }
+        ]
     }
 
-    with patch.object(chronicle_client.session, 'get', return_value=mock_response):
+    # Mock responses for _summarize_entity_by_id (for asset-entity-id)
+    # Call 1: Get details + alerts + timeline
+    mock_details_response = {
+        "entities": [
+            {
+                "name": "projects/p/locations/l/instances/i/entities/asset-entity-id",
+                "metadata": {"entityType": "ASSET"},
+                "metric": {"firstSeen": "2024-01-01T01:00:00Z", "lastSeen": "2024-01-02T01:00:00Z"},
+                "entity": {"asset": {"ip": ["8.8.8.8"]}}
+            }
+        ],
+        "alertCounts": [{"rule": "Test IP Alert", "count": "5"}],
+        "timeline": {"buckets": [{}, {}], "bucketSize": "3600s"}
+    }
+    # Call 2: Get prevalence
+    mock_prevalence_response = {
+         "prevalenceResult": [{"prevalenceTime": "2024-01-01T00:00:00Z", "count": 10}]
+    }
+    mock_summarize_by_id.side_effect = [
+        mock_details_response,
+        mock_prevalence_response
+    ]
+
+    with patch.object(chronicle_client.session, 'get', return_value=mock_query_response) as mock_session_get:
         result = chronicle_client.summarize_entity(
-            start_time=datetime(2024, 1, 1, tzinfo=timezone.utc),
-            end_time=datetime(2024, 1, 2, tzinfo=timezone.utc),
-            field_path="domain.name",
-            value="test.com",
-            value_type="DOMAIN_NAME"
-        )
-
-        assert len(result.entities) == 1
-        assert result.entities[0].name == "test-entity"
-        assert result.entities[0].metadata.entity_type == "DOMAIN_NAME"
-        assert result.widget_metadata.detections == 1
-        assert result.widget_metadata.total == 100
-
-def test_summarize_entities_from_query(chronicle_client):
-    """Test entity summaries from query functionality."""
-    mock_response = Mock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {
-        "entitySummaries": [{
-            "entity": [{
-                "name": "test-entity",
-                "metadata": {
-                    "entityType": "FILE",
-                    "interval": {
-                        "startTime": "2024-01-01T00:00:00Z",
-                        "endTime": "2024-01-02T00:00:00Z"
-                    }
-                },
-                "entity": {
-                    "file": {
-                        "md5": "e17dd4eef8b4978673791ef4672f4f6a",
-                        "firstSeenTime": "2024-01-01T00:00:00Z",
-                        "lastSeenTime": "2024-01-02T00:00:00Z"
-                    }
-                },
-                "metric": {
-                    "firstSeen": "2024-01-01T00:00:00Z",
-                    "lastSeen": "2024-01-02T00:00:00Z"
-                }
-            }]
-        }]
-    }
-
-    with patch.object(chronicle_client.session, 'get', return_value=mock_response):
-        results = chronicle_client.summarize_entities_from_query(
-            query='principal.file.md5 = "e17dd4eef8b4978673791ef4672f4f6a"',
+            value="8.8.8.8",
             start_time=datetime(2024, 1, 1, tzinfo=timezone.utc),
             end_time=datetime(2024, 1, 2, tzinfo=timezone.utc)
         )
 
-        assert len(results) == 1
-        assert len(results[0].entities) == 1
-        entity = results[0].entities[0]
-        assert entity.metadata.entity_type == "FILE"
-        assert entity.entity["file"]["md5"] == "e17dd4eef8b4978673791ef4672f4f6a"
+    # Assertions
+    mock_detect.assert_called_once_with("8.8.8.8")
+    # Check the query call was made
+    mock_session_get.assert_called_once()
+    query_call_args = mock_session_get.call_args
+    assert "summarizeEntitiesFromQuery" in query_call_args[0][0]
+    assert query_call_args[1]["params"]["query"] == 'ip = "8.8.8.8"'
 
-def test_summarize_entity_file(chronicle_client):
-    """Test entity summary functionality for files."""
-    mock_response = Mock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {
-        "entities": [{
-            "name": "test-entity",
-            "metadata": {
-                "entityType": "FILE",
-                "interval": {
-                    "startTime": "2024-01-01T00:00:00Z",
-                    "endTime": "2024-01-02T00:00:00Z"
-                }
-            },
-            "entity": {
-                "file": {
-                    "md5": "e17dd4eef8b4978673791ef4672f4f6a",
-                    "firstSeenTime": "2024-01-01T00:00:00Z",
-                    "lastSeenTime": "2024-01-02T00:00:00Z"
-                }
-            },
-            "metric": {
-                "firstSeen": "2024-01-01T00:00:00Z",
-                "lastSeen": "2024-01-02T00:00:00Z"
-            }
-        }],
-        "alertCounts": [
-            {
-                "rule": "Test Rule",
-                "count": "42"
-            }
-        ],
-        "widgetMetadata": {
-            "uri": "test-uri",
-            "detections": 48,
-            "total": 69
-        }
-    }
+    # Check the _summarize_entity_by_id calls
+    assert mock_summarize_by_id.call_count == 2
+    details_call = mock_summarize_by_id.call_args_list[0]
+    prevalence_call = mock_summarize_by_id.call_args_list[1]
 
-    with patch.object(chronicle_client.session, 'get', return_value=mock_response):
-        result = chronicle_client.summarize_entity(
-            start_time=datetime(2024, 1, 1, tzinfo=timezone.utc),
-            end_time=datetime(2024, 1, 2, tzinfo=timezone.utc),
-            field_path="target.file.md5",
-            value="e17dd4eef8b4978673791ef4672f4f6a"
-        )
+    assert details_call[0][1] == "asset-entity-id" # Check entity ID
+    assert details_call[1]["return_alerts"] is True # Check keyword arg
+    assert details_call[1]["return_prevalence"] is False # Check keyword arg
 
-        assert len(result.entities) == 1
-        assert result.entities[0].metadata.entity_type == "FILE"
-        assert result.entities[0].entity["file"]["md5"] == "e17dd4eef8b4978673791ef4672f4f6a"
-        assert len(result.alert_counts) == 1
-        assert result.alert_counts[0].rule == "Test Rule"
-        assert result.alert_counts[0].count == 42
-        assert result.widget_metadata.detections == 48
-        assert result.widget_metadata.total == 69
+    assert prevalence_call[0][1] == "ip-entity-id" # Check entity ID
+    assert prevalence_call[1]["return_alerts"] is False # Check keyword arg
+    assert prevalence_call[1]["return_prevalence"] is True # Check keyword arg
 
-def test_detect_value_type():
-    """Test value type detection."""
-    # Test IP address detection
-    field_path, value_type = _detect_value_type("192.168.1.1")
-    assert field_path == "principal.ip"
-    assert value_type is None
+    # Check final EntitySummary structure
+    assert result.primary_entity is not None
+    assert result.primary_entity.metadata.entity_type == "ASSET"
+    assert result.primary_entity.entity["asset"]["ip"] == ["8.8.8.8"]
+    assert len(result.related_entities) == 1
+    assert result.related_entities[0].metadata.entity_type == "IP_ADDRESS"
+    assert result.alert_counts is not None
+    assert len(result.alert_counts) == 1
+    assert result.alert_counts[0].rule == "Test IP Alert"
+    assert result.alert_counts[0].count == 5
+    assert result.timeline is not None
+    assert len(result.timeline.buckets) == 2
+    assert result.prevalence is not None
+    assert len(result.prevalence) == 1
+    assert result.prevalence[0].count == 10
+    assert result.file_metadata_and_properties is None # Not expected for IP
 
-    # Test invalid IP
-    field_path, value_type = _detect_value_type("256.256.256.256")
-    assert field_path is None
-    assert value_type is None
-
-    # Test MD5 hash detection
-    field_path, value_type = _detect_value_type("d41d8cd98f00b204e9800998ecf8427e")
-    assert field_path == "target.file.md5"
-    assert value_type is None
-
-    # Test SHA1 hash detection
-    field_path, value_type = _detect_value_type("da39a3ee5e6b4b0d3255bfef95601890afd80709")
-    assert field_path == "target.file.sha1"
-    assert value_type is None
-
-    # Test SHA256 hash detection
-    sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    field_path, value_type = _detect_value_type(sha256)
-    assert field_path == "target.file.sha256"
-    assert value_type is None
-
-    # Test domain detection
-    field_path, value_type = _detect_value_type("example.com")
-    assert field_path is None
-    assert value_type == "DOMAIN_NAME"
-
-    field_path, value_type = _detect_value_type("sub.example.com")
-    assert field_path is None
-    assert value_type == "DOMAIN_NAME"
-
-    # Test email detection
-    field_path, value_type = _detect_value_type("user@example.com")
-    assert field_path is None
-    assert value_type == "EMAIL"
-
-    # Test MAC address detection
-    field_path, value_type = _detect_value_type("00:11:22:33:44:55")
-    assert field_path is None
-    assert value_type == "MAC"
-
-    field_path, value_type = _detect_value_type("00-11-22-33-44-55")
-    assert field_path is None
-    assert value_type == "MAC"
-
-    # Test hostname detection
-    field_path, value_type = _detect_value_type("host-name-123")
-    assert field_path is None
-    assert value_type == "HOSTNAME"
-
-def test_summarize_entity_auto_detection(chronicle_client):
-    """Test entity summary with automatic type detection."""
-    mock_response = Mock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {
-        "entities": [{
-            "name": "test-entity",
-            "metadata": {
-                "entityType": "FILE",
-                "interval": {
-                    "startTime": "2024-01-01T00:00:00Z",
-                    "endTime": "2024-01-02T00:00:00Z"
-                }
-            },
-            "entity": {
-                "file": {
-                    "md5": "d41d8cd98f00b204e9800998ecf8427e",
-                    "firstSeenTime": "2024-01-01T00:00:00Z",
-                    "lastSeenTime": "2024-01-02T00:00:00Z"
-                }
-            },
-            "metric": {
-                "firstSeen": "2024-01-01T00:00:00Z",
-                "lastSeen": "2024-01-02T00:00:00Z"
-            }
-        }]
-    }
-
-    with patch.object(chronicle_client.session, 'get', return_value=mock_response):
-        # Test MD5 auto-detection
-        result = chronicle_client.summarize_entity(
-            start_time=datetime(2024, 1, 1, tzinfo=timezone.utc),
-            end_time=datetime(2024, 1, 2, tzinfo=timezone.utc),
-            value="d41d8cd98f00b204e9800998ecf8427e"
-        )
-        assert len(result.entities) == 1
-        assert result.entities[0].metadata.entity_type == "FILE"
-
-def test_summarize_entity_type_override(chronicle_client):
-    """Test entity summary with type override."""
-    mock_response = Mock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {
-        "entities": [{
-            "name": "test-entity",
-            "metadata": {
-                "entityType": "DOMAIN_NAME",
-                "interval": {
-                    "startTime": "2024-01-01T00:00:00Z",
-                    "endTime": "2024-01-02T00:00:00Z"
-                }
-            },
-            "entity": {
-                "domain": {
-                    "name": "example.com"
-                }
-            },
-            "metric": {
-                "firstSeen": "2024-01-01T00:00:00Z",
-                "lastSeen": "2024-01-02T00:00:00Z"
-            }
-        }]
-    }
-
-    with patch.object(chronicle_client.session, 'get', return_value=mock_response):
-        # Test override of auto-detection
-        result = chronicle_client.summarize_entity(
-            start_time=datetime(2024, 1, 1, tzinfo=timezone.utc),
-            end_time=datetime(2024, 1, 2, tzinfo=timezone.utc),
-            value="example.com",
-            field_path="custom.field.path"  # Override auto-detection
-        )
-        assert len(result.entities) == 1
-        assert result.entities[0].metadata.entity_type == "DOMAIN_NAME"
-
-def test_summarize_entity_invalid_value(chronicle_client):
-    """Test entity summary with invalid value."""
-    with pytest.raises(ValueError) as exc_info:
+@patch('secops.chronicle.entity._detect_value_type_for_query', return_value=(None, None))
+def test_summarize_entity_detect_error(mock_detect, chronicle_client):
+    """Test summarize_entity raises ValueError on detection failure."""
+    with pytest.raises(ValueError, match="Could not determine how to query"): # Check specific error message if possible
         chronicle_client.summarize_entity(
+            value="???",
             start_time=datetime(2024, 1, 1, tzinfo=timezone.utc),
             end_time=datetime(2024, 1, 2, tzinfo=timezone.utc),
-            value="!@#$%^"  # Invalid value that won't match any pattern
         )
-    assert "Could not determine type for value" in str(exc_info.value)
-
-def test_summarize_entity_edge_cases(chronicle_client):
-    """Test entity summary edge cases."""
-    mock_response = Mock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"entities": []}
-
-    with patch.object(chronicle_client.session, 'get', return_value=mock_response):
-        # Test very long domain name
-        result = chronicle_client.summarize_entity(
-            start_time=datetime(2024, 1, 1, tzinfo=timezone.utc),
-            end_time=datetime(2024, 1, 2, tzinfo=timezone.utc),
-            value="very-long-subdomain.example.com"
-        )
-        assert len(result.entities) == 0
-
-        # Test IP with leading zeros
-        result = chronicle_client.summarize_entity(
-            start_time=datetime(2024, 1, 1, tzinfo=timezone.utc),
-            end_time=datetime(2024, 1, 2, tzinfo=timezone.utc),
-            value="192.168.001.001"
-        )
-        assert len(result.entities) == 0
-
-def test_summarize_entity_all_types(chronicle_client):
-    """Test entity summary with all supported types."""
-    mock_response = Mock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"entities": []}
-
-    test_values = {
-        "IP": "192.168.1.1",
-        "MD5": "d41d8cd98f00b204e9800998ecf8427e",
-        "SHA1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-        "SHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "Domain": "example.com",
-        "Email": "user@example.com",
-        "MAC": "00:11:22:33:44:55",
-        "Hostname": "test-host-123"
-    }
-
-    with patch.object(chronicle_client.session, 'get', return_value=mock_response):
-        for type_name, value in test_values.items():
-            result = chronicle_client.summarize_entity(
-                start_time=datetime(2024, 1, 1, tzinfo=timezone.utc),
-                end_time=datetime(2024, 1, 2, tzinfo=timezone.utc),
-                value=value
-            )
-            assert isinstance(result, EntitySummary), f"Failed for type: {type_name}"
 
 def test_list_iocs(chronicle_client):
     """Test listing IoCs."""

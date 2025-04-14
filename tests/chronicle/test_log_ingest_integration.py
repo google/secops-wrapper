@@ -228,13 +228,19 @@ def test_udm_ingestion():
             "hostname": "test-workstation",
             "process": {
                 "command_line": "python --version",
-                "pid": 12345,
+                "pid": "12345",
                 "file": {
                     "full_path": "/usr/bin/python3"
                 }
             },
             "user": {
                 "userid": "testuser"
+            }
+        },
+        "target": {
+            "hostname": "test-workstation",
+            "process": {
+                "pid": "0"
             }
         }
     }

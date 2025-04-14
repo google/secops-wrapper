@@ -19,13 +19,14 @@ from secops.chronicle.udm_search import fetch_udm_search_csv
 from secops.chronicle.validate import validate_query
 from secops.chronicle.stats import get_stats
 from secops.chronicle.search import search_udm
-from secops.chronicle.entity import summarize_entity, summarize_entities_from_query
+from secops.chronicle.entity import summarize_entity
 from secops.chronicle.ioc import list_iocs
 from secops.chronicle.case import get_cases
 from secops.chronicle.alert import get_alerts
 from secops.chronicle.nl_search import translate_nl_to_udm, nl_search
 from secops.chronicle.log_ingest import ingest_log, create_forwarder, get_or_create_forwarder, list_forwarders, get_forwarder, extract_forwarder_id
 from secops.chronicle.log_types import LogType, get_all_log_types, is_valid_log_type, get_log_type_description, search_log_types
+from secops.chronicle.data_export import get_data_export, create_data_export, cancel_data_export, fetch_available_log_types, AvailableLogType
 
 # Rule functionality
 from secops.chronicle.rule import (
@@ -66,8 +67,16 @@ from secops.chronicle.models import (
     AlertCount,
     Case,
     SoarPlatformInfo,
-    CaseList
+    CaseList,
+    DataExport,
+    DataExportStatus,
+    DataExportStage,
+    PrevalenceData,
+    FileMetadataAndProperties
 )
+
+from secops.chronicle.rule_validation import ValidationResult
+from secops.chronicle.gemini import GeminiResponse, Block, SuggestedAction, NavigationAction
 
 __all__ = [
     # Client
@@ -86,7 +95,6 @@ __all__ = [
     
     # Entity
     "summarize_entity",
-    "summarize_entities_from_query",
     
     # IoC
     "list_iocs",
@@ -111,6 +119,16 @@ __all__ = [
     "is_valid_log_type",
     "get_log_type_description",
     "search_log_types",
+    
+    # Data Export
+    "get_data_export",
+    "create_data_export",
+    "cancel_data_export",
+    "fetch_available_log_types",
+    "AvailableLogType",
+    "DataExport",
+    "DataExportStatus",
+    "DataExportStage",
     
     # Rule management
     "create_rule",
@@ -149,5 +167,12 @@ __all__ = [
     "AlertCount",
     "Case",
     "SoarPlatformInfo",
-    "CaseList"
+    "CaseList",
+    "PrevalenceData",
+    "FileMetadataAndProperties",
+    "ValidationResult",
+    "GeminiResponse",
+    "Block",
+    "SuggestedAction",
+    "NavigationAction"
 ] 

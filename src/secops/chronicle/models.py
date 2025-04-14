@@ -13,9 +13,10 @@
 # limitations under the License.
 #
 """Data models for Chronicle API responses."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 from datetime import datetime
+from enum import Enum
 
 @dataclass
 class TimeInterval:
@@ -81,14 +82,70 @@ class AlertCount:
     count: int
 
 @dataclass
+class PrevalenceData:
+    """Represents prevalence data for an entity."""
+    prevalence_time: datetime
+    count: int
+
+@dataclass
+class FileProperty:
+    """Represents a key-value property for a file."""
+    key: str
+    value: str
+
+@dataclass
+class FilePropertyGroup:
+    """Represents a group of file properties."""
+    title: str
+    properties: List[FileProperty]
+
+@dataclass
+class FileMetadataAndProperties:
+    """Represents file metadata and properties."""
+    metadata: List[FileProperty]
+    properties: List[FilePropertyGroup]
+    query_state: Optional[str] = None
+
+@dataclass
 class EntitySummary:
-    """Complete entity summary response."""
-    entities: List[Entity]
+    """Complete entity summary response, potentially combining multiple API calls."""
+    primary_entity: Optional[Entity] = None
+    related_entities: List[Entity] = field(default_factory=list)
     alert_counts: Optional[List[AlertCount]] = None
     timeline: Optional[Timeline] = None
     widget_metadata: Optional[WidgetMetadata] = None
+    prevalence: Optional[List[PrevalenceData]] = None
+    tpd_prevalence: Optional[List[PrevalenceData]] = None
+    file_metadata_and_properties: Optional[FileMetadataAndProperties] = None
     has_more_alerts: bool = False
     next_page_token: Optional[str] = None
+
+class DataExportStage(str, Enum):
+    """Stage/status of a data export request."""
+    STAGE_UNSPECIFIED = "STAGE_UNSPECIFIED"
+    IN_QUEUE = "IN_QUEUE"
+    PROCESSING = "PROCESSING"
+    FINISHED_FAILURE = "FINISHED_FAILURE"
+    FINISHED_SUCCESS = "FINISHED_SUCCESS"
+    CANCELLED = "CANCELLED"
+
+@dataclass
+class DataExportStatus:
+    """Status of a data export request."""
+    stage: DataExportStage
+    progress_percentage: Optional[int] = None
+    error: Optional[str] = None
+
+@dataclass
+class DataExport:
+    """Data export resource."""
+    name: str
+    start_time: datetime
+    end_time: datetime
+    gcs_bucket: str
+    data_export_status: DataExportStatus
+    log_type: Optional[str] = None
+    export_all_logs: bool = False
 
 class SoarPlatformInfo:
     """SOAR platform information for a case."""

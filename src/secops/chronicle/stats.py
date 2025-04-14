@@ -15,7 +15,7 @@
 """Statistics functionality for Chronicle searches."""
 from datetime import datetime
 import time
-from typing import Dict, Any
+from typing import Dict, Any, List, Union
 from secops.exceptions import APIError
 
 def get_stats(
@@ -28,104 +28,58 @@ def get_stats(
     case_insensitive: bool = True,
     max_attempts: int = 30
 ) -> Dict[str, Any]:
-    """Get statistics from a Chronicle search query.
+    """Get statistics from a Chronicle search query using the Chronicle V1alpha API.
     
     Args:
         client: ChronicleClient instance
-        query: Chronicle search query
+        query: Chronicle search query in stats format
         start_time: Search start time
         end_time: Search end time
         max_values: Maximum number of values to return per field
         max_events: Maximum number of events to process
-        case_insensitive: Whether to perform case-insensitive search
-        max_attempts: Maximum number of attempts to poll for results
+        case_insensitive: Whether to perform case-insensitive search (legacy parameter, not used by new API)
+        max_attempts: Legacy parameter kept for backwards compatibility
         
     Returns:
-        Dictionary with search statistics
+        Dictionary with search statistics including columns, rows, and total_rows
         
     Raises:
-        APIError: If the API request fails or times out
+        APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/legacy:legacyFetchUdmSearchView"
-
-    payload = {
-        "baselineQuery": query,
-        "baselineTimeRange": {
-            "startTime": start_time.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
-            "endTime": end_time.strftime("%Y-%m-%dT%H:%M:%S.000Z")
-        },
-        "caseInsensitive": case_insensitive,
-        "returnOperationIdOnly": True,
-        "eventList": {
-            "maxReturnedEvents": max_events
-        },
-        "fieldAggregations": {
-            "maxValuesPerField": max_values
-        },
-        "generateAiOverview": True
+    # Format the instance ID for the API call
+    instance = client.instance_id
+    
+    # Endpoint for UDM search
+    url = f"{client.base_url}/{instance}:udmSearch"
+    
+    # Format times for the API
+    start_time_str = start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    end_time_str = end_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    
+    # Query parameters for the API call
+    params = {
+        "query": query,
+        "timeRange.start_time": start_time_str,
+        "timeRange.end_time": end_time_str,
+        "limit": max_values  # Limit to specified number of results
     }
 
-    # Start the search operation
-    response = client.session.post(url, json=payload)
+    # Make the API request
+    response = client.session.get(url, params=params)
     if response.status_code != 200:
         raise APIError(
-            f"Error initiating search: Status {response.status_code}, "
+            f"Error executing stats search: Status {response.status_code}, "
             f"Response: {response.text}"
         )
 
-    operation = response.json()
+    results = response.json()
 
-    # Extract operation ID from response
-    try:
-        if isinstance(operation, list):
-            operation_id = operation[0].get("operation")
-        else:
-            operation_id = operation.get("operation") or operation.get("name")
-    except Exception as e:
-        raise APIError(
-            f"Error extracting operation ID. Response: {operation}, Error: {str(e)}"
-        )
-
-    if not operation_id:
-        raise APIError(f"No operation ID found in response: {operation}")
-
-    # Poll for results using the full operation ID path
-    results_url = f"{client.base_url}/{operation_id}:streamSearch"
-    attempt = 0
+    # Check if stats data is available in the response
+    if "stats" not in results:
+        raise APIError("No stats found in response")
     
-    while attempt < max_attempts:
-        results_response = client.session.get(results_url)
-        if results_response.status_code != 200:
-            raise APIError(f"Error fetching results: {results_response.text}")
-
-        results = results_response.json()
-
-        if isinstance(results, list):
-            results = results[0]
-
-        # Check both possible paths for completion status
-        done = (
-            results.get("done") or  # Check top level
-            results.get("operation", {}).get("done") or  # Check under operation
-            results.get("response", {}).get("complete")  # Check under response
-        )
-
-        if done:
-            # Check both possible paths for stats
-            stats = (
-                results.get("response", {}).get("stats") or  # Check under response
-                results.get("operation", {}).get("response", {}).get("stats")  # Check under operation.response
-            )
-            if stats:
-                # Process the stats results directly here for better control
-                return process_stats_results(stats)
-            else:
-                raise APIError("No stats found in completed response")
-
-        attempt += 1
-        time.sleep(1)
-    
-    raise APIError(f"Search timed out after {max_attempts} attempts")
+    # Process the stats results
+    return process_stats_results(results["stats"])
 
 def process_stats_results(stats: Dict[str, Any]) -> Dict[str, Any]:
     """Process stats search results.
@@ -134,7 +88,7 @@ def process_stats_results(stats: Dict[str, Any]) -> Dict[str, Any]:
         stats: Stats search results from API
         
     Returns:
-        Processed statistics
+        Processed statistics with columns, rows, and total_rows
     """
     processed_results = {
         "total_rows": 0,
@@ -157,6 +111,7 @@ def process_stats_results(stats: Dict[str, Any]) -> Dict[str, Any]:
         # Process values for this column
         values = []
         for val_data in col_data.get("values", []):
+            # Handle regular single value cells
             if "value" in val_data:
                 val = val_data["value"]
                 if "int64Val" in val:
@@ -167,6 +122,17 @@ def process_stats_results(stats: Dict[str, Any]) -> Dict[str, Any]:
                     values.append(val["stringVal"])
                 else:
                     values.append(None)
+            # Handle list value cells (like those from array_distinct)
+            elif "list" in val_data and "values" in val_data["list"]:
+                list_values = []
+                for list_val in val_data["list"]["values"]:
+                    if "int64Val" in list_val:
+                        list_values.append(int(list_val["int64Val"]))
+                    elif "doubleVal" in list_val:
+                        list_values.append(float(list_val["doubleVal"]))
+                    elif "stringVal" in list_val:
+                        list_values.append(list_val["stringVal"])
+                values.append(list_values)
             else:
                 values.append(None)
         

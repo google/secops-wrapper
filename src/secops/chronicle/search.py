@@ -31,7 +31,7 @@ def search_udm(
     timeout: int = 30,
     debug: bool = False
 ) -> Dict[str, Any]:
-    """Perform a UDM search query.
+    """Perform a UDM search query using the Chronicle V1alpha API.
     
     Args:
         client: ChronicleClient instance
@@ -40,7 +40,7 @@ def search_udm(
         end_time: Search end time
         max_events: Maximum events to return
         case_insensitive: Whether to perform case-insensitive search
-        max_attempts: Maximum number of polling attempts (default: 30)
+        max_attempts: Maximum number of polling attempts (legacy parameter, kept for backwards compatibility)
         timeout: Timeout in seconds for each API request (default: 30)
         debug: Print debug information during execution
         
@@ -50,136 +50,59 @@ def search_udm(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/legacy:legacyFetchUdmSearchView"
-
-    payload = {
-        "baselineQuery": query,
-        "baselineTimeRange": {
-            "startTime": start_time.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
-            "endTime": end_time.strftime("%Y-%m-%dT%H:%M:%S.000Z")
-        },
-        "caseInsensitive": case_insensitive,
-        "returnOperationIdOnly": True,
-        "eventList": {
-            "maxReturnedEvents": max_events
-        }
+    # Format the instance ID for the API call
+    instance = client.instance_id
+    
+    # Endpoint for UDM search
+    url = f"{client.base_url}/{instance}:udmSearch"
+    
+    # Format times for the API
+    start_time_str = start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    end_time_str = end_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    
+    # Query parameters for the API call
+    params = {
+        "query": query,
+        "timeRange.start_time": start_time_str,
+        "timeRange.end_time": end_time_str,
+        "limit": max_events  # Limit to specified number of results
     }
-
-    # Start the search operation
+    
     if debug:
-        print(f"Initiating UDM search: {query}")
-        print(f"Time range: {start_time.isoformat()} to {end_time.isoformat()}")
+        print(f"Executing UDM search: {query}")
+        print(f"Time range: {start_time_str} to {end_time_str}")
     
     try:
-        response = client.session.post(url, json=payload, timeout=timeout)
+        response = client.session.get(url, params=params, timeout=timeout)
+        
         if response.status_code != 200:
-            error_msg = f"Error initiating search: Status {response.status_code}, Response: {response.text}"
+            error_msg = f"Error executing search: Status {response.status_code}, Response: {response.text}"
             if debug:
                 print(f"Error: {error_msg}")
             raise APIError(error_msg)
-    except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
-        error_msg = f"Timeout initiating search: {str(e)}"
-        if debug:
-            print(f"Error: {error_msg}")
-        raise APIError(error_msg)
-
-    try:
-        operation = response.json()
-        if debug:
-            print(f"Initial search response: {operation}")
-    except ValueError:
-        error_msg = "Invalid JSON response from search API"
-        if debug:
-            print(f"Error: {error_msg}")
-        raise APIError(error_msg)
-
-    # Extract operation ID from response
-    try:
-        if isinstance(operation, list):
-            operation_id = operation[0].get("operation")
-        else:
-            operation_id = operation.get("operation") or operation.get("name")
-    except Exception as e:
-        error_msg = f"Error extracting operation ID. Response: {operation}, Error: {str(e)}"
-        if debug:
-            print(f"Error: {error_msg}")
-        raise APIError(error_msg)
-
-    if not operation_id:
-        error_msg = f"No operation ID found in response: {operation}"
-        if debug:
-            print(f"Error: {error_msg}")
-        raise APIError(error_msg)
-
-    if debug:
-        print(f"Operation ID: {operation_id}")
-
-    # Poll for results using the full operation ID path
-    results_url = f"{client.base_url}/{operation_id}:streamSearch"
-    attempt = 0
-    
-    while attempt < max_attempts:
-        if debug:
-            print(f"Polling attempt {attempt+1}/{max_attempts}")
         
-        try:
-            results_response = client.session.get(results_url, timeout=timeout)
-            if results_response.status_code != 200:
-                if debug:
-                    print(f"Error response: {results_response.status_code}, {results_response.text}")
-                # Don't immediately fail, try again
-                attempt += 1
-                time.sleep(1)
-                continue
-
-            results = results_response.json()
-            if debug:
-                print(f"Poll response: {results}")
-                
-        except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
-            # If we time out, just continue to the next attempt
-            if debug:
-                print(f"Timeout during polling: {str(e)}")
-            attempt += 1
-            time.sleep(1)
-            continue
-        except ValueError as e:
-            # If we can't parse the JSON, try again
-            if debug:
-                print(f"JSON parsing error: {str(e)}")
-            attempt += 1
-            time.sleep(1)
-            continue
-
-        if isinstance(results, list):
-            results = results[0]
-
-        # Check both possible paths for completion status
-        done = (
-            results.get("done") or  # Check top level
-            results.get("operation", {}).get("done") or  # Check under operation
-            results.get("response", {}).get("complete")  # Check under response
-        )
-
-        if done:
-            if debug:
-                print("Search completed successfully")
-                
-            events = (
-                results.get("response", {}).get("events", {}).get("events", []) or
-                results.get("operation", {}).get("response", {}).get("events", {}).get("events", [])
-            )
-            
-            if debug:
-                print(f"Found {len(events)} events")
-                
-            return {"events": events, "total_events": len(events)}
-
-        attempt += 1
-        time.sleep(1)
-    
-    if debug:
-        print(f"Search exceeded maximum attempts ({max_attempts}), returning empty result")
+        # Parse the response
+        response_data = response.json()
         
-    # If we've reached max attempts, return an empty result rather than raising an error
-    return {"events": [], "total_events": 0} 
+        # Extract events and metadata
+        events = response_data.get("events", [])
+        more_data_available = response_data.get("moreDataAvailable", False)
+        
+        if debug:
+            print(f"Found {len(events)} events")
+            print(f"More data available: {more_data_available}")
+        
+        # Build the result structure to match the expected format
+        result = {
+            "events": events,
+            "total_events": len(events),
+            "more_data_available": more_data_available
+        }
+        
+        return result
+        
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Request failed: {str(e)}"
+        if debug:
+            print(f"Error: {error_msg}")
+        raise APIError(error_msg) 

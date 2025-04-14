@@ -220,18 +220,18 @@ def extract_forwarder_id(forwarder_name: str) -> str:
 def ingest_log(
     client,
     log_type: str,
-    log_message: str,
+    log_message: Union[str, List[str]],
     log_entry_time: Optional[datetime] = None,
     collection_time: Optional[datetime] = None,
     forwarder_id: Optional[str] = None,
     force_log_type: bool = False
 ) -> Dict[str, Any]:
-    """Ingest a log into Chronicle.
+    """Ingest one or more logs into Chronicle.
     
     Args:
         client: ChronicleClient instance
         log_type: Chronicle log type (e.g., "OKTA", "WINDOWS", etc.)
-        log_message: The raw log message to ingest
+        log_message: Either a single log message string or a list of log message strings
         log_entry_time: The time the log entry was created (defaults to current time)
         collection_time: The time the log was collected (defaults to current time)
         forwarder_id: ID of the forwarder to use (creates or uses default if None)
@@ -267,9 +267,6 @@ def ingest_log(
     log_entry_time_str = log_entry_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     collection_time_str = collection_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     
-    # Encode log message in base64
-    log_data = base64.b64encode(log_message.encode('utf-8')).decode('utf-8')
-    
     # If forwarder_id is not provided, get or create default forwarder
     if forwarder_id is None:
         forwarder = get_or_create_forwarder(client)
@@ -284,20 +281,29 @@ def ingest_log(
     # Construct the import URL
     url = f"{client.base_url}/{client.instance_id}/logTypes/{log_type}/logs:import"
     
-    # Generate a unique ID for this log entry
-    log_id = str(uuid.uuid4())
+    # Convert single log message to a list for unified processing
+    log_messages = log_message if isinstance(log_message, list) else [log_message]
+    
+    # Prepare logs for the payload
+    logs = []
+    for msg in log_messages:
+        # Encode log message in base64
+        log_data = base64.b64encode(msg.encode('utf-8')).decode('utf-8')
+        
+        # Generate a unique ID for this log entry
+        log_id = str(uuid.uuid4())
+        
+        logs.append({
+            "name": f"{client.instance_id}/logTypes/{log_type}/logs/{log_id}",
+            "data": log_data,
+            "log_entry_time": log_entry_time_str,
+            "collection_time": collection_time_str
+        })
     
     # Construct the request payload
     payload = {
         "inline_source": {
-            "logs": [
-                {
-                    "name": f"{client.instance_id}/logTypes/{log_type}/logs/{log_id}",
-                    "data": log_data,
-                    "log_entry_time": log_entry_time_str,
-                    "collection_time": collection_time_str
-                }
-            ],
+            "logs": logs,
             "forwarder": forwarder_resource
         }
     }

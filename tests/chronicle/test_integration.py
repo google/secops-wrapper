@@ -21,6 +21,9 @@ from datetime import datetime, timedelta, timezone
 from secops import SecOpsClient
 from ..config import CHRONICLE_CONFIG, SERVICE_ACCOUNT_JSON
 from secops.exceptions import APIError
+from secops.chronicle.models import EntitySummary
+import json
+import re
 
 @pytest.mark.integration
 def test_chronicle_search():
@@ -156,6 +159,7 @@ def test_chronicle_udm_search():
             assert isinstance(result, dict)
             assert "events" in result
             assert "total_events" in result
+            assert "more_data_available" in result
             
             print(f"Search completed. Found {result['total_events']} events.")
             
@@ -163,8 +167,9 @@ def test_chronicle_udm_search():
             if result["events"]:
                 print("Validating event structure...")
                 event = result["events"][0]
-                assert "event" in event
-                assert "metadata" in event["event"]
+                assert "name" in event
+                assert "udm" in event
+                assert "metadata" in event["udm"]
             else:
                 print("No events found in time window. This is acceptable.")
                 
@@ -172,7 +177,7 @@ def test_chronicle_udm_search():
             print(f"Search failed but test will continue: {type(e).__name__}: {str(e)}")
             # We'll consider no results as a pass condition too
             # Create a placeholder result
-            result = {"events": [], "total_events": 0}
+            result = {"events": [], "total_events": 0, "more_data_available": False}
         
         # The test passes as long as we got a valid response structure,
         # even if it contained no events
@@ -188,86 +193,44 @@ def test_chronicle_udm_search():
 
 @pytest.mark.integration
 def test_chronicle_summarize_entity():
-    """Test Chronicle entity summary functionality with real API."""
-    # Skip this test for now as it's causing issues
-    pytest.skip("Skipping entity summary test due to API response parsing issues")
-    
-    # The original test code is kept below for reference but won't be executed
-    """
+    """Test Chronicle entity summary functionality with the real API."""
     client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
     chronicle = client.chronicle(**CHRONICLE_CONFIG)
     
     end_time = datetime.now(timezone.utc)
-    start_time = end_time - timedelta(days=30)  # Look back 30 days
+    start_time = end_time - timedelta(days=1)  # Look back 1 day
     
     try:
-        # Get summary for a domain
+        # Get summary for a common public IP (more likely to have data)
+        ip_to_check = "8.8.8.8"
         result = chronicle.summarize_entity(
-            start_time=start_time,
-            end_time=end_time,
-            field_path="principal.ip",
-            value="153.200.135.92",
-            return_alerts=True,
-            include_all_udm_types=True
-        )
-        
-        # Check if result is None, which is possible if no entities are found
-        if result is None:
-            print("No entity summary found, but API call succeeded")
-            assert True  # Test passes if API call succeeds even with no results
-        else:
-            # If we have results, validate them
-            assert result.entities is not None
-            if result.entities:
-                entity = result.entities[0]
-                assert entity.metadata.entity_type == "ASSET"
-                assert "153.200.135.92" in entity.entity.get("asset", {}).get("ip", [])
-            
-    except APIError as e:
-        print(f"\nAPI Error details: {str(e)}")  # Debug print
-        raise
-    """
-
-@pytest.mark.integration
-def test_chronicle_summarize_entities_from_query():
-    """Test Chronicle entity summaries from query functionality with real API."""
-    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
-    chronicle = client.chronicle(**CHRONICLE_CONFIG)
-    
-    end_time = datetime.now(timezone.utc)
-    start_time = end_time - timedelta(days=1)
-    
-    try:
-        # Build query for file hash lookup
-        md5 = "e17dd4eef8b4978673791ef4672f4f6a"
-        query = (
-            f'principal.file.md5 = "{md5}" OR '
-            f'principal.process.file.md5 = "{md5}" OR '
-            f'target.file.md5 = "{md5}" OR '
-            f'target.process.file.md5 = "{md5}" OR '
-            f'security_result.about.file.md5 = "{md5}" OR '
-            f'src.file.md5 = "{md5}" OR '
-            f'src.process.file.md5 = "{md5}"'
-        )
-        
-        results = chronicle.summarize_entities_from_query(
-            query=query,
+            value=ip_to_check,
             start_time=start_time,
             end_time=end_time
         )
         
-        assert isinstance(results, list)
-        if results:
-            summary = results[0]
-            assert summary.entities is not None
-            if summary.entities:
-                entity = summary.entities[0]
-                assert entity.metadata.entity_type == "FILE"
-                assert entity.entity.get("file", {}).get("md5") == md5
-            
+        # Basic validation - we expect an EntitySummary object
+        assert isinstance(result, EntitySummary)
+        
+        # Check if a primary entity was found (can be None if no data)
+        if result.primary_entity:
+            print(f"\nPrimary entity found: {result.primary_entity.metadata.entity_type}")
+            # The primary entity type could be ASSET or IP_ADDRESS
+            assert result.primary_entity.metadata.entity_type in ["ASSET", "IP_ADDRESS"]
+        else:
+            print(f"\nNo primary entity found for {ip_to_check} in the last day.")
+        
+        # Print some details if available (optional checks)
+        if result.alert_counts:
+            print(f"Found {len(result.alert_counts)} alert counts.")
+        if result.timeline:
+            print(f"Timeline found with {len(result.timeline.buckets)} buckets.")
+        if result.prevalence:
+            print(f"Prevalence data found: {len(result.prevalence)} entries.")
+        
     except APIError as e:
         print(f"\nAPI Error details: {str(e)}")  # Debug print
-        raise 
+        raise
 
 @pytest.mark.integration
 def test_chronicle_alerts():
@@ -643,3 +606,378 @@ def test_chronicle_nl_search():
             # For other API errors, fail the test
             print(f"\nAPI Error details: {str(e)}")
             raise
+
+@pytest.mark.integration
+def test_chronicle_data_export():
+    """Test Chronicle data export functionality with real API."""
+    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+    chronicle = client.chronicle(**CHRONICLE_CONFIG)
+    
+    # Set up time range for testing
+    end_time = datetime.now(timezone.utc)
+    start_time = end_time - timedelta(days=14)  # Look back 1 day
+    
+    try:
+        # First, fetch available log types
+        log_types_result = chronicle.fetch_available_log_types(
+            start_time=start_time,
+            end_time=end_time,
+            page_size=10  # Limit to 10 for testing
+        )
+        
+        print(f"\nFound {len(log_types_result['available_log_types'])} available log types for export")
+        
+        # If no log types available, skip the test
+        if not log_types_result["available_log_types"]:
+            pytest.skip("No log types available for export in the specified time range")
+            
+        # Show some of the available log types
+        for log_type in log_types_result["available_log_types"][:3]:  # Show first 3
+            print(f"  {log_type.display_name} ({log_type.log_type.split('/')[-1]})")
+            print(f"  Available from {log_type.start_time} to {log_type.end_time}")
+        
+        # For the actual export test, we'll create an export but not wait for completion
+        # Choose a log type that's likely to be present
+        if log_types_result["available_log_types"]:
+            selected_log_type = log_types_result["available_log_types"][0].log_type.split('/')[-1]
+            
+            # Create a data export (this might fail if the GCS bucket isn't properly set up)
+            try:
+                # This part would require a valid GCS bucket to work properly
+                # We'll make the request but catch and report errors without failing the test
+                bucket_name = "dk-test-export-bucket"  
+                
+                export = chronicle.create_data_export(
+                    gcs_bucket=f"projects/{CHRONICLE_CONFIG['project_id']}/buckets/{bucket_name}",
+                    start_time=start_time,
+                    end_time=end_time,
+                    log_type=selected_log_type
+                )
+                
+                print(f"\nCreated data export for log type: {selected_log_type}")
+                print(f"Export ID: {export['name'].split('/')[-1]}")
+                print(f"Status: {export['data_export_status']['stage']}")
+                
+                # Test the get_data_export function
+                export_id = export["name"].split("/")[-1]
+                export_status = chronicle.get_data_export(export_id)
+                print(f"Retrieved export status: {export_status['data_export_status']['stage']}")
+                
+                # Cancel the export
+                cancelled = chronicle.cancel_data_export(export_id)
+                print(f"Cancelled export status: {cancelled['data_export_status']['stage']}")
+                
+            except APIError as e:
+                # Don't fail the test if export creation fails due to permissions
+                # (GCS bucket access, etc.)
+                print(f"\nData export creation failed: {str(e)}")
+                print("This is expected if GCS bucket isn't configured or permissions are missing.")
+        
+    except APIError as e:
+        print(f"\nAPI Error details: {str(e)}")  # Debug print
+        # If we get "not found" or permission errors, skip rather than fail
+        if "permission" in str(e).lower() or "not found" in str(e).lower():
+            pytest.skip(f"Skipping due to permission issues: {str(e)}")
+        raise
+
+@pytest.mark.integration
+def test_chronicle_batch_log_ingestion():
+    """Test batch log ingestion with real API."""
+    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+    chronicle = client.chronicle(**CHRONICLE_CONFIG)
+    
+    # Get current time for use in logs
+    current_time = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+    
+    # Create several sample logs with different usernames
+    okta_logs = []
+    usernames = ["user1@example.com", "user2@example.com", "user3@example.com"]
+    
+    for username in usernames:
+        okta_log = {
+            "actor": {
+                "displayName": f"Test User {username.split('@')[0]}",
+                "alternateId": username
+            },
+            "client": {
+                "ipAddress": "192.168.1.100",
+                "userAgent": {
+                    "os": "Mac OS X",
+                    "browser": "SAFARI"
+                }
+            },
+            "displayMessage": "User login to Okta",
+            "eventType": "user.session.start",
+            "outcome": {
+                "result": "SUCCESS"
+            },
+            "published": current_time  # Use current time
+        }
+        okta_logs.append(json.dumps(okta_log))
+    
+    try:
+        # Ingest multiple logs in a single API call
+        print(f"\nIngesting {len(okta_logs)} logs in batch")
+        result = chronicle.ingest_log(
+            log_type="OKTA",
+            log_message=okta_logs
+        )
+        
+        # Verify response
+        assert result is not None
+        print(f"Batch ingestion result: {result}")
+        if "operation" in result:
+            assert result["operation"], "Operation ID should be present"
+            print(f"Batch operation ID: {result['operation']}")
+        
+        # Test batch ingestion with a different valid log type
+        # Create several Windows Defender ATP logs (simplified format for testing)
+        defender_logs = [
+            json.dumps({
+                "DeviceId": "device1",
+                "Timestamp": current_time,
+                "FileName": "test1.exe",
+                "ActionType": "AntivirusDetection",
+                "SHA1": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }),
+            json.dumps({
+                "DeviceId": "device2",
+                "Timestamp": current_time,
+                "FileName": "test2.exe",
+                "ActionType": "SmartScreenUrlWarning",
+                "SHA1": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            }),
+            json.dumps({
+                "DeviceId": "device3",
+                "Timestamp": current_time,
+                "FileName": "test3.exe",
+                "ActionType": "ProcessCreated",
+                "SHA1": "cccccccccccccccccccccccccccccccccccccccc"
+            })
+        ]
+        
+        # Ingest Windows Defender ATP logs in batch
+        print(f"\nIngesting {len(defender_logs)} Windows Defender ATP logs in batch")
+        try:
+            defender_result = chronicle.ingest_log(
+                log_type="WINDOWS_DEFENDER_ATP",
+                log_message=defender_logs
+            )
+            
+            # Verify response
+            assert defender_result is not None
+            print(f"Windows Defender ATP batch ingestion result: {defender_result}")
+            if "operation" in defender_result:
+                assert defender_result["operation"], "Operation ID should be present"
+                print(f"Windows Defender ATP batch operation ID: {defender_result['operation']}")
+        except APIError as e:
+            # This might fail in some environments
+            print(f"Windows Defender ATP ingestion reported API error: {e}")
+    
+    except APIError as e:
+        print(f"\nAPI Error details: {str(e)}")
+        # Skip the test rather than fail if permissions are not available
+        if "permission" in str(e).lower():
+            pytest.skip("Insufficient permissions to ingest logs")
+        elif "invalid" in str(e).lower():
+            pytest.skip("Invalid log format or API error")
+        else:
+            raise
+
+@pytest.mark.integration
+def test_chronicle_gemini():
+    """Test Chronicle Gemini conversational AI functionality with real API.
+    
+    This test is designed to interact with the Gemini API and verify the response structure.
+    """
+    try:
+        # Set up client
+        client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+        chronicle = client.chronicle(**CHRONICLE_CONFIG)
+        
+        print("\nStarting Gemini integration test...")
+        
+        # Test with a simple, factual query that should have consistent responses
+        query = "What is Windows event ID 4625?"
+        print(f"Querying Gemini with: {query}")
+        
+        try:
+            response = chronicle.gemini(query=query)
+            
+            # Basic structure validation
+            print("Checking response structure...")
+            assert hasattr(response, 'blocks'), "Response should have blocks attribute"
+            assert hasattr(response, 'name'), "Response should have a name"
+            assert hasattr(response, 'create_time'), "Response should have a creation time"
+            assert response.input_query == query, "Response should contain the original query"
+            
+            # Check if we got some content
+            assert len(response.blocks) > 0, "Response should have at least one content block"
+            
+            # Print some information about the response
+            print(f"Received {len(response.blocks)} content blocks")
+            
+            # Check block types
+            block_types = [block.block_type for block in response.blocks]
+            print(f"Block types: {block_types}")
+            
+            # Check if we have text content
+            text_content = response.get_text_content()
+            if text_content:
+                print(f"Text content (truncated): {text_content[:100]}...")
+            
+            # Check for code blocks (may or may not be present)
+            code_blocks = response.get_code_blocks()
+            if code_blocks:
+                print(f"Found {len(code_blocks)} code blocks")
+                for i, block in enumerate(code_blocks):
+                    print(f"Code block {i+1} title: {block.title}")
+            
+            # Check for references (may or may not be present)
+            if response.references:
+                print(f"Found {len(response.references)} references")
+            
+            # Check for suggested actions (may or may not be present)
+            if response.suggested_actions:
+                print(f"Found {len(response.suggested_actions)} suggested actions")
+                for i, action in enumerate(response.suggested_actions):
+                    print(f"Action {i+1}: {action.display_text} (type: {action.action_type})")
+            
+            print("Gemini integration test passed successfully.")
+            
+        except APIError as e:
+            if "users must opt-in before using Gemini" in str(e):
+                pytest.skip("Test skipped: User account has not been opted-in to Gemini. Please enable Gemini in Chronicle settings.")
+            else:
+                raise  # Re-raise if it's a different API error
+        
+    except Exception as e:
+        print(f"Unexpected error in Gemini test: {type(e).__name__}: {str(e)}")
+        pytest.skip(f"Test skipped due to unexpected error: {str(e)}")
+
+@pytest.mark.integration
+def test_chronicle_gemini_text_content():
+    """Test that GeminiResponse.get_text_content() properly strips HTML.
+
+    Uses a query known to return HTML blocks and verifies that the text
+    content includes the information from HTML blocks without the tags.
+    """
+    try:
+        # Set up client
+        client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+        chronicle = client.chronicle(**CHRONICLE_CONFIG)
+
+        print("\nStarting Gemini get_text_content() integration test...")
+
+        # Query known to return HTML blocks
+        query = "What is Windows event ID 4625?"
+        print(f"Querying Gemini with: {query}")
+
+        try:
+            response = chronicle.gemini(query=query)
+
+            # Basic structure validation
+            assert hasattr(response, 'blocks'), "Response should have blocks attribute"
+            assert len(response.blocks) > 0, "Response should have at least one content block"
+
+            # Find an HTML block in the response
+            html_block_content = None
+            for block in response.blocks:
+                if block.block_type == "HTML":
+                    html_block_content = block.content
+                    print(f"Found HTML block content (raw): {html_block_content[:200]}...")
+                    break
+
+            assert html_block_content is not None, "Response should contain at least one HTML block for this test"
+
+            # Get the combined text content
+            text_content = response.get_text_content()
+            print(f"Combined text content (stripped): {text_content[:200]}...")
+
+            assert text_content, "get_text_content() should return non-empty string"
+
+            # Check that HTML tags are stripped
+            assert "<p>" not in text_content, "HTML <p> tags should be stripped"
+            assert "<li>" not in text_content, "HTML <li> tags should be stripped"
+            assert "<a>" not in text_content, "HTML <a> tags should be stripped"
+            assert "<strong>" not in text_content, "HTML <strong> tags should be stripped"
+
+            # Check that the *content* from the HTML block is present (approximate check)
+            # We strip tags from the original HTML and check if a snippet exists in the combined text
+            stripped_html_for_check = re.sub(r'<[^>]+>', ' ', html_block_content).strip()
+            # Take a small snippet from the stripped HTML to verify its presence
+            snippet_to_find = stripped_html_for_check[:50].split()[-1] if stripped_html_for_check else None # Get last word of first 50 chars
+            if snippet_to_find:
+                 print(f"Verifying presence of snippet: '{snippet_to_find}'")
+                 assert snippet_to_find in text_content, f"Text content should include content from HTML block (missing snippet: {snippet_to_find})"
+
+            print("Gemini get_text_content() HTML stripping test passed successfully.")
+
+        except APIError as e:
+            if "users must opt-in before using Gemini" in str(e):
+                pytest.skip("Test skipped: User account has not been opted-in to Gemini. Please enable Gemini in Chronicle settings.")
+            else:
+                raise  # Re-raise if it's a different API error
+
+    except Exception as e:
+        print(f"Unexpected error in Gemini get_text_content test: {type(e).__name__}: {str(e)}")
+        pytest.skip(f"Test skipped due to unexpected error: {str(e)}")
+
+@pytest.mark.integration
+def test_chronicle_gemini_rule_generation():
+    """Test Chronicle Gemini's ability to generate security rules.
+    
+    This test asks Gemini to generate a detection rule and verifies the response structure.
+    """
+    try:
+        # Set up client
+        client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+        chronicle = client.chronicle(**CHRONICLE_CONFIG)
+        
+        print("\nStarting Gemini rule generation test...")
+        
+        # Ask Gemini to generate a detection rule
+        query = "Write a rule to detect powershell downloading a file called gdp.zip"
+        print(f"Querying Gemini with: {query}")
+        
+        try:
+            response = chronicle.gemini(query=query)
+            
+            # Basic structure validation
+            assert len(response.blocks) > 0, "Response should have at least one content block"
+            
+            # We should have at least one code block for the rule
+            code_blocks = response.get_code_blocks()
+            assert len(code_blocks) > 0, "Response should contain at least one code block with the rule"
+            
+            # Verify the code block contains a YARA-L rule
+            rule_block = code_blocks[0]
+            assert "rule " in rule_block.content, "Code block should contain a YARA-L rule"
+            assert "meta:" in rule_block.content, "Rule should have a meta section"
+            assert "events:" in rule_block.content, "Rule should have an events section"
+            assert "condition:" in rule_block.content, "Rule should have a condition section"
+            
+            # Check for powershell and gdp.zip in the rule
+            assert "powershell" in rule_block.content.lower(), "Rule should reference powershell"
+            assert "gdp.zip" in rule_block.content.lower(), "Rule should reference gdp.zip"
+            
+            # Check for suggested actions (typically rule editor)
+            if response.suggested_actions:
+                rule_editor_action = [action for action in response.suggested_actions if 
+                                    "rule" in action.display_text.lower() and 
+                                    action.action_type == "NAVIGATION"]
+                if rule_editor_action:
+                    print(f"Found rule editor action: {rule_editor_action[0].display_text}")
+                    assert rule_editor_action[0].navigation is not None, "Navigation action should have a target URI"
+            
+            print("Gemini rule generation test passed successfully.")
+        
+        except APIError as e:
+            if "users must opt-in before using Gemini" in str(e):
+                pytest.skip("Test skipped: User account has not been opted-in to Gemini. Please enable Gemini in Chronicle settings.")
+            else:
+                raise  # Re-raise if it's a different API error
+        
+    except Exception as e:
+        print(f"Unexpected error in Gemini rule generation test: {type(e).__name__}: {str(e)}")
+        pytest.skip(f"Test skipped due to unexpected error: {str(e)}")

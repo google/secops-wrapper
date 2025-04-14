@@ -506,4 +506,66 @@ def test_ingest_udm_api_error(chronicle_client):
             ingest_udm(
                 client=chronicle_client,
                 udm_events=event
-            ) 
+            )
+
+
+def test_ingest_log_batch(chronicle_client, mock_forwarders_list_response, mock_ingest_response):
+    """Test batch log ingestion functionality."""
+    test_logs = [
+        json.dumps({"test": "log1", "message": "Test message 1"}),
+        json.dumps({"test": "log2", "message": "Test message 2"}),
+        json.dumps({"test": "log3", "message": "Test message 3"})
+    ]
+    
+    with patch.object(chronicle_client.session, 'get', return_value=mock_forwarders_list_response), \
+         patch.object(chronicle_client.session, 'post', return_value=mock_ingest_response), \
+         patch('secops.chronicle.log_ingest.is_valid_log_type', return_value=True):
+        result = ingest_log(
+            client=chronicle_client,
+            log_type="OKTA",
+            log_message=test_logs
+        )
+        
+        # Check result
+        assert "operation" in result
+        assert result["operation"] == "projects/test-project/locations/us/operations/operation-id"
+        
+        # Verify request payload
+        call_args = chronicle_client.session.post.call_args
+        assert call_args is not None
+        payload = call_args[1]['json']
+        assert "inline_source" in payload
+        assert "logs" in payload["inline_source"]
+        assert len(payload["inline_source"]["logs"]) == 3
+
+
+def test_ingest_log_backward_compatibility(chronicle_client, mock_forwarders_list_response, mock_ingest_response):
+    """Test backward compatibility of log ingestion."""
+    # Original way of calling with a single log
+    test_log = json.dumps({"test": "log", "message": "Test message"})
+    
+    with patch.object(chronicle_client.session, 'get', return_value=mock_forwarders_list_response), \
+         patch.object(chronicle_client.session, 'post', return_value=mock_ingest_response), \
+         patch('secops.chronicle.log_ingest.is_valid_log_type', return_value=True):
+        result = ingest_log(
+            client=chronicle_client,
+            log_type="OKTA",
+            log_message=test_log
+        )
+        
+        # Check result
+        assert "operation" in result
+        
+        # Verify request payload still has the expected format
+        call_args = chronicle_client.session.post.call_args
+        assert call_args is not None
+        payload = call_args[1]['json']
+        assert "inline_source" in payload
+        assert "logs" in payload["inline_source"]
+        assert len(payload["inline_source"]["logs"]) == 1
+        
+        # Verify the log content is properly encoded
+        log_entry = payload["inline_source"]["logs"][0]
+        assert "data" in log_entry
+        decoded_data = base64.b64decode(log_entry["data"]).decode('utf-8')
+        assert json.loads(decoded_data) == {"test": "log", "message": "Test message"} 
