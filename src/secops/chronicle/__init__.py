@@ -45,6 +45,13 @@ from secops.chronicle.rule_alert import (
 )
 from secops.chronicle.rule_detection import (
     list_detections,
+    get_detection, # Added
+    search_curated_detections, # Added
+    count_all_curated_rule_set_detections, # Added
+    count_curated_rule_set_detections, # Added
+    search_detection_events, # Added
+    search_detection_count_buckets, # Added
+    search_rule_results, # Added
     list_errors
 )
 from secops.chronicle.rule_retrohunt import (
@@ -146,8 +153,15 @@ __all__ = [
     
     # Rule detection operations
     "list_detections",
+    "get_detection", # Added
+    "search_curated_detections", # Added
+    "count_all_curated_rule_set_detections", # Added
+    "count_curated_rule_set_detections", # Added
+    "search_detection_events", # Added
+    "search_detection_count_buckets", # Added
+    "search_rule_results", # Added
     "list_errors",
-    
+
     # Rule retrohunt operations
     "create_retrohunt",
     "get_retrohunt",
@@ -175,4 +189,4 @@ __all__ = [
     "Block",
     "SuggestedAction",
     "NavigationAction"
-] 
+]
