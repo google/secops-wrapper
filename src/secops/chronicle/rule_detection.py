@@ -79,12 +79,14 @@ def list_detections(
 
 def get_detection(
     client,
+    rule_id: str,
     detection_id: str
 ) -> Dict[str, Any]:
-    """Gets a single detection by its ID.
+    """Gets a single detection by its rule and specific detection ID.
 
     Args:
         client: ChronicleClient instance
+        rule_id: Required. The specific rule revision to get a detection for. There are two acceptable formats: - {rule_id} gets a detection for the latest revision of the Rule with rule ID rule_id - {rule_id}@{revision_id} gets a detection for the Rule revision with rule ID rule_id and revision ID revision_id
         detection_id: The unique ID of the detection to retrieve.
 
     Returns:
@@ -94,7 +96,7 @@ def get_detection(
         APIError: If the API request fails.
     """
     url = f"{client.base_url}/{client.instance_id}/legacy:legacyGetDetection"
-    params = {"detection_id": detection_id}
+    params = {"detection_id": detection_id, "rule_id": rule_id}
     response = client.session.get(url, params=params)
 
     if response.status_code != 200:
