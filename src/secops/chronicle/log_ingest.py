@@ -303,7 +303,7 @@ def ingest_log(
         }
 
         if namespace:
-            log_data["asset_namespace"] = namespace
+            log_data["environment_namespace"] = namespace
         
         # Fix for labels: API expects a map where values are LogLabel objects
         if labels:
