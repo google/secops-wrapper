@@ -23,9 +23,10 @@ from secops.chronicle.rule import (
     list_rules,
     update_rule,
     delete_rule,
-    enable_rule
+    enable_rule,
+    search_rules
 )
-from secops.exceptions import APIError
+from secops.exceptions import APIError, SecOpsError
 
 
 @pytest.fixture
@@ -120,7 +121,7 @@ def test_list_rules(chronicle_client, mock_response):
         
         # Assert
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules"
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules", params={"pageSize": 1000, "view": "FULL"}
         )
         assert result == mock_response.json.return_value
         assert len(result["rules"]) == 2
@@ -265,4 +266,31 @@ def test_enable_rule_error(chronicle_client, mock_error_response):
         with pytest.raises(APIError) as exc_info:
             enable_rule(chronicle_client, rule_id)
         
-        assert "Failed to enable rule" in str(exc_info.value) 
+        assert "Failed to enable rule" in str(exc_info.value)
+
+def test_search_rules(chronicle_client, mock_response):
+    """Test search_rules function."""
+    # Arrange
+    mock_response.json.return_value = {"rules": [{"name": "rule1"}, {"name": "rule2"}]}
+    
+    with patch.object(chronicle_client.session, 'get', return_value=mock_response) as mock_get:
+        # Act
+        result = search_rules(chronicle_client, ".*")
+        
+        # Assert
+        mock_get.assert_called_once_with(
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules", params={"pageSize": 1000, "view": "FULL"}
+        )
+        assert result == mock_response.json.return_value
+        assert len(result["rules"]) == 2
+
+
+def test_search_rules_error(chronicle_client, mock_error_response):
+    """Test list_rules function with error response."""
+    # Arrange
+    with patch.object(chronicle_client.session, 'get', return_value=mock_error_response):
+        # Act & Assert
+        with pytest.raises(SecOpsError) as exc_info:
+            search_rules(chronicle_client, "(")
+        
+        assert "Invalid regular expression" in str(exc_info.value)

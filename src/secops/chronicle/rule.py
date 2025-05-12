@@ -15,7 +15,8 @@
 """Rule management functionality for Chronicle."""
 
 from typing import Dict, Any, Optional
-from secops.exceptions import APIError
+from secops.exceptions import APIError, SecOpsError
+import re
 
 
 def create_rule(
@@ -90,15 +91,34 @@ def list_rules(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/rules"
+    more = True
+    rules = {
+        "rules": []
+    }
     
-    response = client.session.get(url)
-    
-    if response.status_code != 200:
-        raise APIError(f"Failed to list rules: {response.text}")
-    
-    return response.json()
+    while more:
+        url = f"{client.base_url}/{client.instance_id}/rules"
 
+        params = {
+            "pageSize": 1000,
+            "view": "FULL"
+        }
+        
+        response = client.session.get(url, params=params)
+        
+        if response.status_code != 200:
+            raise APIError(f"Failed to list rules: {response.text}")
+        
+        data = response.json()
+        
+        rules["rules"].extend(data["rules"])
+        
+        if "next_page_token" in data:
+            params['pageToken'] = data["next_page_token"]
+        else:
+            more = False
+    
+    return rules
 
 def update_rule(
     client,
@@ -198,4 +218,39 @@ def enable_rule(
     if response.status_code != 200:
         raise APIError(f"Failed to {'enable' if enabled else 'disable'} rule: {response.text}")
     
-    return response.json() 
+    return response.json()
+
+def search_rules(
+    client,
+    query: str
+    ) -> Dict[str, Any]:
+    """Search for rules.
+
+    Args:
+        client: ChronicleClient instance
+        query: Search query string that supports regex
+
+    Returns:
+        Dictionary containing search results
+        
+    Raises:
+        APIError: If the API request fails
+    """
+    try:
+        re.compile(query)
+    except re.error:
+        raise SecOpsError(f"Invalid regular expression: {query}")
+
+    rules = list_rules(client)
+    results = {
+        "rules": []
+    }
+    for rule in rules['rules']:
+        rule_text = rule.get('text', "")
+        match = re.search(query, rule_text)
+
+        if match:
+            results['rules'].append(rule)
+
+    return results
+

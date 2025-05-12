@@ -300,3 +300,77 @@ def test_udm_ingestion():
         if "permission" in str(e).lower():
             pytest.skip("Insufficient permissions to ingest UDM events")
         raise 
+
+
+@pytest.mark.integration
+def test_log_ingest_with_labels():
+    """Test ingesting a log with custom labels using the real API.
+    
+    This test verifies that logs can be successfully ingested with custom labels,
+    which is a feature that previously had formatting issues.
+    """
+    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+    chronicle = client.chronicle(**CHRONICLE_CONFIG)
+    
+    # Get current time for use in log
+    current_time = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+    
+    # Create a sample OKTA log with current timestamp
+    okta_log = {
+        "actor": {
+            "alternateId": "test_user@example.com",
+            "displayName": "Test User"
+        },
+        "client": {
+            "ipAddress": "192.168.1.100",
+            "userAgent": {
+                "os": "Mac OS X",
+                "browser": "SAFARI"
+            }
+        },
+        "displayMessage": "User login to Okta",
+        "eventType": "user.session.start",
+        "outcome": {
+            "result": "SUCCESS"
+        },
+        "published": current_time  # Use current time
+    }
+    
+    # Define test labels
+    test_labels = {
+        "environment": "integration_test",
+        "purpose": "label_functionality_test",
+        "sdk_version": "latest"
+    }
+    
+    try:
+        # Ingest log with labels
+        result = ingest_log(
+            client=chronicle,
+            log_type="OKTA",
+            log_message=json.dumps(okta_log),
+            labels=test_labels
+        )
+        
+        # Verify response
+        assert result is not None
+        print(f"\nSuccessfully ingested OKTA log with labels:")
+        print(f"- environment: integration_test")
+        print(f"- purpose: label_functionality_test")
+        print(f"- sdk_version: latest")
+        
+        # The response may be empty in some environments, but the function shouldn't have raised an error
+        print(f"Response: {result}")
+        if "operation" in result:
+            print(f"Operation: {result['operation']}")
+        
+    except APIError as e:
+        print(f"\nAPI Error details: {str(e)}")
+        # Skip the test rather than fail if permissions are not available
+        if "permission" in str(e).lower():
+            pytest.skip("Insufficient permissions to ingest logs")
+        # If we get a specific labels error, the test fails
+        elif "labels" in str(e).lower():
+            pytest.fail(f"Labels not formatted correctly: {str(e)}")
+        # Other errors should cause the test to fail
+        raise 

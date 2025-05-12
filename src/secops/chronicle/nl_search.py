@@ -35,9 +35,9 @@ def translate_nl_to_udm(
     Raises:
         APIError: If the API request fails or no valid query can be generated after retries
     """
-    max_retries = 5
+    max_retries = 10
     retry_count = 0
-    wait_time = 5  # seconds
+    wait_time = 5  # seconds, will double with each retry
     
     url = f"https://{client.region}-chronicle.googleapis.com/v1alpha/projects/{client.project_id}/locations/{client.region}/instances/{client.customer_id}:translateUdmQuery"
     
@@ -56,6 +56,7 @@ def translate_nl_to_udm(
                         retry_count += 1
                         print(f"Received 429 error in translation, retrying ({retry_count}/{max_retries}) after {wait_time} seconds")
                         time.sleep(wait_time)
+                        wait_time *= 2  # Double the wait time for next retry
                         continue
                 # For non-429 errors or if we've exhausted retries
                 raise APIError(f"Chronicle API request failed: {response.text}")
@@ -74,6 +75,7 @@ def translate_nl_to_udm(
                     retry_count += 1
                     print(f"Received 429 error, retrying ({retry_count}/{max_retries}) after {wait_time} seconds")
                     time.sleep(wait_time)
+                    wait_time *= 2  # Double the wait time for next retry
                     continue
             # For other errors or if we've exhausted retries, raise the error
             raise e
@@ -107,9 +109,9 @@ def nl_search(
     Raises:
         APIError: If the API request fails after retries
     """
-    max_retries = 5
+    max_retries = 10
     retry_count = 0
-    wait_time = 5  # seconds
+    wait_time = 5  # seconds, will double with each retry
     
     last_error = None
     
@@ -136,6 +138,7 @@ def nl_search(
                     # Log retry attempt
                     print(f"Received 429 error, retrying ({retry_count}/{max_retries}) after {wait_time} seconds")
                     time.sleep(wait_time)
+                    wait_time *= 2  # Double the wait time for next retry
                     continue
             # For other errors or if we've exhausted retries, raise the error
             raise e

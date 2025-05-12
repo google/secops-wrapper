@@ -52,7 +52,8 @@ from secops.chronicle.rule import (
     list_rules as _list_rules,
     update_rule as _update_rule,
     delete_rule as _delete_rule,
-    enable_rule as _enable_rule
+    enable_rule as _enable_rule,
+    search_rules as _search_rules
 )
 from secops.chronicle.rule_alert import (
     get_alert as _get_alert,
@@ -716,6 +717,21 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _enable_rule(self, rule_id, enabled)
+    
+    def search_rules(self, query: str) -> Dict[str, Any]:
+        """Search for rules.
+
+        Args:
+            client: ChronicleClient instance
+            query: Search query string that supports regex
+
+        Returns:
+            Dictionary containing search results
+            
+        Raises:
+            APIError: If the API request fails
+        """
+        return _search_rules(self, query)
     
     # Rule Alert methods
     

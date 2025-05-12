@@ -83,7 +83,12 @@ ADC will automatically try these authentication methods in order:
 
 ### 2. Service Account Authentication
 
-For more explicit control, you can authenticate using a service account. This can be done in two ways:
+For more explicit control, you can authenticate using a service account that is created in the Google Cloud project associated with Google SecOps.
+
+**Important Note on Permissions:**
+* This service account needs to be granted the appropriate Identity and Access Management (IAM) role to interact with the Google Secops (Chronicle) API. The recommended predefined role is **Chronicle API Admin** (`roles/chronicle.admin`). Alternatively, if your security policies require more granular control, you can create a custom IAM role with the specific permissions needed for the operations you intend to use (e.g., `chronicle.instances.get`, `chronicle.events.create`, `chronicle.rules.list`, etc.). 
+
+Once the service account is properly permissioned, you can authenticate using it in two ways: 
 
 #### a. Using a Service Account JSON File
 
@@ -95,6 +100,8 @@ client = SecOpsClient(service_account_path="/path/to/service-account.json")
 ```
 
 #### b. Using Service Account Info Dictionary
+
+If you prefer to manage credentials programmatically without a file, you can create a dictionary containing the service account key's contents.
 
 ```python
 from secops import SecOpsClient
@@ -185,6 +192,13 @@ batch_result = chronicle.ingest_log(
 )
 
 print(f"Batch operation: {batch_result.get('operation')}")
+
+# Add custom labels to your logs
+labeled_result = chronicle.ingest_log(
+    log_type="OKTA",
+    log_message=json.dumps(okta_log),
+    labels={"environment": "production", "app": "web-portal", "team": "security"}
+)
 ```
 The SDK also supports non-JSON log formats. Here's an example with XML for Windows Event logs:
 
@@ -802,6 +816,22 @@ deployment = chronicle.enable_rule(rule_id, enabled=False) # Disable
 
 # Delete rule
 chronicle.delete_rule(rule_id)
+```
+
+### Searching Rules
+
+Search for rules using regular expressions:
+
+```python
+# Search for rules containing specific patterns
+results = chronicle.search_rules("suspicious process")
+for rule in results.get("rules", []):
+    rule_id = rule.get("name", "").split("/")[-1]
+    print(f"Rule ID: {rule_id}, contains: 'suspicious process'")
+    
+# Find rules mentioning a specific MITRE technique
+mitre_rules = chronicle.search_rules("T1055")
+print(f"Found {len(mitre_rules.get('rules', []))} rules mentioning T1055 technique")
 ```
 
 ### Retrohunts

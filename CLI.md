@@ -163,6 +163,15 @@ secops log ingest --type "OKTA" --file "/path/to/okta_logs.json"
 secops log ingest --type "WINDOWS" --message "{\"event\": \"data\"}"
 ```
 
+Add custom labels to your logs:
+```bash
+# Using JSON format
+secops log ingest --type "OKTA" --file "/path/to/okta_logs.json" --labels '{"environment": "production", "source": "web-portal"}'
+
+# Using key=value pairs
+secops log ingest --type "WINDOWS" --file "/path/to/windows_logs.xml" --labels "environment=test,team=security,version=1.0"
+```
+
 Ingest UDM events:
 
 ```bash
@@ -220,6 +229,13 @@ Validate a rule:
 
 ```bash
 secops rule validate --file "/path/to/rule.yaral"
+```
+
+Search for rules using regex patterns:
+
+```bash
+secops rule search --query "suspicious process"
+secops rule search --query "MITRE.*T1055"
 ```
 
 ### Alert Management
@@ -314,6 +330,13 @@ secops iocs --time-window 168 --prioritized
 
 ```bash
 secops log ingest --type "CUSTOM_JSON" --file "logs.json" --force
+```
+
+### Ingest Logs with Labels
+
+```bash
+# Add labels to categorize logs
+secops log ingest --type "OKTA" --file "auth_logs.json" --labels "environment=production,application=web-app,region=us-central"
 ```
 
 ### Create and Enable a Detection Rule

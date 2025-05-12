@@ -50,6 +50,7 @@ def test_translate_nl_to_udm_success(mock_client):
     # Check URL format
     url = call_args[0][0]
     assert "us-chronicle.googleapis.com" in url
+    assert "/v1alpha/" in url
     assert "test-project" in url
     assert "test-customer-id" in url
     assert ":translateUdmQuery" in url
@@ -235,7 +236,7 @@ def test_nl_search_max_retries_exceeded(mock_sleep, mock_translate, mock_client)
     error_429 = APIError("Error executing search: Status 429, Response: { \"error\": { \"code\": 429 } }")
     
     # Set up search_udm to always fail with 429
-    mock_client.search_udm.side_effect = [error_429] * 6  # Original + 5 retries
+    mock_client.search_udm.side_effect = [error_429] * 11  # Original + 10 retries (max_retries=10)
     
     # Define test parameters
     start_time = datetime.now(timezone.utc) - timedelta(hours=24)
@@ -250,8 +251,8 @@ def test_nl_search_max_retries_exceeded(mock_sleep, mock_translate, mock_client)
             end_time
         )
     
-    # Verify search_udm was called 6 times (initial + 5 retries)
-    assert mock_client.search_udm.call_count == 6
+    # Verify search_udm was called 11 times (initial + 10 retries)
+    assert mock_client.search_udm.call_count == 11
     
-    # Verify sleep was called 5 times
-    assert mock_sleep.call_count == 5 
+    # Verify sleep was called 10 times
+    assert mock_sleep.call_count == 10 

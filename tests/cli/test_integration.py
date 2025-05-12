@@ -116,6 +116,34 @@ def test_cli_rule_list(cli_env, common_args):
         assert "Error:" not in result.stdout
 
 @pytest.mark.integration
+def test_cli_rule_search(cli_env, common_args):
+    """Test the rule search command."""
+    # Execute the CLI command
+    cmd = [
+        "secops",
+    ] + common_args + [
+        "rule", "search", "--query", ".*"
+    ]
+    
+    result = subprocess.run(
+        cmd,
+        env=cli_env,
+        capture_output=True,
+        text=True
+    )
+    
+    # Check that the command executed successfully
+    assert result.returncode == 0
+    
+    # Try to parse the output as JSON
+    try:
+        output = json.loads(result.stdout)
+        assert "rules" in output
+    except json.JSONDecodeError:
+        # If not valid JSON, check for expected error messages
+        assert "Error:" not in result.stdout
+
+@pytest.mark.integration
 def test_cli_stats(cli_env, common_args):
     """Test the stats command."""
     # Execute the CLI command
@@ -476,6 +504,102 @@ def test_cli_alert(cli_env, common_args):
     except json.JSONDecodeError:
         # If not valid JSON, check for expected error messages
         assert "Error:" not in result.stdout
+
+@pytest.mark.integration
+def test_cli_log_ingest_with_labels(cli_env, common_args):
+    """Test the log ingest command with labels."""
+    # Create a temporary file with a sample OKTA log
+    with tempfile.NamedTemporaryFile(suffix=".json", mode="w+", delete=False) as temp_file:
+        # Create an OKTA log similar to the examples/ingest_logs.py format
+        current_time = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        okta_log = {
+            "actor": {
+                "displayName": "CLI Test User",
+                "alternateId": "cli_test@example.com"
+            },
+            "client": {
+                "ipAddress": "192.168.1.100",
+                "userAgent": {
+                    "os": "Mac OS X",
+                    "browser": "SAFARI"
+                }
+            },
+            "displayMessage": "User login to Okta via CLI test",
+            "eventType": "user.session.start",
+            "outcome": {
+                "result": "SUCCESS"
+            },
+            "published": current_time
+        }
+        temp_file.write(json.dumps(okta_log))
+        temp_file_path = temp_file.name
+    
+    try:
+        # Test 1: Test with JSON format labels
+        json_labels = '{"environment": "test", "source": "cli_test", "version": "1.0"}'
+        
+        json_cmd = [
+            "secops",
+        ] + common_args + [
+            "log", "ingest",
+            "--type", "OKTA",
+            "--file", temp_file_path,
+            "--labels", json_labels
+        ]
+        
+        json_result = subprocess.run(
+            json_cmd,
+            env=cli_env,
+            capture_output=True,
+            text=True
+        )
+        
+        # Check that the command executed successfully with JSON labels
+        assert json_result.returncode == 0, f"Command failed with stderr: {json_result.stderr}"
+        
+        # Try to parse the output as JSON - just check it's valid JSON, not specific fields
+        try:
+            json_output = json.loads(json_result.stdout)
+            # The response might be an empty object {}, which is still valid
+            assert isinstance(json_output, dict)
+        except json.JSONDecodeError:
+            # If not valid JSON, check for expected error messages
+            assert "Error:" not in json_result.stdout
+        
+        # Test 2: Test with key=value format labels
+        kv_labels = "environment=integration,source=cli_integration_test,team=security"
+        
+        kv_cmd = [
+            "secops",
+        ] + common_args + [
+            "log", "ingest",
+            "--type", "OKTA",
+            "--file", temp_file_path,
+            "--labels", kv_labels
+        ]
+        
+        kv_result = subprocess.run(
+            kv_cmd,
+            env=cli_env,
+            capture_output=True,
+            text=True
+        )
+        
+        # Check that the command executed successfully with key=value labels
+        assert kv_result.returncode == 0, f"Command failed with stderr: {kv_result.stderr}"
+        
+        # Try to parse the output as JSON - just check it's valid JSON, not specific fields
+        try:
+            kv_output = json.loads(kv_result.stdout)
+            # The response might be an empty object {}, which is still valid
+            assert isinstance(kv_output, dict)
+        except json.JSONDecodeError:
+            # If not valid JSON, check for expected error messages
+            assert "Error:" not in kv_result.stdout
+            
+    finally:
+        # Clean up
+        os.unlink(temp_file_path)
 
 @pytest.mark.integration
 def test_cli_export_log_types(cli_env, common_args):

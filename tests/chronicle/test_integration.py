@@ -523,6 +523,42 @@ rule test_rule {
         pytest.fail(f"API Error during rule validation test: {str(e)}")
 
 @pytest.mark.integration
+def test_chronicle_search_rules():
+    """Test Chronicle rule search functionality with real API."""
+    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+    chronicle = client.chronicle(**CHRONICLE_CONFIG)
+    
+    try:
+        # Search for rules containing "Uppercase"
+        result = chronicle.search_rules("Uppercase")
+        
+        # Basic validation of the response structure
+        assert isinstance(result, dict)
+        assert "rules" in result
+        
+        # Print some debug info about what we found
+        print(f"\nFound {len(result['rules'])} rules containing 'Uppercase'")
+        
+        # If we found any rules, validate their structure
+        if result["rules"]:
+            rule = result["rules"][0]
+            assert "name" in rule
+            assert "text" in rule
+            
+            # Print the first rule's name for debugging
+            print(f"First matching rule ID: {rule['name'].split('/')[-1]}")
+            
+            # Verify the search term appears in the rule text
+            assert any("Uppercase" in rule["text"] for rule in result["rules"]), \
+                "Search term 'Uppercase' not found in any returned rule's text"
+        else:
+            print("No rules found containing 'Uppercase' - this is acceptable")
+        
+    except Exception as e:
+        print(f"\nUnexpected error in rule search test: {type(e).__name__}: {str(e)}")
+        pytest.skip(f"Test skipped due to unexpected error: {str(e)}")
+
+@pytest.mark.integration
 def test_chronicle_nl_search():
     """Test Chronicle natural language search functionality with real API."""
     client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)

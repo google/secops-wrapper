@@ -35,7 +35,8 @@ from secops.chronicle.rule import (
     list_rules,
     update_rule,
     delete_rule,
-    enable_rule
+    enable_rule,
+    search_rules
 )
 from secops.chronicle.rule_alert import (
     get_alert,
@@ -144,6 +145,7 @@ __all__ = [
     "update_rule",
     "delete_rule",
     "enable_rule",
+    "search_rules"
     
     # Rule alert operations
     "get_alert",

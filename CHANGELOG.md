@@ -5,7 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.13] - 2024-05-10
+## [0.1.15] - 2024-05-04
+### Added
+- CLI support for log labels with `--labels` flag in the `log ingest` command
+- Support for both JSON format and key=value pair format for labels
+- Updated documentation in CLI.md for label usage
+- Integration tests for verifying CLI label functionality
+
+## [0.1.14] - 2024-05-04
+### Added
+- New `search_rules` functionality to find rules using regex patterns
+- Enhanced rule management with ability to search rule content
+- CLI command for rule searching with regex pattern matching
+
+## [0.1.13] - 2024-04-22
 ### Fixed
 - Added retry mechanism for 429 (rate limit) errors in natural language search
 - Implemented 5-second backoff with up to 5 retry attempts for both translation and search
