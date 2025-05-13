@@ -96,8 +96,8 @@ def get_alerts(
     
     # Build the request parameters
     params = {
-        "timeRange.startTime": start_time.isoformat(),
-        "timeRange.endTime": end_time.isoformat(),
+        "timeRange.startTime": f"{start_time.isoformat()}Z",
+        "timeRange.endTime": f"{end_time.isoformat()}Z",
         "snapshotQuery": snapshot_query,
     }
     
