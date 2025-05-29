@@ -20,6 +20,7 @@ When initializing the Chronicle client, you need to specify the `region` paramet
 | `me_central1` | Doha |
 | `southamerica_east1` | Sao Paulo |
 | `europe_west9` | Paris |
+| `africa-south1` | Johannesburg |
 | `dev` | Development environment (sandbox) |
 | `staging` | Staging environment (sandbox) |
 
