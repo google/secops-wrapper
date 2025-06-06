@@ -14,20 +14,11 @@
 #
 """Reference list management functionality for Chronicle."""
 
-import ipaddress
-import re
 from enum import StrEnum
 from typing import Any, Dict, List
 from secops.chronicle.client import ChronicleClient
 from secops.exceptions import APIError, SecOpsError
-
-
-REFERENCE_LIST_ID_REGEX = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,254}$")
-"""Ensures the reference list id/name matches the following conditions:
-    - Starts with letter.
-    - Contains only letters, numbers and underscore.
-    - Has length < 256
-"""
+from secops.utils import REF_LIST_DATA_TABLE_ID_REGEX, _validate_cidr_entries
 
 
 class ReferenceListSyntaxType(StrEnum):
@@ -50,14 +41,6 @@ class ReferenceListView(StrEnum):
     """Include metadata about the ReferenceList. This is the default view for ListReferenceLists."""
     FULL = "REFERENCE_LIST_VIEW_FULL"
     """Include all details about the ReferenceList: metadata, content lines, associated rule counts. This is the default view for GetReferenceList."""
-
-
-def _validate_cidr_entries(entries: List[str]) -> None:
-    for x in entries:
-        try:
-            ipaddress.ip_network(x)
-        except ValueError:
-            raise SecOpsError(f"Invalid CIDR entry: {x}")
 
 
 def create_reference_list(
@@ -83,9 +66,9 @@ def create_reference_list(
         APIError: If the API request fails.
         SecOpsError: If the reference list name is invalid or a CIDR entry is invalid.
     """
-    if not REFERENCE_LIST_ID_REGEX.match(name):
+    if not REF_LIST_DATA_TABLE_ID_REGEX.match(name):
         raise SecOpsError(
-            f"Invalid reference list name: {name}.\n{REFERENCE_LIST_ID_REGEX.__doc__.replace("Ensures", "Ensure", 1)}"
+            f"Invalid reference list name: {name}.\n{REF_LIST_DATA_TABLE_ID_REGEX.__doc__.replace("Ensures", "Ensure", 1)}"
         )
     if syntax_type == ReferenceListSyntaxType.CIDR:
         _validate_cidr_entries(entries)
