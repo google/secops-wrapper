@@ -130,8 +130,8 @@ def list_reference_lists(
         APIError: If the API request fails.
     """
     ref_lists = []
+    params = {"pageSize": 1000, "view": view.value}
     while True:
-        params = {"pageSize": 1000, "view": view.value}
         if (
             response := client.session.get(
                 f"{client.base_url}/{client.instance_id}/referenceLists",
@@ -140,7 +140,7 @@ def list_reference_lists(
         ).status_code != 200:
             raise APIError(f"Failed to list reference lists: {response.text}")
         ref_lists += response.json().get("referenceLists", [])
-        if response.json().get("nextPageToken"):
+        if "nextPageToken" in response.json():
             params["pageToken"] = response.json()["nextPageToken"]
         else:
             break
