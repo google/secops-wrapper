@@ -759,6 +759,94 @@ open_cases = cases.filter_by_status("STATUS_OPEN")
 case = cases.get_case("case-id-1")
 ```
 
+## Parser Management
+
+The SDK provides comprehensive support for managing Chronicle Parsers:
+
+### Creating Parsers
+
+Create new parser:
+
+```python
+parser_text = """
+filter {
+    mutate {
+      replace => {
+        "event1.idm.read_only_udm.metadata.event_type" => "GENERIC_EVENT"
+        "event1.idm.read_only_udm.metadata.vendor_name" =>  "ACME Labs"
+      }
+    }
+    grok {
+      match => {
+        "message" => ["^(?P<_firstWord>[^\s]+)\s.*$"]
+      }
+      on_error => "_grok_message_failed"
+    }
+    if ![_grok_message_failed] {
+      mutate {
+        replace => {
+          "event1.idm.read_only_udm.metadata.description" => "%{_firstWord}"
+        }
+      }
+    }
+    mutate {
+      merge => {
+        "@output" => "event1"
+      }
+    }
+}
+"""
+
+log_type = "WINDOWS_AD"
+
+# Create the rule
+parser = chronicle.create_parser(log_type=log_type, parser_code=parser_text)
+parser_id = parser.get("name", "").split("/")[-1]
+print(f"Parser ID: {parser_id}")
+```
+
+### Managing Parsers
+
+Retrieve, list, copy, activate/deactivate, and delete parsers:
+
+```python
+# List all parsers
+parsers = chronicle.list_parsers()
+for parser in parsers:
+    parser_id = parser.get("name", "").split("/")[-1]
+    state = parser.get("state")
+    print(f"Parser ID: {parser_id}, State: {state}")
+
+log_type = "WINDOWS_AD"
+    
+# Get specific parser
+rule = chronicle.get_parser(log_type=log_type, id=parser_id)
+print(f"Parser content: {parser.get('text')}")
+
+# Activate/Deactivate rule
+chronicle.activate_parser(log_type=log_type, id=parser_id)
+chronicle.deactivate_parser(log_type=log_type, id=parser_id)
+
+# Delete parser
+chronicle.delete_parser(rule_id)
+```
+
+### Searching Rules
+
+Search for rules using regular expressions:
+
+```python
+# Search for rules containing specific patterns
+results = chronicle.search_rules("suspicious process")
+for rule in results.get("rules", []):
+    rule_id = rule.get("name", "").split("/")[-1]
+    print(f"Rule ID: {rule_id}, contains: 'suspicious process'")
+    
+# Find rules mentioning a specific MITRE technique
+mitre_rules = chronicle.search_rules("T1055")
+print(f"Found {len(mitre_rules.get('rules', []))} rules mentioning T1055 technique")
+```
+
 ## Rule Management
 
 The SDK provides comprehensive support for managing Chronicle detection rules:

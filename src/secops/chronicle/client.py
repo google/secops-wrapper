@@ -44,7 +44,16 @@ from secops.chronicle.data_export import (
     fetch_available_log_types as _fetch_available_log_types,
     AvailableLogType
 )
-
+from .parser import (
+    activate_parser as _activate_parser,
+    activate_release_candidate_parser as _activate_release_candidate_parser,
+    copy_parser as _copy_parser,
+    create_parser as _create_parser,
+    deactivate_parser as _deactivate_parser,
+    delete_parser as _delete_parser,
+    get_parser as _get_parser,
+    list_parsers as _list_parsers
+)
 # Import rule functions
 from secops.chronicle.rule import (
     create_rule as _create_rule,
@@ -1001,7 +1010,113 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _get_retrohunt(self, rule_id, operation_id)
-    
+
+    # Parser Management methods
+
+    def activate_parser(self, log_type: str, id: str) -> Dict[str, Any]:
+        """Activate a custom parser.
+
+        Returns:
+            Empty JSON object
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _activate_parser(self, log_type=log_type, id=id)
+
+    def activate_release_candidate_parser(self, log_type: str, id: str) -> Dict[str, Any]:
+        """Activate a release candidate parser.
+
+        Returns:
+            Empty JSON object
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _activate_release_candidate_parser(self, log_type=log_type, id=id)
+
+    def copy_parser(self, log_type: str, id: str) -> Dict[str, Any]:
+        """Makes a copy of a prebuilt parser.
+
+        Args:
+            client: ChronicleClient instance
+            log_type: Log type of the parser
+            id: Parser ID
+
+        Returns:
+            Newly copied Parser
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _copy_parser(client=self, log_type=log_type, id=id)
+
+    def create_parser(self, log_type: str, parser_code: str, validated_on_empty_logs: bool) -> Dict[str, Any]:
+        """Create a custom parser.
+
+        Returns:
+            Dictionary containing information about newly created parser
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _create_parser(self, log_type=log_type, parser_code=parser_code, validated_on_empty_logs=validated_on_empty_logs)
+
+    def deactivate_parser(self, log_type: str, id: str) -> Dict[str, Any]:
+        """Deactivate a custom parser.
+
+        Args:
+            self: ChronicleClient instance
+            log_type: Log type of the parser
+            id: Parser ID
+
+        Returns:
+            Empty JSON object
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _delete_parser(client=self, log_type=log_type, id=id)
+
+    def delete_parser(self, log_type: str, id: str, force: bool = False) -> Dict[str, Any]:
+        """Delete a parser.
+
+        Args:
+            self: ChronicleClient instance
+            log_type: Log type of the parser
+            id: Parser ID
+            force: Flag to forcibly delete an ACTIVE parser.
+
+        Returns:
+            Empty JSON object
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _delete_parser(client=self, log_type=log_type, id=id, force=force)
+
+    def get_parser(self, log_type: str, id: str) -> Dict[str, Any]:
+        """Gets a parser by ID.
+
+        Returns:
+            Dictionary containing information about rules
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _get_parser(self, log_type=log_type, id=id)
+
+    def list_parsers(self, log_type: str = "-") -> List[Any]:
+        """Gets a list of parsers.
+
+        Returns:
+            Dictionary containing information about rules
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _list_parsers(self, log_type=log_type)
+
     # Rule Set methods
     
     def batch_update_curated_rule_set_deployments(
