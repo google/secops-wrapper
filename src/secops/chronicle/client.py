@@ -90,6 +90,9 @@ from secops.chronicle.models import (
 from secops.chronicle.nl_search import translate_nl_to_udm, nl_search as _nl_search
 from secops.chronicle.gemini import query_gemini as _query_gemini, opt_in_to_gemini as _opt_in_to_gemini, GeminiResponse
 
+USER_AGENT = "secops-wrapper"
+
+
 class ValueType(Enum):
     """Chronicle API value types."""
     ASSET_IP_ADDRESS = "ASSET_IP_ADDRESS"
@@ -216,6 +219,7 @@ class ChronicleClient:
         Returns:
             Authorized session for API requests
         """
+        self._session = USER_AGENT
         return self._session
 
     def fetch_udm_search_csv(
