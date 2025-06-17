@@ -19,6 +19,7 @@ import ipaddress
 from datetime import datetime
 from enum import Enum
 from typing import Optional, Dict, Any, List, Tuple, Union, Literal
+import os
 
 from google.auth.transport import requests as google_auth_requests
 from secops.auth import SecOpsAuth
@@ -90,7 +91,7 @@ from secops.chronicle.models import (
 from secops.chronicle.nl_search import translate_nl_to_udm, nl_search as _nl_search
 from secops.chronicle.gemini import query_gemini as _query_gemini, opt_in_to_gemini as _opt_in_to_gemini, GeminiResponse
 
-USER_AGENT = "secops-wrapper"
+SECOPS_WRAPPER_USER_AGENT = "secops-wrapper"
 
 
 class ValueType(Enum):
@@ -212,6 +213,16 @@ class ChronicleClient:
                 
             self._session = auth.session
 
+        # Set User-Agent header if not already present
+        # Check for custom user agent from environment variable
+        custom_user_agent = os.environ.get("SECOPS_WRAPPER_USER_AGENT")
+        if custom_user_agent:
+            # Use custom user agent from environment
+            self._session.headers["User-Agent"] = custom_user_agent
+        elif "User-Agent" not in self._session.headers:
+            # Only set if no User-Agent exists
+            self._session.headers["User-Agent"] = SECOPS_WRAPPER_USER_AGENT
+
     @property
     def session(self) -> google_auth_requests.AuthorizedSession:
         """Get an authenticated session.
@@ -219,7 +230,6 @@ class ChronicleClient:
         Returns:
             Authorized session for API requests
         """
-        self._session = USER_AGENT
         return self._session
 
     def fetch_udm_search_csv(
