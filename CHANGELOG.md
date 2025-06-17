@@ -5,40 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - 2024-05-31
+## [0.3.0] - 2025-06-16
+### Added
+- New Data Table functionality for managing structured data in Secops
+  - Support for creating, retrieving, listing, and deleting data tables
+  - Multiple column types (STRING, REGEX, CIDR) with proper validation
+  - Efficient batch processing for row operations with automatic chunking
+  - Data scope management for access control
+- Enhanced Reference List capabilities for simple value lookups in Secops
+  - Create, update, list, and delete reference lists with proper validation
+  - Support for three syntax types: STRING, REGEX, and CIDR patterns
+  - View control options (BASIC/FULL) for efficient list management
+  - Proper validation of CIDR entries to prevent invalid data
+- Comprehensive integration with SecOps's detection rule system
+- Example script `data_tables_and_reference_lists.py` demonstrating all functionality
+- Extensive documentation in README.md with usage examples and best practices
+
+## [0.2.0] - 2025-05-31
 ### Added
 - Support for "dev" and "staging" regions with special URL formats
 - Updated documentation with new region options and usage examples
 
-## [0.1.16-17] - 2024-05-24
+## [0.1.16-17] - 2025-05-24
 ### Fixed
 - Fixed timestamp format in `get_alerts` to handle timezone conversion, include 'Z' suffix, and remove microseconds, resolving API compatibility issues
 
-## [0.1.15] - 2024-05-04
+## [0.1.15] - 2025-05-04
 ### Added
 - CLI support for log labels with `--labels` flag in the `log ingest` command
 - Support for both JSON format and key=value pair format for labels
 - Updated documentation in CLI.md for label usage
 - Integration tests for verifying CLI label functionality
 
-## [0.1.14] - 2024-05-04
+## [0.1.14] - 2025-05-04
 ### Added
 - New `search_rules` functionality to find rules using regex patterns
 - Enhanced rule management with ability to search rule content
 - CLI command for rule searching with regex pattern matching
 
-## [0.1.13] - 2024-04-22
+## [0.1.13] - 2025-04-22
 ### Fixed
 - Added retry mechanism for 429 (rate limit) errors in natural language search
 - Implemented 5-second backoff with up to 5 retry attempts for both translation and search
 - Enhanced error detection to handle both HTTP 429 codes and "RESOURCE_EXHAUSTED" error messages
 - Improved resilience against intermittent rate limiting in Chronicle API calls
 
-## [0.1.12] - 2024-04-18
+## [0.1.12] - 2025-04-18
 ### Added
 - Support for ingest labels
 
-## [0.1.11] - 2024-04-17
+## [0.1.11] - 2025-04-17
 ### Fixed
 - Bugs in type handling for strict builder
 

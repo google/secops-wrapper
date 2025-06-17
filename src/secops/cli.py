@@ -8,6 +8,8 @@ from pathlib import Path
 
 from secops import SecOpsClient
 from secops.exceptions import SecOpsError, AuthenticationError, APIError
+from secops.chronicle.data_table import DataTableColumnType
+from secops.chronicle.reference_list import ReferenceListSyntaxType, ReferenceListView
 
 
 # Define config directory and file paths
@@ -1028,6 +1030,283 @@ def handle_help_command(args, chronicle=None):
         print("  secops help --topic project-id")
    
 
+def setup_data_table_command(subparsers):
+    """Set up the data table command parser."""
+    dt_parser = subparsers.add_parser("data-table", help="Manage data tables")
+    dt_subparsers = dt_parser.add_subparsers(dest="dt_command", help="Data table command")
+    
+    # List data tables command
+    list_parser = dt_subparsers.add_parser("list", help="List data tables")
+    list_parser.add_argument("--order-by", "--order_by", dest="order_by", help="Order by field (only 'createTime asc' is supported)")
+    list_parser.set_defaults(func=handle_dt_list_command)
+    
+    # Get data table command
+    get_parser = dt_subparsers.add_parser("get", help="Get data table details")
+    get_parser.add_argument("--name", required=True, help="Data table name")
+    get_parser.set_defaults(func=handle_dt_get_command)
+    
+    # Create data table command
+    create_parser = dt_subparsers.add_parser("create", help="Create a data table")
+    create_parser.add_argument("--name", required=True, help="Data table name")
+    create_parser.add_argument("--description", required=True, help="Data table description")
+    create_parser.add_argument("--header", required=True, help="Header definition in JSON format. Example: '{\"col1\":\"STRING\",\"col2\":\"CIDR\"}'")
+    create_parser.add_argument("--rows", help="Rows in JSON format. Example: '[[\"value1\",\"192.168.1.0/24\"],[\"value2\",\"10.0.0.0/8\"]]'")
+    create_parser.add_argument("--scopes", help="Comma-separated list of scopes")
+    create_parser.set_defaults(func=handle_dt_create_command)
+    
+    # Delete data table command
+    delete_parser = dt_subparsers.add_parser("delete", help="Delete a data table")
+    delete_parser.add_argument("--name", required=True, help="Data table name")
+    delete_parser.add_argument("--force", action="store_true", help="Force deletion even if table has rows")
+    delete_parser.set_defaults(func=handle_dt_delete_command)
+    
+    # List rows command
+    list_rows_parser = dt_subparsers.add_parser("list-rows", help="List data table rows")
+    list_rows_parser.add_argument("--name", required=True, help="Data table name")
+    list_rows_parser.add_argument("--order-by", "--order_by", dest="order_by", help="Order by field (only 'createTime asc' is supported)")
+    list_rows_parser.set_defaults(func=handle_dt_list_rows_command)
+    
+    # Add rows command
+    add_rows_parser = dt_subparsers.add_parser("add-rows", help="Add rows to a data table")
+    add_rows_parser.add_argument("--name", required=True, help="Data table name")
+    add_rows_parser.add_argument("--rows", required=True, help="Rows in JSON format. Example: '[[\"value1\",\"192.168.1.0/24\"],[\"value2\",\"10.0.0.0/8\"]]'")
+    add_rows_parser.set_defaults(func=handle_dt_add_rows_command)
+    
+    # Delete rows command
+    delete_rows_parser = dt_subparsers.add_parser("delete-rows", help="Delete rows from a data table")
+    delete_rows_parser.add_argument("--name", required=True, help="Data table name")
+    delete_rows_parser.add_argument("--row-ids", "--row_ids", dest="row_ids", required=True, help="Comma-separated list of row IDs")
+    delete_rows_parser.set_defaults(func=handle_dt_delete_rows_command)
+
+
+def setup_reference_list_command(subparsers):
+    """Set up the reference list command parser."""
+    rl_parser = subparsers.add_parser("reference-list", help="Manage reference lists")
+    rl_subparsers = rl_parser.add_subparsers(dest="rl_command", help="Reference list command")
+    
+    # List reference lists command
+    list_parser = rl_subparsers.add_parser("list", help="List reference lists")
+    list_parser.add_argument("--view", choices=["BASIC", "FULL"], default="BASIC", help="View type")
+    list_parser.set_defaults(func=handle_rl_list_command)
+    
+    # Get reference list command
+    get_parser = rl_subparsers.add_parser("get", help="Get reference list details")
+    get_parser.add_argument("--name", required=True, help="Reference list name")
+    get_parser.add_argument("--view", choices=["BASIC", "FULL"], default="FULL", help="View type")
+    get_parser.set_defaults(func=handle_rl_get_command)
+    
+    # Create reference list command
+    create_parser = rl_subparsers.add_parser("create", help="Create a reference list")
+    create_parser.add_argument("--name", required=True, help="Reference list name")
+    create_parser.add_argument("--description", default="", help="Reference list description")
+    create_parser.add_argument("--entries", help="Comma-separated list of entries")
+    create_parser.add_argument("--syntax-type", "--syntax_type", dest="syntax_type", 
+                               choices=["STRING", "REGEX", "CIDR"], default="STRING", 
+                               help="Syntax type")
+    create_parser.add_argument("--entries-file", "--entries_file", dest="entries_file", 
+                               help="Path to file containing entries (one per line)")
+    create_parser.set_defaults(func=handle_rl_create_command)
+    
+    # Update reference list command
+    update_parser = rl_subparsers.add_parser("update", help="Update a reference list")
+    update_parser.add_argument("--name", required=True, help="Reference list name")
+    update_parser.add_argument("--description", help="New reference list description")
+    update_parser.add_argument("--entries", help="Comma-separated list of entries")
+    update_parser.add_argument("--entries-file", "--entries_file", dest="entries_file", 
+                               help="Path to file containing entries (one per line)")
+    update_parser.set_defaults(func=handle_rl_update_command)
+    
+    # Note: Reference List deletion is currently not supported by the API
+
+
+def handle_dt_list_command(args, chronicle):
+    """Handle data table list command."""
+    try:
+        order_by = args.order_by if hasattr(args, 'order_by') and args.order_by else None
+        result = chronicle.list_data_tables(order_by=order_by)
+        output_formatter(result, args.output)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_dt_get_command(args, chronicle):
+    """Handle data table get command."""
+    try:
+        result = chronicle.get_data_table(args.name)
+        output_formatter(result, args.output)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_dt_create_command(args, chronicle):
+    """Handle data table create command."""
+    try:
+        # Parse header
+        try:
+            header_dict = json.loads(args.header)
+            # Convert string values to DataTableColumnType enum
+            header = {k: DataTableColumnType[v] for k, v in header_dict.items()}
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"Error parsing header: {e}", file=sys.stderr)
+            print("Header should be a JSON object mapping column names to types (STRING, REGEX, CIDR).", file=sys.stderr)
+            sys.exit(1)
+        
+        # Parse rows if provided
+        rows = None
+        if args.rows:
+            try:
+                rows = json.loads(args.rows)
+            except json.JSONDecodeError as e:
+                print(f"Error parsing rows: {e}", file=sys.stderr)
+                print("Rows should be a JSON array of arrays.", file=sys.stderr)
+                sys.exit(1)
+        
+        # Parse scopes if provided
+        scopes = None
+        if args.scopes:
+            scopes = [s.strip() for s in args.scopes.split(',')]
+        
+        result = chronicle.create_data_table(
+            name=args.name,
+            description=args.description,
+            header=header,
+            rows=rows,
+            scopes=scopes
+        )
+        output_formatter(result, args.output)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_dt_delete_command(args, chronicle):
+    """Handle data table delete command."""
+    try:
+        result = chronicle.delete_data_table(args.name, force=args.force)
+        output_formatter(result, args.output)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_dt_list_rows_command(args, chronicle):
+    """Handle data table list rows command."""
+    try:
+        order_by = args.order_by if hasattr(args, 'order_by') and args.order_by else None
+        result = chronicle.list_data_table_rows(args.name, order_by=order_by)
+        output_formatter(result, args.output)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_dt_add_rows_command(args, chronicle):
+    """Handle data table add rows command."""
+    try:
+        try:
+            rows = json.loads(args.rows)
+        except json.JSONDecodeError as e:
+            print(f"Error parsing rows: {e}", file=sys.stderr)
+            print("Rows should be a JSON array of arrays.", file=sys.stderr)
+            sys.exit(1)
+        
+        result = chronicle.create_data_table_rows(args.name, rows)
+        output_formatter(result, args.output)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_dt_delete_rows_command(args, chronicle):
+    """Handle data table delete rows command."""
+    try:
+        row_ids = [id.strip() for id in args.row_ids.split(',')]
+        result = chronicle.delete_data_table_rows(args.name, row_ids)
+        output_formatter(result, args.output)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_rl_list_command(args, chronicle):
+    """Handle reference list list command."""
+    try:
+        view = ReferenceListView[args.view]
+        result = chronicle.list_reference_lists(view=view)
+        output_formatter(result, args.output)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_rl_get_command(args, chronicle):
+    """Handle reference list get command."""
+    try:
+        view = ReferenceListView[args.view]
+        result = chronicle.get_reference_list(args.name, view=view)
+        output_formatter(result, args.output)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_rl_create_command(args, chronicle):
+    """Handle reference list create command."""
+    try:
+        # Get entries from file or command line
+        entries = []
+        if args.entries_file:
+            try:
+                with open(args.entries_file, 'r') as f:
+                    entries = [line.strip() for line in f if line.strip()]
+            except IOError as e:
+                print(f"Error reading entries file: {e}", file=sys.stderr)
+                sys.exit(1)
+        elif args.entries:
+            entries = [e.strip() for e in args.entries.split(',')]
+        
+        syntax_type = ReferenceListSyntaxType[args.syntax_type]
+        
+        result = chronicle.create_reference_list(
+            name=args.name,
+            description=args.description,
+            entries=entries,
+            syntax_type=syntax_type
+        )
+        output_formatter(result, args.output)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_rl_update_command(args, chronicle):
+    """Handle reference list update command."""
+    try:
+        # Get entries from file or command line
+        entries = None
+        if args.entries_file:
+            try:
+                with open(args.entries_file, 'r') as f:
+                    entries = [line.strip() for line in f if line.strip()]
+            except IOError as e:
+                print(f"Error reading entries file: {e}", file=sys.stderr)
+                sys.exit(1)
+        elif args.entries:
+            entries = [e.strip() for e in args.entries.split(',')]
+        
+        result = chronicle.update_reference_list(
+            name=args.name,
+            description=args.description,
+            entries=entries
+        )
+        output_formatter(result, args.output)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main() -> None:
     """Main entry point for the CLI."""
     parser = argparse.ArgumentParser(description="Google SecOps CLI")
@@ -1050,8 +1329,10 @@ def main() -> None:
     setup_case_command(subparsers)
     setup_export_command(subparsers)
     setup_gemini_command(subparsers)
-    setup_config_command(subparsers)  # Add the config command
-    setup_help_command(subparsers)  # Add the help command
+    setup_data_table_command(subparsers)  # Add data table command
+    setup_reference_list_command(subparsers)  # Add reference list command
+    setup_config_command(subparsers)
+    setup_help_command(subparsers)
     
     # Parse arguments
     args = parser.parse_args()

@@ -79,6 +79,10 @@ from secops.chronicle.models import (
 from secops.chronicle.rule_validation import ValidationResult
 from secops.chronicle.gemini import GeminiResponse, Block, SuggestedAction, NavigationAction
 
+# Import data table and reference list classes
+from secops.chronicle.data_table import DataTableColumnType
+from secops.chronicle.reference_list import ReferenceListSyntaxType, ReferenceListView
+
 __all__ = [
     # Client
     "ChronicleClient",
@@ -176,5 +180,10 @@ __all__ = [
     "GeminiResponse",
     "Block",
     "SuggestedAction",
-    "NavigationAction"
+    "NavigationAction",
+
+    # Data Table and Reference List
+    "DataTableColumnType",
+    "ReferenceListSyntaxType",
+    "ReferenceListView"
 ] 

@@ -985,6 +985,183 @@ else:
         print(f"Error at line {result.position['startLine']}, column {result.position['startColumn']}")
 ```
 
+## Data Tables and Reference Lists
+
+Chronicle provides two ways to manage and reference structured data in detection rules: Data Tables and Reference Lists. These can be used to maintain lists of trusted/suspicious entities, mappings of contextual information, or any other structured data useful for detection.
+
+### Data Tables
+
+Data Tables are collections of structured data with defined columns and data types. They can be referenced in detection rules to enhance your detections with additional context.
+
+#### Creating Data Tables
+
+```python
+from secops.chronicle.data_table import DataTableColumnType
+
+# Create a data table with different column types
+data_table = chronicle.create_data_table(
+    name="suspicious_ips",
+    description="Known suspicious IP addresses with context",
+    header={
+        "ip_address": DataTableColumnType.CIDR,
+        "severity": DataTableColumnType.STRING,
+        "description": DataTableColumnType.STRING
+    },
+    # Optional: Add initial rows
+    rows=[
+        ["192.168.1.100", "High", "Scanning activity"],
+        ["10.0.0.5", "Medium", "Suspicious login attempts"]
+    ]
+)
+
+print(f"Created table: {data_table['name']}")
+```
+
+#### Managing Data Tables
+
+```python
+# List all data tables
+tables = chronicle.list_data_tables()
+for table in tables:
+    table_id = table["name"].split("/")[-1]
+    print(f"Table: {table_id}, Created: {table.get('createTime')}")
+
+# Get a specific data table's details
+table_details = chronicle.get_data_table("suspicious_ips")
+print(f"Column count: {len(table_details.get('columnInfo', []))}")
+
+# Add rows to a data table
+chronicle.create_data_table_rows(
+    "suspicious_ips",
+    [
+        ["172.16.0.1", "Low", "Unusual outbound connection"],
+        ["192.168.2.200", "Critical", "Data exfiltration attempt"]
+    ]
+)
+
+# List rows in a data table
+rows = chronicle.list_data_table_rows("suspicious_ips")
+for row in rows:
+    row_id = row["name"].split("/")[-1]
+    values = row.get("values", [])
+    print(f"Row {row_id}: {values}")
+
+# Delete specific rows by ID
+row_ids = [rows[0]["name"].split("/")[-1], rows[1]["name"].split("/")[-1]]
+chronicle.delete_data_table_rows("suspicious_ips", row_ids)
+
+# Delete a data table
+chronicle.delete_data_table("suspicious_ips", force=True)  # force=True deletes even if it has rows
+```
+
+### Reference Lists
+
+Reference Lists are simple lists of values (strings, CIDR blocks, or regex patterns) that can be referenced in detection rules. They are useful for maintaining whitelists, blacklists, or any other categorized sets of values.
+
+#### Creating Reference Lists
+
+```python
+from secops.chronicle.reference_list import ReferenceListSyntaxType, ReferenceListView
+
+# Create a reference list with string entries
+string_list = chronicle.create_reference_list(
+    name="admin_accounts",
+    description="Administrative user accounts",
+    entries=["admin", "administrator", "root", "system"],
+    syntax_type=ReferenceListSyntaxType.STRING
+)
+
+print(f"Created reference list: {string_list['name']}")
+
+# Create a reference list with CIDR entries
+cidr_list = chronicle.create_reference_list(
+    name="trusted_networks",
+    description="Internal network ranges",
+    entries=["10.0.0.0/8", "192.168.0.0/16", "172.16.0.0/12"],
+    syntax_type=ReferenceListSyntaxType.CIDR
+)
+
+# Create a reference list with regex patterns
+regex_list = chronicle.create_reference_list(
+    name="email_patterns",
+    description="Email patterns to watch for",
+    entries=[".*@suspicious\\.com", "malicious_.*@.*\\.org"],
+    syntax_type=ReferenceListSyntaxType.REGEX
+)
+```
+
+#### Managing Reference Lists
+
+```python
+# List all reference lists (basic view without entries)
+lists = chronicle.list_reference_lists(view=ReferenceListView.BASIC)
+for ref_list in lists:
+    list_id = ref_list["name"].split("/")[-1]
+    print(f"List: {list_id}, Description: {ref_list.get('description')}")
+
+# Get a specific reference list including all entries
+admin_list = chronicle.get_reference_list("admin_accounts", view=ReferenceListView.FULL)
+entries = [entry.get("value") for entry in admin_list.get("entries", [])]
+print(f"Admin accounts: {entries}")
+
+# Update reference list entries
+chronicle.update_reference_list(
+    name="admin_accounts",
+    entries=["admin", "administrator", "root", "system", "superuser"]
+)
+
+# Update reference list description
+chronicle.update_reference_list(
+    name="admin_accounts",
+    description="Updated administrative user accounts list"
+)
+
+```
+
+### Using in YARA-L Rules
+
+Both Data Tables and Reference Lists can be referenced in YARA-L detection rules.
+
+#### Using Data Tables in Rules
+
+```
+rule detect_with_data_table {
+    meta:
+        description = "Detect connections to suspicious IPs"
+        author = "SecOps SDK Example"
+        severity = "Medium"
+        yara_version = "YL2.0"
+    events:
+        $e.metadata.event_type = "NETWORK_CONNECTION"
+        $e.target.ip != ""
+        $lookup in data_table.suspicious_ips
+        $lookup.ip_address = $e.target.ip
+        $severity = $lookup.severity
+        
+    condition:
+        $e and $lookup and $severity = "High"
+}
+```
+
+#### Using Reference Lists in Rules
+
+```
+rule detect_with_reference_list {
+    meta:
+        description = "Detect admin account usage from untrusted networks"
+        author = "SecOps SDK Example" 
+        severity = "High"
+        yara_version = "YL2.0"
+    events:
+        $login.metadata.event_type = "USER_LOGIN"
+        $login.principal.user.userid in reference_list.admin_accounts
+        not $login.principal.ip in reference_list.trusted_networks
+        
+    condition:
+        $login
+}
+```
+
 ## Gemini AI
 
 You can use Chronicle's Gemini AI to get security insights, generate detection rules, explain security concepts, and more:

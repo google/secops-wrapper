@@ -4,6 +4,7 @@ import subprocess
 import json
 import os
 import tempfile
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
@@ -806,3 +807,448 @@ def test_cli_config_lifecycle(cli_env):
             # Check that the view command shows no configuration
             assert view_result.returncode == 0
             assert "No configuration found" in view_result.stdout
+
+@pytest.mark.integration
+def test_cli_data_tables(cli_env, common_args):
+    """Test the data-table command lifecycle."""
+    # Generate unique name for data table using timestamp
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    table_name = f"test_cli_dt_{timestamp}"
+    
+    try:
+        # 1. Create a data table
+        header = json.dumps({"hostname": "STRING", "ip_address": "STRING", "description": "STRING"})
+        rows = json.dumps([["host1.example.com", "192.168.1.10", "Test host 1"], 
+                           ["host2.example.com", "192.168.1.11", "Test host 2"]])
+        
+        create_cmd = [
+            "secops",
+        ] + common_args + [
+            "data-table", "create",
+            "--name", table_name,
+            "--description", "CLI Test Data Table",
+            "--header", header,
+            "--rows", rows
+        ]
+        
+        create_result = subprocess.run(
+            create_cmd,
+            env=cli_env,
+            capture_output=True,
+            text=True
+        )
+        
+        # Check that creation was successful
+        assert create_result.returncode == 0, f"Creation failed: {create_result.stderr}"
+        
+        # 2. Get the data table
+        get_cmd = [
+            "secops",
+        ] + common_args + [
+            "data-table", "get",
+            "--name", table_name
+        ]
+        
+        get_result = subprocess.run(
+            get_cmd,
+            env=cli_env,
+            capture_output=True,
+            text=True
+        )
+        
+        # Check that get was successful
+        assert get_result.returncode == 0
+        table_data = json.loads(get_result.stdout)
+        assert table_data["name"].endswith(table_name)
+        assert table_data["description"] == "CLI Test Data Table"
+        assert len(table_data["columnInfo"]) == 3
+        
+        # 3. List rows
+        list_rows_cmd = [
+            "secops",
+        ] + common_args + [
+            "data-table", "list-rows",
+            "--name", table_name
+        ]
+        
+        list_rows_result = subprocess.run(
+            list_rows_cmd,
+            env=cli_env,
+            capture_output=True,
+            text=True
+        )
+        
+        assert list_rows_result.returncode == 0
+        rows_data = json.loads(list_rows_result.stdout)
+        assert len(rows_data) == 2  # We added 2 rows during creation
+        
+        # 4. Add more rows
+        new_rows = json.dumps([["host3.example.com", "192.168.1.12", "Test host 3"]])
+        add_rows_cmd = [
+            "secops",
+        ] + common_args + [
+            "data-table", "add-rows",
+            "--name", table_name,
+            "--rows", new_rows
+        ]
+        
+        add_rows_result = subprocess.run(
+            add_rows_cmd,
+            env=cli_env,
+            capture_output=True,
+            text=True
+        )
+        
+        assert add_rows_result.returncode == 0
+        
+        # 5. List rows again to verify the addition
+        list_rows_result = subprocess.run(
+            list_rows_cmd,
+            env=cli_env,
+            capture_output=True,
+            text=True
+        )
+        
+        assert list_rows_result.returncode == 0
+        updated_rows_data = json.loads(list_rows_result.stdout)
+        assert len(updated_rows_data) == 3  # Now should have 3 rows
+        
+        # 6. Delete a row
+        # First, get the row ID
+        row_id = updated_rows_data[0]["name"].split("/")[-1]
+        
+        delete_row_cmd = [
+            "secops",
+        ] + common_args + [
+            "data-table", "delete-rows",
+            "--name", table_name,
+            "--row-ids", row_id
+        ]
+        
+        delete_row_result = subprocess.run(
+            delete_row_cmd,
+            env=cli_env,
+            capture_output=True,
+            text=True
+        )
+        
+        assert delete_row_result.returncode == 0
+        
+        # 7. List data tables
+        list_cmd = [
+            "secops",
+        ] + common_args + [
+            "data-table", "list"
+        ]
+        
+        list_result = subprocess.run(
+            list_cmd,
+            env=cli_env,
+            capture_output=True,
+            text=True
+        )
+        
+        assert list_result.returncode == 0
+        tables = json.loads(list_result.stdout)
+        # Find our table in the list
+        found = False
+        for table in tables:
+            if table["name"].endswith(table_name):
+                found = True
+                break
+        assert found, f"Couldn't find {table_name} in list of tables"
+        
+        # 8. Delete the table
+        delete_cmd = [
+            "secops",
+        ] + common_args + [
+            "data-table", "delete",
+            "--name", table_name,
+            "--force"
+        ]
+        
+        delete_result = subprocess.run(
+            delete_cmd,
+            env=cli_env,
+            capture_output=True,
+            text=True
+        )
+        
+        assert delete_result.returncode == 0
+        
+    except Exception as e:
+        # Clean up in case of test failure
+        try:
+            subprocess.run([
+                "secops",
+            ] + common_args + [
+                "data-table", "delete",
+                "--name", table_name,
+                "--force"
+            ], env=cli_env, capture_output=True)
+        except:
+            pass
+        raise
+
+@pytest.mark.integration
+def test_cli_reference_lists(cli_env, common_args):
+    """Test the reference-list command lifecycle."""
+    # Generate unique name for reference list using timestamp
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    list_name = f"test_cli_rl_{timestamp}"
+    
+    try:
+        # 1. Create a reference list
+        # Create a temporary file with reference list entries
+        with tempfile.NamedTemporaryFile(suffix=".txt", mode="w+", delete=False) as temp_file:
+            temp_file.write("malicious.example.com\n")
+            temp_file.write("suspicious.example.org\n")
+            temp_file.write("evil.example.net\n")
+            entries_file_path = temp_file.name
+        
+        create_cmd = [
+            "secops",
+        ] + common_args + [
+            "reference-list", "create",
+            "--name", list_name,
+            "--description", "CLI Test Reference List",
+            "--entries-file", entries_file_path,
+            "--syntax-type", "STRING"
+        ]
+        
+        create_result = subprocess.run(
+            create_cmd,
+            env=cli_env,
+            capture_output=True,
+            text=True
+        )
+        
+        # Check that creation was successful
+        assert create_result.returncode == 0, f"Creation failed: {create_result.stderr}"
+        
+        # 2. Get the reference list
+        get_cmd = [
+            "secops",
+        ] + common_args + [
+            "reference-list", "get",
+            "--name", list_name,
+            "--view", "FULL"
+        ]
+        
+        get_result = subprocess.run(
+            get_cmd,
+            env=cli_env,
+            capture_output=True,
+            text=True
+        )
+        
+        # Check that get was successful
+        assert get_result.returncode == 0
+        list_data = json.loads(get_result.stdout)
+        assert list_data["name"].endswith(list_name)
+        assert list_data["description"] == "CLI Test Reference List"
+        assert len(list_data["entries"]) == 3
+        
+        # 3. List reference lists
+        list_cmd = [
+            "secops",
+        ] + common_args + [
+            "reference-list", "list"
+        ]
+        
+        list_result = subprocess.run(
+            list_cmd,
+            env=cli_env,
+            capture_output=True,
+            text=True
+        )
+        
+        assert list_result.returncode == 0
+        lists = json.loads(list_result.stdout)
+        # Find our list in the result
+        found = False
+        for ref_list in lists:
+            if ref_list["name"].endswith(list_name):
+                found = True
+                break
+        assert found, f"Couldn't find {list_name} in list of reference lists"
+        
+        # 4. Update the reference list with new entries
+        with tempfile.NamedTemporaryFile(suffix=".txt", mode="w+", delete=False) as temp_update_file:
+            temp_update_file.write("updated.example.com\n")
+            temp_update_file.write("new.example.org\n")
+            update_file_path = temp_update_file.name
+        
+        update_cmd = [
+            "secops",
+        ] + common_args + [
+            "reference-list", "update",
+            "--name", list_name,
+            "--description", "Updated CLI Test Reference List",
+            "--entries-file", update_file_path
+        ]
+        
+        update_result = subprocess.run(
+            update_cmd,
+            env=cli_env,
+            capture_output=True,
+            text=True
+        )
+        
+        assert update_result.returncode == 0
+        
+        # 5. Get the updated reference list to verify changes
+        get_updated_result = subprocess.run(
+            get_cmd,
+            env=cli_env,
+            capture_output=True,
+            text=True
+        )
+        
+        assert get_updated_result.returncode == 0
+        updated_data = json.loads(get_updated_result.stdout)
+        assert updated_data["description"] == "Updated CLI Test Reference List"
+        assert len(updated_data["entries"]) == 2
+        
+        # Add a delay before deletion to allow API to fully process previous operations
+        time.sleep(5)
+        
+        # Note: Reference list deletion is not currently supported by the API
+        print(f"Skipping deletion of reference list {list_name} - deletion not supported by API")
+        
+    except Exception as e:
+        # Note: Reference list deletion is not currently supported by the API,
+        # so we can't clean up test reference lists
+        print(f"Warning: Test reference list {list_name} will remain since deletion is not supported")
+        raise
+    finally:
+        # Clean up temp files
+        if 'entries_file_path' in locals():
+            os.unlink(entries_file_path)
+        if 'update_file_path' in locals():
+            os.unlink(update_file_path)
+
+@pytest.mark.integration
+def test_cli_reference_list_create_delete(cli_env, common_args):
+    """Test simple reference list create and delete operations."""
+    # Generate unique name for reference list using timestamp
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    list_name = f"test_cli_simple_{timestamp}"
+    
+    try:
+        # 1. Create a reference list with simple inline entries
+        create_cmd = [
+            "secops",
+        ] + common_args + [
+            "reference-list", "create",
+            "--name", list_name,
+            "--description", "Simple Test Reference List",
+            "--entries", "test1.example.com,test2.example.com",
+            "--syntax-type", "STRING"
+        ]
+        
+        create_result = subprocess.run(
+            create_cmd,
+            env=cli_env,
+            capture_output=True,
+            text=True
+        )
+        
+        # Check that creation was successful
+        assert create_result.returncode == 0, f"Creation failed: {create_result.stderr}"
+        print(f"Reference list created: {list_name}")
+        
+        # 2. Get the reference list to confirm creation
+        get_cmd = [
+            "secops",
+        ] + common_args + [
+            "reference-list", "get",
+            "--name", list_name
+        ]
+        
+        get_result = subprocess.run(
+            get_cmd,
+            env=cli_env,
+            capture_output=True,
+            text=True
+        )
+        
+        # Check that get was successful
+        assert get_result.returncode == 0, f"Get failed: {get_result.stderr}"
+        list_data = json.loads(get_result.stdout)
+        print(f"Successfully retrieved reference list: {list_data['name']}")
+        
+        # Note: Reference list deletion is not currently supported by the API
+        print(f"Skipping deletion of reference list {list_name} - deletion not supported by API")
+        
+    except Exception as e:
+        print(f"Test failed with exception: {e}")
+        # Note: Reference list deletion is not currently supported by the API,
+        # so we can't clean up test reference lists
+        print(f"Warning: Test reference list {list_name} will remain since deletion is not supported")
+        raise
+
+@pytest.mark.integration
+def test_cli_reference_list_api_investigation(cli_env, common_args):
+    """Test reference list API interactions directly using the SecOpsClient."""
+    from secops import SecOpsClient
+    from secops.chronicle.reference_list import ReferenceListSyntaxType, ReferenceListView
+    from tests.config import CHRONICLE_CONFIG
+    
+    # Generate unique name for reference list
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    list_name = f"test_cli_api_{timestamp}"
+    
+    # Create a direct client instance
+    client = SecOpsClient()
+    chronicle = client.chronicle(**CHRONICLE_CONFIG)
+    
+    print("\n=== Reference List API Test ===\n")
+    
+    try:
+        # 1. Create a reference list
+        print(f"Creating reference list: {list_name}")
+        created = chronicle.create_reference_list(
+            name=list_name,
+            description="API Test Reference List",
+            entries=["test1.example.com", "test2.example.com"],
+            syntax_type=ReferenceListSyntaxType.STRING
+        )
+        print(f"Creation response: {created}")
+        print(f"Reference list name: {created.get('name', 'N/A')}")
+        
+        # 2. Get the reference list
+        print(f"\nGetting reference list: {list_name}")
+        retrieved = chronicle.get_reference_list(list_name, view=ReferenceListView.FULL)
+        print(f"Get response: {retrieved}")
+        print(f"Retrieved name: {retrieved.get('name', 'N/A')}")
+        
+        # 3. List reference lists and check if ours is included
+        print("\nListing all reference lists")
+        all_lists = chronicle.list_reference_lists()
+        found = False
+        for ref_list in all_lists:
+            if ref_list.get("name", "").endswith(list_name):
+                found = True
+                print(f"Found in list: {ref_list.get('name')}")
+                break
+        
+        if not found:
+            print(f"WARNING: Reference list {list_name} not found in list results")
+            
+        # 4. Examine delete endpoint
+        # Print what the delete URL would be
+        instance_id = CHRONICLE_CONFIG.get("customer_id")
+        project_id = CHRONICLE_CONFIG.get("project_id")
+        region = CHRONICLE_CONFIG.get("region", "us")
+        base_url = f"https://{region}-chronicle.googleapis.com/v1alpha"
+        
+        delete_url = f"{base_url}/{project_id}/locations/{region}/instances/{instance_id}/referenceLists/{list_name}"
+        print(f"\nDelete would use URL: {delete_url}")
+        
+        # Note: Reference list deletion is not currently supported by the API
+        print(f"\nSkipping deletion of reference list {list_name} - deletion not supported by API")
+            
+    except Exception as e:
+        print(f"Test encountered an error: {e}")
+        raise

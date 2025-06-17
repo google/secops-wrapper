@@ -300,6 +300,130 @@ Explicitly opt-in to Gemini:
 secops gemini --opt-in
 ```
 
+### Data Tables
+
+Data Tables are collections of structured data that can be referenced in detection rules.
+
+#### List data tables:
+
+```bash
+secops data-table list
+secops data-table list --order-by "createTime asc"
+```
+
+#### Get data table details:
+
+```bash
+secops data-table get --name "suspicious_ips"
+```
+
+#### Create a data table:
+
+```bash
+# Basic creation with header definition
+secops data-table create \
+  --name "suspicious_ips" \
+  --description "Known suspicious IP addresses" \
+  --header '{"ip_address":"CIDR","description":"STRING","severity":"STRING"}'
+
+# Create with initial rows
+secops data-table create \
+  --name "malicious_domains" \
+  --description "Known malicious domains" \
+  --header '{"domain":"STRING","category":"STRING","last_seen":"STRING"}' \
+  --rows '[["evil.example.com","phishing","2023-07-01"],["malware.example.net","malware","2023-06-15"]]'
+```
+
+#### List rows in a data table:
+
+```bash
+secops data-table list-rows --name "suspicious_ips"
+```
+
+#### Add rows to a data table:
+
+```bash
+secops data-table add-rows \
+  --name "suspicious_ips" \
+  --rows '[["192.168.1.100","Scanning activity","Medium"],["10.0.0.5","Suspicious login attempts","High"]]'
+```
+
+#### Delete rows from a data table:
+
+```bash
+secops data-table delete-rows --name "suspicious_ips" --row-ids "row123,row456"
+```
+
+#### Delete a data table:
+
+```bash
+secops data-table delete --name "suspicious_ips"
+secops data-table delete --name "suspicious_ips" --force  # Force deletion of non-empty table
+```
+
+### Reference Lists
+
+Reference Lists are simple lists of values (strings, CIDR blocks, or regex patterns) that can be referenced in detection rules.
+
+#### List reference lists:
+
+```bash
+secops reference-list list
+secops reference-list list --view "FULL"  # Include entries (can be large)
+```
+
+#### Get reference list details:
+
+```bash
+secops reference-list get --name "malicious_domains"
+secops reference-list get --name "malicious_domains" --view "BASIC"  # Metadata only
+```
+
+#### Create a reference list:
+
+```bash
+# Create with inline entries
+secops reference-list create \
+  --name "admin_accounts" \
+  --description "Administrative accounts" \
+  --entries "admin,administrator,root,superuser"
+
+# Create with entries from a file
+secops reference-list create \
+  --name "malicious_domains" \
+  --description "Known malicious domains" \
+  --entries-file "/path/to/domains.txt" \
+  --syntax-type "STRING"
+
+# Create with CIDR entries
+secops reference-list create \
+  --name "trusted_networks" \
+  --description "Internal network ranges" \
+  --entries "10.0.0.0/8,192.168.0.0/16,172.16.0.0/12" \
+  --syntax-type "CIDR"
+```
+
+#### Update a reference list:
+
+```bash
+# Update description
+secops reference-list update \
+  --name "admin_accounts" \
+  --description "Updated administrative accounts list"
+
+# Update entries
+secops reference-list update \
+  --name "admin_accounts" \
+  --entries "admin,administrator,root,superuser,sysadmin"
+
+# Update entries from file
+secops reference-list update \
+  --name "malicious_domains" \
+  --entries-file "/path/to/updated_domains.txt"
+```
+
+<!-- Note: Reference list deletion is not currently supported by the API -->
+
 ## Examples
 
 ### Search for Recent Network Connections
@@ -363,6 +487,24 @@ secops export create --gcs-bucket "projects/my-project/buckets/my-export-bucket"
 
 ```bash
 secops gemini --query "Explain how to defend against Log4Shell vulnerability"
+```
+
+### Create a Data Table and Reference List
+
+```bash
+# Create a data table for suspicious IP address tracking
+secops data-table create \
+  --name "suspicious_ips" \
+  --description "IP addresses with suspicious activity" \
+  --header '{"ip_address":"CIDR","detection_count":"STRING","last_seen":"STRING"}' \
+  --rows '[["192.168.1.100","5","2023-08-15"],["10.0.0.5","12","2023-08-16"]]'
+
+# Create a reference list with trusted domains
+secops reference-list create \
+  --name "trusted_domains" \
+  --description "Internal trusted domains" \
+  --entries "internal.example.com,trusted.example.org,secure.example.net" \
+  --syntax-type "STRING"
 ```
 
 ## Conclusion

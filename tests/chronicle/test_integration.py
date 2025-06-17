@@ -20,8 +20,10 @@ import pytest
 from datetime import datetime, timedelta, timezone
 from secops import SecOpsClient
 from ..config import CHRONICLE_CONFIG, SERVICE_ACCOUNT_JSON
-from secops.exceptions import APIError
+from secops.exceptions import APIError, SecOpsError
 from secops.chronicle.models import EntitySummary
+from secops.chronicle.data_table import DataTableColumnType
+from secops.chronicle.reference_list import ReferenceListSyntaxType, ReferenceListView
 import json
 import re
 import time
@@ -989,3 +991,268 @@ def test_chronicle_gemini_rule_generation():
     except Exception as e:
         print(f"Unexpected error in Gemini rule generation test: {type(e).__name__}: {str(e)}")
         pytest.skip(f"Test skipped due to unexpected error: {str(e)}")
+
+@pytest.mark.integration
+def test_chronicle_data_tables():
+    """Test Chronicle data table functionality with API."""
+    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+    chronicle = client.chronicle(**CHRONICLE_CONFIG)
+    
+    # Use timestamp for unique names to avoid conflicts
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    dt_name = f"sdktest_dt_{timestamp}"
+    
+    try:
+        print("\n>>> Testing data table operations")
+        
+        # List existing data tables (to verify API access)
+        try:
+            initial_tables = chronicle.list_data_tables(order_by="createTime asc")
+            print(f"Found {len(initial_tables)} existing data tables")
+        except APIError as e:
+            if "invalid order by field" in str(e):
+                # Handle the specific error we know about
+                print("Note: API only supports 'createTime asc' for ordering")
+                initial_tables = chronicle.list_data_tables() # Try without order_by
+            else:
+                raise
+        
+        # Create a data table with string columns
+        print(f"Creating data table: {dt_name}")
+        created_dt = chronicle.create_data_table(
+            name=dt_name,
+            description="SDK Integration Test Data Table",
+            header={
+                "hostname": DataTableColumnType.STRING,
+                "ip_address": DataTableColumnType.STRING,
+                "description": DataTableColumnType.STRING
+            },
+            rows=[
+                ["host1.example.com", "192.168.1.10", "Primary server"],
+                ["host2.example.com", "192.168.1.11", "Backup server"]
+            ]
+        )
+        
+        print(f"Created data table: {created_dt.get('name')}")
+        assert created_dt.get("name").endswith(dt_name)
+        assert created_dt.get("description") == "SDK Integration Test Data Table"
+        
+        # Get the data table
+        retrieved_dt = chronicle.get_data_table(dt_name)
+        assert retrieved_dt.get("name") == created_dt.get("name")
+        assert len(retrieved_dt.get("columnInfo", [])) == 3
+        
+        # List rows
+        rows = chronicle.list_data_table_rows(dt_name)
+        print(f"Found {len(rows)} rows in data table")
+        assert len(rows) == 2  # We added 2 rows during creation
+        
+        # Store row IDs for deletion testing
+        row_ids = [row.get("name", "").split("/")[-1] for row in rows if row.get("name")]
+        
+        if row_ids:
+            # Delete one row
+            row_to_delete = row_ids[0]
+            print(f"Deleting row: {row_to_delete}")
+            delete_result = chronicle.delete_data_table_rows(dt_name, [row_to_delete])
+            
+            # Check rows after deletion
+            updated_rows = chronicle.list_data_table_rows(dt_name)
+            assert len(updated_rows) == 1  # Should be one less than before
+        
+        # Add more rows
+        new_rows = [
+            ["host3.example.com", "192.168.1.12", "Development server"],
+            ["host4.example.com", "192.168.1.13", "Test server"]
+        ]
+        print("Adding more rows")
+        add_rows_result = chronicle.create_data_table_rows(dt_name, new_rows)
+        
+        # Check rows after addition
+        final_rows = chronicle.list_data_table_rows(dt_name)
+        assert len(final_rows) == 3  # 1 remaining + 2 new ones
+        
+    except Exception as e:
+        print(f"Error during data table test: {e}")
+        raise
+    finally:
+        # Clean up - delete the test data table
+        try:
+            print(f"Cleaning up - deleting data table: {dt_name}")
+            chronicle.delete_data_table(dt_name, force=True)
+            print("Data table deleted successfully")
+        except Exception as cleanup_error:
+            print(f"Warning: Failed to clean up data table {dt_name}: {cleanup_error}")
+
+
+@pytest.mark.integration
+def test_chronicle_data_tables_cidr():
+    """Test Chronicle data table functionality with CIDR columns."""
+    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+    chronicle = client.chronicle(**CHRONICLE_CONFIG)
+    
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    dt_name = f"sdktest_dt_cidr_{timestamp}"
+    
+    try:
+        print("\n>>> Testing data table with CIDR column")
+        
+        # Create a data table with CIDR column
+        created_dt = chronicle.create_data_table(
+            name=dt_name,
+            description="SDK Integration Test Data Table with CIDR",
+            header={
+                "network": DataTableColumnType.CIDR,
+                "location": DataTableColumnType.STRING
+            },
+            rows=[
+                ["10.0.0.0/8", "Corporate HQ"],
+                ["192.168.0.0/16", "Branch offices"]
+            ]
+        )
+        
+        print(f"Created CIDR data table: {created_dt.get('name')}")
+        assert created_dt.get("name").endswith(dt_name)
+        
+        # Get the data table to verify CIDR column type
+        retrieved_dt = chronicle.get_data_table(dt_name)
+        column_info = retrieved_dt.get("columnInfo", [])
+        
+        # Find the CIDR column
+        cidr_column = next((col for col in column_info if col.get("originalColumn") == "network"), None)
+        assert cidr_column is not None
+        assert cidr_column.get("columnType") == "CIDR"
+        
+        # List rows to verify CIDR values were stored correctly
+        rows = chronicle.list_data_table_rows(dt_name)
+        assert len(rows) == 2
+        
+        # Try to add an invalid CIDR to test validation
+        try:
+            chronicle.create_data_table_rows(dt_name, [["not-a-cidr", "Invalid Network"]])
+            pytest.fail("Should have raised an error for invalid CIDR")
+        except APIError as e:
+            print(f"Expected error for invalid CIDR: {e}")
+            assert "not a valid CIDR" in str(e) or "Invalid Row Value" in str(e)
+        
+    except Exception as e:
+        print(f"Error during CIDR data table test: {e}")
+        raise
+    finally:
+        # Clean up
+        try:
+            chronicle.delete_data_table(dt_name, force=True)
+        except Exception as cleanup_error:
+            print(f"Warning: Failed to clean up CIDR data table {dt_name}: {cleanup_error}")
+
+
+@pytest.mark.integration
+def test_chronicle_reference_lists():
+    """Test Chronicle reference list functionality with real API."""
+    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+    chronicle = client.chronicle(**CHRONICLE_CONFIG)
+    
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    rl_name = f"sdktest_rl_{timestamp}"
+    
+    try:
+        print("\n>>> Testing reference list operations")
+        
+        # List existing reference lists
+        initial_lists = chronicle.list_reference_lists()
+        print(f"Found {len(initial_lists)} existing reference lists")
+        
+        # Create a reference list
+        print(f"Creating reference list: {rl_name}")
+        created_rl = chronicle.create_reference_list(
+            name=rl_name,
+            description="SDK Integration Test Reference List",
+            entries=["malicious.example.com", "suspicious.example.org", "evil.example.net"],
+            syntax_type=ReferenceListSyntaxType.STRING
+        )
+        
+        print(f"Created reference list: {created_rl.get('name')}")
+        assert created_rl.get("name").endswith(rl_name)
+        assert created_rl.get("description") == "SDK Integration Test Reference List"
+        
+        # Get the reference list with FULL view
+        retrieved_rl_full = chronicle.get_reference_list(rl_name, view=ReferenceListView.FULL)
+        assert retrieved_rl_full.get("name").endswith(rl_name)
+        assert len(retrieved_rl_full.get("entries", [])) == 3
+        
+        # Get the reference list with BASIC view
+        retrieved_rl_basic = chronicle.get_reference_list(rl_name, view=ReferenceListView.BASIC)
+        assert retrieved_rl_basic.get("name").endswith(rl_name)
+        
+        # Update the reference list
+        updated_description = "Updated SDK Test Reference List"
+        updated_entries = ["updated.example.com", "new.example.org"]
+        
+        updated_rl = chronicle.update_reference_list(
+            name=rl_name,
+            description=updated_description,
+            entries=updated_entries
+        )
+        
+        assert updated_rl.get("description") == updated_description
+        assert len(updated_rl.get("entries", [])) == 2
+        
+        # Verify update with a get
+        final_rl = chronicle.get_reference_list(rl_name)
+        assert final_rl.get("description") == updated_description
+        assert len(final_rl.get("entries", [])) == 2
+        
+    except Exception as e:
+        print(f"Error during reference list test: {e}")
+        raise
+    finally:
+        # Note: Reference list deletion is not supported by the API
+        print(f"Note: Reference list {rl_name} remains since reference list deletion is not supported by the API")
+
+
+@pytest.mark.integration
+def test_chronicle_reference_lists_cidr():
+    """Test Chronicle reference list functionality with CIDR syntax type."""
+    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+    chronicle = client.chronicle(**CHRONICLE_CONFIG)
+    
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    rl_name = f"sdktest_rl_cidr_{timestamp}"
+    
+    try:
+        print("\n>>> Testing CIDR reference list operations")
+        
+        # Create a CIDR reference list
+        created_rl = chronicle.create_reference_list(
+            name=rl_name,
+            description="SDK Integration Test CIDR Reference List",
+            entries=["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"],
+            syntax_type=ReferenceListSyntaxType.CIDR
+        )
+        
+        print(f"Created CIDR reference list: {created_rl.get('name')}")
+        assert created_rl.get("name").endswith(rl_name)
+        assert created_rl.get("syntaxType") == ReferenceListSyntaxType.CIDR.value
+        
+        # Get the reference list to verify CIDR entries
+        retrieved_rl = chronicle.get_reference_list(rl_name)
+        assert retrieved_rl.get("syntaxType") == ReferenceListSyntaxType.CIDR.value
+        assert len(retrieved_rl.get("entries", [])) == 3
+        
+        # Try to update with an invalid CIDR to test validation
+        try:
+            chronicle.update_reference_list(
+                name=rl_name,
+                entries=["not-a-cidr", "192.168.1.0/24"]
+            )
+            pytest.fail("Should have raised an error for invalid CIDR")
+        except SecOpsError as e:
+            print(f"Expected error for invalid CIDR: {e}")
+            assert "Invalid CIDR entry" in str(e)
+        
+    except Exception as e:
+        print(f"Error during CIDR reference list test: {e}")
+        raise
+    finally:
+        # Note: Reference list deletion is not supported by the API
+        print(f"Note: CIDR reference list {rl_name} remains since reference list deletion is not supported by the API")

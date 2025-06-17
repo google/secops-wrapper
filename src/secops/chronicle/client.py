@@ -91,8 +91,27 @@ from secops.chronicle.models import (
 from secops.chronicle.nl_search import translate_nl_to_udm, nl_search as _nl_search
 from secops.chronicle.gemini import query_gemini as _query_gemini, opt_in_to_gemini as _opt_in_to_gemini, GeminiResponse
 
-SECOPS_WRAPPER_USER_AGENT = "secops-wrapper"
+from secops.chronicle.data_table import (
+    DataTableColumnType,
+    create_data_table as _create_data_table,
+    get_data_table as _get_data_table,
+    list_data_tables as _list_data_tables,
+    delete_data_table as _delete_data_table,
+    create_data_table_rows as _create_data_table_rows,
+    list_data_table_rows as _list_data_table_rows,
+    delete_data_table_rows as _delete_data_table_rows
+)
 
+from secops.chronicle.reference_list import (
+    ReferenceListSyntaxType,
+    ReferenceListView,
+    create_reference_list as _create_reference_list,
+    get_reference_list as _get_reference_list,
+    list_reference_lists as _list_reference_lists,
+    update_reference_list as _update_reference_list
+)
+
+SECOPS_WRAPPER_USER_AGENT = "secops-wrapper"
 
 class ValueType(Enum):
     """Chronicle API value types."""
@@ -1458,4 +1477,209 @@ class ChronicleClient:
             end_time=end_time,
             page_size=page_size,
             page_token=page_token
-        ) 
+        )
+
+    # Data Table methods
+    
+    def create_data_table(
+        self,
+        name: str,
+        description: str,
+        header: Dict[str, DataTableColumnType],
+        rows: Optional[List[List[str]]] = None,
+        scopes: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Create a new data table.
+        
+        Args:
+            name: The name for the new data table
+            description: A user-provided description of the data table
+            header: A dictionary mapping column names to column types
+            rows: Optional list of rows for the data table
+            scopes: Optional list of scopes for the data table
+            
+        Returns:
+            Dictionary containing the created data table
+            
+        Raises:
+            APIError: If the API request fails
+            SecOpsError: If the data table name is invalid or CIDR validation fails
+        """
+        return _create_data_table(self, name, description, header, rows, scopes)
+    
+    def get_data_table(self, name: str) -> Dict[str, Any]:
+        """Get data table details.
+        
+        Args:
+            name: The name of the data table to get
+            
+        Returns:
+            Dictionary containing the data table
+            
+        Raises:
+            APIError: If the API request fails
+        """
+        return _get_data_table(self, name)
+    
+    def list_data_tables(self, order_by: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List data tables.
+        
+        Args:
+            order_by: Configures ordering of DataTables in the response. 
+                      Note: The API only supports "createTime asc".
+                      
+        Returns:
+            List of data tables
+            
+        Raises:
+            APIError: If the API request fails
+        """
+        return _list_data_tables(self, order_by)
+    
+    def delete_data_table(self, name: str, force: bool = False) -> Dict[str, Any]:
+        """Delete a data table.
+        
+        Args:
+            name: The name of the data table to delete
+            force: If set to true, any rows under this data table will also be deleted.
+                   (Otherwise, the request will only work if the data table has no rows).
+                   
+        Returns:
+            Dictionary containing the deleted data table or empty dict
+            
+        Raises:
+            APIError: If the API request fails
+        """
+        return _delete_data_table(self, name, force)
+    
+    def create_data_table_rows(self, name: str, rows: List[List[str]]) -> List[Dict[str, Any]]:
+        """Create data table rows, chunking if necessary.
+        
+        Args:
+            name: The name of the data table
+            rows: A list of rows for the data table
+            
+        Returns:
+            List of responses containing the created data table rows
+            
+        Raises:
+            APIError: If the API request fails
+            SecOpsError: If a row is too large to process
+        """
+        return _create_data_table_rows(self, name, rows)
+    
+    def list_data_table_rows(self, name: str, order_by: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List data table rows.
+        
+        Args:
+            name: The name of the data table to list rows from
+            order_by: Configures ordering of DataTableRows in the response.
+                      Note: The API only supports "createTime asc".
+                      
+        Returns:
+            List of data table rows
+            
+        Raises:
+            APIError: If the API request fails
+        """
+        return _list_data_table_rows(self, name, order_by)
+    
+    def delete_data_table_rows(self, name: str, row_ids: List[str]) -> List[Dict[str, Any]]:
+        """Delete data table rows.
+        
+        Args:
+            name: The name of the data table to delete rows from
+            row_ids: The IDs of the rows to delete
+            
+        Returns:
+            List of dictionaries containing the deleted data table rows
+            
+        Raises:
+            APIError: If the API request fails
+        """
+        return _delete_data_table_rows(self, name, row_ids)
+    
+    # Reference List methods
+    
+    def create_reference_list(
+        self,
+        name: str,
+        description: str = "",
+        entries: List[str] = [],
+        syntax_type: ReferenceListSyntaxType = ReferenceListSyntaxType.STRING,
+    ) -> Dict[str, Any]:
+        """Create a new reference list.
+        
+        Args:
+            name: The name for the new reference list
+            description: A user-provided description of the reference list
+            entries: A list of entries for the reference list
+            syntax_type: The syntax type of the reference list
+            
+        Returns:
+            Dictionary containing the created reference list
+            
+        Raises:
+            APIError: If the API request fails
+            SecOpsError: If the reference list name is invalid or a CIDR entry is invalid
+        """
+        return _create_reference_list(self, name, description, entries, syntax_type)
+    
+    def get_reference_list(
+        self, 
+        name: str, 
+        view: ReferenceListView = ReferenceListView.FULL
+    ) -> Dict[str, Any]:
+        """Get a single reference list.
+        
+        Args:
+            name: The name of the reference list
+            view: How much of the ReferenceList to view. Defaults to REFERENCE_LIST_VIEW_FULL.
+            
+        Returns:
+            Dictionary containing the reference list
+            
+        Raises:
+            APIError: If the API request fails
+        """
+        return _get_reference_list(self, name, view)
+    
+    def list_reference_lists(
+        self,
+        view: ReferenceListView = ReferenceListView.BASIC,
+    ) -> List[Dict[str, Any]]:
+        """List reference lists.
+        
+        Args:
+            view: How much of each ReferenceList to view. Defaults to REFERENCE_LIST_VIEW_BASIC.
+            
+        Returns:
+            List of reference lists, ordered in ascending alphabetical order by name
+            
+        Raises:
+            APIError: If the API request fails
+        """
+        return _list_reference_lists(self, view)
+    
+    def update_reference_list(
+        self,
+        name: str,
+        description: Optional[str] = None,
+        entries: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Update a reference list.
+        
+        Args:
+            name: The name of the reference list
+            description: A user-provided description of the reference list
+            entries: A list of entries for the reference list
+            
+        Returns:
+            Dictionary containing the updated reference list
+            
+        Raises:
+            APIError: If the API request fails
+            SecOpsError: If no description or entries are provided to be updated
+        """
+        return _update_reference_list(self, name, description, entries)
+    
