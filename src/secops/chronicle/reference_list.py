@@ -246,7 +246,7 @@ def delete_reference_list(
         Dictionary containing the deleted reference list or empty dict
         
     Raises:
-        APIError: If the API request fails
+        APIError: If the API request fails with an error other than 404 (Not Found)
     """
     response = client.session.delete(
         f"{client.base_url}/{client.instance_id}/referenceLists/{name}"
@@ -261,4 +261,9 @@ def delete_reference_list(
                 return {"status": "success", "statusCode": response.status_code}
         return {}
     
+    # Treat 404 (Not Found) as successful deletion since the resource doesn't exist
+    elif response.status_code == 404:
+        return {"status": "success", "message": "Resource not found", "statusCode": 404}
+    
+    # Raise error for other non-success status codes
     raise APIError(f"Failed to delete reference list '{name}': {response.status_code} {response.text}") 

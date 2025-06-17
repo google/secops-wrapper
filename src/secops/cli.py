@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 import os
 from typing import Optional, Dict, Any, List, Tuple, Union
 from pathlib import Path
+import time
 
 from secops import SecOpsClient
 from secops.exceptions import SecOpsError, AuthenticationError, APIError
@@ -1312,12 +1313,35 @@ def handle_rl_update_command(args, chronicle):
 
 def handle_rl_delete_command(args, chronicle):
     """Handle reference list delete command."""
-    try:
-        result = chronicle.delete_reference_list(args.name)
-        output_formatter(result, args.output)
-    except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+    # Try up to 3 times with a delay between attempts
+    max_attempts = 3
+    delay_seconds = 2
+    
+    for attempt in range(1, max_attempts + 1):
+        try:
+            result = chronicle.delete_reference_list(args.name)
+            output_formatter(result, args.output)
+            return  # Success, exit the function
+        except Exception as e:
+            error_msg = str(e)
+            # Check if this is a 404 Not Found error
+            if "404" in error_msg:
+                # If this is the last attempt, consider 404 as success (item doesn't exist)
+                if attempt == max_attempts:
+                    print(f"Reference list '{args.name}' not found or already deleted.")
+                    return  # Exit with success
+                print(f"Attempt {attempt}/{max_attempts}: Reference list not found, retrying in {delay_seconds} seconds...")
+            else:
+                # For other errors, retry if we have attempts left
+                if attempt < max_attempts:
+                    print(f"Attempt {attempt}/{max_attempts}: Failed to delete reference list, retrying in {delay_seconds} seconds...")
+                else:
+                    # On last attempt with non-404 error, show the error
+                    print(f"Error: {e}", file=sys.stderr)
+                    sys.exit(1)
+            
+            # Wait before retrying
+            time.sleep(delay_seconds)
 
 
 def main() -> None:
