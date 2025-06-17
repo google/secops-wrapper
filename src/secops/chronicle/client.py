@@ -225,6 +225,7 @@ class ChronicleClient:
                         "https://www.googleapis.com/auth/chronicle-backstory",
                     ] + (extra_scopes or []),
                     credentials=credentials,
+                    base_url=self.base_url
                 )
                 
             self._session = auth.session
