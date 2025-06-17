@@ -29,20 +29,28 @@ from secops.chronicle.udm_search import fetch_udm_search_csv as _fetch_udm_searc
 from secops.chronicle.validate import validate_query as _validate_query
 from secops.chronicle.stats import get_stats as _get_stats
 from secops.chronicle.search import search_udm as _search_udm
-from secops.chronicle.entity import (
-    summarize_entity as _summarize_entity
-)
+from secops.chronicle.entity import summarize_entity as _summarize_entity
 from secops.chronicle.ioc import list_iocs as _list_iocs
 from secops.chronicle.case import get_cases_from_list
 from secops.chronicle.alert import get_alerts as _get_alerts
-from secops.chronicle.log_ingest import ingest_log as _ingest_log, get_or_create_forwarder as _get_or_create_forwarder, ingest_udm as _ingest_udm
-from secops.chronicle.log_types import get_all_log_types as _get_all_log_types, is_valid_log_type as _is_valid_log_type, get_log_type_description as _get_log_type_description, search_log_types as _search_log_types, LogType
+from secops.chronicle.log_ingest import (
+    ingest_log as _ingest_log,
+    get_or_create_forwarder as _get_or_create_forwarder,
+    ingest_udm as _ingest_udm,
+)
+from secops.chronicle.log_types import (
+    get_all_log_types as _get_all_log_types,
+    is_valid_log_type as _is_valid_log_type,
+    get_log_type_description as _get_log_type_description,
+    search_log_types as _search_log_types,
+    LogType,
+)
 from secops.chronicle.data_export import (
     get_data_export as _get_data_export,
     create_data_export as _create_data_export,
     cancel_data_export as _cancel_data_export,
     fetch_available_log_types as _fetch_available_log_types,
-    AvailableLogType
+    AvailableLogType,
 )
 
 # Import rule functions
@@ -53,42 +61,46 @@ from secops.chronicle.rule import (
     update_rule as _update_rule,
     delete_rule as _delete_rule,
     enable_rule as _enable_rule,
-    search_rules as _search_rules
+    search_rules as _search_rules,
 )
 from secops.chronicle.rule_alert import (
     get_alert as _get_alert,
     update_alert as _update_alert,
     bulk_update_alerts as _bulk_update_alerts,
-    search_rule_alerts as _search_rule_alerts
+    search_rule_alerts as _search_rule_alerts,
 )
 from secops.chronicle.rule_detection import (
     list_detections as _list_detections,
-    list_errors as _list_errors
+    list_errors as _list_errors,
 )
 from secops.chronicle.rule_retrohunt import (
     create_retrohunt as _create_retrohunt,
-    get_retrohunt as _get_retrohunt
+    get_retrohunt as _get_retrohunt,
 )
 from secops.chronicle.rule_set import (
-    batch_update_curated_rule_set_deployments as _batch_update_curated_rule_set_deployments
+    batch_update_curated_rule_set_deployments as _batch_update_curated_rule_set_deployments,
 )
 from .rule_validation import validate_rule as _validate_rule
 
 from secops.chronicle.models import (
-    Entity, 
-    EntityMetadata, 
-    EntityMetrics, 
-    TimeInterval, 
-    TimelineBucket, 
-    Timeline, 
-    WidgetMetadata, 
+    Entity,
+    EntityMetadata,
+    EntityMetrics,
+    TimeInterval,
+    TimelineBucket,
+    Timeline,
+    WidgetMetadata,
     EntitySummary,
     AlertCount,
-    CaseList
+    CaseList,
 )
 
 from secops.chronicle.nl_search import translate_nl_to_udm, nl_search as _nl_search
-from secops.chronicle.gemini import query_gemini as _query_gemini, opt_in_to_gemini as _opt_in_to_gemini, GeminiResponse
+from secops.chronicle.gemini import (
+    query_gemini as _query_gemini,
+    opt_in_to_gemini as _opt_in_to_gemini,
+    GeminiResponse,
+)
 
 from secops.chronicle.data_table import (
     DataTableColumnType,
@@ -98,7 +110,7 @@ from secops.chronicle.data_table import (
     delete_data_table as _delete_data_table,
     create_data_table_rows as _create_data_table_rows,
     list_data_table_rows as _list_data_table_rows,
-    delete_data_table_rows as _delete_data_table_rows
+    delete_data_table_rows as _delete_data_table_rows,
 )
 
 from secops.chronicle.reference_list import (
@@ -108,11 +120,13 @@ from secops.chronicle.reference_list import (
     get_reference_list as _get_reference_list,
     list_reference_lists as _list_reference_lists,
     update_reference_list as _update_reference_list,
-    delete_reference_list as _delete_reference_list
+    delete_reference_list as _delete_reference_list,
 )
+
 
 class ValueType(Enum):
     """Chronicle API value types."""
+
     ASSET_IP_ADDRESS = "ASSET_IP_ADDRESS"
     MAC = "MAC"
     HOSTNAME = "HOSTNAME"
@@ -123,12 +137,13 @@ class ValueType(Enum):
     EMAIL = "EMAIL"
     USERNAME = "USERNAME"
 
+
 def _detect_value_type(value: str) -> tuple[Optional[str], Optional[str]]:
     """Detect value type from a string.
-    
+
     Args:
         value: The value to detect type for
-        
+
     Returns:
         Tuple of (field_path, value_type) where one or both may be None
     """
@@ -138,37 +153,40 @@ def _detect_value_type(value: str) -> tuple[Optional[str], Optional[str]]:
         return "principal.ip", None
     except ValueError:
         pass
-    
+
     # Try to detect MD5 hash
     if re.match(r"^[a-fA-F0-9]{32}$", value):
         return "target.file.md5", None
-    
+
     # Try to detect SHA-1 hash
     if re.match(r"^[a-fA-F0-9]{40}$", value):
         return "target.file.sha1", None
-    
+
     # Try to detect SHA-256 hash
     if re.match(r"^[a-fA-F0-9]{64}$", value):
         return "target.file.sha256", None
-    
+
     # Try to detect domain name
-    if re.match(r"^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$", value):
+    if re.match(
+        r"^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$", value
+    ):
         return None, "DOMAIN_NAME"
-    
+
     # Try to detect email address
     if re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", value):
         return None, "EMAIL"
-    
+
     # Try to detect MAC address
     if re.match(r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$", value):
         return None, "MAC"
-    
+
     # Try to detect hostname (simple rule)
     if re.match(r"^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$", value):
         return None, "HOSTNAME"
-    
+
     # If no match found
     return None, None
+
 
 class ChronicleClient:
     """Client for the Chronicle API."""
@@ -184,7 +202,7 @@ class ChronicleClient:
         credentials: Optional[Any] = None,
     ):
         """Initialize ChronicleClient.
-        
+
         Args:
             project_id: Google Cloud project ID
             customer_id: Chronicle customer ID
@@ -197,43 +215,50 @@ class ChronicleClient:
         self.project_id = project_id
         self.customer_id = customer_id
         self.region = region
-        
+
         # Format the instance ID to match the expected format
         if region in ["dev", "staging"]:
             # For dev and staging environments, use a different instance ID format
-            self.instance_id = f"projects/{project_id}/locations/us/instances/{customer_id}"
+            self.instance_id = (
+                f"projects/{project_id}/locations/us/instances/{customer_id}"
+            )
             # Set up the base URL for dev/staging
             if region == "dev":
                 self.base_url = f"https://dev-chronicle.sandbox.googleapis.com/v1alpha"
             else:  # staging
-                self.base_url = f"https://staging-chronicle.sandbox.googleapis.com/v1alpha"
+                self.base_url = (
+                    f"https://staging-chronicle.sandbox.googleapis.com/v1alpha"
+                )
         else:
             # Standard production regions use the normal format
-            self.instance_id = f"projects/{project_id}/locations/{region}/instances/{customer_id}"
+            self.instance_id = (
+                f"projects/{project_id}/locations/{region}/instances/{customer_id}"
+            )
             # Set up the base URL
             self.base_url = f"https://{self.region}-chronicle.googleapis.com/v1alpha"
-        
+
         # Create a session with authentication
         if session:
             self._session = session
         else:
             from secops import auth as secops_auth
-            
+
             if auth is None:
                 auth = secops_auth.SecOpsAuth(
                     scopes=[
                         "https://www.googleapis.com/auth/cloud-platform",
                         "https://www.googleapis.com/auth/chronicle-backstory",
-                    ] + (extra_scopes or []),
+                    ]
+                    + (extra_scopes or []),
                     credentials=credentials,
                 )
-                
+
             self._session = auth.session
 
     @property
     def session(self) -> google_auth_requests.AuthorizedSession:
         """Get an authenticated session.
-        
+
         Returns:
             Authorized session for API requests
         """
@@ -245,41 +270,36 @@ class ChronicleClient:
         start_time: datetime,
         end_time: datetime,
         fields: list[str],
-        case_insensitive: bool = True
+        case_insensitive: bool = True,
     ) -> str:
         """Fetch UDM search results in CSV format.
-        
+
         Args:
             query: Chronicle search query
             start_time: Search start time
             end_time: Search end time
             fields: List of fields to include in results
             case_insensitive: Whether to perform case-insensitive search
-            
+
         Returns:
             CSV formatted string of results
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _fetch_udm_search_csv(
-            self,
-            query,
-            start_time,
-            end_time,
-            fields,
-            case_insensitive
+            self, query, start_time, end_time, fields, case_insensitive
         )
 
     def validate_query(self, query: str) -> Dict[str, Any]:
         """Validate a Chronicle search query.
-        
+
         Args:
             query: Chronicle search query to validate
-            
+
         Returns:
             Dictionary with validation results
-            
+
         Raises:
             APIError: If the API request fails
         """
@@ -293,10 +313,10 @@ class ChronicleClient:
         max_values: int = 60,
         max_events: int = 10000,
         case_insensitive: bool = True,
-        max_attempts: int = 30
+        max_attempts: int = 30,
     ) -> Dict[str, Any]:
         """Get statistics from a Chronicle search query.
-        
+
         Args:
             query: Chronicle search query in stats format
             start_time: Search start time
@@ -305,13 +325,13 @@ class ChronicleClient:
             max_events: Maximum number of events to process
             case_insensitive: Whether to perform case-insensitive search
             max_attempts: Maximum number of polling attempts (deprecated)
-            
+
         Returns:
             Dictionary with search statistics containing:
             - columns: List of column names
             - rows: List of dictionaries with row data
             - total_rows: Total number of rows
-            
+
         Raises:
             APIError: If the API request fails
         """
@@ -323,36 +343,32 @@ class ChronicleClient:
             max_values,
             max_events,
             case_insensitive,
-            max_attempts
+            max_attempts,
         )
 
     def _process_stats_results(self, results: Dict[str, Any]) -> Dict[str, Any]:
         """Process stats search results.
-        
+
         Args:
             results: Stats search results from API
-            
+
         Returns:
             Processed statistics
         """
-        processed_results = {
-            "total_rows": 0,
-            "columns": [],
-            "rows": []
-        }
-        
+        processed_results = {"total_rows": 0, "columns": [], "rows": []}
+
         # Return early if no stats results
         if "stats" not in results or "results" not in results["stats"]:
             return processed_results
-        
+
         # Extract columns
         columns = []
         column_data = {}
-        
+
         for col_data in results["stats"]["results"]:
             col_name = col_data.get("column", "")
             columns.append(col_name)
-            
+
             # Process values for this column
             values = []
             for val_data in col_data.get("values", []):
@@ -368,25 +384,25 @@ class ChronicleClient:
                         values.append(None)
                 else:
                     values.append(None)
-            
+
             column_data[col_name] = values
-        
+
         # Build result rows
         rows = []
         if columns and all(col in column_data for col in columns):
             max_rows = max(len(column_data[col]) for col in columns)
             processed_results["total_rows"] = max_rows
-            
+
             for i in range(max_rows):
                 row = {}
                 for col in columns:
                     col_values = column_data[col]
                     row[col] = col_values[i] if i < len(col_values) else None
                 rows.append(row)
-        
+
         processed_results["columns"] = columns
         processed_results["rows"] = rows
-        
+
         return processed_results
 
     def search_udm(
@@ -398,10 +414,10 @@ class ChronicleClient:
         case_insensitive: bool = True,
         max_attempts: int = 30,
         timeout: int = 30,
-        debug: bool = False
+        debug: bool = False,
     ) -> Dict[str, Any]:
         """Search UDM events in Chronicle.
-        
+
         Args:
             query: Chronicle search query
             start_time: Search start time
@@ -411,13 +427,13 @@ class ChronicleClient:
             max_attempts: Maximum number of polling attempts (default: 30)
             timeout: Timeout in seconds for each API request (default: 30)
             debug: Print debug information during execution
-            
+
         Returns:
             Dictionary with search results containing:
             - events: List of UDM events with 'name' and 'udm' fields
             - total_events: Number of events returned
             - more_data_available: Boolean indicating if more results are available
-            
+
         Raises:
             APIError: If the API request fails
         """
@@ -430,7 +446,7 @@ class ChronicleClient:
             case_insensitive,
             max_attempts,
             timeout,
-            debug
+            debug,
         )
 
     def summarize_entity(
@@ -441,7 +457,7 @@ class ChronicleClient:
         preferred_entity_type: Optional[str] = None,
         include_all_udm_types: bool = True,
         page_size: int = 1000,
-        page_token: Optional[str] = None
+        page_token: Optional[str] = None,
     ) -> EntitySummary:
         """Get comprehensive summary information about an entity (IP, domain, file hash, etc.).
 
@@ -478,7 +494,7 @@ class ChronicleClient:
             preferred_entity_type=preferred_entity_type,
             include_all_udm_types=include_all_udm_types,
             page_size=page_size,
-            page_token=page_token
+            page_token=page_token,
         )
 
     def list_iocs(
@@ -490,17 +506,17 @@ class ChronicleClient:
         prioritized_only: bool = False,
     ) -> dict:
         """List IoCs from Chronicle.
-        
+
         Args:
             start_time: Start time for IoC search
             end_time: End time for IoC search
             max_matches: Maximum number of matches to return
             add_mandiant_attributes: Whether to add Mandiant attributes
             prioritized_only: Whether to only include prioritized IoCs
-            
+
         Returns:
             Dictionary with IoC matches
-            
+
         Raises:
             APIError: If the API request fails
         """
@@ -510,18 +526,18 @@ class ChronicleClient:
             end_time,
             max_matches,
             add_mandiant_attributes,
-            prioritized_only
+            prioritized_only,
         )
 
     def get_cases(self, case_ids: list[str]) -> CaseList:
         """Get case information for the specified case IDs.
-        
+
         Args:
             case_ids: List of case IDs to retrieve
-            
+
         Returns:
             A CaseList object containing the requested cases
-            
+
         Raises:
             APIError: If the API request fails
         """
@@ -531,15 +547,15 @@ class ChronicleClient:
         self,
         start_time: datetime,
         end_time: datetime,
-        snapshot_query: str = "feedback_summary.status != \"CLOSED\"",
+        snapshot_query: str = 'feedback_summary.status != "CLOSED"',
         baseline_query: Optional[str] = None,
         max_alerts: int = 1000,
         enable_cache: bool = True,
         max_attempts: int = 30,
-        poll_interval: float = 1.0
+        poll_interval: float = 1.0,
     ) -> dict:
         """Get alerts from Chronicle.
-        
+
         Args:
             start_time: Start time for alert search
             end_time: End time for alert search
@@ -549,10 +565,10 @@ class ChronicleClient:
             enable_cache: Whether to use cached results
             max_attempts: Maximum number of attempts to poll for results
             poll_interval: Interval between polling attempts in seconds
-            
+
         Returns:
             Dictionary with alert data
-            
+
         Raises:
             APIError: If the API request fails or times out
         """
@@ -565,15 +581,15 @@ class ChronicleClient:
             max_alerts,
             enable_cache,
             max_attempts,
-            poll_interval
+            poll_interval,
         )
 
     def _process_alerts_response(self, response) -> list:
         """Process alerts response.
-        
+
         Args:
             response: Response data from API
-            
+
         Returns:
             Processed response
         """
@@ -582,28 +598,32 @@ class ChronicleClient:
 
     def _merge_alert_updates(self, target: dict, updates: list) -> None:
         """Merge alert updates into the target dictionary.
-        
+
         Args:
             target: Target dictionary to update
             updates: List of updates to apply
         """
         if "alerts" not in target or "alerts" not in target["alerts"]:
             return
-        
+
         alerts = target["alerts"]["alerts"]
-        
+
         # Create a map of alerts by ID for faster lookups
         alert_map = {alert["id"]: alert for alert in alerts}
-        
+
         # Apply updates
         for update in updates:
             if "id" in update and update["id"] in alert_map:
                 target_alert = alert_map[update["id"]]
-                
+
                 # Update each field
                 for field, value in update.items():
                     if field != "id":
-                        if isinstance(value, dict) and field in target_alert and isinstance(target_alert[field], dict):
+                        if (
+                            isinstance(value, dict)
+                            and field in target_alert
+                            and isinstance(target_alert[field], dict)
+                        ):
                             # Merge nested dictionaries
                             target_alert[field].update(value)
                         else:
@@ -612,26 +632,26 @@ class ChronicleClient:
 
     def _fix_json_formatting(self, json_str: str) -> str:
         """Fix common JSON formatting issues.
-        
+
         Args:
             json_str: JSON string to fix
-            
+
         Returns:
             Fixed JSON string
         """
         # Fix trailing commas in objects
-        json_str = re.sub(r',\s*}', '}', json_str)
+        json_str = re.sub(r",\s*}", "}", json_str)
         # Fix trailing commas in arrays
-        json_str = re.sub(r',\s*]', ']', json_str)
-        
+        json_str = re.sub(r",\s*]", "]", json_str)
+
         return json_str
 
     def _detect_value_type(self, value: str) -> tuple[Optional[str], Optional[str]]:
         """Instance method version of _detect_value_type for backward compatibility.
-        
+
         Args:
             value: The value to detect type for
-            
+
         Returns:
             Tuple of (field_path, value_type) where one or both may be None
         """
@@ -639,108 +659,109 @@ class ChronicleClient:
 
     def _detect_value_type(self, value, value_type=None):
         """Detect value type for entity values.
-        
+
         This is a legacy method maintained for backward compatibility.
         It calls the standalone detect_value_type function.
-        
+
         Args:
             value: Value to detect type for
             value_type: Optional explicit value type
-            
+
         Returns:
             Tuple of (field_path, value_type)
         """
         from secops.chronicle.entity import _detect_value_type_for_query
+
         return _detect_value_type_for_query(value)
 
     # Rule Management methods
-    
+
     def create_rule(self, rule_text: str) -> Dict[str, Any]:
         """Creates a new detection rule to find matches in logs.
-        
+
         Args:
             rule_text: Content of the new detection rule, used to evaluate logs.
-            
+
         Returns:
             Dictionary containing the created rule information
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _create_rule(self, rule_text)
-    
+
     def get_rule(self, rule_id: str) -> Dict[str, Any]:
         """Get a rule by ID.
-        
+
         Args:
             rule_id: Unique ID of the detection rule to retrieve ("ru_<UUID>" or
               "ru_<UUID>@v_<seconds>_<nanoseconds>"). If a version suffix isn't
               specified we use the rule's latest version.
-              
+
         Returns:
             Dictionary containing rule information
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _get_rule(self, rule_id)
-    
+
     def list_rules(self) -> Dict[str, Any]:
         """Gets a list of rules.
-        
+
         Returns:
             Dictionary containing information about rules
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _list_rules(self)
-    
+
     def update_rule(self, rule_id: str, rule_text: str) -> Dict[str, Any]:
         """Updates a rule.
-        
+
         Args:
             rule_id: Unique ID of the detection rule to update ("ru_<UUID>")
             rule_text: Updated content of the detection rule
-            
+
         Returns:
             Dictionary containing the updated rule information
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _update_rule(self, rule_id, rule_text)
-    
+
     def delete_rule(self, rule_id: str, force: bool = False) -> Dict[str, Any]:
         """Deletes a rule.
-        
+
         Args:
             rule_id: Unique ID of the detection rule to delete ("ru_<UUID>")
             force: If True, deletes the rule even if it has associated retrohunts
-            
+
         Returns:
             Empty dictionary or deletion confirmation
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _delete_rule(self, rule_id, force)
-    
+
     def enable_rule(self, rule_id: str, enabled: bool = True) -> Dict[str, Any]:
         """Enables or disables a rule.
-        
+
         Args:
             rule_id: Unique ID of the detection rule to enable/disable ("ru_<UUID>")
             enabled: Whether to enable (True) or disable (False) the rule
-            
+
         Returns:
             Dictionary containing rule deployment information
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _enable_rule(self, rule_id, enabled)
-    
+
     def search_rules(self, query: str) -> Dict[str, Any]:
         """Search for rules.
 
@@ -750,29 +771,31 @@ class ChronicleClient:
 
         Returns:
             Dictionary containing search results
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _search_rules(self, query)
-    
+
     # Rule Alert methods
-    
-    def get_alert(self, alert_id: str, include_detections: bool = False) -> Dict[str, Any]:
+
+    def get_alert(
+        self, alert_id: str, include_detections: bool = False
+    ) -> Dict[str, Any]:
         """Gets an alert by ID.
-        
+
         Args:
             alert_id: ID of the alert to retrieve
             include_detections: Whether to include detection details in the response
-            
+
         Returns:
             Dictionary containing alert information
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _get_alert(self, alert_id, include_detections)
-    
+
     def update_alert(
         self,
         alert_id: str,
@@ -786,10 +809,10 @@ class ChronicleClient:
         disregarded: Optional[bool] = None,
         severity: Optional[int] = None,
         comment: Optional[Union[str, Literal[""]]] = None,
-        root_cause: Optional[Union[str, Literal[""]]] = None
+        root_cause: Optional[Union[str, Literal[""]]] = None,
     ) -> Dict[str, Any]:
         """Updates an alert's properties.
-        
+
         Args:
             alert_id: ID of the alert to update
             confidence_score: Confidence score [0-100] of the alert
@@ -824,10 +847,10 @@ class ChronicleClient:
             severity: Severity score [0-100] of the alert
             comment: Analyst comment (empty string is valid to clear)
             root_cause: Alert root cause (empty string is valid to clear)
-            
+
         Returns:
             Dictionary containing updated alert information
-            
+
         Raises:
             APIError: If the API request fails
             ValueError: If invalid values are provided
@@ -845,9 +868,9 @@ class ChronicleClient:
             disregarded,
             severity,
             comment,
-            root_cause
+            root_cause,
         )
-    
+
     def bulk_update_alerts(
         self,
         alert_ids: List[str],
@@ -861,13 +884,13 @@ class ChronicleClient:
         disregarded: Optional[bool] = None,
         severity: Optional[int] = None,
         comment: Optional[Union[str, Literal[""]]] = None,
-        root_cause: Optional[Union[str, Literal[""]]] = None
+        root_cause: Optional[Union[str, Literal[""]]] = None,
     ) -> List[Dict[str, Any]]:
         """Updates multiple alerts with the same properties.
-        
+
         This is a helper function that iterates through the list of alert IDs
         and applies the same updates to each alert.
-        
+
         Args:
             alert_ids: List of alert IDs to update
             confidence_score: Confidence score [0-100] of the alert
@@ -881,10 +904,10 @@ class ChronicleClient:
             severity: Severity score [0-100] of the alert
             comment: Analyst comment (empty string is valid to clear)
             root_cause: Alert root cause (empty string is valid to clear)
-            
+
         Returns:
             List of dictionaries containing updated alert information
-            
+
         Raises:
             APIError: If any API request fails
             ValueError: If invalid values are provided
@@ -902,44 +925,47 @@ class ChronicleClient:
             disregarded,
             severity,
             comment,
-            root_cause
+            root_cause,
         )
-    
+
     def search_rule_alerts(
         self,
         start_time: datetime,
         end_time: datetime,
         rule_status: Optional[str] = None,
-        page_size: Optional[int] = None
+        page_size: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Search for alerts generated by rules.
-        
+
         Args:
             start_time: Start time for the search (inclusive)
             end_time: End time for the search (exclusive)
             rule_status: Filter by rule status (deprecated - not currently supported by the API)
             page_size: Maximum number of alerts to return
-            
+
         Returns:
             Dictionary containing alert search results
-            
+
         Raises:
             APIError: If the API request fails
         """
-        from secops.chronicle.rule_alert import search_rule_alerts as _search_rule_alerts
+        from secops.chronicle.rule_alert import (
+            search_rule_alerts as _search_rule_alerts,
+        )
+
         return _search_rule_alerts(self, start_time, end_time, rule_status, page_size)
-    
+
     # Rule Detection methods
-    
+
     def list_detections(
         self,
         rule_id: str,
         alert_state: Optional[str] = None,
         page_size: Optional[int] = None,
-        page_token: Optional[str] = None
+        page_token: Optional[str] = None,
     ) -> Dict[str, Any]:
         """List detections for a rule.
-        
+
         Args:
             rule_id: Unique ID of the rule to list detections for. Options are:
                 - {rule_id} (latest version)
@@ -951,86 +977,78 @@ class ChronicleClient:
                 - "ALERTING"
             page_size: If provided, maximum number of detections to return
             page_token: If provided, continuation token for pagination
-            
+
         Returns:
             Dictionary containing detection information
-            
+
         Raises:
             APIError: If the API request fails
             ValueError: If an invalid alert_state is provided
         """
         return _list_detections(self, rule_id, alert_state, page_size, page_token)
-    
+
     def list_errors(self, rule_id: str) -> Dict[str, Any]:
         """List execution errors for a rule.
-        
+
         Args:
             rule_id: Unique ID of the rule to list errors for. Options are:
                 - {rule_id} (latest version)
                 - {rule_id}@v_<seconds>_<nanoseconds> (specific version)
                 - {rule_id}@- (all versions)
-                
+
         Returns:
             Dictionary containing rule execution errors
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _list_errors(self, rule_id)
-    
+
     # Rule Retrohunt methods
-    
+
     def create_retrohunt(
-        self,
-        rule_id: str,
-        start_time: datetime,
-        end_time: datetime
+        self, rule_id: str, start_time: datetime, end_time: datetime
     ) -> Dict[str, Any]:
         """Creates a retrohunt for a rule.
-        
+
         A retrohunt applies a rule to historical data within the specified time range.
-        
+
         Args:
             rule_id: Unique ID of the rule to run retrohunt for ("ru_<UUID>")
             start_time: Start time for retrohunt analysis
             end_time: End time for retrohunt analysis
-            
+
         Returns:
             Dictionary containing operation information for the retrohunt
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _create_retrohunt(self, rule_id, start_time, end_time)
-    
-    def get_retrohunt(
-        self,
-        rule_id: str,
-        operation_id: str
-    ) -> Dict[str, Any]:
+
+    def get_retrohunt(self, rule_id: str, operation_id: str) -> Dict[str, Any]:
         """Get retrohunt status and results.
-        
+
         Args:
             rule_id: Unique ID of the rule the retrohunt is for ("ru_<UUID>" or
               "ru_<UUID>@v_<seconds>_<nanoseconds>")
             operation_id: Operation ID of the retrohunt
-            
+
         Returns:
             Dictionary containing retrohunt information
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _get_retrohunt(self, rule_id, operation_id)
-    
+
     # Rule Set methods
-    
+
     def batch_update_curated_rule_set_deployments(
-        self,
-        deployments: List[Dict[str, Any]]
+        self, deployments: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """Batch update curated rule set deployments.
-        
+
         Args:
             deployments: List of deployment configurations where each item contains:
                 - category_id: UUID of the category
@@ -1038,10 +1056,10 @@ class ChronicleClient:
                 - precision: Precision level (e.g., "broad", "precise")
                 - enabled: Whether the rule set should be enabled
                 - alerting: Whether alerting should be enabled for the rule set
-                
+
         Returns:
             Dictionary containing information about the modified deployments
-            
+
         Raises:
             APIError: If the API request fails
             ValueError: If required fields are missing from the deployments
@@ -1050,16 +1068,16 @@ class ChronicleClient:
 
     def validate_rule(self, rule_text: str):
         """Validates a YARA-L2 rule against the Chronicle API.
-        
+
         Args:
             rule_text: Content of the rule to validate
-            
+
         Returns:
             ValidationResult containing:
                 - success: Whether the rule is valid
                 - message: Error message if validation failed, None if successful
                 - position: Dictionary containing position information for errors, if available
-            
+
         Raises:
             APIError: If the API request fails
         """
@@ -1067,52 +1085,52 @@ class ChronicleClient:
 
     def translate_nl_to_udm(self, text: str) -> str:
         """Translate natural language query to UDM search syntax.
-        
+
         Args:
             text: Natural language query text
-            
+
         Returns:
             UDM search query string
-            
+
         Raises:
             APIError: If the API request fails or no valid query can be generated
         """
         return translate_nl_to_udm(self, text)
-    
+
     def gemini(
         self,
         query: str,
         conversation_id: Optional[str] = None,
         context_uri: str = "/search",
-        context_body: Optional[Dict[str, Any]] = None
+        context_body: Optional[Dict[str, Any]] = None,
     ) -> GeminiResponse:
         """Query Chronicle Gemini with a prompt.
-        
+
         This method provides access to Chronicle's Gemini conversational AI interface,
-        which can answer security questions, generate detection rules, explain 
+        which can answer security questions, generate detection rules, explain
         CVEs, and provide other security insights.
-        
+
         Args:
             query: The text query to send to Gemini
             conversation_id: Optional conversation ID. If not provided, a new conversation will be created
             context_uri: URI context for the query (default: "/search")
             context_body: Optional additional context as a dictionary
-            
+
         Returns:
             A GeminiResponse object with structured content blocks (text, code, HTML) and
             suggested actions if applicable
-            
+
         Raises:
             APIError: If the API request fails
-            
+
         Example:
             ```python
             # Ask about a security concept
             response = chronicle.gemini("What is Windows event ID 4625?")
-            
+
             # Get explanatory text
             print(response.get_text_content())
-            
+
             # Get code blocks separately (for rule generation, etc.)
             for code_block in response.get_code_blocks():
                 print(f"Code: {code_block.content}")
@@ -1123,28 +1141,28 @@ class ChronicleClient:
             query=query,
             conversation_id=conversation_id,
             context_uri=context_uri,
-            context_body=context_body
+            context_body=context_body,
         )
-    
+
     def opt_in_to_gemini(self) -> bool:
         """Opt the user into Gemini (Duet AI) in Chronicle.
-        
+
         This method updates the user's preferences to enable Duet AI chat,
         which is required before using the Gemini functionality. The Gemini method
         will attempt to do this automatically if needed, but this method
         allows for explicit opt-in.
-        
+
         Returns:
             True if successful, False if permission error
-            
+
         Raises:
             APIError: If the API request fails for a reason other than permissions
-            
+
         Example:
             ```python
             # Explicitly opt in to Gemini before using it
             chronicle.opt_in_to_gemini()
-            
+
             # Now use Gemini
             response = chronicle.gemini("What is Windows event ID 4625?")
             ```
@@ -1152,7 +1170,7 @@ class ChronicleClient:
         # Set the opt-in attempted flag
         self._gemini_opt_in_attempted = True
         return _opt_in_to_gemini(self)
-    
+
     def nl_search(
         self,
         text: str,
@@ -1160,10 +1178,10 @@ class ChronicleClient:
         end_time: datetime,
         max_events: int = 10000,
         case_insensitive: bool = True,
-        max_attempts: int = 30
+        max_attempts: int = 30,
     ) -> Dict[str, Any]:
         """Perform a search using natural language that is translated to UDM.
-        
+
         Args:
             text: Natural language query text
             start_time: Search start time
@@ -1171,10 +1189,10 @@ class ChronicleClient:
             max_events: Maximum events to return
             case_insensitive: Whether to perform case-insensitive search
             max_attempts: Maximum number of polling attempts
-            
+
         Returns:
             Dict containing the search results with events
-            
+
         Raises:
             APIError: If the API request fails
         """
@@ -1185,7 +1203,7 @@ class ChronicleClient:
             end_time=end_time,
             max_events=max_events,
             case_insensitive=case_insensitive,
-            max_attempts=max_attempts
+            max_attempts=max_attempts,
         )
 
     def ingest_log(
@@ -1200,7 +1218,7 @@ class ChronicleClient:
         labels: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """Ingest a log into Chronicle.
-        
+
         Args:
             log_type: Chronicle log type (e.g., "OKTA", "WINDOWS", etc.)
             log_message: The raw log message to ingest
@@ -1208,10 +1226,10 @@ class ChronicleClient:
             collection_time: The time the log was collected (defaults to current time)
             forwarder_id: ID of the forwarder to use (creates or uses default if None)
             force_log_type: Whether to force using the log type even if not in the valid list
-            
+
         Returns:
             Dictionary containing the operation details for the ingestion
-            
+
         Raises:
             ValueError: If the log type is invalid or timestamps are invalid
             APIError: If the API request fails
@@ -1229,68 +1247,64 @@ class ChronicleClient:
         )
 
     def get_or_create_forwarder(
-        self,
-        display_name: str = "Wrapper-SDK-Forwarder"
+        self, display_name: str = "Wrapper-SDK-Forwarder"
     ) -> Dict[str, Any]:
         """Get an existing forwarder by name or create a new one if none exists.
-        
+
         Args:
             display_name: Name of the forwarder to find or create
-            
+
         Returns:
             Dictionary containing the forwarder details
-            
+
         Raises:
             APIError: If the API request fails
         """
-        return _get_or_create_forwarder(
-            self,
-            display_name=display_name
-        )
+        return _get_or_create_forwarder(self, display_name=display_name)
 
     def get_all_log_types(self) -> List[LogType]:
         """Get all available Chronicle log types.
-        
+
         Returns:
             List of LogType objects representing all available log types
         """
         return _get_all_log_types()
-        
+
     def is_valid_log_type(self, log_type_id: str) -> bool:
         """Check if a log type ID is valid.
-        
+
         Args:
             log_type_id: The log type ID to validate
-            
+
         Returns:
             True if the log type exists, False otherwise
         """
         return _is_valid_log_type(log_type_id)
-        
+
     def get_log_type_description(self, log_type_id: str) -> Optional[str]:
         """Get the description for a log type ID.
-        
+
         Args:
             log_type_id: The log type ID to get the description for
-            
+
         Returns:
             Description string if the log type exists, None otherwise
         """
         return _get_log_type_description(log_type_id)
-        
+
     def search_log_types(
         self,
         search_term: str,
         case_sensitive: bool = False,
-        search_in_description: bool = True
+        search_in_description: bool = True,
     ) -> List[LogType]:
         """Search log types by ID or description.
-        
+
         Args:
             search_term: Term to search for
             case_sensitive: Whether the search should be case sensitive
             search_in_description: Whether to search in descriptions as well as IDs
-            
+
         Returns:
             List of matching LogType objects
         """
@@ -1299,39 +1313,35 @@ class ChronicleClient:
     def ingest_udm(
         self,
         udm_events: Union[Dict[str, Any], List[Dict[str, Any]]],
-        add_missing_ids: bool = True
+        add_missing_ids: bool = True,
     ) -> Dict[str, Any]:
         """Ingest UDM events directly into Chronicle.
-        
+
         Args:
             udm_events: A single UDM event dictionary or a list of UDM event dictionaries
             add_missing_ids: Whether to automatically add unique IDs to events missing them
-            
+
         Returns:
             Dictionary containing the operation details for the ingestion
-            
+
         Raises:
             ValueError: If any required fields are missing or events are malformed
             APIError: If the API request fails
         """
-        return _ingest_udm(
-            self,
-            udm_events=udm_events,
-            add_missing_ids=add_missing_ids
-        )
+        return _ingest_udm(self, udm_events=udm_events, add_missing_ids=add_missing_ids)
 
     def get_data_export(self, data_export_id: str) -> Dict[str, Any]:
         """Get information about a specific data export.
-        
+
         Args:
             data_export_id: ID of the data export to retrieve
-            
+
         Returns:
             Dictionary containing data export details
-            
+
         Raises:
             APIError: If the API request fails
-            
+
         Example:
             ```python
             export = chronicle.get_data_export("export123")
@@ -1346,10 +1356,10 @@ class ChronicleClient:
         start_time: datetime,
         end_time: datetime,
         log_type: Optional[str] = None,
-        export_all_logs: bool = False
+        export_all_logs: bool = False,
     ) -> Dict[str, Any]:
         """Create a new data export job.
-        
+
         Args:
             gcs_bucket: GCS bucket path in format "projects/{project}/buckets/{bucket}"
             start_time: Start time for the export (inclusive)
@@ -1357,21 +1367,21 @@ class ChronicleClient:
             log_type: Optional specific log type to export. If None and export_all_logs is False,
                     no logs will be exported
             export_all_logs: Whether to export all log types
-            
+
         Returns:
             Dictionary containing details of the created data export
-            
+
         Raises:
             APIError: If the API request fails
             ValueError: If invalid parameters are provided
-            
+
         Example:
             ```python
             from datetime import datetime, timedelta
-            
+
             end_time = datetime.now()
             start_time = end_time - timedelta(days=1)
-            
+
             # Export a specific log type
             export = chronicle.create_data_export(
                 gcs_bucket="projects/my-project/buckets/my-bucket",
@@ -1379,7 +1389,7 @@ class ChronicleClient:
                 end_time=end_time,
                 log_type="WINDOWS"
             )
-            
+
             # Export all logs
             export = chronicle.create_data_export(
                 gcs_bucket="projects/my-project/buckets/my-bucket",
@@ -1395,21 +1405,21 @@ class ChronicleClient:
             start_time=start_time,
             end_time=end_time,
             log_type=log_type,
-            export_all_logs=export_all_logs
+            export_all_logs=export_all_logs,
         )
 
     def cancel_data_export(self, data_export_id: str) -> Dict[str, Any]:
         """Cancel an in-progress data export.
-        
+
         Args:
             data_export_id: ID of the data export to cancel
-            
+
         Returns:
             Dictionary containing details of the cancelled data export
-            
+
         Raises:
             APIError: If the API request fails
-            
+
         Example:
             ```python
             result = chronicle.cancel_data_export("export123")
@@ -1423,37 +1433,37 @@ class ChronicleClient:
         start_time: datetime,
         end_time: datetime,
         page_size: Optional[int] = None,
-        page_token: Optional[str] = None
+        page_token: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Fetch available log types for export within a time range.
-        
+
         Args:
             start_time: Start time for the time range (inclusive)
             end_time: End time for the time range (exclusive)
             page_size: Optional maximum number of results to return
             page_token: Optional page token for pagination
-            
+
         Returns:
             Dictionary containing:
                 - available_log_types: List of AvailableLogType objects
                 - next_page_token: Token for fetching the next page of results
-            
+
         Raises:
             APIError: If the API request fails
             ValueError: If invalid parameters are provided
-            
+
         Example:
             ```python
             from datetime import datetime, timedelta
-            
+
             end_time = datetime.now()
             start_time = end_time - timedelta(days=7)
-            
+
             result = chronicle.fetch_available_log_types(
                 start_time=start_time,
                 end_time=end_time
             )
-            
+
             for log_type in result["available_log_types"]:
                 print(f"{log_type.display_name} ({log_type.log_type})")
                 print(f"  Available from {log_type.start_time} to {log_type.end_time}")
@@ -1464,11 +1474,11 @@ class ChronicleClient:
             start_time=start_time,
             end_time=end_time,
             page_size=page_size,
-            page_token=page_token
+            page_token=page_token,
         )
 
     # Data Table methods
-    
+
     def create_data_table(
         self,
         name: str,
@@ -1478,117 +1488,123 @@ class ChronicleClient:
         scopes: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """Create a new data table.
-        
+
         Args:
             name: The name for the new data table
             description: A user-provided description of the data table
             header: A dictionary mapping column names to column types
             rows: Optional list of rows for the data table
             scopes: Optional list of scopes for the data table
-            
+
         Returns:
             Dictionary containing the created data table
-            
+
         Raises:
             APIError: If the API request fails
             SecOpsError: If the data table name is invalid or CIDR validation fails
         """
         return _create_data_table(self, name, description, header, rows, scopes)
-    
+
     def get_data_table(self, name: str) -> Dict[str, Any]:
         """Get data table details.
-        
+
         Args:
             name: The name of the data table to get
-            
+
         Returns:
             Dictionary containing the data table
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _get_data_table(self, name)
-    
+
     def list_data_tables(self, order_by: Optional[str] = None) -> List[Dict[str, Any]]:
         """List data tables.
-        
+
         Args:
-            order_by: Configures ordering of DataTables in the response. 
+            order_by: Configures ordering of DataTables in the response.
                       Note: The API only supports "createTime asc".
-                      
+
         Returns:
             List of data tables
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _list_data_tables(self, order_by)
-    
+
     def delete_data_table(self, name: str, force: bool = False) -> Dict[str, Any]:
         """Delete a data table.
-        
+
         Args:
             name: The name of the data table to delete
             force: If set to true, any rows under this data table will also be deleted.
                    (Otherwise, the request will only work if the data table has no rows).
-                   
+
         Returns:
             Dictionary containing the deleted data table or empty dict
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _delete_data_table(self, name, force)
-    
-    def create_data_table_rows(self, name: str, rows: List[List[str]]) -> List[Dict[str, Any]]:
+
+    def create_data_table_rows(
+        self, name: str, rows: List[List[str]]
+    ) -> List[Dict[str, Any]]:
         """Create data table rows, chunking if necessary.
-        
+
         Args:
             name: The name of the data table
             rows: A list of rows for the data table
-            
+
         Returns:
             List of responses containing the created data table rows
-            
+
         Raises:
             APIError: If the API request fails
             SecOpsError: If a row is too large to process
         """
         return _create_data_table_rows(self, name, rows)
-    
-    def list_data_table_rows(self, name: str, order_by: Optional[str] = None) -> List[Dict[str, Any]]:
+
+    def list_data_table_rows(
+        self, name: str, order_by: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """List data table rows.
-        
+
         Args:
             name: The name of the data table to list rows from
             order_by: Configures ordering of DataTableRows in the response.
                       Note: The API only supports "createTime asc".
-                      
+
         Returns:
             List of data table rows
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _list_data_table_rows(self, name, order_by)
-    
-    def delete_data_table_rows(self, name: str, row_ids: List[str]) -> List[Dict[str, Any]]:
+
+    def delete_data_table_rows(
+        self, name: str, row_ids: List[str]
+    ) -> List[Dict[str, Any]]:
         """Delete data table rows.
-        
+
         Args:
             name: The name of the data table to delete rows from
             row_ids: The IDs of the rows to delete
-            
+
         Returns:
             List of dictionaries containing the deleted data table rows
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _delete_data_table_rows(self, name, row_ids)
-    
+
     # Reference List methods
-    
+
     def create_reference_list(
         self,
         name: str,
@@ -1597,58 +1613,56 @@ class ChronicleClient:
         syntax_type: ReferenceListSyntaxType = ReferenceListSyntaxType.STRING,
     ) -> Dict[str, Any]:
         """Create a new reference list.
-        
+
         Args:
             name: The name for the new reference list
             description: A user-provided description of the reference list
             entries: A list of entries for the reference list
             syntax_type: The syntax type of the reference list
-            
+
         Returns:
             Dictionary containing the created reference list
-            
+
         Raises:
             APIError: If the API request fails
             SecOpsError: If the reference list name is invalid or a CIDR entry is invalid
         """
         return _create_reference_list(self, name, description, entries, syntax_type)
-    
+
     def get_reference_list(
-        self, 
-        name: str, 
-        view: ReferenceListView = ReferenceListView.FULL
+        self, name: str, view: ReferenceListView = ReferenceListView.FULL
     ) -> Dict[str, Any]:
         """Get a single reference list.
-        
+
         Args:
             name: The name of the reference list
             view: How much of the ReferenceList to view. Defaults to REFERENCE_LIST_VIEW_FULL.
-            
+
         Returns:
             Dictionary containing the reference list
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _get_reference_list(self, name, view)
-    
+
     def list_reference_lists(
         self,
         view: ReferenceListView = ReferenceListView.BASIC,
     ) -> List[Dict[str, Any]]:
         """List reference lists.
-        
+
         Args:
             view: How much of each ReferenceList to view. Defaults to REFERENCE_LIST_VIEW_BASIC.
-            
+
         Returns:
             List of reference lists, ordered in ascending alphabetical order by name
-            
+
         Raises:
             APIError: If the API request fails
         """
         return _list_reference_lists(self, view)
-    
+
     def update_reference_list(
         self,
         name: str,
@@ -1656,31 +1670,31 @@ class ChronicleClient:
         entries: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """Update a reference list.
-        
+
         Args:
             name: The name of the reference list
             description: A user-provided description of the reference list
             entries: A list of entries for the reference list
-            
+
         Returns:
             Dictionary containing the updated reference list
-            
+
         Raises:
             APIError: If the API request fails
             SecOpsError: If no description or entries are provided to be updated
         """
         return _update_reference_list(self, name, description, entries)
-    
+
     def delete_reference_list(self, name: str) -> Dict[str, Any]:
         """Delete a reference list.
-        
+
         Args:
             name: The name of the reference list to delete
-            
+
         Returns:
             Dictionary containing the deleted reference list or empty dict
-            
+
         Raises:
             APIError: If the API request fails
         """
-        return _delete_reference_list(self, name) 
+        return _delete_reference_list(self, name)

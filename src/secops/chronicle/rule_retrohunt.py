@@ -20,68 +20,61 @@ from secops.exceptions import APIError
 
 
 def create_retrohunt(
-    client,
-    rule_id: str,
-    start_time: datetime,
-    end_time: datetime
+    client, rule_id: str, start_time: datetime, end_time: datetime
 ) -> Dict[str, Any]:
     """Creates a retrohunt for a rule.
-    
+
     A retrohunt applies a rule to historical data within the specified time range.
-    
+
     Args:
         client: ChronicleClient instance
         rule_id: Unique ID of the rule to run retrohunt for ("ru_<UUID>")
         start_time: Start time for retrohunt analysis
         end_time: End time for retrohunt analysis
-        
+
     Returns:
         Dictionary containing operation information for the retrohunt
-        
+
     Raises:
         APIError: If the API request fails
     """
     url = f"{client.base_url}/{client.instance_id}/rules/{rule_id}/retrohunts"
-    
+
     body = {
         "process_interval": {
             "start_time": start_time.isoformat(),
             "end_time": end_time.isoformat(),
         },
     }
-    
+
     response = client.session.post(url, json=body)
-    
+
     if response.status_code != 200:
         raise APIError(f"Failed to create retrohunt: {response.text}")
-    
+
     return response.json()
 
 
-def get_retrohunt(
-    client,
-    rule_id: str,
-    operation_id: str
-) -> Dict[str, Any]:
+def get_retrohunt(client, rule_id: str, operation_id: str) -> Dict[str, Any]:
     """Get retrohunt status and results.
-    
+
     Args:
         client: ChronicleClient instance
         rule_id: Unique ID of the rule the retrohunt is for ("ru_<UUID>" or
           "ru_<UUID>@v_<seconds>_<nanoseconds>")
         operation_id: Operation ID of the retrohunt
-        
+
     Returns:
         Dictionary containing retrohunt information
-        
+
     Raises:
         APIError: If the API request fails
     """
     url = f"{client.base_url}/{client.instance_id}/rules/{rule_id}/retrohunts/{operation_id}"
-    
+
     response = client.session.get(url)
-    
+
     if response.status_code != 200:
         raise APIError(f"Failed to get retrohunt: {response.text}")
-    
-    return response.json() 
+
+    return response.json()

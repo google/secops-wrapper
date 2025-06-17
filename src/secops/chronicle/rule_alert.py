@@ -20,37 +20,35 @@ from secops.exceptions import APIError
 
 
 def get_alert(
-    client,
-    alert_id: str,
-    include_detections: bool = False
+    client, alert_id: str, include_detections: bool = False
 ) -> Dict[str, Any]:
     """Gets an alert by ID.
-    
+
     Args:
         client: ChronicleClient instance
         alert_id: ID of the alert to retrieve
         include_detections: Whether to include detection details in the response
-        
+
     Returns:
         Dictionary containing alert information
-        
+
     Raises:
         APIError: If the API request fails
     """
     url = f"{client.base_url}/{client.instance_id}/legacy:legacyGetAlert"
-    
+
     params = {
         "alertId": alert_id,
     }
-    
+
     if include_detections:
         params["includeDetections"] = True
-    
+
     response = client.session.get(url, params=params)
-    
+
     if response.status_code != 200:
         raise APIError(f"Failed to get alert: {response.text}")
-    
+
     return response.json()
 
 
@@ -67,10 +65,10 @@ def update_alert(
     disregarded: Optional[bool] = None,
     severity: Optional[int] = None,
     comment: Optional[Union[str, Literal[""]]] = None,
-    root_cause: Optional[Union[str, Literal[""]]] = None
+    root_cause: Optional[Union[str, Literal[""]]] = None,
 ) -> Dict[str, Any]:
     """Updates an alert's properties.
-    
+
     Args:
         client: ChronicleClient instance
         alert_id: ID of the alert to update
@@ -106,35 +104,35 @@ def update_alert(
         severity: Severity score [0-100] of the alert
         comment: Analyst comment (empty string is valid to clear)
         root_cause: Alert root cause (empty string is valid to clear)
-        
+
     Returns:
         Dictionary containing updated alert information
-        
+
     Raises:
         APIError: If the API request fails
         ValueError: If invalid values are provided
     """
     url = f"{client.base_url}/{client.instance_id}/legacy:legacyUpdateAlert"
-    
+
     # Validate inputs
     priority_values = [
-        "PRIORITY_UNSPECIFIED", "PRIORITY_INFO", "PRIORITY_LOW", 
-        "PRIORITY_MEDIUM", "PRIORITY_HIGH", "PRIORITY_CRITICAL"
+        "PRIORITY_UNSPECIFIED",
+        "PRIORITY_INFO",
+        "PRIORITY_LOW",
+        "PRIORITY_MEDIUM",
+        "PRIORITY_HIGH",
+        "PRIORITY_CRITICAL",
     ]
     reason_values = [
-        "REASON_UNSPECIFIED", "REASON_NOT_MALICIOUS", 
-        "REASON_MALICIOUS", "REASON_MAINTENANCE"
+        "REASON_UNSPECIFIED",
+        "REASON_NOT_MALICIOUS",
+        "REASON_MALICIOUS",
+        "REASON_MAINTENANCE",
     ]
-    reputation_values = [
-        "REPUTATION_UNSPECIFIED", "USEFUL", "NOT_USEFUL"
-    ]
-    status_values = [
-        "STATUS_UNSPECIFIED", "NEW", "REVIEWED", "CLOSED", "OPEN"
-    ]
-    verdict_values = [
-        "VERDICT_UNSPECIFIED", "TRUE_POSITIVE", "FALSE_POSITIVE"
-    ]
-    
+    reputation_values = ["REPUTATION_UNSPECIFIED", "USEFUL", "NOT_USEFUL"]
+    status_values = ["STATUS_UNSPECIFIED", "NEW", "REVIEWED", "CLOSED", "OPEN"]
+    verdict_values = ["VERDICT_UNSPECIFIED", "TRUE_POSITIVE", "FALSE_POSITIVE"]
+
     # Validate enum values if provided
     if priority and priority not in priority_values:
         raise ValueError(f"priority must be one of {priority_values}")
@@ -146,7 +144,7 @@ def update_alert(
         raise ValueError(f"status must be one of {status_values}")
     if verdict and verdict not in verdict_values:
         raise ValueError(f"verdict must be one of {verdict_values}")
-    
+
     # Validate score ranges
     if confidence_score is not None and not (0 <= confidence_score <= 100):
         raise ValueError("confidence_score must be between 0 and 100")
@@ -154,7 +152,7 @@ def update_alert(
         raise ValueError("risk_score must be between 0 and 100")
     if severity is not None and not (0 <= severity <= 100):
         raise ValueError("severity must be between 0 and 100")
-    
+
     # Build feedback dictionary with only provided values
     feedback = {}
     if confidence_score is not None:
@@ -179,21 +177,21 @@ def update_alert(
         feedback["comment"] = comment
     if root_cause is not None:  # Accept empty string
         feedback["root_cause"] = root_cause
-    
+
     # Check if at least one property is provided
     if not feedback:
         raise ValueError("At least one alert property must be specified for update")
-    
+
     payload = {
         "alert_id": alert_id,
         "feedback": feedback,
     }
-    
+
     response = client.session.post(url, json=payload)
-    
+
     if response.status_code != 200:
         raise APIError(f"Failed to update alert: {response.text}")
-    
+
     return response.json()
 
 
@@ -210,13 +208,13 @@ def bulk_update_alerts(
     disregarded: Optional[bool] = None,
     severity: Optional[int] = None,
     comment: Optional[Union[str, Literal[""]]] = None,
-    root_cause: Optional[Union[str, Literal[""]]] = None
+    root_cause: Optional[Union[str, Literal[""]]] = None,
 ) -> List[Dict[str, Any]]:
     """Updates multiple alerts with the same properties.
-    
+
     This is a helper function that iterates through the list of alert IDs
     and applies the same updates to each alert.
-    
+
     Args:
         client: ChronicleClient instance
         alert_ids: List of alert IDs to update
@@ -231,16 +229,16 @@ def bulk_update_alerts(
         severity: Severity score [0-100] of the alert
         comment: Analyst comment (empty string is valid to clear)
         root_cause: Alert root cause (empty string is valid to clear)
-        
+
     Returns:
         List of dictionaries containing updated alert information
-        
+
     Raises:
         APIError: If any API request fails
         ValueError: If invalid values are provided
     """
     results = []
-    
+
     for alert_id in alert_ids:
         result = update_alert(
             client,
@@ -255,10 +253,10 @@ def bulk_update_alerts(
             disregarded,
             severity,
             comment,
-            root_cause
+            root_cause,
         )
         results.append(result)
-    
+
     return results
 
 
@@ -267,17 +265,17 @@ def search_rule_alerts(
     start_time: datetime,
     end_time: datetime,
     rule_status: Optional[str] = None,
-    page_size: Optional[int] = None
+    page_size: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Search for alerts generated by rules.
-    
+
     Args:
         client: ChronicleClient instance
         start_time: Start time for the search (inclusive)
         end_time: End time for the search (exclusive)
         rule_status: Filter by rule status (deprecated - not currently supported by the API)
         page_size: Maximum number of alerts to return
-        
+
     Returns:
         Dictionary containing alert search results with the format:
         {
@@ -315,26 +313,26 @@ def search_rule_alerts(
             ],
             "tooManyAlerts": boolean
         }
-        
+
     Raises:
         APIError: If the API request fails
     """
     url = f"{client.base_url}/{client.instance_id}/legacy:legacySearchRulesAlerts"
-    
+
     # Build request parameters
     params = {
         "timeRange.start_time": start_time.isoformat(),
         "timeRange.end_time": end_time.isoformat(),
     }
-    
+
     # Remove rule status filtering as it doesn't seem to be supported
     if page_size:
         params["maxNumAlertsToReturn"] = page_size
-    
+
     response = client.session.get(url, params=params)
-    
+
     if response.status_code != 200:
         error_msg = f"Failed to search rule alerts: {response.text}"
         raise APIError(error_msg)
-    
-    return response.json() 
+
+    return response.json()

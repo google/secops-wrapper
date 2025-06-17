@@ -17,56 +17,59 @@
 from typing import Dict, Any
 from secops.exceptions import APIError
 
+
 def validate_query(client, query: str) -> Dict[str, Any]:
     """Validate a UDM query against the Chronicle API.
-    
+
     Args:
         client: ChronicleClient instance
         query: Query string to validate
-        
+
     Returns:
         Dictionary containing query validation results, including:
         - isValid: Boolean indicating if the query is valid
         - queryType: Type of query (e.g., QUERY_TYPE_UDM_QUERY, QUERY_TYPE_STATS_QUERY)
         - validationMessage: Error message if the query is invalid
-        
+
     Raises:
         APIError: If the API request fails
     """
     url = f"{client.base_url}/{client.instance_id}:validateQuery"
-    
+
     # Replace special characters with Unicode escapes
-    encoded_query = query.replace('!', '\u0021')
-    
+    encoded_query = query.replace("!", "\u0021")
+
     params = {
         "rawQuery": encoded_query,
         "dialect": "DIALECT_UDM_SEARCH",
-        "allowUnreplacedPlaceholders": "false"
+        "allowUnreplacedPlaceholders": "false",
     }
 
     response = client.session.get(url, params=params)
-    
+
     # Handle successful validation
     if response.status_code == 200:
         try:
             return response.json()
         except ValueError:
             return {"isValid": True, "queryType": "QUERY_TYPE_UNKNOWN"}
-    
+
     # If validation failed, return structured error
     # For any status code other than 200, return an error structure
     if response.status_code == 400:
         try:
             # Try to parse the error message
             error_data = response.json()
-            validation_message = error_data.get("error", {}).get("message", "Invalid query syntax")
+            validation_message = error_data.get("error", {}).get(
+                "message", "Invalid query syntax"
+            )
             return {
-                "isValid": False, 
+                "isValid": False,
                 "queryType": "QUERY_TYPE_UNKNOWN",
-                "validationMessage": validation_message
+                "validationMessage": validation_message,
             }
         except ValueError:
             pass
-    
+
     # For any other status codes, raise an APIError
-    raise APIError(f"Query validation failed: {response.text}") 
+    raise APIError(f"Query validation failed: {response.text}")

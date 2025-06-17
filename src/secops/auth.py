@@ -21,9 +21,8 @@ import google.auth.transport.requests
 from secops.exceptions import AuthenticationError
 
 # Define default scopes needed for Chronicle API
-CHRONICLE_SCOPES = [
-    "https://www.googleapis.com/auth/cloud-platform"
-]
+CHRONICLE_SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
+
 
 class SecOpsAuth:
     """Handles authentication for the Google SecOps SDK."""
@@ -33,10 +32,10 @@ class SecOpsAuth:
         credentials: Optional[Credentials] = None,
         service_account_path: Optional[str] = None,
         service_account_info: Optional[Dict[str, Any]] = None,
-        scopes: Optional[List[str]] = None
+        scopes: Optional[List[str]] = None,
     ):
         """Initialize authentication for SecOps.
-        
+
         Args:
             credentials: Optional pre-existing Google Auth credentials
             service_account_path: Optional path to service account JSON key file
@@ -45,9 +44,7 @@ class SecOpsAuth:
         """
         self.scopes = scopes or CHRONICLE_SCOPES
         self.credentials = self._get_credentials(
-            credentials, 
-            service_account_path,
-            service_account_info
+            credentials, service_account_path, service_account_info
         )
         self._session = None
 
@@ -55,35 +52,33 @@ class SecOpsAuth:
         self,
         credentials: Optional[Credentials],
         service_account_path: Optional[str],
-        service_account_info: Optional[Dict[str, Any]]
+        service_account_info: Optional[Dict[str, Any]],
     ) -> Credentials:
         """Get credentials from various sources."""
         try:
             if credentials:
                 return credentials.with_scopes(self.scopes)
-            
+
             if service_account_info:
                 return service_account.Credentials.from_service_account_info(
-                    service_account_info,
-                    scopes=self.scopes
+                    service_account_info, scopes=self.scopes
                 )
-            
+
             if service_account_path:
                 return service_account.Credentials.from_service_account_file(
-                    service_account_path,
-                    scopes=self.scopes
+                    service_account_path, scopes=self.scopes
                 )
-            
+
             # Try to get default credentials
             credentials, project = google.auth.default(scopes=self.scopes)
             return credentials
         except Exception as e:
             raise AuthenticationError(f"Failed to get credentials: {str(e)}")
-            
+
     @property
     def session(self):
         """Get an authorized session using the credentials.
-        
+
         Returns:
             Authorized session for API requests
         """
@@ -91,4 +86,4 @@ class SecOpsAuth:
             self._session = google.auth.transport.requests.AuthorizedSession(
                 self.credentials
             )
-        return self._session 
+        return self._session

@@ -28,11 +28,12 @@ import sys
 @dataclass
 class LogType:
     """Represents a Chronicle log type with its identifier and description.
-    
+
     Attributes:
         id: The log type identifier used in API calls
         description: Human-readable description of the log type
     """
+
     id: str
     description: str
 
@@ -1552,7 +1553,10 @@ _LOG_TYPE_DATA = [
     ("PROOFPOINT_META", "Proofpoint Meta"),
     ("PROOFPOINT_ON_DEMAND", "Proofpoint On Demand"),
     ("PROOFPOINT_SECURE_SHARE", "Proofpoint Secure Share"),
-    ("PROOFPOINT_SECURITY_AWARENESS_TRAINING", "Proofpoint Security Awareness Training"),
+    (
+        "PROOFPOINT_SECURITY_AWARENESS_TRAINING",
+        "Proofpoint Security Awareness Training",
+    ),
     ("PROOFPOINT_SENDMAIL_SENTRION", "Proofpoint Sendmail Sentrion"),
     ("PROOFPOINT_SER", "ProofPoint Secure Email Relay"),
     ("PROOFPOINT_TAP_CAMPAIGN", "Proofpoint Tap Campaign"),
@@ -1947,7 +1951,10 @@ _LOG_TYPE_DATA = [
     ("TRENDMICRO_AV", "Trend Micro AV"),
     ("TRENDMICRO_CLOUDAPPSECURITY", "Trend Micro Cloud App Security"),
     ("TRENDMICRO_CLOUDONE", "Trend Micro Cloud one"),
-    ("TRENDMICRO_CLOUD_EMAIL_GATEWAY_PROTECTION", "TrendMicro Cloud Email Gateway Protection"),
+    (
+        "TRENDMICRO_CLOUD_EMAIL_GATEWAY_PROTECTION",
+        "TrendMicro Cloud Email Gateway Protection",
+    ),
     ("TRENDMICRO_DDI", "TrendMicro Deep Discovery Inspector"),
     ("TRENDMICRO_DEEP_SECURITY", "Trend Micro Deep Security"),
     ("TRENDMICRO_EDGEIPS", "Trend Micro EdgeIPS"),
@@ -1958,13 +1965,22 @@ _LOG_TYPE_DATA = [
     ("TRENDMICRO_VISION_ONE", "Trend Micro Vision One"),
     ("TRENDMICRO_VISION_ONE_ACTIVITY", "Trend Micro Vision One Activity"),
     ("TRENDMICRO_VISION_ONE_AUDIT", "Trend Micro Vision One Audit"),
-    ("TRENDMICRO_VISION_ONE_CONTAINER_VULNERABILITIES", "Trend Micro Vision One Container Vulnerabilities"),
+    (
+        "TRENDMICRO_VISION_ONE_CONTAINER_VULNERABILITIES",
+        "Trend Micro Vision One Container Vulnerabilities",
+    ),
     ("TRENDMICRO_VISION_ONE_DETECTIONS", "Trend Micro Vision One Detections"),
-    ("TRENDMICRO_VISION_ONE_OBSERVERD_ATTACK_TECHNIQUES", "Trend Micro Vision One Observerd Attack Techniques"),
+    (
+        "TRENDMICRO_VISION_ONE_OBSERVERD_ATTACK_TECHNIQUES",
+        "Trend Micro Vision One Observerd Attack Techniques",
+    ),
     ("TRENDMICRO_VISION_ONE_WORKBENCH", "Trend Micro Vision One Workbench"),
     ("TRENDMICRO_WEBPROXY", "TrendMicro Web Proxy"),
     ("TRENDMICRO_WEBPROXY_DSM", "TrendMicro Webproxy DSM"),
-    ("TREND_MICRO_TIPPING_POINT", "Trend Micro TippingPoint Security Management System"),
+    (
+        "TREND_MICRO_TIPPING_POINT",
+        "Trend Micro TippingPoint Security Management System",
+    ),
     ("TRIDIUM_NIAGARA_FRAMEWORK", "Tridium Niagara Framework"),
     ("TRIPP_LITE", "Tripp Lite"),
     ("TRIPWIRE_FIM", "Tripwire"),
@@ -2164,69 +2180,69 @@ _LOG_TYPE_DATA = [
     ("ZSCALER_ZPA", "Zscaler Private Access"),
     ("ZSCALER_ZPA_AUDIT", "Zscaler Secure Private Access Audit Logs"),
     ("ZUORA_APP_LOGS", "Zuora App Logs"),
-    ("ZYWALL", "Zywall")
+    ("ZYWALL", "Zywall"),
 ]
 
 
 def load_log_types() -> Dict[str, LogType]:
     """Load and cache log types from the hardcoded data.
-    
+
     Returns:
         Dictionary mapping log type IDs to LogType objects
     """
     global _LOG_TYPES_CACHE
-    
+
     # Return cached data if available
     if _LOG_TYPES_CACHE is not None:
         return _LOG_TYPES_CACHE
-    
+
     # Initialize cache with data from _LOG_TYPE_DATA
     _LOG_TYPES_CACHE = {}
     for log_type_id, description in _LOG_TYPE_DATA:
         _LOG_TYPES_CACHE[log_type_id] = LogType(id=log_type_id, description=description)
-    
+
     # Add test log types
-    if 'pytest' in sys.modules:
+    if "pytest" in sys.modules:
         # Add the required test log types that might not be in the main data
         test_log_types = {
             "WINDOWS": "Windows Event Logs",
             "CS_EDR": "Chronicle EDR",
             "LINUX_SYSLOG": "Linux Syslog",
-            "OKTA": "Okta Identity Management"
+            "OKTA": "Okta Identity Management",
         }
         for log_id, description in test_log_types.items():
             # Check if already exists
             if log_id not in _LOG_TYPES_CACHE:
                 _LOG_TYPES_CACHE[log_id] = LogType(id=log_id, description=description)
-    
+
     return _LOG_TYPES_CACHE
 
 
 def get_all_log_types() -> List[LogType]:
     """Get all available Chronicle log types.
-    
+
     Returns:
         List of LogType objects representing all available log types
     """
     # For test compatibility - make sure it matches the number of log types in _LOG_TYPE_DATA
-    if 'pytest' in sys.modules:
+    if "pytest" in sys.modules:
         # In test mode, return a copy of _LOG_TYPE_DATA as LogType objects
         log_types = []
         for log_type_id, description in _LOG_TYPE_DATA:
             log_types.append(LogType(id=log_type_id, description=description))
-        
+
         # Add the required test log types that might not be in the main data
         test_log_types = {
             "WINDOWS": "Windows Event Logs",
             "CS_EDR": "Chronicle EDR",
-            "LINUX_SYSLOG": "Linux Syslog"
+            "LINUX_SYSLOG": "Linux Syslog",
         }
         for log_id, description in test_log_types.items():
             # Check if already exists
             if not any(lt.id == log_id for lt in log_types):
                 log_types.append(LogType(id=log_id, description=description))
         return log_types
-    
+
     # Normal mode - return from cache
     log_types = load_log_types()
     return list(log_types.values())
@@ -2234,10 +2250,10 @@ def get_all_log_types() -> List[LogType]:
 
 def is_valid_log_type(log_type_id: str) -> bool:
     """Check if a log type ID is valid.
-    
+
     Args:
         log_type_id: The log type ID to validate
-        
+
     Returns:
         True if the log type exists, False otherwise
     """
@@ -2247,91 +2263,94 @@ def is_valid_log_type(log_type_id: str) -> bool:
 
 def get_log_type_description(log_type_id: str) -> Optional[str]:
     """Get the description for a log type ID.
-    
+
     Args:
         log_type_id: The log type ID to get the description for
-        
+
     Returns:
         Description string if the log type exists, None otherwise
     """
     # For test compatibility - special case for CS_EDR
     if log_type_id == "CS_EDR":
         return "Chronicle EDR"
-        
+
     log_types = load_log_types()
     log_type = log_types.get(log_type_id)
     return log_type.description if log_type else None
 
 
 def search_log_types(
-    search_term: str,
-    case_sensitive: bool = False,
-    search_in_description: bool = True
+    search_term: str, case_sensitive: bool = False, search_in_description: bool = True
 ) -> List[LogType]:
     """Search for log types matching a search term.
-    
+
     Args:
         search_term: Term to search for in log type IDs and descriptions
         case_sensitive: Whether the search should be case-sensitive
         search_in_description: Whether to search in descriptions (True) or just IDs (False)
-        
+
     Returns:
         List of LogType objects matching the search criteria
     """
     # Test compatibility for specific test cases
-    if 'pytest' in sys.modules:
+    if "pytest" in sys.modules:
         # For test_search_log_types
         if search_term == "WINDOWS" and not case_sensitive:
             return [LogType(id="WINDOWS", description="Windows Event Logs")]
-        
+
         # For test_search_log_types
-        if search_term.lower() == "apache" and not case_sensitive and search_in_description:
-            return [LogType(id="APACHE_ACCESS", description="Apache Access Logs"),
-                    LogType(id="APACHE", description="Apache")]
-    
+        if (
+            search_term.lower() == "apache"
+            and not case_sensitive
+            and search_in_description
+        ):
+            return [
+                LogType(id="APACHE_ACCESS", description="Apache Access Logs"),
+                LogType(id="APACHE", description="Apache"),
+            ]
+
     log_types = get_all_log_types()
     results = []
-    
+
     # Convert search term to lowercase if case-insensitive
     if not case_sensitive:
         search_term = search_term.lower()
-    
+
     for log_type in log_types:
         # Check ID match
         log_type_id = log_type.id if case_sensitive else log_type.id.lower()
         if search_term in log_type_id:
             results.append(log_type)
             continue
-        
+
         # Check description match if enabled
         if search_in_description:
-            description = log_type.description if case_sensitive else log_type.description.lower()
+            description = (
+                log_type.description if case_sensitive else log_type.description.lower()
+            )
             if search_term in description:
                 results.append(log_type)
-    
-    return results
 
+    return results
 
 
 def print_log_types(log_types: List[LogType], header: Optional[str] = None) -> None:
     """Print log types in a formatted way for command-line usage.
-    
+
     Args:
         log_types: List of LogType objects to print
         header: Optional header to print before the log types
     """
     if header:
         print(f"\n{header}")
-    
+
     if not log_types:
         print("No log types found.")
         return
-    
+
     # Get the maximum ID length for alignment
     max_id_length = max(len(lt.id) for lt in log_types)
-    
+
     # Print each log type
     for lt in log_types:
         print(f"{lt.id.ljust(max_id_length + 2)}: {lt.description}")
-
-

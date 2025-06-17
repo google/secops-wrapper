@@ -18,6 +18,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime
 from secops.exceptions import APIError
 
+
 def list_iocs(
     client,
     start_time: datetime,
@@ -27,7 +28,7 @@ def list_iocs(
     prioritized_only: bool = False,
 ) -> Dict[str, Any]:
     """List IoCs from Chronicle.
-    
+
     Args:
         client: ChronicleClient instance
         start_time: Start time for the IoC search
@@ -35,15 +36,17 @@ def list_iocs(
         max_matches: Maximum number of matches to return
         add_mandiant_attributes: Whether to add Mandiant attributes
         prioritized_only: Whether to only include prioritized IoCs
-        
+
     Returns:
         Dictionary with IoC matches
-        
+
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/legacy:legacySearchEnterpriseWideIoCs"
-    
+    url = (
+        f"{client.base_url}/{client.instance_id}/legacy:legacySearchEnterpriseWideIoCs"
+    )
+
     params = {
         "timestampRange.startTime": start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
         "timestampRange.endTime": end_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
@@ -51,31 +54,38 @@ def list_iocs(
         "addMandiantAttributes": add_mandiant_attributes,
         "fetchPrioritizedIocsOnly": prioritized_only,
     }
-    
+
     response = client.session.get(url, params=params)
-    
+
     if response.status_code != 200:
         raise APIError(f"Failed to list IoCs: {response.text}")
-    
+
     try:
         data = response.json()
-        
+
         # Process each IoC match to ensure consistent field names
         if "matches" in data:
             for match in data["matches"]:
                 # Convert timestamps if present
-                for ts_field in ["iocIngestTimestamp", "firstSeenTimestamp", "lastSeenTimestamp"]:
+                for ts_field in [
+                    "iocIngestTimestamp",
+                    "firstSeenTimestamp",
+                    "lastSeenTimestamp",
+                ]:
                     if ts_field in match:
                         match[ts_field] = match[ts_field].rstrip("Z")
-                
+
                 # Ensure consistent field names
-                if "filterProperties" in match and "stringProperties" in match["filterProperties"]:
+                if (
+                    "filterProperties" in match
+                    and "stringProperties" in match["filterProperties"]
+                ):
                     props = match["filterProperties"]["stringProperties"]
                     match["properties"] = {
                         k: [v["rawValue"] for v in values["values"]]
                         for k, values in props.items()
                     }
-                
+
                 # Process associations
                 if "associationIdentifier" in match:
                     # Remove duplicate associations (some have same name but different regionCode)
@@ -87,8 +97,8 @@ def list_iocs(
                             seen.add(key)
                             unique_associations.append(assoc)
                     match["associationIdentifier"] = unique_associations
-        
+
         return data
-        
+
     except Exception as e:
-        raise APIError(f"Failed to process IoCs response: {str(e)}") 
+        raise APIError(f"Failed to process IoCs response: {str(e)}")

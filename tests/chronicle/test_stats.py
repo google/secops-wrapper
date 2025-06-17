@@ -1,4 +1,5 @@
 """Tests for Chronicle stats functionality."""
+
 import unittest
 from unittest import mock
 from datetime import datetime, timedelta
@@ -34,16 +35,16 @@ class TestChronicleStats(unittest.TestCase):
                         "column": "col1",
                         "values": [
                             {"value": {"stringVal": "value1"}},
-                            {"value": {"stringVal": "value2"}}
-                        ]
+                            {"value": {"stringVal": "value2"}},
+                        ],
                     },
                     {
                         "column": "col2",
                         "values": [
                             {"value": {"int64Val": "10"}},
-                            {"value": {"int64Val": "20"}}
-                        ]
-                    }
+                            {"value": {"int64Val": "20"}},
+                        ],
+                    },
                 ]
             }
         }
@@ -51,10 +52,7 @@ class TestChronicleStats(unittest.TestCase):
 
         # Execute the function
         result = get_stats(
-            self.mock_client,
-            "test query",
-            self.start_time,
-            self.end_time
+            self.mock_client, "test query", self.start_time, self.end_time
         )
 
         # Assertions
@@ -77,21 +75,15 @@ class TestChronicleStats(unittest.TestCase):
                         "values": [
                             {
                                 "list": {
-                                    "values": [
-                                        {"stringVal": "X1"},
-                                        {"stringVal": "X2"}
-                                    ]
+                                    "values": [{"stringVal": "X1"}, {"stringVal": "X2"}]
                                 }
                             },
                             {
                                 "list": {
-                                    "values": [
-                                        {"stringVal": "Y1"},
-                                        {"stringVal": "Y2"}
-                                    ]
+                                    "values": [{"stringVal": "Y1"}, {"stringVal": "Y2"}]
                                 }
-                            }
-                        ]
+                            },
+                        ],
                     }
                 ]
             }
@@ -103,7 +95,7 @@ class TestChronicleStats(unittest.TestCase):
             self.mock_client,
             "test query with array_distinct",
             self.start_time,
-            self.end_time
+            self.end_time,
         )
 
         # This will fail with the current implementation, but after our fix
@@ -118,11 +110,11 @@ class TestChronicleStats(unittest.TestCase):
         """Test processing empty stats results."""
         empty_stats: Dict[str, Any] = {}
         result = process_stats_results(empty_stats)
-        
+
         self.assertEqual(result["total_rows"], 0)
         self.assertEqual(result["columns"], [])
         self.assertEqual(result["rows"], [])
 
 
 if __name__ == "__main__":
-    unittest.main() 
+    unittest.main()

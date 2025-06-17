@@ -1,4 +1,5 @@
 """Data table functionality for Chronicle."""
+
 import sys
 import re
 import ipaddress
@@ -10,10 +11,13 @@ if sys.version_info >= (3, 11):
     from enum import StrEnum
 else:
     from enum import Enum
+
     class StrEnum(str, Enum):
         """String enum implementation for Python versions before 3.11."""
+
         def __str__(self) -> str:
             return self.value
+
 
 from secops.exceptions import APIError, SecOpsError
 
@@ -116,7 +120,9 @@ def create_data_table(
     )
 
     if response.status_code != 200:
-        raise APIError(f"Failed to create data table '{name}': {response.status_code} {response.text}")
+        raise APIError(
+            f"Failed to create data table '{name}': {response.status_code} {response.text}"
+        )
 
     created_table_data = response.json()
 
@@ -133,9 +139,7 @@ def create_data_table(
 
 
 def create_data_table_rows(
-    client: "Any",
-    name: str,
-    rows: List[List[str]]
+    client: "Any", name: str, rows: List[List[str]]
 ) -> List[Dict[str, Any]]:
     """Create data table rows, chunking if necessary.
 
@@ -184,9 +188,7 @@ def create_data_table_rows(
 
 
 def _create_data_table_rows(
-    client: "Any",
-    name: str,
-    rows: List[List[str]]
+    client: "Any", name: str, rows: List[List[str]]
 ) -> Dict[str, Any]:
     """Create a batch of data table rows.
 
@@ -208,7 +210,9 @@ def _create_data_table_rows(
     )
 
     if response.status_code != 200:
-        raise APIError(f"Failed to create data table rows for '{name}': {response.status_code} {response.text}")
+        raise APIError(
+            f"Failed to create data table rows for '{name}': {response.status_code} {response.text}"
+        )
 
     return response.json()
 
@@ -246,7 +250,9 @@ def delete_data_table(
                 return {"status": "success", "statusCode": response.status_code}
         return {}
 
-    raise APIError(f"Failed to delete data table '{name}': {response.status_code} {response.text}")
+    raise APIError(
+        f"Failed to delete data table '{name}': {response.status_code} {response.text}"
+    )
 
 
 def delete_data_table_rows(
@@ -303,7 +309,9 @@ def _delete_data_table_row(
                 return {"status": "success", "statusCode": response.status_code}
         return {"status": "success", "statusCode": response.status_code}
 
-    raise APIError(f"Failed to delete data table row '{row_guid}' from '{table_id}': {response.status_code} {response.text}")
+    raise APIError(
+        f"Failed to delete data table row '{row_guid}' from '{table_id}': {response.status_code} {response.text}"
+    )
 
 
 def get_data_table(
@@ -327,7 +335,9 @@ def get_data_table(
     )
 
     if response.status_code != 200:
-        raise APIError(f"Failed to get data table '{name}': {response.status_code} {response.text}")
+        raise APIError(
+            f"Failed to get data table '{name}': {response.status_code} {response.text}"
+        )
 
     return response.json()
 
@@ -362,7 +372,9 @@ def list_data_tables(
         )
 
         if response.status_code != 200:
-            raise APIError(f"Failed to list data tables: {response.status_code} {response.text}")
+            raise APIError(
+                f"Failed to list data tables: {response.status_code} {response.text}"
+            )
 
         resp_json = response.json()
         all_data_tables.extend(resp_json.get("dataTables", []))
@@ -408,7 +420,9 @@ def list_data_table_rows(
         )
 
         if response.status_code != 200:
-            raise APIError(f"Failed to list data table rows for '{name}': {response.status_code} {response.text}")
+            raise APIError(
+                f"Failed to list data table rows for '{name}': {response.status_code} {response.text}"
+            )
 
         resp_json = response.json()
         all_rows.extend(resp_json.get("dataTableRows", []))

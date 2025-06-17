@@ -18,6 +18,7 @@ import time
 from typing import Dict, Any, List, Union
 from secops.exceptions import APIError
 
+
 def get_stats(
     client,
     query: str,
@@ -26,10 +27,10 @@ def get_stats(
     max_values: int = 60,
     max_events: int = 10000,
     case_insensitive: bool = True,
-    max_attempts: int = 30
+    max_attempts: int = 30,
 ) -> Dict[str, Any]:
     """Get statistics from a Chronicle search query using the Chronicle V1alpha API.
-    
+
     Args:
         client: ChronicleClient instance
         query: Chronicle search query in stats format
@@ -39,29 +40,29 @@ def get_stats(
         max_events: Maximum number of events to process
         case_insensitive: Whether to perform case-insensitive search (legacy parameter, not used by new API)
         max_attempts: Legacy parameter kept for backwards compatibility
-        
+
     Returns:
         Dictionary with search statistics including columns, rows, and total_rows
-        
+
     Raises:
         APIError: If the API request fails
     """
     # Format the instance ID for the API call
     instance = client.instance_id
-    
+
     # Endpoint for UDM search
     url = f"{client.base_url}/{instance}:udmSearch"
-    
+
     # Format times for the API
     start_time_str = start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     end_time_str = end_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-    
+
     # Query parameters for the API call
     params = {
         "query": query,
         "timeRange.start_time": start_time_str,
         "timeRange.end_time": end_time_str,
-        "limit": max_values  # Limit to specified number of results
+        "limit": max_values,  # Limit to specified number of results
     }
 
     # Make the API request
@@ -77,37 +78,34 @@ def get_stats(
     # Check if stats data is available in the response
     if "stats" not in results:
         raise APIError("No stats found in response")
-    
+
     # Process the stats results
     return process_stats_results(results["stats"])
 
+
 def process_stats_results(stats: Dict[str, Any]) -> Dict[str, Any]:
     """Process stats search results.
-    
+
     Args:
         stats: Stats search results from API
-        
+
     Returns:
         Processed statistics with columns, rows, and total_rows
     """
-    processed_results = {
-        "total_rows": 0,
-        "columns": [],
-        "rows": []
-    }
-    
+    processed_results = {"total_rows": 0, "columns": [], "rows": []}
+
     # Return early if no results
     if not stats or "results" not in stats:
         return processed_results
-    
+
     # Extract columns
     columns = []
     column_data = {}
-    
+
     for col_data in stats["results"]:
         col_name = col_data.get("column", "")
         columns.append(col_name)
-        
+
         # Process values for this column
         values = []
         for val_data in col_data.get("values", []):
@@ -135,23 +133,23 @@ def process_stats_results(stats: Dict[str, Any]) -> Dict[str, Any]:
                 values.append(list_values)
             else:
                 values.append(None)
-        
+
         column_data[col_name] = values
-    
+
     # Build result rows
     rows = []
     if columns and all(col in column_data for col in columns):
         max_rows = max(len(column_data[col]) for col in columns) if column_data else 0
         processed_results["total_rows"] = max_rows
-        
+
         for i in range(max_rows):
             row = {}
             for col in columns:
                 col_values = column_data[col]
                 row[col] = col_values[i] if i < len(col_values) else None
             rows.append(row)
-    
+
     processed_results["columns"] = columns
     processed_results["rows"] = rows
-    
-    return processed_results 
+
+    return processed_results

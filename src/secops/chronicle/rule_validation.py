@@ -20,68 +20,60 @@ from secops.exceptions import APIError
 
 class ValidationResult(NamedTuple):
     """Result of a rule validation.
-    
+
     Attributes:
         success: Whether the rule is valid
         message: Error message if validation failed, None if successful
         position: Dictionary containing position information for errors, if available
     """
+
     success: bool
     message: Optional[str] = None
     position: Optional[Dict[str, int]] = None
 
 
-def validate_rule(
-    client,
-    rule_text: str
-) -> ValidationResult:
+def validate_rule(client, rule_text: str) -> ValidationResult:
     """Validates a YARA-L2 rule against the Chronicle API.
-    
+
     Args:
         client: ChronicleClient instance
         rule_text: Content of the rule to validate
-        
+
     Returns:
         ValidationResult containing:
             - success: Whether the rule is valid
             - message: Error message if validation failed, None if successful
             - position: Dictionary containing position information for errors, if available
-        
+
     Raises:
         APIError: If the API request fails
     """
     url = f"{client.base_url}/{client.instance_id}:verifyRuleText"
-    
+
     # Clean up the rule text by removing leading/trailing backticks and whitespace
-    cleaned_rule = rule_text.strip('` \n\t\r')
-    
-    body = {
-        "ruleText": cleaned_rule
-    }
-    
+    cleaned_rule = rule_text.strip("` \n\t\r")
+
+    body = {"ruleText": cleaned_rule}
+
     response = client.session.post(url, json=body)
-    
+
     if response.status_code != 200:
         raise APIError(f"Failed to validate rule: {response.text}")
-    
+
     result = response.json()
-    
+
     # Check if the response indicates success
     if result.get("success", False):
         return ValidationResult(success=True)
-    
+
     # Extract error information
     diagnostics = result.get("compilationDiagnostics", [])
     if not diagnostics:
         return ValidationResult(success=False, message="Unknown validation error")
-    
+
     # Get the first error message and position information
     first_error = diagnostics[0]
     error_message = first_error.get("message")
     position = first_error.get("position")
-    
-    return ValidationResult(
-        success=False,
-        message=error_message,
-        position=position
-    ) 
+
+    return ValidationResult(success=False, message=error_message, position=position)
