@@ -284,6 +284,11 @@ secops parser run \
   --log-type OKTA \
   --parser-code 'filter { mutate { add_field => { "test" => "value" } } }' \
   --log '{"user": "john.doe", "action": "login"}'
+
+# Run the active parser on a set of logs
+secops parser run \
+  --log-type OKTA \
+  --logs-file "./test.log"
 ```
 
 The command validates:
