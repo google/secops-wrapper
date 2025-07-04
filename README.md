@@ -124,6 +124,17 @@ service_account_info = {
 client = SecOpsClient(service_account_info=service_account_info)
 ```
 
+### Impersonate Service Account
+
+Both [Application Default Credentials](#1-application-default-credentials-adc) and [Service Account Authentication](#2-service-account-authentication) supports impersonating a Service Account leveraging the corresponding `impersonate_service_account` parameter as per the following configuration:
+
+```python
+from secops import SecOpsClient
+
+# Initialize with default credentials and impersonate service account
+client = SecOpsClient(impersonate_service_account="secops@test-project.iam.gserviceaccount.com")
+```
+
 ## Using the Chronicle API
 
 ### Initializing the Chronicle Client

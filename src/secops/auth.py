@@ -16,6 +16,7 @@
 from typing import Optional, Dict, Any, List
 from google.auth.credentials import Credentials
 from google.oauth2 import service_account
+from google.auth import impersonated_credentials
 import google.auth
 import google.auth.transport.requests
 from secops.exceptions import AuthenticationError
@@ -32,6 +33,7 @@ class SecOpsAuth:
         credentials: Optional[Credentials] = None,
         service_account_path: Optional[str] = None,
         service_account_info: Optional[Dict[str, Any]] = None,
+        impersonate_service_account: Optional[str] = None,
         scopes: Optional[List[str]] = None,
     ):
         """Initialize authentication for SecOps.
@@ -40,11 +42,12 @@ class SecOpsAuth:
             credentials: Optional pre-existing Google Auth credentials
             service_account_path: Optional path to service account JSON key file
             service_account_info: Optional service account JSON key data as dict
+            impersonate_service_account: Optional service account to impersonate
             scopes: Optional list of OAuth scopes to request
         """
         self.scopes = scopes or CHRONICLE_SCOPES
         self.credentials = self._get_credentials(
-            credentials, service_account_path, service_account_info
+            credentials, service_account_path, service_account_info, impersonate_service_account
         )
         self._session = None
 
@@ -53,25 +56,35 @@ class SecOpsAuth:
         credentials: Optional[Credentials],
         service_account_path: Optional[str],
         service_account_info: Optional[Dict[str, Any]],
+        impersonate_service_account: Optional[str]
     ) -> Credentials:
         """Get credentials from various sources."""
         try:
             if credentials:
-                return credentials.with_scopes(self.scopes)
+                google_credentials = credentials.with_scopes(self.scopes)
 
-            if service_account_info:
-                return service_account.Credentials.from_service_account_info(
+            elif service_account_info:
+                google_credentials =  service_account.Credentials.from_service_account_info(
                     service_account_info, scopes=self.scopes
                 )
 
-            if service_account_path:
-                return service_account.Credentials.from_service_account_file(
+            elif service_account_path:
+                google_credentials = service_account.Credentials.from_service_account_file(
                     service_account_path, scopes=self.scopes
                 )
 
-            # Try to get default credentials
-            credentials, project = google.auth.default(scopes=self.scopes)
-            return credentials
+            else:
+                # Try to get default credentials
+                google_credentials, project = google.auth.default(scopes=self.scopes)
+
+            if impersonate_service_account:
+                target_credentials = impersonated_credentials.Credentials(
+                    source_credentials=google_credentials,
+                    target_principal=impersonate_service_account,
+                    target_scopes = self.scopes,
+                    lifetime=600)
+                return target_credentials
+            return google_credentials
         except Exception as e:
             raise AuthenticationError(f"Failed to get credentials: {str(e)}")
 

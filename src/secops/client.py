@@ -27,6 +27,7 @@ class SecOpsClient:
         credentials: Optional[Credentials] = None,
         service_account_path: Optional[str] = None,
         service_account_info: Optional[Dict[str, Any]] = None,
+        impersonate_service_account: Optional[str] = None,
     ):
         """Initialize the SecOps client.
 
@@ -34,11 +35,13 @@ class SecOpsClient:
             credentials: Optional pre-existing Google Auth credentials
             service_account_path: Optional path to service account JSON key file
             service_account_info: Optional service account JSON key data as dict
+            impersonate_service_account: Optional service account to impersonate
         """
         self.auth = SecOpsAuth(
             credentials=credentials,
             service_account_path=service_account_path,
             service_account_info=service_account_info,
+            impersonate_service_account=impersonate_service_account
         )
         self._chronicle = None
 
