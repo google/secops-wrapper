@@ -851,6 +851,8 @@ def setup_parser_command(subparsers):
             "  secops parser run --log-type OKTA --parser-code 'filter {}' --log 'log1' --log 'log2'\n\n"
             "  # Run parser using files:\n"
             "  secops parser run --log-type WINDOWS --parser-code-file parser.conf --logs-file logs.txt\n\n"
+            "  # Run parser with the active parser\n"
+            "  secops parser run --log-type OKTA --log-file logs.txt\n\n"
             "  # Run parser with extension:\n"
             "  secops parser run --log-type CUSTOM --parser-code-file parser.conf \\\n"
             "    --parser-extension-code-file extension.conf --logs-file logs.txt"
@@ -863,7 +865,7 @@ def setup_parser_command(subparsers):
         required=True,
         help="Log type of the parser for evaluation (e.g., OKTA, WINDOWS_AD)",
     )
-    run_parser_code_group = run_parser_sub.add_mutually_exclusive_group(required=True)
+    run_parser_code_group = run_parser_sub.add_mutually_exclusive_group(required=False)
     run_parser_code_group.add_argument(
         "--parser-code",
         type=str,
@@ -1018,9 +1020,16 @@ def handle_parser_run_command(args, chronicle):
         elif args.parser_code:
             parser_code = args.parser_code
         else:
-            raise SecOpsError(
-                "Either --parser-code or --parser-code-file must be provided for the main parser."
+            # If no parser code provided, try to find an active parser for the log type
+            parsers = chronicle.list_parsers(
+                args.log_type, page_size=1, page_token=None, filter="STATE=ACTIVE"
             )
+            if len(parsers) < 1:
+                raise SecOpsError(
+                    f"No parser file provided and an active parser could not be found for log type '{args.log_type}'."
+                )
+            parser_code_encoded = parsers[0].get("cbn")
+            parser_code = base64.b64decode(parser_code_encoded).decode("utf-8")
 
         # Read parser extension code (optional)
         parser_extension_code = ""
