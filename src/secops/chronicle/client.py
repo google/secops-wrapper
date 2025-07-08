@@ -64,6 +64,18 @@ from .parser import (
     run_parser as _run_parser,
 )
 
+from secops.chronicle.feeds import (
+    list_feeds as _list_feeds,
+    get_feed as _get_feed,
+    create_feed as _create_feed,
+    update_feed as _update_feed,
+    delete_feed as _delete_feed,
+    enable_feed as _enable_feed,
+    disable_feed as _disable_feed,
+    generate_secret as _generate_secret,
+    CreateFeedModel,
+    UpdateFeedModel
+)
 # Import rule functions
 from secops.chronicle.rule import (
     create_rule as _create_rule,
@@ -726,6 +738,32 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _get_rule(self, rule_id)
+
+    def list_feeds(self) -> Dict[str, Any]:
+        return _list_feeds(self)
+
+    def get_feed(self, feed_id: str) -> Dict[str, Any]:
+        return _get_feed(self, feed_id)
+
+    def create_feed(self, display_name: str, details: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
+        feed_config = CreateFeedModel(display_name=display_name, details=details)
+        return _create_feed(self, feed_config)
+
+    def update_feed(self, feed_id: str, display_name: Optional[str] = None, details: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        feed_config = UpdateFeedModel(display_name=display_name, details=details)
+        return _update_feed(self, feed_id, feed_config)
+
+    def enable_feed(self, feed_id: str) -> Dict[str, Any]:
+        return _enable_feed(self, feed_id)
+
+    def disable_feed(self, feed_id: str) -> Dict[str, Any]:
+        return _disable_feed(self, feed_id)
+
+    def generate_secret(self, feed_id: str) -> Dict[str, Any]:
+        return _generate_secret(self, feed_id)
+
+    def delete_feed(self, feed_id: str) -> Dict[str, Any]:
+        return _delete_feed(self, feed_id)
 
     def list_rules(self) -> Dict[str, Any]:
         """Gets a list of rules.
