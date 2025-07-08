@@ -222,30 +222,53 @@ def test_cli_parser_lifecycle(cli_env, common_args):
                 found_in_list
             ), f"Created parser {created_parser_id} not found in listed parsers for {test_log_type}"
 
-        # 4. Activate the parser (if applicable and testable - might require specific states)
-        # Note: Activation typically makes a parser "live".
-        # This step might depend on the parser's state and whether it's a "custom" or "release candidate".
-        # For simplicity, we'll try activating the newly created one.
-        activate_cmd = (
+        # 4. Activate the parser (newly created parsers are typically release candidates)
+        # Try activating as release candidate first, then fall back to regular activation
+        activate_rc_cmd = (
             [
                 "secops",
             ]
             + common_args
             + [
                 "parser",
-                "activate",
+                "activate-rc",
                 "--log-type",
                 test_log_type,
                 "--id",
                 created_parser_id,
             ]
         )
-        activate_result = subprocess.run(
-            activate_cmd, env=cli_env, capture_output=True, text=True
+        activate_rc_result = subprocess.run(
+            activate_rc_cmd, env=cli_env, capture_output=True, text=True
         )
-        assert (
-            activate_result.returncode == 0
-        ), f"Parser activation failed: {activate_result.stderr}\n{activate_result.stdout}"
+        
+        # If release candidate activation fails, try regular activation
+        if activate_rc_result.returncode != 0:
+            activate_cmd = (
+                [
+                    "secops",
+                ]
+                + common_args
+                + [
+                    "parser",
+                    "activate",
+                    "--log-type",
+                    test_log_type,
+                    "--id",
+                    created_parser_id,
+                ]
+            )
+            activate_result = subprocess.run(
+                activate_cmd, env=cli_env, capture_output=True, text=True
+            )
+            assert (
+                activate_result.returncode == 0
+            ), f"Parser activation failed: {activate_result.stderr}\n{activate_result.stdout}"
+        else:
+            # Release candidate activation succeeded
+            assert (
+                activate_rc_result.returncode == 0
+            ), f"Parser release candidate activation failed: {activate_rc_result.stderr}\n{activate_rc_result.stdout}"
 
         # 5. Deactivate the parser
         deactivate_cmd = (
@@ -265,6 +288,7 @@ def test_cli_parser_lifecycle(cli_env, common_args):
         deactivate_result = subprocess.run(
             deactivate_cmd, env=cli_env, capture_output=True, text=True
         )
+        
         assert (
             deactivate_result.returncode == 0
         ), f"Parser deactivation failed: {deactivate_result.stderr}\n{deactivate_result.stdout}"
