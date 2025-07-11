@@ -195,7 +195,7 @@ def enable_rule(client, rule_id: str, enabled: bool = True) -> Dict[str, Any]:
 
     if response.status_code != 200:
         raise APIError(
-            f"Failed to {"enable" if enabled else "disable"} "
+            f"Failed to {'enable' if enabled else 'disable'} "
             f"rule: {response.text}"
         )
 

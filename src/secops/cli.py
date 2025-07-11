@@ -1354,8 +1354,8 @@ def handle_rule_validate_command(args, chronicle):
             print(f"Rule is invalid: {result.message}")
             if result.position:
                 print(
-                    f"Error at line {result.position["startLine"]}, "
-                    f"column {result.position["startColumn"]}"
+                    f"Error at line {result.position['startLine']}, "
+                    f"column {result.position['startColumn']}"
                 )
     except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error: {e}", file=sys.stderr)
@@ -1655,10 +1655,8 @@ def handle_export_create_command(args, chronicle):
                     file=sys.stderr,
                 )
                 print("Available log types:", file=sys.stderr)
-                for lt in available_logs.get("available_log_types", [])[
-                    :5
-                ]:  # Show first 5
-                    print(f"  {lt.log_type.split("/")[-1]}", file=sys.stderr)
+                for lt in available_logs.get("available_log_types", [])[:5]:  # Show first 5
+                    print(f"  {lt.log_type.split('/')[-1]}", file=sys.stderr)
                 print("Attempting to create export anyway...", file=sys.stderr)
 
         # Proceed with export creation
@@ -1782,7 +1780,7 @@ def handle_gemini_command(args, chronicle):
     try:
         if args.opt_in:
             result = chronicle.opt_in_to_gemini()
-            print(f"Opt-in result: {"Success" if result else "Failed"}")
+            print(f"Opt-in result: {'Success' if result else 'Failed'}")
             if not result:
                 return
 
@@ -2331,7 +2329,7 @@ def main() -> None:
                 missing.append("project_id")
 
             print(
-                f"Error: Missing required configuration: {", ".join(missing)}",
+                f"Error: Missing required configuration: {', '.join(missing)}",
                 file=sys.stderr,
             )
             print("\nPlease set up your configuration first:", file=sys.stderr)
