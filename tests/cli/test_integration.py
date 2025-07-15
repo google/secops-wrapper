@@ -2037,3 +2037,49 @@ def test_cli_reference_list_api_investigation(cli_env, common_args):
     except Exception as e:
         print(f"Test encountered an error: {e}")
         raise
+
+
+@pytest.mark.integration
+def test_cli_parser_run_with_auto_parser(cli_env, common_args):
+    """Test the 'parser run' command using auto parser selection.
+
+    This test runs OKTA logs against active OKTA
+    without explicitly providing the parser file or code in the run command.
+    """
+    test_log_type = "OKTA"
+
+    # Test logs
+    test_log = """{"actor":{"alternateId":"mark.taylor@cymbal-investments.org","displayName":"Mark Taylor","id":"00u4j7xcb5N6zfiRP5d8","type":"User"},"client":{"userAgent":{"rawUserAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36","os":"Windows 10","browser":"CHROME"},"ipAddress":"96.6.127.53","geographicalContext":{"city":"New York","state":"New York","country":"United States","postalCode":"10118","geolocation":{"lat":40.7123,"lon":-74.0068}}},"displayMessage":"Max sign in attempts exceeded","eventType":"user.account.lock","outcome":{"result":"FAILURE","reason":"LOCKED_OUT"},"published":"2025-06-19T21:51:50.116Z","securityContext":{"asNumber":20940,"asOrg":"akamai technologies inc.","isp":"akamai international b.v.","domain":"akamaitechnologies.com","isProxy":false},"severity":"DEBUG","legacyEventType":"core.user_auth.account_locked","uuid":"5b90a94a-d7ba-11ea-834a-85c24a1b2121","version":"0"}"""
+
+    run_cmd = (
+        [
+            "secops",
+        ]
+        + common_args
+        + [
+            "parser",
+            "run",
+            "--log-type",
+            test_log_type,
+            "--log",
+            test_log,
+        ]
+    )
+
+    run_result = subprocess.run(
+        run_cmd, env=cli_env, capture_output=True, text=True
+    )
+
+    # Check the run executed successfully
+    assert (
+        run_result.returncode == 0
+    ), f"Parser run failed: {run_result.stderr}"
+
+    # Parse and verify output
+    output = json.loads(run_result.stdout)
+    assert "runParserResults" in output
+
+    # Should have processed both logs
+    assert (
+        len(output["runParserResults"]) > 0
+    ), "Expected log parsing results"
