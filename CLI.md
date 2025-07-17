@@ -823,6 +823,67 @@ This workflow is useful for:
 - Re-processing logs with updated parsers
 - Validating parser changes against real log samples
 
+### Feed Management
+
+Manage data ingestion feeds in Chronicle.
+
+List feeds:
+
+```bash
+secops feed list
+```
+
+Get feed details:
+
+```bash
+secops feed get --id "feed-123"
+```
+
+Create feed:
+
+```bash
+# Create an HTTP feed
+secops feed create \
+  --display-name "My HTTP Feed" \
+  --details '{"logType":"projects/your-project-id/locations/us/instances/your-instance-id/logTypes/WINEVTLOG","feedSourceType":"HTTP","httpSettings":{"uri":"https://example.com/feed","sourceType":"FILES"},"labels":{"environment":"production"}}'
+```
+
+Update feed:
+
+```bash
+# Update feed display name
+secops feed update --id "feed-123" --display-name "Updated Feed Name"
+
+# Update feed details
+secops feed update --id "feed-123" --details '{"httpSettings":{"uri":"https://example.com/updated-feed","sourceType":"FILES"}}'
+
+# Update both display name and details
+secops feed update --id "feed-123" --display-name "Updated Name" --details '{"httpSettings":{"uri":"https://example.com/updated-feed"}}'
+```
+
+Enable and disable feeds:
+
+```bash
+# Enable a feed
+secops feed enable --id "feed-123"
+
+# Disable a feed
+secops feed disable --id "feed-123"
+```
+
+Generate feed secret:
+
+```bash
+# Generate a secret for feeds that support authentication
+secops feed generate-secret --id "feed-123"
+```
+
+Delete feed:
+
+```bash
+secops feed delete --id "feed-123"
+```
+
 ## Conclusion
 
 The SecOps CLI provides a powerful way to interact with Google Security Operations products directly from your terminal. For more detailed information about the SDK capabilities, refer to the [main README](README.md).

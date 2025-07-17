@@ -1651,6 +1651,80 @@ followup_response = chronicle.gemini(
 # Gemini will remember the context of the previous question about DDoS
 ```
 
+### Feed Management
+
+Feeds are used to ingest data into Chronicle. The SDK provides methods to manage feeds.
+
+```python
+import json
+
+# List existing feeds
+feeds = chronicle.list_feeds()
+print(f"Found {len(feeds)} feeds")
+
+# Create a new feed
+feed_details = {
+    "logType": f"projects/your-project-id/locations/us/instances/your-chronicle-instance-id/logTypes/WINEVTLOG",
+    "feedSourceType": "HTTP",
+    "httpSettings": {
+        "uri": "https://example.com/example_feed",
+        "sourceType": "FILES",
+    },
+    "labels": {"environment": "production", "created_by": "secops_sdk"}
+}
+
+created_feed = chronicle.create_feed(
+    display_name="My New Feed",
+    details=feed_details
+)
+
+# Get feed ID from name
+feed_id = created_feed["name"].split("/")[-1]
+print(f"Feed created with ID: {feed_id}")
+
+# Get feed details
+feed_details = chronicle.get_feed(feed_id)
+print(f"Feed state: {feed_details.get('state')}")
+
+# Update feed
+updated_details = {
+    "httpSettings": {
+        "uri": "https://example.com/updated_feed_url",
+        "sourceType": "FILES"
+    },
+    "labels": {"environment": "production", "updated": "true"}
+}
+
+updated_feed = chronicle.update_feed(
+    feed_id=feed_id,
+    display_name="Updated Feed Name",
+    details=updated_details
+)
+
+# Disable feed
+disabled_feed = chronicle.disable_feed(feed_id)
+print(f"Feed disabled. State: {disabled_feed.get('state')}")
+
+# Enable feed
+enabled_feed = chronicle.enable_feed(feed_id)
+print(f"Feed enabled. State: {enabled_feed.get('state')}")
+
+# Generate secret for feed (for supported feed types)
+try:
+    secret_result = chronicle.generate_secret(feed_id)
+    print(f"Generated secret: {secret_result.get('secret')}")
+except Exception as e:
+    print(f"Error generating secret for feed: {e}")
+
+# Delete feed
+chronicle.delete_feed(feed_id)
+print("Feed deleted successfully")
+```
+
+The Feed API supports different feed types such as HTTP, HTTPS Push, and S3 bucket data sources etc. Each feed type has specific configuration options that can be specified in the `details` dictionary.
+
+> **Note**: Secret generation is only available for certain feed types that require authentication.
+
 ## Error Handling
 
 The SDK defines several custom exceptions:
