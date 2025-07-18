@@ -15,8 +15,6 @@
 """Unit tests for natural language search functionality."""
 
 import pytest
-import json
-import time
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 from secops.chronicle.nl_search import translate_nl_to_udm, nl_search

@@ -13,9 +13,8 @@
 # limitations under the License.
 #
 """Unit tests for Chronicle Gemini API."""
-import json
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from secops.chronicle.gemini import (
     Block,
     NavigationAction,

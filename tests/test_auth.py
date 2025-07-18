@@ -14,11 +14,13 @@
 #
 """Tests for authentication functionality."""
 import pytest
-from secops.auth import SecOpsAuth, CHRONICLE_SCOPES
+from secops.auth import SecOpsAuth
 from secops.exceptions import AuthenticationError
-from config import SERVICE_ACCOUNT_JSON
 
+# Marked tests for integration as ADC and Service Account Information 
+# Required for tests
 
+@pytest.mark.integration
 def test_default_auth():
     """Test authentication with default credentials."""
     auth = SecOpsAuth()
@@ -26,15 +28,17 @@ def test_default_auth():
     # Some credential types might not expose scopes directly
     assert hasattr(auth.credentials, "requires_scopes")
 
-
+@pytest.mark.integration
 def test_invalid_service_account_path():
     """Test authentication with invalid service account path."""
     with pytest.raises(AuthenticationError):
         SecOpsAuth(service_account_path="invalid/path.json")
 
-
+@pytest.mark.integration
 def test_service_account_info():
     """Test authentication with service account JSON data."""
+    from config import SERVICE_ACCOUNT_JSON
+
     auth = SecOpsAuth(service_account_info=SERVICE_ACCOUNT_JSON)
     assert auth.credentials is not None
     assert (
@@ -49,17 +53,21 @@ def test_invalid_service_account_info():
     with pytest.raises(AuthenticationError):
         SecOpsAuth(service_account_info={"invalid": "data"})
 
-
+@pytest.mark.integration
 def test_custom_scopes():
     """Test authentication with custom scopes."""
+    from config import SERVICE_ACCOUNT_JSON
+
     custom_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
     auth = SecOpsAuth(service_account_info=SERVICE_ACCOUNT_JSON, scopes=custom_scopes)
     assert auth.credentials is not None
     assert set(custom_scopes).issubset(set(auth.credentials.scopes))
 
-
+@pytest.mark.integration
 def test_custom_user_agent():
     """Test that custom user agent is set on the session."""
+    from config import SERVICE_ACCOUNT_JSON
+    
     auth = SecOpsAuth(service_account_info=SERVICE_ACCOUNT_JSON)
     session = auth.session
     assert session is not None

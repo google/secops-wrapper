@@ -10,7 +10,13 @@ from secops.exceptions import APIError
 @pytest.fixture
 def chronicle_client():
     """Create a Chronicle client for testing."""
-    return ChronicleClient(customer_id="test-customer", project_id="test-project")
+    with patch("secops.auth.SecOpsAuth") as mock_auth:
+        mock_session = Mock()
+        mock_session.headers = {}
+        mock_auth.return_value.session = mock_session
+        return ChronicleClient(
+            customer_id="test-customer", project_id="test-project"
+        )
 
 
 @pytest.fixture

@@ -3,11 +3,9 @@
 import unittest
 from unittest import mock
 from datetime import datetime, timedelta
-import json
 from typing import Dict, Any
 
 from secops.chronicle.stats import get_stats, process_stats_results
-from secops.exceptions import APIError
 
 
 class TestChronicleStats(unittest.TestCase):

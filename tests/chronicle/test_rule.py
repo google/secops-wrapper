@@ -15,7 +15,7 @@
 """Tests for Chronicle rule functions."""
 
 import pytest
-from unittest.mock import Mock, patch, call
+from unittest.mock import Mock, patch
 from secops.chronicle.client import ChronicleClient
 from secops.chronicle.rule import (
     create_rule,
@@ -35,7 +35,13 @@ import json
 @pytest.fixture
 def chronicle_client():
     """Create a Chronicle client for testing."""
-    return ChronicleClient(customer_id="test-customer", project_id="test-project")
+    with patch("secops.auth.SecOpsAuth") as mock_auth:
+        mock_session = Mock()
+        mock_session.headers = {}
+        mock_auth.return_value.session = mock_session
+        return ChronicleClient(
+            customer_id="test-customer", project_id="test-project"
+        )
 
 
 @pytest.fixture

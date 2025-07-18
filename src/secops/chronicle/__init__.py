@@ -27,7 +27,7 @@ from secops.chronicle.entity import summarize_entity
 from secops.chronicle.ioc import list_iocs
 from secops.chronicle.case import get_cases
 from secops.chronicle.alert import get_alerts
-from secops.chronicle.nl_search import translate_nl_to_udm, nl_search
+from secops.chronicle.nl_search import translate_nl_to_udm
 from secops.chronicle.log_ingest import (
     ingest_log,
     create_forwarder,
@@ -118,7 +118,6 @@ __all__ = [
     "search_udm",
     # Natural Language Search
     "translate_nl_to_udm",
-    "nl_search",
     # Entity
     "summarize_entity",
     # IoC

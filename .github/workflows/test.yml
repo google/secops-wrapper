@@ -1,0 +1,60 @@
+name: Test
+
+# This workflow runs when a pull request is opened or updated
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+  # Run on push to main as well
+  push:
+    branches: [ main ]
+
+jobs:
+  tox:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Define Python versions as specified in tox.ini
+        python-version: ['3.9','3.10','3.11','3.12']
+    
+    steps:
+    - name: Check out repository code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    # Install tox and dependencies
+    - name: Install tox
+      run: |
+        python -m pip install --upgrade pip
+        pip install tox
+    
+    # Run tox for the specific Python version with coverage, excluding integration tests
+    - name: Run tox with coverage
+      run: |
+        tox -- -m "not integration" --cov=secops --cov-report=xml --cov-report=term -vv -n auto
+      env:
+        PYTHONPATH: ${{ github.workspace }}
+        # Map GitHub Actions Python versions to tox environments
+        TOXENV: py${{ matrix.python-version == '3.9' && '39' || matrix.python-version == '3.10' && '310' || matrix.python-version == '3.11' && '311' || matrix.python-version == '3.12' && '312'}}
+    
+    # Only run coverage checks on Python 3.9
+    - name: Check coverage threshold
+      if: matrix.python-version == '3.9'
+      run: |
+        pip install coverage
+        coverage report --fail-under=60
+    
+    # Only upload coverage report for Python 3.9
+    - name: Upload coverage report
+      if: matrix.python-version == '3.9'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage.xml
+        retention-days: 7

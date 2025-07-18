@@ -1,10 +1,7 @@
 """Unit tests for the SecOps CLI."""
 
-import pytest
-import json
 from unittest.mock import patch, MagicMock
 from argparse import Namespace
-from datetime import datetime, timezone
 import sys
 from pathlib import Path
 import tempfile

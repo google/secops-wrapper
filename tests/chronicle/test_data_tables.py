@@ -1,6 +1,5 @@
 """Unit tests for Chronicle API data table and reference list functionality."""
 
-from datetime import datetime, timezone
 import pytest
 from unittest.mock import (
     Mock,

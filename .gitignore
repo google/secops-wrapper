@@ -2,7 +2,9 @@ tests/config.py
 env/
 .pytest_cache/
 __pycache__/
-.github/
+# GitHub workflow files are now allowed
+# Previously: .github/
+
 .vscode/
 .env
 how-to-upload.txt
@@ -17,3 +19,4 @@ temp_test_data_tables.py
 *.iml
 tests/config_prbss.py
 tests/config_purple.py
+.tox

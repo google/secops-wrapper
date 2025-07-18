@@ -15,25 +15,10 @@
 """Tests for Chronicle API client."""
 from datetime import datetime, timezone, timedelta
 import pytest
-from unittest.mock import Mock, patch, call, MagicMock
+from unittest.mock import Mock, patch
 from secops.chronicle.client import ChronicleClient
-from secops.chronicle.models import (
-    Entity,
-    EntityMetadata,
-    EntityMetrics,
-    TimeInterval,
-    TimelineBucket,
-    Timeline,
-    WidgetMetadata,
-    PrevalenceData,
-    FileMetadataAndProperties,
-    EntitySummary,
-    AlertCount,
-    CaseList,
-)
+from secops.chronicle.models import CaseList
 from secops.exceptions import APIError
-import time
-from config import SERVICE_ACCOUNT_JSON
 
 
 @pytest.fixture
