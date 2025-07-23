@@ -46,7 +46,7 @@ def fetch_udm_search_csv(
     url = (
         f"{client.base_url}/{client.instance_id}/legacy:legacyFetchUdmSearchCsv"
     )
-
+    # verify fields is a list of strings
     search_query = {
         "baselineQuery": query,
         "baselineTimeRange": {

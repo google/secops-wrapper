@@ -132,6 +132,9 @@ from secops.chronicle.stats import get_stats as _get_stats
 from secops.chronicle.udm_search import (
     fetch_udm_search_csv as _fetch_udm_search_csv,
 )
+from secops.chronicle.raw_logs import (
+    find_raw_logs as _find_raw_logs,
+)
 from secops.chronicle.validate import validate_query as _validate_query
 
 from .parser import activate_parser as _activate_parser
@@ -323,6 +326,44 @@ class ChronicleClient:
         """
         return _fetch_udm_search_csv(
             self, query, start_time, end_time, fields, case_insensitive
+        )
+
+    def find_raw_logs(
+        self,
+        start_time: datetime,
+        end_time: datetime,
+        log_source: Optional[str] = None,
+        log_type: Optional[str] = None,
+        query: Optional[str] = None,
+        page_size: int = 100,
+        page_token: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Find raw logs in Chronicle.
+
+        Args:
+            start_time: Search start time
+            end_time: Search end time
+            log_source: Filter by log source (optional)
+            log_type: Filter by log type (optional)
+            query: Raw log search query (optional)
+            page_size: Number of results per page
+            page_token: Token for pagination
+
+        Returns:
+            Dict containing raw logs and pagination info
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _find_raw_logs(
+            self,
+            start_time,
+            end_time,
+            log_source,
+            log_type,
+            query,
+            page_size,
+            page_token,
         )
 
     def validate_query(self, query: str) -> Dict[str, Any]:

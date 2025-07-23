@@ -20,6 +20,7 @@ from secops.chronicle.client import (
     ValueType,
 )
 from secops.chronicle.udm_search import fetch_udm_search_csv
+from secops.chronicle.raw_logs import find_raw_logs
 from secops.chronicle.validate import validate_query
 from secops.chronicle.stats import get_stats
 from secops.chronicle.search import search_udm
@@ -113,6 +114,7 @@ __all__ = [
     "ValueType",
     # UDM and Search
     "fetch_udm_search_csv",
+    "find_raw_logs",
     "validate_query",
     "get_stats",
     "search_udm",

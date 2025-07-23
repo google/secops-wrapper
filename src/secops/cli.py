@@ -789,6 +789,56 @@ def handle_log_types_command(args, chronicle):
         sys.exit(1)
 
 
+def handle_raw_logs_command(args, chronicle):
+    """Handle the raw logs command.
+
+    Args:
+        args: Command line arguments
+        chronicle: Chronicle client
+    """
+    start_time, end_time = get_time_range(args)
+
+    try:
+        result = chronicle.find_raw_logs(
+            start_time=start_time,
+            end_time=end_time,
+            log_source=args.log_source,
+            log_type=args.log_type,
+            query=args.query,
+            page_size=args.page_size,
+            page_token=args.page_token,
+        )
+        output_formatter(result, args.output)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def setup_raw_logs_command(subparsers):
+    """Set up the raw logs command parser."""
+    raw_logs_parser = subparsers.add_parser("raw-logs", help="Search raw logs")
+    raw_logs_parser.add_argument("--log-source", help="Filter by log source")
+    raw_logs_parser.add_argument("--log-type", help="Filter by log type")
+    raw_logs_parser.add_argument("--query", help="Raw log search query")
+    raw_logs_parser.add_argument(
+        "--page-size",
+        type=int,
+        default=100,
+        help="Number of results per page (default: 100)",
+    )
+    raw_logs_parser.add_argument(
+        "--page-token", help="Page token for pagination"
+    )
+    raw_logs_parser.add_argument(
+        "--output",
+        choices=["json", "table"],
+        default="json",
+        help="Output format (default: json)",
+    )
+    add_time_range_args(raw_logs_parser)
+    raw_logs_parser.set_defaults(func=handle_raw_logs_command)
+
+
 def setup_parser_command(subparsers):
     """Set up the parser command parser."""
 
@@ -2444,6 +2494,7 @@ def main() -> None:
     setup_entity_command(subparsers)
     setup_iocs_command(subparsers)
     setup_log_command(subparsers)
+    setup_raw_logs_command(subparsers)
     setup_parser_command(subparsers)
     setup_feed_command(subparsers)
     setup_rule_command(subparsers)

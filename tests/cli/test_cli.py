@@ -167,3 +167,69 @@ def test_time_config():
             assert loaded_config.get("start_time") == "2023-01-01T00:00:00Z"
             assert loaded_config.get("end_time") == "2023-01-02T00:00:00Z"
             assert loaded_config.get("time_window") == 48
+
+
+def test_handle_raw_logs_command():
+    """Test handle_raw_logs_command function."""
+    from secops.cli import handle_raw_logs_command
+    
+    # Mock the chronicle client
+    mock_chronicle = MagicMock()
+    mock_chronicle.find_raw_logs.return_value = {
+        "rawLogs": [
+            {
+                "timestamp": "2023-01-01T10:00:00Z",
+                "logSource": "MICROSOFT_WINDOWS",
+                "logType": "WINDOWS_DHCP",
+                "rawLog": "Sample log entry"
+            }
+        ],
+        "nextPageToken": "token123"
+    }
+    
+    # Test basic command
+    args = Namespace(
+        start_time="2023-01-01T00:00:00Z",
+        end_time="2023-01-02T00:00:00Z",
+        time_window=24,
+        log_source=None,
+        log_type=None,
+        query=None,
+        page_size=100,
+        page_token=None,
+        output="json"
+    )
+    
+    # Capture output
+    with patch("sys.stdout", new_callable=MagicMock) as mock_stdout:
+        handle_raw_logs_command(args, mock_chronicle)
+        
+        # Verify the function was called
+        mock_chronicle.find_raw_logs.assert_called_once()
+        
+        # Verify output was printed
+        assert mock_stdout.write.called
+    
+    # Test with filters
+    args = Namespace(
+        start_time="2023-01-01T00:00:00Z",
+        end_time="2023-01-02T00:00:00Z",
+        time_window=24,
+        log_source="MICROSOFT_WINDOWS",
+        log_type="WINDOWS_DHCP",
+        query="error",
+        page_size=50,
+        page_token="next123",
+        output="json"
+    )
+    
+    mock_chronicle.reset_mock()
+    handle_raw_logs_command(args, mock_chronicle)
+    
+    # Verify the function was called with correct parameters
+    call_kwargs = mock_chronicle.find_raw_logs.call_args.kwargs
+    assert call_kwargs["log_source"] == "MICROSOFT_WINDOWS"
+    assert call_kwargs["log_type"] == "WINDOWS_DHCP"
+    assert call_kwargs["query"] == "error"
+    assert call_kwargs["page_size"] == 50
+    assert call_kwargs["page_token"] == "next123"
