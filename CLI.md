@@ -394,6 +394,57 @@ secops alert --snapshot-query "feedback_summary.status != \"CLOSED\"" --time-win
 secops alert --baseline-query "detection.rule_name = \"My Rule\"" --time-window 24
 ```
 
+### Rule Exclusions Management
+
+Rule Exclusions allow you to exclude specific events from triggering detections in Chronicle. Use these commands to manage rule exclusions and their deployments:
+
+List all rule exclusions
+```bash
+secops rule-exclusion list
+```
+
+Get specific rule exclusion details
+```bash
+secops rule-exclusion get --id "exclusion-id"
+```
+
+Create new rule exclusion (aka findings refinement)
+```bash
+secops rule-exclusion create \
+  --display-name "Test Exclusion" \
+  --type "DETECTION_EXCLUSION" \
+  --query '(ip="8.8.8.8")'
+```
+
+Update rule exclusion
+```bash
+secops rule-exclusion patch \
+  --id "exclusion-id" \
+  --display-name "Updated Exclusion" \
+  --query '(domain="googl.com")' \
+  --update-mask "display_name,query"
+```
+
+Get rule exclusion deployment details
+```bash
+secops rule-exclusion get-deployment --id "exclusion-id"
+```
+
+Update rule exclusion deployment
+```bash
+secops rule-exclusion update-deployment \
+  --id "exclusion-id" \
+  --enabled true \
+  --archived false \
+  --detection-exclusion-application '"{\"curatedRules\": [],\"curatedRuleSets\": [],\"rules\": []}'
+```
+Compute rule exclusion activity for specific exclusion
+```bash
+secops rule-exclusion activity \
+  --id "exclusion-id" \
+  --time-window 168
+```
+
 ### Case Management
 
 Get case details for specific case IDs:

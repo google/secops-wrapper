@@ -14,97 +14,105 @@
 #
 """Chronicle API specific functionality."""
 
+from secops.chronicle.alert import get_alerts
+from secops.chronicle.case import get_cases
 from secops.chronicle.client import (
     ChronicleClient,
-    _detect_value_type,
     ValueType,
+    _detect_value_type,
 )
-from secops.chronicle.udm_search import fetch_udm_search_csv
-from secops.chronicle.validate import validate_query
-from secops.chronicle.stats import get_stats
-from secops.chronicle.search import search_udm
+from secops.chronicle.data_export import (
+    AvailableLogType,
+    cancel_data_export,
+    create_data_export,
+    fetch_available_log_types,
+    get_data_export,
+)
+
+# Import data table and reference list classes
+from secops.chronicle.data_table import DataTableColumnType
 from secops.chronicle.entity import summarize_entity
+from secops.chronicle.gemini import (
+    Block,
+    GeminiResponse,
+    NavigationAction,
+    SuggestedAction,
+)
 from secops.chronicle.ioc import list_iocs
-from secops.chronicle.case import get_cases
-from secops.chronicle.alert import get_alerts
-from secops.chronicle.nl_search import translate_nl_to_udm
 from secops.chronicle.log_ingest import (
-    ingest_log,
     create_forwarder,
-    get_or_create_forwarder,
-    list_forwarders,
-    get_forwarder,
     extract_forwarder_id,
+    get_forwarder,
+    get_or_create_forwarder,
+    ingest_log,
+    list_forwarders,
 )
 from secops.chronicle.log_types import (
     LogType,
     get_all_log_types,
-    is_valid_log_type,
     get_log_type_description,
+    is_valid_log_type,
     search_log_types,
 )
-from secops.chronicle.data_export import (
-    get_data_export,
-    create_data_export,
-    cancel_data_export,
-    fetch_available_log_types,
-    AvailableLogType,
+from secops.chronicle.models import (
+    AlertCount,
+    Case,
+    CaseList,
+    DataExport,
+    DataExportStage,
+    DataExportStatus,
+    Entity,
+    EntityMetadata,
+    EntityMetrics,
+    EntitySummary,
+    FileMetadataAndProperties,
+    PrevalenceData,
+    SoarPlatformInfo,
+    TimeInterval,
+    Timeline,
+    TimelineBucket,
+    WidgetMetadata,
+)
+from secops.chronicle.nl_search import translate_nl_to_udm
+from secops.chronicle.reference_list import (
+    ReferenceListSyntaxType,
+    ReferenceListView,
 )
 
 # Rule functionality
 from secops.chronicle.rule import (
     create_rule,
-    get_rule,
-    list_rules,
-    update_rule,
     delete_rule,
     enable_rule,
+    get_rule,
+    list_rules,
     search_rules,
+    update_rule,
 )
 from secops.chronicle.rule_alert import (
-    get_alert,
-    update_alert,
     bulk_update_alerts,
+    get_alert,
     search_rule_alerts,
+    update_alert,
 )
 from secops.chronicle.rule_detection import list_detections, list_errors
+from secops.chronicle.rule_exclusion import (
+    UpdateRuleDeployment,
+    compute_rule_exclusion_activity,
+    create_rule_exclusion,
+    get_rule_exclusion,
+    get_rule_exclusion_deployment,
+    list_rule_exclusions,
+    patch_rule_exclusion,
+    update_rule_exclusion_deployment,
+)
 from secops.chronicle.rule_retrohunt import create_retrohunt, get_retrohunt
 from secops.chronicle.rule_set import batch_update_curated_rule_set_deployments
-
-from secops.chronicle.models import (
-    Entity,
-    EntityMetadata,
-    EntityMetrics,
-    TimeInterval,
-    TimelineBucket,
-    Timeline,
-    WidgetMetadata,
-    EntitySummary,
-    AlertCount,
-    Case,
-    SoarPlatformInfo,
-    CaseList,
-    DataExport,
-    DataExportStatus,
-    DataExportStage,
-    PrevalenceData,
-    FileMetadataAndProperties,
-)
-
 from secops.chronicle.rule_validation import ValidationResult
-from secops.chronicle.gemini import (
-    GeminiResponse,
-    Block,
-    SuggestedAction,
-    NavigationAction,
-)
-
-# Import data table and reference list classes
-from secops.chronicle.data_table import DataTableColumnType
-from secops.chronicle.reference_list import (
-    ReferenceListSyntaxType,
-    ReferenceListView,
-)
+from secops.chronicle.search import search_udm
+from secops.chronicle.stats import get_stats
+from secops.chronicle.udm_search import fetch_udm_search_csv
+from secops.chronicle.validate import validate_query
 
 __all__ = [
     # Client
@@ -156,6 +164,14 @@ __all__ = [
     "delete_rule",
     "enable_rule",
     "search_rules",
+    # Rule exclusion operations
+    "create_rule_exclusion",
+    "get_rule_exclusion",
+    "list_rule_exclusions",
+    "patch_rule_exclusion",
+    "compute_rule_exclusion_activity",
+    "get_rule_exclusion_deployment",
+    "update_rule_exclusion_deployment",
     # Rule alert operations
     "get_alert",
     "update_alert",
@@ -189,6 +205,7 @@ __all__ = [
     "Block",
     "SuggestedAction",
     "NavigationAction",
+    "UpdateRuleDeployment",
     # Data Table and Reference List
     "DataTableColumnType",
     "ReferenceListSyntaxType",

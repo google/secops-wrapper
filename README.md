@@ -1331,6 +1331,65 @@ else:
         print(f"Error at line {result.position['startLine']}, column {result.position['startColumn']}")
 ```
 
+### Rule Exclusions
+
+Rule Exclusions allow you to exclude specific events from triggering detections in Chronicle. They are useful for filtering out known false positives or excluding test/development traffic from production detections.
+
+```python
+from secops.chronicle.rule_exclusion import RuleExclusionType
+from datetime import datetime, timedelta
+
+# Create a new rule exclusion
+exclusion = chronicle.create_rule_exclusion(
+    display_name="Exclusion Display Name",
+    refinement_type=RuleExclusionType.DETECTION_EXCLUSION,
+    query='(domain = "google.com")'
+)
+
+# Get exclusion id from name
+exclusion_id = exclusion["name"].split("/")[-1]
+
+# Get details of a specific rule exclusion
+exclusion_details = chronicle.get_rule_exclusion(exclusion_id)
+print(f"Exclusion: {exclusion_details.get('display_name')}")
+print(f"Query: {exclusion_details.get('query')}")
+
+# List all rule exclusions with pagination
+exclusions = chronicle.list_rule_exclusions(page_size=10)
+for exclusion in exclusions.get("findingsRefinements", []):
+    print(f"- {exclusion.get('display_name')}: {exclusion.get('name')}")
+
+# Update an existing exclusion
+updated = chronicle.patch_rule_exclusion(
+    exclusion_id=exclusion_id,
+    display_name="Updated Exclusion",
+    query='(ip = "8.8.8.8")',
+    update_mask="display_name,query"
+)
+
+# Manage deployment settings
+chronicle.update_rule_exclusion_deployment(
+    exclusion_id,
+    enabled=True,
+    archived=False,
+    detection_exclusion_application={
+        "curatedRules": [],
+        "curatedRuleSets": [],
+        "rules": [],
+    }
+)
+
+# Compute rule exclusion Activity for provided time period
+end_time = datetime.utcnow()
+start_time = end_time - timedelta(days=7)
+
+activity = chronicle.compute_rule_exclusion_activity(
+    exclusion_id,
+    start_time=start_time,
+    end_time=end_time
+)
+```
+
 ## Data Tables and Reference Lists
 
 Chronicle provides two ways to manage and reference structured data in detection rules: Data Tables and Reference Lists. These can be used to maintain lists of trusted/suspicious entities, mappings of contextual information, or any other structured data useful for detection.
@@ -1659,7 +1718,7 @@ followup_response = chronicle.gemini(
 # Gemini will remember the context of the previous question about DDoS
 ```
 
-### Feed Management
+## Feed Management
 
 Feeds are used to ingest data into Chronicle. The SDK provides methods to manage feeds.
 

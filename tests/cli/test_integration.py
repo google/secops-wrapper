@@ -10,31 +10,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
-# Import configuration - use absolute import
-from tests.config import CHRONICLE_CONFIG
-
-
-# Integration test fixture
-@pytest.fixture
-def cli_env():
-    """Set up environment for CLI tests."""
-    env = os.environ.copy()
-    # Add any environment variables needed for testing
-    return env
-
-
-@pytest.fixture
-def common_args():
-    """Return common command line arguments for the CLI."""
-    return [
-        "--customer-id",
-        CHRONICLE_CONFIG.get("customer_id", ""),
-        "--project-id",
-        CHRONICLE_CONFIG.get("project_id", ""),
-        "--region",
-        CHRONICLE_CONFIG.get("region", "us"),
-    ]
-
 
 @pytest.mark.integration
 def test_cli_search(cli_env, common_args):

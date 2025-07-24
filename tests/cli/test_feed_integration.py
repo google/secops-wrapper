@@ -12,26 +12,6 @@ import pytest
 from tests.config import CHRONICLE_CONFIG
 
 
-@pytest.fixture
-def cli_env():
-    """Set up environment for CLI tests."""
-    env = os.environ.copy()
-    return env
-
-
-@pytest.fixture
-def common_args():
-    """Return common command line arguments for the CLI."""
-    return [
-        "--customer-id",
-        CHRONICLE_CONFIG.get("customer_id", ""),
-        "--project-id",
-        CHRONICLE_CONFIG.get("project_id", ""),
-        "--region",
-        CHRONICLE_CONFIG.get("region", "us"),
-    ]
-
-
 @pytest.mark.integration
 def test_cli_feed_list(cli_env, common_args):
     """Test the feed list command."""

@@ -50,6 +50,15 @@ from secops.chronicle.data_table import (
 from secops.chronicle.data_table import list_data_tables as _list_data_tables
 from secops.chronicle.entity import _detect_value_type_for_query
 from secops.chronicle.entity import summarize_entity as _summarize_entity
+from secops.chronicle.feeds import CreateFeedModel, UpdateFeedModel
+from secops.chronicle.feeds import create_feed as _create_feed
+from secops.chronicle.feeds import delete_feed as _delete_feed
+from secops.chronicle.feeds import disable_feed as _disable_feed
+from secops.chronicle.feeds import enable_feed as _enable_feed
+from secops.chronicle.feeds import generate_secret as _generate_secret
+from secops.chronicle.feeds import get_feed as _get_feed
+from secops.chronicle.feeds import list_feeds as _list_feeds
+from secops.chronicle.feeds import update_feed as _update_feed
 from secops.chronicle.gemini import GeminiResponse
 from secops.chronicle.gemini import opt_in_to_gemini as _opt_in_to_gemini
 from secops.chronicle.gemini import query_gemini as _query_gemini
@@ -84,19 +93,6 @@ from secops.chronicle.reference_list import (
 )
 from secops.chronicle.reference_list import (
     update_reference_list as _update_reference_list,
-)
-
-from secops.chronicle.feeds import (
-    list_feeds as _list_feeds,
-    get_feed as _get_feed,
-    create_feed as _create_feed,
-    update_feed as _update_feed,
-    delete_feed as _delete_feed,
-    enable_feed as _enable_feed,
-    disable_feed as _disable_feed,
-    generate_secret as _generate_secret,
-    CreateFeedModel,
-    UpdateFeedModel,
 )
 
 # Import rule functions
@@ -145,6 +141,20 @@ from .parser import delete_parser as _delete_parser
 from .parser import get_parser as _get_parser
 from .parser import list_parsers as _list_parsers
 from .parser import run_parser as _run_parser
+from .rule_exclusion import RuleExclusionType, UpdateRuleDeployment
+from .rule_exclusion import (
+    compute_rule_exclusion_activity as _compute_rule_exclusion_activity,
+)
+from .rule_exclusion import create_rule_exclusion as _create_rule_exclusion
+from .rule_exclusion import get_rule_exclusion as _get_rule_exclusion
+from .rule_exclusion import (
+    get_rule_exclusion_deployment as _get_rule_exclusion_deployment,
+)
+from .rule_exclusion import list_rule_exclusions as _list_rule_exclusions
+from .rule_exclusion import patch_rule_exclusion as _patch_rule_exclusion
+from .rule_exclusion import (
+    update_rule_exclusion_deployment as _update_rule_exclusion_deployment,
+)
 from .rule_validation import validate_rule as _validate_rule
 
 
@@ -1981,6 +1991,184 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _delete_data_table_rows(self, name, row_ids)
+
+    # Rule Exclusion methods
+
+    def list_rule_exclusions(
+        self, page_size: int = 100, page_token: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """List rule exclusions.
+
+        Args:
+            page_size: Maximum number of rule exclusions to return per page
+            page_token: Page token for pagination
+
+        Returns:
+            Dictionary containing the list of rule exclusions
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _list_rule_exclusions(self, page_size, page_token)
+
+    def get_rule_exclusion(self, exclusion_id: str) -> Dict[str, Any]:
+        """Get a rule exclusion by name.
+
+        Args:
+            exclusion_id: Id of the rule exclusion to retrieve.
+                Can be the ID or full resource name.
+
+        Returns:
+            Dictionary containing rule exclusion information
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _get_rule_exclusion(self, exclusion_id=exclusion_id)
+
+    def create_rule_exclusion(
+        self, display_name: str, refinement_type: str, query: str
+    ) -> Dict[str, Any]:
+        """Creates a new rule exclusion.
+
+        Args:
+            display_name: The display name to use for the rule exclusion
+            refinement_type: The type of the Findings refinement
+                    Must be one of:
+                    - DETECTION_EXCLUSION
+                    - FINDINGS_REFINEMENT_TYPE_UNSPECIFIED
+            query: The query for the findings refinement.
+
+        Returns:
+            Dictionary containing the created rule exclusion
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _create_rule_exclusion(
+            self,
+            display_name=display_name,
+            refinement_type=RuleExclusionType[refinement_type],
+            query=query,
+        )
+
+    def patch_rule_exclusion(
+        self,
+        exclusion_id: str,
+        display_name: Optional[str] = None,
+        refinement_type: Optional[str] = None,
+        query: Optional[str] = None,
+        update_mask: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Updates a rule exclusion.
+
+        Args:
+            exclusion_id: Id of the rule exclusion to update
+            display_name: The display name to use for the rule exclusion
+            refinement_type: The type of the Findings refinement
+                    Must be one of:
+                    - DETECTION_EXCLUSION
+                    - FINDINGS_REFINEMENT_TYPE_UNSPECIFIED
+            query: The query for the findings refinement.
+            update_mask: Comma-separated list of fields to update
+
+        Returns:
+            Dictionary containing the updated rule exclusion
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _patch_rule_exclusion(
+            self,
+            exclusion_id=exclusion_id,
+            display_name=display_name,
+            refinement_type=(
+                RuleExclusionType[refinement_type] if refinement_type else None
+            ),
+            query=query,
+            update_mask=update_mask,
+        )
+
+    def compute_rule_exclusion_activity(
+        self,
+        exclusion_id: Optional[str] = None,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+    ) -> Dict[str, Any]:
+        """Compute activity statistics for rule exclusions.
+
+        Args:
+            exclusion_id: Id of a specific rule exclusion
+            start_time: Optional start of the time window
+            end_time: Optional end of the time window
+
+        Returns:
+            Dictionary containing activity statistics
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _compute_rule_exclusion_activity(
+            self,
+            exclusion_id=exclusion_id,
+            start_time=start_time,
+            end_time=end_time,
+        )
+
+    def get_rule_exclusion_deployment(
+        self, exclusion_id: str
+    ) -> Dict[str, Any]:
+        """Get deployment information for a rule exclusion.
+
+        Args:
+            exclusion_id: Id of the rule exclusion
+
+        Returns:
+            Dictionary containing deployment information
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _get_rule_exclusion_deployment(self, exclusion_id=exclusion_id)
+
+    def update_rule_exclusion_deployment(
+        self,
+        exclusion_id: str,
+        enabled: Optional[bool] = None,
+        archived: Optional[bool] = None,
+        detection_exclusion_application: Optional[
+            Union[str, Dict[str, Any]]
+        ] = None,
+        update_mask: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Update deployment settings for a rule exclusion.
+
+        Args:
+            exclusion_id: Id of the rule exclusion
+            enabled: Whether the rule exclusion should be enabled
+            archived: Whether the rule exclusion should be archived
+            detection_exclusion_application: The resources which the detection
+                exclusion is applied to.
+                Must be either valid JSON or JSON string
+            update_mask: Comma-separated list of fields to update
+
+        Returns:
+            Dictionary containing updated deployment information
+
+        Raises:
+            APIError: If the API request fails
+        """
+        deployment_update_details = UpdateRuleDeployment(
+            enabled=enabled,
+            archived=archived,
+            detection_exclusion_application=detection_exclusion_application,
+        )
+        return _update_rule_exclusion_deployment(
+            self,
+            exclusion_id=exclusion_id,
+            deployment_details=deployment_update_details,
+            update_mask=update_mask,
+        )
 
     # Reference List methods
 
