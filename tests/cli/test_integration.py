@@ -2086,3 +2086,84 @@ def test_cli_parser_run_with_auto_parser(cli_env, common_args):
     assert (
         len(output["runParserResults"]) > 0
     ), "Expected log parsing results"
+
+@pytest.mark.integration
+def test_cli_generate_udm_key_value_mapping(cli_env, common_args):
+    """Test the generate-udm-mapping command."""
+    log_file_path = ""
+    try:
+        # Create a temporary file with sample JSON log content
+        with tempfile.NamedTemporaryFile(
+            suffix=".json", mode="w+", delete=False
+        ) as temp_file:
+            # Sample JSON log similar to what's used in the API test
+            json_log = """
+            {
+                "events": [
+                    {
+                        "id": "123",
+                        "user": "test_user",
+                        "source_ip": "192.168.1.10",
+                        "destination_url": "www.example.com",
+                        "action_taken": "allowed",
+                        "timestamp": 1588059648129
+                    },
+                    {
+                        "id": "231",
+                        "user": "test_user2",
+                        "source_ip": "192.168.1.9",
+                        "destination_url": "www.example2.com",
+                        "action_taken": "allowed",
+                        "timestamp": 1588059649129
+                    }
+                ]
+            }
+            """
+            temp_file.write(json_log)
+            temp_file.flush()
+            log_file_path = temp_file.name
+
+        print(f"\nTesting generate-udm-mapping with file: {log_file_path}")
+        generating_udm_cmd = (
+            [
+                "secops",
+            ]
+            + common_args
+            + [
+                "log",
+                "generate-udm-mapping",
+                "--log-format",
+                "JSON",
+                "--log-file",
+                log_file_path,
+            ]
+        )
+
+        gum_result = subprocess.run(
+            generating_udm_cmd, env=cli_env, capture_output=True, text=True
+        )
+
+        # Check the run executed successfully
+        assert (
+            gum_result.returncode == 0
+        ), f"Generate UDM key/value mapping failed: {gum_result.stderr}"
+
+        mapping_data = json.loads(gum_result.stdout)
+
+        expected_fields = [
+            "events.0.id",
+            "events.0.user",
+            "events.1.id",
+            "events.1.user",
+        ]
+
+        # Check for expected fields
+        assert all(field in mapping_data for field in expected_fields)
+
+    except Exception as e:
+        print(f"Error during generate-udm-mapping CLI test: {str(e)}")
+        raise
+    finally:
+        # Clean up temp files
+        if "log_file_path" in locals() and os.path.exists(log_file_path):
+            os.unlink(log_file_path)

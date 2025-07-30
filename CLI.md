@@ -196,6 +196,19 @@ secops log types --search "windows"
 
 > **Note:** Chronicle uses parsers to process and normalize raw log data into UDM format. If you're ingesting logs for a custom format, you may need to create or configure parsers. See the [Parser Management](#parser-management) section for details on managing parsers.
 
+
+### Generate UDM Key/Value Mapping
+
+Generate UDM key/value mapping for provided row log
+
+```bash
+secops log generate-udm-mapping \ 
+--log-format "JSON" \
+--log '{"events":[{"id":"123","user":"test_user","source_ip":"192.168.1.10"}]}' \
+--use-array-bracket-notation "true" \
+--compress-array-fields "false"
+```
+
 ### Parser Management
 
 Parsers in Chronicle are used to process and normalize raw log data into UDM (Unified Data Model) format. The CLI provides comprehensive parser management capabilities.

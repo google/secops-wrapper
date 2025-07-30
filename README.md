@@ -803,6 +803,26 @@ case = cases.get_case("case-id-1")
 
 > **Note**: The case management API uses the `legacy:legacyBatchGetCases` endpoint to retrieve multiple cases in a single request. You can retrieve up to 1000 cases in a single batch.
 
+### Generating UDM Key/Value Mapping
+Chronicle provides a feature to generate UDM key-value mapping for a given row log.
+
+```python
+mapping = chronicle.generate_udm_key_value_mappings(
+    log_format="JSON",
+    log='{"events":[{"id":"123","user":"test_user","source_ip":"192.168.1.10"}]}',
+    use_array_bracket_notation=True,
+    compress_array_fields=False,
+)
+
+print(f"Generated UDM key/value mapping: {mapping}")
+```
+
+```python
+# Generate UDM key-value mapping
+udm_mapping = chronicle.generate_udm_mapping(log_type="WINDOWS_AD")
+print(udm_mapping)
+```
+
 ## Parser Management
 
 Chronicle parsers are used to process and normalize raw log data into Chronicle's Unified Data Model (UDM) format. Parsers transform various log formats (JSON, XML, CEF, etc.) into a standardized structure that enables consistent querying and analysis across different data sources.

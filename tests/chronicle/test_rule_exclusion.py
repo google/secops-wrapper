@@ -14,14 +14,13 @@
 #
 """Tests for the Rule Exclusion module."""
 
-import json
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime
 from unittest.mock import Mock, patch
 
 from secops.chronicle import rule_exclusion
 from secops.chronicle.client import ChronicleClient
-from secops.exceptions import APIError, SecOpsError
+from secops.exceptions import APIError
 
 
 @pytest.fixture

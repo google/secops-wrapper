@@ -713,6 +713,37 @@ def setup_log_command(subparsers):
     types_parser.add_argument("--search", help="Search term for log types")
     types_parser.set_defaults(func=handle_log_types_command)
 
+    generate_udm_mapping_parser = log_subparsers.add_parser(
+        "generate-udm-mapping", help="Generate UDM mapping"
+    )
+    generate_udm_mapping_parser.add_argument(
+        "--log-format", "--log_format", dest="log_format", help="Log format"
+    )
+    udm_log_group = generate_udm_mapping_parser.add_mutually_exclusive_group()
+    udm_log_group.add_argument("--log", help="Sample log content as a string")
+    udm_log_group.add_argument(
+        "--log-file",
+        "--log_file",
+        help="Path to file containing sample log content",
+    )
+    generate_udm_mapping_parser.add_argument(
+        "--use-array-bracket-notation",
+        "--use_array_bracket_notation",
+        choices=["true", "false"],
+        dest="use_array_bracket_notation",
+        help="Use array bracket notation",
+    )
+    generate_udm_mapping_parser.add_argument(
+        "--compress-array-fields",
+        "--compress_array_fields",
+        choices=["true", "false"],
+        dest="compress_array_fields",
+        help="Compress array fields",
+    )
+    generate_udm_mapping_parser.set_defaults(
+        func=handle_generate_udm_mapping_command
+    )
+
 
 def handle_log_ingest_command(args, chronicle):
     """Handle log ingestion command."""
@@ -2672,6 +2703,31 @@ def handle_rule_exclusion_update_deployment_command(args, chronicle):
                 args.detection_exclusion_application
             ),
             update_mask=args.update_mask,
+        )
+        output_formatter(result, args.output)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_generate_udm_mapping_command(args, chronicle):
+    """Handle generate UDM mapping command."""
+    try:
+        log = ""
+        if args.log_file:
+            with open(args.log_file, "r", encoding="utf-8") as f:
+                log = f.read()
+        elif args.log:
+            log = args.log
+        else:
+            print("Error: log or log_file must be specified", file=sys.stderr)
+            sys.exit(1)
+
+        result = chronicle.generate_udm_key_value_mappings(
+            log_format=args.log_format,
+            log=log,
+            use_array_bracket_notation=args.use_array_bracket_notation,
+            compress_array_fields=args.compress_array_fields,
         )
         output_formatter(result, args.output)
     except Exception as e:  # pylint: disable=broad-exception-caught

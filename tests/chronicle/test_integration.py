@@ -1514,3 +1514,65 @@ def test_chronicle_reference_lists_cidr():
         print(
             f"Note: CIDR reference list {rl_name} remains since reference list deletion is not supported by the API"
         )
+
+@pytest.mark.integration
+def test_chronicle_generate_udm_key_value_mapping():
+    """Test UDM key/value mapping functionality with real API."""
+    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+    chronicle = client.chronicle(**CHRONICLE_CONFIG)
+
+    # Sample Row JSON log
+    json_log = """
+    {
+        "events": [
+            {
+                "id": "123",
+                "user": "test_user",
+                "source_ip": "192.168.1.10",
+                "destination_url": "www.example.com",
+                "action_taken": "allowed",
+                "timestamp": 1588059648129
+            },
+            {
+                "id": "231",
+                "user": "test_user2",
+                "source_ip": "192.168.1.9",
+                "destination_url": "www.example2.com",
+                "action_taken": "allowed",
+                "timestamp": 1588059649129
+            }
+        ]
+    }
+    """
+
+    try:
+        print("\n>>> Testing Generating UDM key/value mapping")
+
+        json_mappings = chronicle.generate_udm_key_value_mappings(
+            log_format="JSON",
+            log=json_log,
+            use_array_bracket_notation=True,
+            compress_array_fields=False,
+        )
+        print(f"JSON mappings retrieved: {len(json_mappings)} fields")
+
+        # Verify we got expected mapping fields
+        assert isinstance(json_mappings, dict)
+        assert len(json_mappings) > 0
+
+        # Check for specific expected fields
+        expected_fields = [
+            "events[0].id",
+            "events[0].user",
+            "events[1].id",
+            "events[1].user",
+        ]
+
+        # Check for expected fields
+        assert all(field in json_mappings for field in expected_fields)
+
+        print("UDM key/value mapping successful")
+
+    except Exception as e:
+        print(f"Error during generate UDM key/value mapping test: {e}")
+        raise

@@ -113,6 +113,10 @@ from secops.chronicle.search import search_udm
 from secops.chronicle.stats import get_stats
 from secops.chronicle.udm_search import fetch_udm_search_csv
 from secops.chronicle.validate import validate_query
+from secops.chronicle.udm_mapping import (
+    generate_udm_key_value_mappings,
+    RowLogFormat,
+)
 
 __all__ = [
     # Client
@@ -172,6 +176,8 @@ __all__ = [
     "compute_rule_exclusion_activity",
     "get_rule_exclusion_deployment",
     "update_rule_exclusion_deployment",
+    # UDM Mapping
+    "generate_udm_key_value_mappings",
     # Rule alert operations
     "get_alert",
     "update_alert",
@@ -206,6 +212,7 @@ __all__ = [
     "SuggestedAction",
     "NavigationAction",
     "UpdateRuleDeployment",
+    "RowLogFormat",
     # Data Table and Reference List
     "DataTableColumnType",
     "ReferenceListSyntaxType",
