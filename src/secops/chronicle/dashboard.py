@@ -555,25 +555,25 @@ def edit_chart(
         f"{client.base_url}/{client.instance_id}/"
         f"nativeDashboards/{dashboard_id}:editChart"
     )
-    payload = {"dashboardQuery": {"name": chart_id}, "dashboardChart": {}}
+    payload = {"dashboard_query": {"name": chart_id}, "dashboard_chart": {}}
 
     # Track update mask fields
     update_mask = []
 
     if display_name:
-        payload["dashboardChart"]["displayName"] = display_name
+        payload["dashboard_chart"]["displayName"] = display_name
         update_mask.append("dashboard_chart.display_name")
 
     if description:
-        payload["dashboardChart"]["description"] = description
+        payload["dashboard_chart"]["description"] = description
         update_mask.append("dashboard_chart.description")
 
     if chart_datasource:
-        payload["dashboardChart"]["chartDatasource"] = chart_datasource
+        payload["dashboard_chart"]["chartDatasource"] = chart_datasource
         update_mask.append("dashboard_chart.chart_datasource.data_sources")
 
     if visualization:
-        payload["dashboardChart"]["visualization"] = visualization
+        payload["dashboard_chart"]["visualization"] = visualization
         update_mask.append("dashboard_chart.visualization")
 
     # Handle query and interval if provided
@@ -581,7 +581,7 @@ def edit_chart(
         if isinstance(interval, dict):
             interval = InputInterval.from_dict(interval)
 
-        payload["dashboardQuery"].update(
+        payload["dashboard_query"].update(
             {
                 "query": query,
                 "input": interval.to_dict(),
@@ -592,7 +592,7 @@ def edit_chart(
 
     # Add update mask query parameter
     if update_mask:
-        payload["editMask"] = ",".join(update_mask)
+        payload["edit_mask"] = ",".join(update_mask)
 
     response = client.session.post(url, json=payload)
 
