@@ -455,3 +455,63 @@ def list_data_table_rows(
             break
 
     return all_rows
+
+
+def update_data_table(
+    client: "Any",
+    name: str,
+    description: Optional[str] = None,
+    row_time_to_live: Optional[str] = None,
+    update_mask: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """Update a data table using the PATCH method.
+
+    Args:
+        client: ChronicleClient instance
+        name: The name of the data table to update
+        description: Optional new description for the data table
+        row_time_to_live: Optional TTL for the data table rows
+        update_mask: Optional list of fields to update. When no field mask is supplied,
+                     all non-empty fields will be updated. Supported fields include:
+                     'description', 'row_time_to_live'.
+
+    Returns:
+        Dictionary containing the updated data table
+
+    Raises:
+        APIError: If the API request fails
+        SecOpsError: If validation fails
+    """
+    if not REF_LIST_DATA_TABLE_ID_REGEX.match(name):
+        raise SecOpsError(
+            f"Invalid data table name: {name}.\n"
+            "Ensure the name starts with a letter, contains only letters, "
+            "numbers, and underscores, and has length < 256 characters."
+        )
+
+    # Prepare request body
+    body_payload = {}
+    if description is not None:
+        body_payload["description"] = description
+    if row_time_to_live is not None:
+        body_payload["row_time_to_live"] = row_time_to_live
+
+    # Prepare query parameters
+    params = {}
+    if update_mask:
+        params["updateMask"] = ",".join(update_mask)
+
+    # Make the PATCH request
+    response = client.session.patch(
+        f"{client.base_url}/{client.instance_id}/dataTables/{name}",
+        params=params,
+        json=body_payload,
+    )
+
+    if response.status_code != 200:
+        raise APIError(
+            f"Failed to update data table '{name}': {response.status_code} "
+            f"{response.text}"
+        )
+
+    return response.json()

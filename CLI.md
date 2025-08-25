@@ -615,6 +615,22 @@ secops data-table create \
 secops data-table list-rows --name "suspicious_ips"
 ```
 
+#### Update a data table's properties:
+
+```bash
+# Update both description and row TTL
+secops data-table update \
+  --name "suspicious_ips" \
+  --description "Updated description for suspicious IPs" \
+  --row-ttl "72h"
+
+# Update only the description with explicit update mask
+secops data-table update \
+  --name "suspicious_ips" \
+  --description "Only updating description" \
+  --update-mask "description"
+```
+
 #### Add rows to a data table:
 
 ```bash

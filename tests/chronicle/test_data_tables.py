@@ -492,6 +492,210 @@ class TestReferenceLists:
             match=r"Either description or entries \(or both\) must be provided for update.",
         ):
             update_reference_list(mock_chronicle_client, "some_rl_name")
+            
+    @patch("secops.chronicle.data_table.REF_LIST_DATA_TABLE_ID_REGEX")
+    def test_update_data_table_success_both_params(
+        self, mock_regex_check: Mock, mock_chronicle_client: Mock
+    ) -> None:
+        """Test successful update of a data table with both description and row TTL."""
+        mock_regex_check.match.return_value = True  # Assume name is valid
+        mock_response = Mock()
+        mock_response.status_code = 200
+        
+        dt_name = "test_dt_update"
+        expected_dt_name = f"projects/test-project/locations/us/instances/test-customer/dataTables/{dt_name}"
+        new_description = "Updated description"
+        new_row_ttl = "48h"
+        
+        mock_response.json.return_value = {
+            "name": expected_dt_name,
+            "description": new_description,
+            "rowTimeToLive": new_row_ttl,
+            "updateTime": "2025-08-25T10:00:00Z",
+            "columnInfo": [{"originalColumn": "col1", "columnType": "STRING"}],
+            "dataTableUuid": "test-uuid",
+        }
+        
+        mock_chronicle_client.session.patch.return_value = mock_response
+
+        result = update_data_table(
+            mock_chronicle_client, 
+            dt_name, 
+            description=new_description, 
+            row_time_to_live=new_row_ttl
+        )
+
+        assert result["name"] == expected_dt_name
+        assert result["description"] == new_description
+        assert result["rowTimeToLive"] == new_row_ttl
+        
+        mock_chronicle_client.session.patch.assert_called_once_with(
+            f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
+            params={},
+            json={
+                "description": new_description,
+                "row_time_to_live": new_row_ttl,
+            },
+        )
+
+    @patch("secops.chronicle.data_table.REF_LIST_DATA_TABLE_ID_REGEX")
+    def test_update_data_table_description_only(
+        self, mock_regex_check: Mock, mock_chronicle_client: Mock
+    ) -> None:
+        """Test successful update of a data table with description only."""
+        mock_regex_check.match.return_value = True
+        mock_response = Mock()
+        mock_response.status_code = 200
+        
+        dt_name = "test_dt_update"
+        expected_dt_name = f"projects/test-project/locations/us/instances/test-customer/dataTables/{dt_name}"
+        new_description = "Updated description only"
+        
+        mock_response.json.return_value = {
+            "name": expected_dt_name,
+            "description": new_description,
+            "updateTime": "2025-08-25T10:05:00Z",
+            "dataTableUuid": "test-uuid",
+        }
+        
+        mock_chronicle_client.session.patch.return_value = mock_response
+
+        result = update_data_table(
+            mock_chronicle_client, 
+            dt_name, 
+            description=new_description
+        )
+
+        assert result["name"] == expected_dt_name
+        assert result["description"] == new_description
+        assert "rowTimeToLive" not in result
+        
+        mock_chronicle_client.session.patch.assert_called_once_with(
+            f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
+            params={},
+            json={"description": new_description},
+        )
+
+    @patch("secops.chronicle.data_table.REF_LIST_DATA_TABLE_ID_REGEX")
+    def test_update_data_table_row_ttl_only(
+        self, mock_regex_check: Mock, mock_chronicle_client: Mock
+    ) -> None:
+        """Test successful update of a data table with row TTL only."""
+        mock_regex_check.match.return_value = True
+        mock_response = Mock()
+        mock_response.status_code = 200
+        
+        dt_name = "test_dt_update"
+        expected_dt_name = f"projects/test-project/locations/us/instances/test-customer/dataTables/{dt_name}"
+        new_row_ttl = "72h"
+        
+        mock_response.json.return_value = {
+            "name": expected_dt_name,
+            "rowTimeToLive": new_row_ttl,
+            "updateTime": "2025-08-25T10:10:00Z",
+            "dataTableUuid": "test-uuid",
+        }
+        
+        mock_chronicle_client.session.patch.return_value = mock_response
+
+        result = update_data_table(
+            mock_chronicle_client, 
+            dt_name, 
+            row_time_to_live=new_row_ttl
+        )
+
+        assert result["name"] == expected_dt_name
+        assert result["rowTimeToLive"] == new_row_ttl
+        assert "description" not in result
+        
+        mock_chronicle_client.session.patch.assert_called_once_with(
+            f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
+            params={},
+            json={"row_time_to_live": new_row_ttl},
+        )
+
+    @patch("secops.chronicle.data_table.REF_LIST_DATA_TABLE_ID_REGEX")
+    def test_update_data_table_with_update_mask(
+        self, mock_regex_check: Mock, mock_chronicle_client: Mock
+    ) -> None:
+        """Test update of a data table with explicit update mask."""
+        mock_regex_check.match.return_value = True
+        mock_response = Mock()
+        mock_response.status_code = 200
+        
+        dt_name = "test_dt_update"
+        expected_dt_name = f"projects/test-project/locations/us/instances/test-customer/dataTables/{dt_name}"
+        new_description = "Updated with mask"
+        new_row_ttl = "96h"
+        update_mask = ["description"]
+        
+        mock_response.json.return_value = {
+            "name": expected_dt_name,
+            "description": new_description,
+            "updateTime": "2025-08-25T10:15:00Z",
+            "dataTableUuid": "test-uuid",
+        }
+        
+        mock_chronicle_client.session.patch.return_value = mock_response
+
+        result = update_data_table(
+            mock_chronicle_client, 
+            dt_name, 
+            description=new_description,
+            row_time_to_live=new_row_ttl,
+            update_mask=update_mask
+        )
+
+        assert result["name"] == expected_dt_name
+        assert result["description"] == new_description
+        
+        # Verify that even though row_time_to_live was provided, it wasn't included in the API call
+        # due to the update_mask
+        mock_chronicle_client.session.patch.assert_called_once_with(
+            f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
+            params={"updateMask": "description"},
+            json={
+                "description": new_description,
+                "row_time_to_live": new_row_ttl,
+            },
+        )
+
+    @patch("secops.chronicle.data_table.REF_LIST_DATA_TABLE_ID_REGEX")
+    def test_update_data_table_invalid_name(
+        self, mock_regex_check: Mock, mock_chronicle_client: Mock
+    ) -> None:
+        """Test update_data_table with an invalid name."""
+        mock_regex_check.match.return_value = False  # Simulate invalid name
+        with pytest.raises(
+            SecOpsError, match="Invalid data table name: invalid_name!."
+        ):
+            update_data_table(
+                mock_chronicle_client,
+                "invalid_name!",
+                description="New description",
+            )
+            
+        # Verify the API was never called
+        mock_chronicle_client.session.patch.assert_not_called()
+
+    def test_update_data_table_api_error(
+        self, mock_chronicle_client: Mock
+    ) -> None:
+        """Test update_data_table when API returns an error."""
+        mock_response = Mock()
+        mock_response.status_code = 400
+        mock_response.text = "Invalid row_time_to_live format"
+        
+        mock_chronicle_client.session.patch.return_value = mock_response
+        
+        with pytest.raises(
+            APIError, match="Failed to update data table 'test_table': 400 Invalid row_time_to_live format"
+        ):
+            update_data_table(
+                mock_chronicle_client, 
+                "test_table", 
+                row_time_to_live="invalid"
+            )
 
     # TODO: Add more unit tests for:
     # - APIError scenarios for each function (e.g., 404 Not Found, 500 Server Error)

@@ -10,8 +10,8 @@ from secops.chronicle.reference_list import ReferenceListSyntaxType, ReferenceLi
 from secops.exceptions import APIError, SecOpsError
 
 # Replace these with your actual values
-PROJECT_ID = "your-project-id"
-CUSTOMER_ID = "your-customer-id"
+PROJECT_ID = "725716774503"
+CUSTOMER_ID = "c3c6260c1c9340dcbbb802603bbf9636"
 REGION = "us"  # or "eu", etc.
 
 # Optional: Path to service account key file
@@ -99,7 +99,74 @@ def main():
         except Exception as cleanup_error:
             print(f"Error during cleanup: {cleanup_error}")
 
-    # Example 2: Create a data table with CIDR column
+    # Example 2: Update data table using patch_data_table
+    dt_patch_name = f"example_dt_patch_{timestamp}"
+    print(f"\nCreating data table for PATCH example: {dt_patch_name}")
+    
+    try:
+        # First, create a data table that we'll update
+        dt_patch = chronicle.create_data_table(
+            name=dt_patch_name,
+            description="Original description - to be updated",
+            header={
+                "hostname": DataTableColumnType.STRING,
+                "ip_address": DataTableColumnType.STRING,
+            },
+            rows=[
+                ["host1.example.com", "192.168.1.10"],
+                ["host2.example.com", "192.168.1.11"],
+            ],
+        )
+        print(f"Created data table: {dt_patch['name']}")
+        print(f"Original description: {dt_patch.get('description')}")
+        
+        # Get the original TTL (if any)
+        original_ttl = dt_patch.get("rowTimeToLive", "Not set")
+        print(f"Original TTL: {original_ttl}")
+        
+        # Update only the description
+        print("\nUpdating only the description...")
+        updated_dt = chronicle.update_data_table(
+            name=dt_patch_name,
+            description="Updated description via PATCH",
+            update_mask=["description"],
+        )
+        print(f"Updated description: {updated_dt.get('description')}")
+        print(f"TTL after first update: {updated_dt.get('rowTimeToLive', 'Not set')}")
+        
+        # Update only the TTL
+        print("\nUpdating only the TTL...")
+        updated_dt = chronicle.update_data_table(
+            name=dt_patch_name,
+            row_time_to_live="24h",
+            update_mask=["row_time_to_live"],
+        )
+        print(f"TTL after second update: {updated_dt.get('rowTimeToLive', 'Not set')}")
+        print(f"Description after second update: {updated_dt.get('description')}")
+        
+        # Update both fields at once
+        print("\nUpdating both description and TTL at once...")
+        updated_dt = chronicle.update_data_table(
+            name=dt_patch_name,
+            description="Final description - both fields updated",
+            row_time_to_live="48h",
+            # When no update_mask is provided, all non-empty fields are updated
+        )
+        print(f"Final description: {updated_dt.get('description')}")
+        print(f"Final TTL: {updated_dt.get('rowTimeToLive', 'Not set')}")
+        
+    except (APIError, SecOpsError) as e:
+        print(f"Error in data table patch example: {e}")
+    finally:
+        # Clean up - delete the data table
+        try:
+            print(f"Cleaning up - deleting patched data table: {dt_patch_name}")
+            chronicle.delete_data_table(dt_patch_name, force=True)
+            print("Patched data table deleted")
+        except Exception as cleanup_error:
+            print(f"Error during cleanup: {cleanup_error}")
+    
+    # Example 3: Create a data table with CIDR column
     dt_cidr_name = f"example_dt_cidr_{timestamp}"
     print(f"\nCreating CIDR data table: {dt_cidr_name}")
 
