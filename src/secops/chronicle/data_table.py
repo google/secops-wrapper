@@ -515,3 +515,93 @@ def update_data_table(
         )
 
     return response.json()
+
+
+def replace_data_table_rows(
+    client: "Any", name: str, rows: List[List[str]]
+) -> List[Dict[str, Any]]:
+    """Replace all rows in a data table with new rows, chunking if necessary.
+
+    Args:
+        client: ChronicleClient instance
+        name: The name of the data table
+        rows: A list of new rows to replace all existing rows in the table
+
+    Returns:
+        List of responses containing the created data table rows
+
+    Raises:
+        APIError: If the API request fails
+        SecOpsError: If a row is too large to process
+    """
+    responses = []
+    row_iter = iter(rows)
+
+    # Process rows in chunks of up to 1000 rows or 4MB
+    while chunk := list(islice(row_iter, 1000)):
+        current_chunk_size_bytes = sum(
+            sys.getsizeof(".".join(r)) for r in chunk
+        )
+
+        # If chunk is too large, split it
+        while current_chunk_size_bytes > 4000000 and len(chunk) > 1:
+            half_len = len(chunk) // 2
+            if half_len == 0:  # Should not happen if len(chunk) > 1
+                break
+
+            temp_chunk_for_next_iter = chunk[half_len:]
+            chunk = chunk[:half_len]
+            row_iter = iter(temp_chunk_for_next_iter + list(row_iter))
+            current_chunk_size_bytes = sum(
+                sys.getsizeof(".".join(r)) for r in chunk
+            )
+
+        if not chunk:  # If chunk became empty
+            continue
+
+        # If a single row is too large
+        if current_chunk_size_bytes > 4000000 and len(chunk) == 1:
+            raise SecOpsError(
+                "Single row is too large to process "
+                f"(>{current_chunk_size_bytes} bytes): {chunk[0][:100]}..."
+            )
+
+        responses.append(_replace_data_table_rows(client, name, chunk))
+
+    return responses
+
+
+def _replace_data_table_rows(
+    client: "Any", name: str, rows: List[List[str]]
+) -> Dict[str, Any]:
+    """Replace all rows in a data table with new rows in a single request.
+
+    Args:
+        client: ChronicleClient instance
+        name: The name of the data table
+        rows: New data table rows to replace all existing rows. A maximum of 1000 rows
+              can be replaced in a single request. Total size of the rows should be
+              less than 4MB.
+
+    Returns:
+        Dictionary containing the data table rows that replaced existing data table rows
+
+    Raises:
+        APIError: If the API request fails
+    """
+    url = (
+        f"{client.base_url}/{client.instance_id}/dataTables/{name}"
+        "/dataTableRows:bulkReplace"
+    )
+    response = client.session.post(
+        url,
+        json={"requests": [{"data_table_row": {"values": x}} for x in rows]},
+    )
+
+    if response.status_code != 200:
+        raise APIError(
+            f"Failed to replace data table rows for '{name}': "
+            f"{response.status_code} {response.text}"
+        )
+
+    return response.json()

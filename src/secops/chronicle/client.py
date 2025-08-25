@@ -58,6 +58,9 @@ from secops.chronicle.data_table import create_data_table as _create_data_table
 from secops.chronicle.data_table import (
     create_data_table_rows as _create_data_table_rows,
 )
+from secops.chronicle.data_table import (
+    replace_data_table_rows as _replace_data_table_rows,
+)
 from secops.chronicle.data_table import delete_data_table as _delete_data_table
 from secops.chronicle.data_table import (
     delete_data_table_rows as _delete_data_table_rows,
@@ -2200,6 +2203,27 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _delete_data_table_rows(self, name, row_ids)
+
+    def replace_data_table_rows(
+        self, name: str, rows: List[List[str]]
+    ) -> List[Dict[str, Any]]:
+        """Replace all data table rows with new rows, chunking if necessary.
+
+        This method replaces all existing rows in a data table with the provided
+        new rows. It handles chunking to stay within API limits.
+
+        Args:
+            name: Data table name
+            rows: List of rows where each row is a list of string values
+
+        Returns:
+            List of response objects, one per chunk
+
+        Raises:
+            APIError: If the API request fails
+            SecOpsError: If a row is too large to process
+        """
+        return _replace_data_table_rows(self, name, rows)
 
     def update_data_table(
         self,

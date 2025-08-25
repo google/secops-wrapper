@@ -44,7 +44,11 @@ from secops.chronicle.data_export import (
 )
 
 # Import data table and reference list classes
-from secops.chronicle.data_table import DataTableColumnType, update_data_table
+from secops.chronicle.data_table import (
+    DataTableColumnType,
+    update_data_table,
+    replace_data_table_rows,
+)
 from secops.chronicle.entity import summarize_entity
 from secops.chronicle.gemini import (
     Block,
@@ -255,4 +259,5 @@ __all__ = [
     "ReferenceListSyntaxType",
     "ReferenceListView",
     "update_data_table",
+    "replace_data_table_rows",
 ]
