@@ -464,14 +464,14 @@ def update_data_table(
     row_time_to_live: Optional[str] = None,
     update_mask: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    """Update a data table using the PATCH method.
+    """Update a existing data table.
 
     Args:
         client: ChronicleClient instance
         name: The name of the data table to update
-        description: Optional new description for the data table
-        row_time_to_live: Optional TTL for the data table rows
-        update_mask: Optional list of fields to update. When no field mask is supplied,
+        description: Description for the data table
+        row_time_to_live: TTL for the data table rows
+        update_mask: List of fields to update. When no field mask is supplied,
                      all non-empty fields will be updated. Supported fields include:
                      'description', 'row_time_to_live'.
 
