@@ -6,6 +6,30 @@
 A Python SDK for interacting with Google Security Operations products, currently supporting Chronicle/SecOps SIEM.
 This wraps the API for common use cases, including UDM searches, entity lookups, IoCs, alert management, case management, and detection rule management.
 
+## Prerequisites
+
+Follow these steps to ensure your environment is properly configured:
+
+1. **Configure a Google Cloud Project for Google SecOps**
+   - Your Google Cloud project must be linked to your Google SecOps instance.
+   - Chronicle API needs to be enabled in your Google Cloud project.
+   - The project used for authentication must be the same project that was set up during your SecOps onboarding.
+   - For detailed instructions, see [Configure a Google Cloud project for Google SecOps](https://cloud.google.com/chronicle/docs/onboard/configure-cloud-project).
+
+2. **Set up IAM Permissions**
+   - The service account or user credentials you use must have appropriate permissions
+   - The recommended predefined role is **Chronicle API Admin** (`roles/chronicle.admin`)
+   - For more granular access control, you can create custom roles with specific permissions
+   - See [Access control using IAM](https://cloud.google.com/chronicle/docs/onboard/configure-feature-access) for detailed permission information
+
+3. **Required Information**
+   - Your Chronicle instance ID (customer_id)
+   - Your Google Cloud project number (project_id)
+   - Your preferred region (e.g., "us", "europe", "asia")
+
+
+> **Note:** Using a Google Cloud project that is not linked to your SecOps instance will result in authentication failures, even if the service account/user has the correct IAM roles assigned.
+
 ## Installation
 
 ```bash
