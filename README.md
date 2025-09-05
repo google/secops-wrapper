@@ -1996,6 +1996,84 @@ followup_response = chronicle.gemini(
 # Gemini will remember the context of the previous question about DDoS
 ```
 
+### Dashboards
+- `create_dashboard(name, description)`
+- `import_dashboard(file_path)`
+- `list_dashboards()`
+- `get_dashboard(dashboard_id)`
+- `delete_dashboard(dashboard_id)`
+
+#### Create Dashboard
+Creates a new dashboard.
+
+```python
+from secops.chronicle import client
+
+chronicle_client = client.Client()
+new_dashboard = chronicle_client.create_dashboard("My new dashboard", "This is a description")
+print(new_dashboard)
+```
+
+#### Import Dashboard
+Imports a dashboard from a JSON file.
+
+```python
+import os
+from secops.chronicle import client
+
+# Assumes the CHRONICLE_SA_KEY environment variable is set with service account JSON
+chronicle_client = client.Client()
+
+# Path to the dashboard file
+dashboard = {
+    "dashboard": {...}
+    "dashboardCharts": [...],
+    "dashboardQueries": [...]
+}
+
+# Import the dashboard
+try:
+    new_dashboard = chronicle_client.import_dashboard(dashboard)
+    print(new_dashboard)
+except Exception as e:
+    print(f"An error occurred: {e}")
+
+```
+
+#### List Dashboards
+Lists all dashboards.
+
+```python
+from secops.chronicle import client
+
+chronicle_client = client.Client()
+dashboards = chronicle_client.list_dashboards()
+for dashboard in dashboards:
+    print(dashboard)
+```
+
+#### Get Dashboard
+Gets a specific dashboard by its ID.
+
+```python
+from secops.chronicle import client
+
+chronicle_client = client.Client()
+dashboard = chronicle_client.get_dashboard("dashboard-id")
+print(dashboard)
+```
+
+#### Delete Dashboard
+Deletes a dashboard by its ID.
+
+```python
+from secops.chronicle import client
+
+chronicle_client = client.Client()
+chronicle_client.delete_dashboard("dashboard-id")
+print("Dashboard deleted.")
+```
+
 ## Feed Management
 
 Feeds are used to ingest data into Chronicle. The SDK provides methods to manage feeds.
@@ -2072,6 +2150,7 @@ The Feed API supports different feed types such as HTTP, HTTPS Push, and S3 buck
 
 ## Chronicle Dashboard
 
+The Chronicle Dashboard API provides methods to manage native dashboards and dashboard charts in Chronicle.
 The Chronicle Dashboard API provides methods to manage native dashboards and dashboard charts in Chronicle.
 
 ### Create Dashboard

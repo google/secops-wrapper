@@ -1152,6 +1152,17 @@ secops dashboard duplicate --id source-dashboard-id \
                            --display-name "Copy of Security Overview"
 ```
 
+Import dashboard:
+```bash
+secops dashboard import --dashboard-data-file dashboard_data.json
+
+# import with chart and query
+secops dashboard import --dashboard-data-file dashboard_data.json --chart-file chart.json --query-file query.json
+
+# Or with dashboard JSON
+secops dashboard import --dashboard-data '{"name":"12312321321321"}'
+```
+
 Adding Chart to existing dashboard:
 ```bash
 secops dashboard add-chart --dashboard-id dashboard-id \

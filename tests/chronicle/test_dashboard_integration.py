@@ -275,3 +275,93 @@ def test_dashboard_chart_lifecycle():
                 print(f"Cleaned up test dashboard: {dashboard_id}")
             except Exception as e:
                 print(f"Clean up failed: {str(e)}")
+
+
+@pytest.mark.integration
+def test_dashboard_import():
+    """Test importing a dashboard."""
+    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+    chronicle = client.chronicle(**CHRONICLE_CONFIG)
+
+    imported_dashboard_id = None
+
+    try:
+        # dashboard import payload
+        import_payload = {
+            "dashboard": {
+                "name": "50221a9e-afd7-4f7b-8043-35a925454995",
+                "displayName": "Source Dashboard 8f736a58",
+                "description": "Source dashboard for import test",
+                "definition": {
+                    "filters": [
+                        {
+                            "id": "GlobalTimeFilter",
+                            "dataSource": "GLOBAL",
+                            "filterOperatorAndFieldValues": [
+                                {
+                                    "filterOperator": "PAST",
+                                    "fieldValues": ["1", "DAY"],
+                                }
+                            ],
+                            "displayName": "Global Time Filter",
+                            "isStandardTimeRangeFilter": True,
+                            "isStandardTimeRangeFilterEnabled": True,
+                        }
+                    ]
+                },
+                "type": "CUSTOM",
+                "etag": "9bcb466d09e461d19aa890d0f5eb38a5496fa085dc2605954e4457b408acd916",
+                "access": "DASHBOARD_PRIVATE",
+            }
+        }
+
+        # 1. Import dashboard
+        imported_dashboard = chronicle.import_dashboard(import_payload)
+
+        assert imported_dashboard is not None
+        assert "results" in imported_dashboard
+        assert len(imported_dashboard["results"]) > 0
+        assert "dashboard" in imported_dashboard["results"][0]
+
+        # Extract the imported dashboard ID
+        imported_dashboard_path = imported_dashboard["results"][0]["dashboard"]
+        imported_dashboard_id = imported_dashboard_path.split("/")[-1]
+        print(f"Imported dashboard with ID: {imported_dashboard_id}")
+
+        # 2. Verify the imported dashboard exists
+        imported_details = chronicle.get_dashboard(
+            dashboard_id=imported_dashboard_id
+        )
+        assert imported_details is not None
+
+        # Verify key properties match the original import payload
+        assert (
+            imported_details.get("displayName")
+            == import_payload["dashboard"]["displayName"]
+        )
+        assert (
+            imported_details.get("description")
+            == import_payload["dashboard"]["description"]
+        )
+        assert (
+            imported_details.get("access")
+            == import_payload["dashboard"]["access"]
+        )
+        assert (
+            imported_details.get("type") == import_payload["dashboard"]["type"]
+        )
+
+    except APIError as e:
+        print(f"API Error: {str(e)}")
+        pytest.fail(f"Dashboard import test failed: {str(e)}")
+
+    finally:
+        # Clean up the imported dashboard
+        if imported_dashboard_id:
+            try:
+                chronicle.delete_dashboard(dashboard_id=imported_dashboard_id)
+                print(
+                    f"Cleaned up imported dashboard with ID: {imported_dashboard_id}"
+                )
+            except Exception as e:
+                print(f"Clean up failed for imported dashboard: {str(e)}")

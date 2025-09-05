@@ -23,7 +23,7 @@ from secops.chronicle import dashboard
 from secops.chronicle.client import ChronicleClient
 from secops.chronicle.dashboard import DashboardAccessType, DashboardView
 from secops.chronicle.models import InputInterval
-from secops.exceptions import APIError
+from secops.exceptions import APIError, SecOpsError
 
 
 @pytest.fixture
@@ -561,6 +561,153 @@ class TestCreateDashboard:
                 display_name=display_name,
                 access_type=access_type,
             )
+
+
+class TestImportDashboard:
+    """Test the import_dashboard function."""
+
+    def test_import_dashboard_success(
+        self, chronicle_client: ChronicleClient, response_mock: Mock
+    ) -> None:
+        """Test import_dashboard function with successful response."""
+        # Setup mock response
+        response_mock.json.return_value = {
+            "name": "projects/test-project/locations/test-location/nativeDashboards/imported-dashboard",
+            "displayName": "Imported Dashboard",
+        }
+        chronicle_client.session.post.return_value = response_mock
+
+        # Dashboard to import
+        dashboard_data = {
+            "dashboard": {
+                "name": (
+                    "projects/test-project/locations/test-location/"
+                    "nativeDashboards/dashboard-to-import"
+                ),
+                "displayName": "test-dashboard",
+            },
+            "dashboardCharts": [{"displayName": "Test Chart"}],
+            "dashboardQueries": [
+                {
+                    "query": "sample_query",
+                    "input": {
+                        "relativeTime": {
+                            "timeUnit": "SECOND",
+                            "startTimeVal": "20",
+                        }
+                    },
+                }
+            ],
+        }
+
+        # Call the function
+        result = dashboard.import_dashboard(chronicle_client, dashboard_data)
+
+        # Verify API call was made with correct parameters
+        chronicle_client.session.post.assert_called_once()
+        url = f"{chronicle_client.base_url}/{chronicle_client.instance_id}/nativeDashboards:import"
+        payload = {"source": {"dashboards": [dashboard_data]}}
+        chronicle_client.session.post.assert_called_with(url, json=payload)
+
+        # Verify the returned result
+        assert result["name"].endswith("/imported-dashboard")
+        assert result["displayName"] == "Imported Dashboard"
+
+    def test_import_dashboard_minimal(
+        self, chronicle_client: ChronicleClient, response_mock: Mock
+    ) -> None:
+        """Test import_dashboard function with minimal dashboard data."""
+        # Setup mock response
+        response_mock.json.return_value = {"name": "test-dashboard"}
+        chronicle_client.session.post.return_value = response_mock
+
+        # Minimal dashboard to import
+        dashboard_data = {
+            "dashboard": {
+                "name": (
+                    "projects/test-project/locations/test-location/"
+                    "nativeDashboards/dashboard-to-import"
+                ),
+                "displayName": "test-dashboard",
+            },
+            "dashboardCharts": [],
+            "dashboardQueries": [],
+        }
+
+        # Call the function
+        result = dashboard.import_dashboard(chronicle_client, dashboard_data)
+
+        # Verify API call was made with correct parameters
+        chronicle_client.session.post.assert_called_once()
+        url = f"{chronicle_client.base_url}/{chronicle_client.instance_id}/nativeDashboards:import"
+        payload = {"source": {"dashboards": [dashboard_data]}}
+        chronicle_client.session.post.assert_called_with(url, json=payload)
+
+        # Verify the returned result
+        assert result == {"name": "test-dashboard"}
+
+    def test_import_dashboard_error(
+        self, chronicle_client: ChronicleClient, response_mock: Mock
+    ) -> None:
+        """Test import_dashboard function with server error response."""
+        # Setup server error response
+        response_mock.status_code = 500
+        response_mock.text = "Internal Server Error"
+        chronicle_client.session.post.return_value = response_mock
+
+        # Valid dashboard data
+        dashboard_data = {
+            "dashboard": {
+                "name": (
+                    "projects/test-project/locations/test-location/"
+                    "nativeDashboards/dashboard-to-import"
+                ),
+                "displayName": "test-dashboard",
+            },
+            "dashboardCharts": [{"displayName": "Test Chart"}],
+            "dashboardQueries": [
+                {
+                    "query": "sample_query",
+                    "input": {
+                        "relativeTime": {
+                            "timeUnit": "SECOND",
+                            "startTimeVal": "20",
+                        }
+                    },
+                }
+            ],
+        }
+
+        # Verify the function raises an APIError
+        with pytest.raises(APIError, match="Failed to import dashboard"):
+            dashboard.import_dashboard(chronicle_client, dashboard_data)
+
+        # Verify API call was attempted
+        chronicle_client.session.post.assert_called_once()
+
+    def test_import_dashboard_invalid_data(
+        self, chronicle_client: ChronicleClient
+    ) -> None:
+        """Test import_dashboard function with invalid dashboard data."""
+        # Dashboard data without any of the required keys
+        invalid_dashboard_data = {
+            "displayName": "Invalid Dashboard",
+            "access": "DASHBOARD_PUBLIC",
+            "type": "CUSTOM",
+        }
+
+        # Verify the function raises a SecOpsError with the correct message
+        with pytest.raises(
+            SecOpsError,
+            match=(
+                "Dashboard must contain "
+                "at least one of: dashboard, dashboardCharts, dashboardQueries"
+            ),
+        ):
+            dashboard.import_dashboard(chronicle_client, invalid_dashboard_data)
+
+        # Verify no API call was attempted
+        chronicle_client.session.post.assert_not_called()
 
 
 class TestAddChart:

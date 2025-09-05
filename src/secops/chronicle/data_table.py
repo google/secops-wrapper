@@ -113,7 +113,7 @@ def create_data_table(
     }
 
     if scopes:
-        body_payload["scopes"] = {"dataAccessScopes": scopes}
+        body_payload["scopeInfo"] = {"dataAccessScopes": scopes}
 
     # Create the data table
     response = client.session.post(

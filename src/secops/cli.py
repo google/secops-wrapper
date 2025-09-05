@@ -3451,6 +3451,54 @@ def setup_dashboard_command(subparsers):
     )
     edit_chart_parser.set_defaults(func=handle_dashboard_edit_chart_command)
 
+    # Import Dashboard
+    import_dashboard_parser = dashboard_subparsers.add_parser(
+        "import", help="Import a dashboard"
+    )
+
+    # Dashboard data arguments
+    dashboard_data_group = import_dashboard_parser.add_mutually_exclusive_group(
+        required=True
+    )
+    dashboard_data_group.add_argument(
+        "--dashboard-data",
+        "--dashboard_data",
+        help="Dashboard data as JSON string",
+    )
+    dashboard_data_group.add_argument(
+        "--dashboard-data-file",
+        "--dashboard_data_file",
+        help="File containing dashboard data in JSON format",
+    )
+
+    # Chart data arguments (optional)
+    chart_data_group = import_dashboard_parser.add_mutually_exclusive_group()
+    chart_data_group.add_argument(
+        "--chart-data",
+        "--chart_data",
+        help="Dashboard chart data as JSON string",
+    )
+    chart_data_group.add_argument(
+        "--chart-data-file",
+        "--chart_data_file",
+        help="File containing dashboard chart data in JSON format",
+    )
+
+    # Query data arguments (optional)
+    query_data_group = import_dashboard_parser.add_mutually_exclusive_group()
+    query_data_group.add_argument(
+        "--query-data",
+        "--query_data",
+        help="Dashboard query data as JSON string",
+    )
+    query_data_group.add_argument(
+        "--query-data-file",
+        "--query_data_file",
+        help="File containing dashboard query data in JSON format",
+    )
+
+    import_dashboard_parser.set_defaults(func=handle_dashboard_import_command)
+
 
 def handle_dashboard_list_command(args, chronicle):
     """Handle list dashboards command."""
@@ -3731,6 +3779,97 @@ def handle_dashboard_edit_chart_command(args, chronicle):
         sys.exit(1)
     except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error editing chart: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_dashboard_import_command(args, chronicle):
+    """Handle import dashboard command."""
+    try:
+        # Initialize variables for the data components
+        dashboard_data = None
+        chart_data = None
+        query_data = None
+
+        # Process dashboard data from argument or file
+        if args.dashboard_data:
+            dashboard_data = args.dashboard_data
+        elif args.dashboard_data_file:
+            try:
+                with open(args.dashboard_data_file, "r", encoding="utf-8") as f:
+                    dashboard_data = f.read()
+            except IOError as e:
+                print(
+                    f"Error reading dashboard data file: {e}", file=sys.stderr
+                )
+                sys.exit(1)
+
+        # Process chart data from argument or file (if provided)
+        if args.chart_data:
+            chart_data = args.chart_data
+        elif args.chart_data_file:
+            try:
+                with open(args.chart_data_file, "r", encoding="utf-8") as f:
+                    chart_data = f.read()
+            except IOError as e:
+                print(f"Error reading chart data file: {e}", file=sys.stderr)
+                sys.exit(1)
+
+        # Process query data from argument or file (if provided)
+        if args.query_data:
+            query_data = args.query_data
+        elif args.query_data_file:
+            try:
+                with open(args.query_data_file, "r", encoding="utf-8") as f:
+                    query_data = f.read()
+            except IOError as e:
+                print(f"Error reading query data file: {e}", file=sys.stderr)
+                sys.exit(1)
+
+        # Convert JSON strings to dictionaries
+        try:
+            if isinstance(dashboard_data, str):
+                dashboard_data = json.loads(dashboard_data)
+
+            if chart_data and isinstance(chart_data, str):
+                chart_data = json.loads(chart_data)
+
+            if query_data and isinstance(query_data, str):
+                query_data = json.loads(query_data)
+        except json.JSONDecodeError as e:
+            print(f"Error parsing JSON data: {e}", file=sys.stderr)
+            sys.exit(1)
+
+        # Construct the payload
+        dashboard = {}
+
+        # Add dashboard data if provided
+        if dashboard_data:
+            dashboard["dashboard"] = dashboard_data
+
+        # Add chart data if provided
+        if chart_data:
+            dashboard["dashboardCharts"] = (
+                chart_data if isinstance(chart_data, list) else [chart_data]
+            )
+
+        # Add query data if provided
+        if query_data:
+            dashboard["dashboardQueries"] = (
+                query_data if isinstance(query_data, list) else [query_data]
+            )
+
+        # Call the import_dashboard method
+        result = chronicle.import_dashboard(dashboard)
+        output_formatter(result, args.output)
+
+    except APIError as e:
+        print(f"API error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except SecOpsError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        print(f"Error importing dashboard: {e}", file=sys.stderr)
         sys.exit(1)
 
 

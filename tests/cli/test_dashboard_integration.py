@@ -16,8 +16,10 @@
 
 These tests require valid credentials and API access.
 """
+import os
 import json
 import subprocess
+import tempfile
 import time
 import uuid
 
@@ -544,3 +546,129 @@ def test_cli_dashboard_chart_lifecycle(cli_env, common_args):
 
             subprocess.run(delete_cmd, env=cli_env, check=False)
             print(f"Cleaned up dashboard with ID: {dashboard_id}")
+
+
+@pytest.mark.integration
+def test_cli_dashboard_import(cli_env, common_args):
+    """Test the dashboard import command via CLI."""
+    imported_dashboard_id = None
+    import_payload_file_name = None
+    try:
+
+        # 1. Create the dashboard import payload with the required structure
+        import_data = {
+            "name": "50221a9e-afd7-4f7b-8043-35a925454995",
+            "displayName": "Source Dashboard 8f736a58",
+            "description": "Source dashboard for import test",
+            "definition": {
+                "filters": [
+                    {
+                        "id": "GlobalTimeFilter",
+                        "dataSource": "GLOBAL",
+                        "filterOperatorAndFieldValues": [
+                            {
+                                "filterOperator": "PAST",
+                                "fieldValues": ["1", "DAY"],
+                            }
+                        ],
+                        "displayName": "Global Time Filter",
+                        "isStandardTimeRangeFilter": True,
+                        "isStandardTimeRangeFilterEnabled": True,
+                    }
+                ]
+            },
+            "type": "CUSTOM",
+            "etag": "9bcb466d09e461d19aa890d0f5eb38a5496fa085dc2605954e4457b408acd916",
+            "access": "DASHBOARD_PRIVATE",
+        }
+
+        # Write import data to a temporary file
+        with tempfile.NamedTemporaryFile(
+            suffix=".json", mode="w+", delete=False
+        ) as temp_file:
+            temp_file.write(json.dumps(import_data))
+            import_payload_file_name = temp_file.name
+
+        # 2. Import dashboard using the file
+        import_cmd = (
+            ["secops"]
+            + common_args
+            + [
+                "dashboard",
+                "import",
+                "--dashboard-data-file",
+                import_payload_file_name,
+            ]
+        )
+
+        import_result = subprocess.run(
+            import_cmd, env=cli_env, capture_output=True, text=True
+        )
+
+        # Check that the command executed successfully
+        assert import_result.returncode == 0
+
+        # Load imported dashboard data
+        imported_dashboard = json.loads(import_result.stdout)
+        assert "results" in imported_dashboard
+        assert len(imported_dashboard["results"]) > 0
+        assert "dashboard" in imported_dashboard["results"][0]
+        imported_dashboard_id = imported_dashboard["results"][0][
+            "dashboard"
+        ].split("/")[-1]
+        print(f"Imported dashboard with ID: {imported_dashboard_id}")
+
+        # 3. Verify the imported dashboard exists
+        verify_cmd = (
+            ["secops"]
+            + common_args
+            + [
+                "dashboard",
+                "get",
+                "--dashboard-id",
+                imported_dashboard_id,
+            ]
+        )
+
+        verify_result = subprocess.run(
+            verify_cmd, env=cli_env, capture_output=True, text=True
+        )
+
+        # Check that the command executed successfully
+        assert verify_result.returncode == 0
+
+        # Load verified dashboard data
+        verified_data = json.loads(verify_result.stdout)
+
+        # Verify key properties match the provided static payload
+        assert verified_data["displayName"] == import_data["displayName"]
+        assert verified_data["description"] == import_data["description"]
+        assert verified_data["access"] == import_data["access"]
+        assert verified_data["type"] == import_data["type"]
+
+    finally:
+        # Clean up the imported dashboard
+        if imported_dashboard_id:
+            delete_cmd = (
+                ["secops"]
+                + common_args
+                + [
+                    "dashboard",
+                    "delete",
+                    "--dashboard-id",
+                    imported_dashboard_id,
+                ]
+            )
+            subprocess.run(delete_cmd, env=cli_env, check=False)
+            print(
+                f"Cleaned up imported dashboard with ID: {imported_dashboard_id}"
+            )
+
+        try:
+            if import_payload_file_name and os.path.exists(
+                import_payload_file_name
+            ):
+                os.remove(import_payload_file_name)
+                print(f"Removed temporary file: {import_payload_file_name}")
+        except Exception as e:
+            print(f"Error removing temporary file: {str(e)}")
