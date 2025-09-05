@@ -537,3 +537,102 @@ def test_run_rule_test_handles_exceptions(chronicle_client):
             )
 
         assert "Error testing rule" in str(exc_info.value)
+
+
+def test_get_rule_deployment(chronicle_client, mock_response):
+    """Test get_rule_deployment function."""
+    rule_id = "ru_12345"
+    with patch.object(
+        chronicle_client.session, "get", return_value=mock_response
+    ) as mock_get:
+        from secops.chronicle.rule import get_rule_deployment
+
+        result = get_rule_deployment(chronicle_client, rule_id)
+
+        mock_get.assert_called_once_with(
+            f"{chronicle_client.base_v1_url}/{chronicle_client.instance_id}/rules/{rule_id}/deployment"
+        )
+        assert result == mock_response.json.return_value
+
+
+def test_get_rule_deployment_error(chronicle_client, mock_error_response):
+    """Test get_rule_deployment function with error response."""
+    rule_id = "ru_12345"
+    with patch.object(
+        chronicle_client.session, "get", return_value=mock_error_response
+    ):
+        from secops.chronicle.rule import get_rule_deployment
+
+        with pytest.raises(APIError) as exc_info:
+            get_rule_deployment(chronicle_client, rule_id)
+
+        assert "Failed to get rule deployment" in str(exc_info.value)
+
+
+def test_list_rule_deployments_single_page(chronicle_client, mock_response):
+    """Test list_rule_deployments with a single page."""
+    mock_response.json.return_value = {
+        "ruleDeployments": [{"name": "dep1"}, {"name": "dep2"}]
+    }
+
+    with patch.object(
+        chronicle_client.session, "get", return_value=mock_response
+    ) as mock_get:
+        from secops.chronicle.rule import list_rule_deployments
+
+        result = list_rule_deployments(chronicle_client)
+
+        mock_get.assert_called_once_with(
+            f"{chronicle_client.base_v1_url}/{chronicle_client.instance_id}/rules/-/deployments",
+            params={},
+        )
+        assert result == {"ruleDeployments": [{"name": "dep1"}, {"name": "dep2"}]}
+
+
+def test_list_rule_deployments_pagination(chronicle_client):
+    """Test list_rule_deployments function with pagination."""
+
+    def get_mock_response(url, **kwargs):
+        params = kwargs.get("params", {})
+        if "pageToken" not in params:
+            # First page response
+            response = Mock()
+            response.status_code = 200
+            response.json.return_value = {
+                "ruleDeployments": [{"name": "dep1"}],
+                "nextPageToken": "page2token",
+            }
+            return response
+        elif params["pageToken"] == "page2token":
+            # Second page response
+            response = Mock()
+            response.status_code = 200
+            response.json.return_value = {
+                "ruleDeployments": [{"name": "dep2"}],
+            }
+            return response
+        else:
+            raise ValueError(f"Unexpected pageToken: {params.get('pageToken')}")
+
+    with patch.object(chronicle_client.session, "get") as mock_get:
+        mock_get.side_effect = get_mock_response
+
+        from secops.chronicle.rule import list_rule_deployments
+
+        result = list_rule_deployments(chronicle_client)
+
+        assert mock_get.call_count == 2
+        assert [d["name"] for d in result["ruleDeployments"]] == ["dep1", "dep2"]
+
+
+def test_list_rule_deployments_error(chronicle_client, mock_error_response):
+    """Test list_rule_deployments function with error response."""
+    with patch.object(
+        chronicle_client.session, "get", return_value=mock_error_response
+    ):
+        from secops.chronicle.rule import list_rule_deployments
+
+        with pytest.raises(APIError) as exc_info:
+            list_rule_deployments(chronicle_client)
+
+        assert "Failed to list rule deployments" in str(exc_info.value)

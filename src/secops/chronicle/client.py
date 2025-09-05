@@ -225,6 +225,10 @@ from secops.chronicle.udm_search import (
 )
 from secops.chronicle.validate import validate_query as _validate_query
 from secops.exceptions import SecOpsError
+from secops.chronicle.rule import get_rule_deployment as _get_rule_deployment
+from secops.chronicle.rule import (
+    list_rule_deployments as _list_rule_deployments,
+)
 
 
 class ValueType(Enum):
@@ -3049,3 +3053,36 @@ class ChronicleClient:
             Dictionary containing the query details
         """
         return _get_execute_query(self, query_id=query_id)
+
+    def get_rule_deployment(self, rule_id: str) -> Dict[str, Any]:
+        """Get the current deployment for a rule.
+
+        Args:
+            rule_id: Unique ID of the detection rule (e.g., "ru_<UUID>")
+
+        Returns:
+            Dictionary containing the rule deployment information
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _get_rule_deployment(self, rule_id)
+
+    def list_rule_deployments(
+        self, page_size: Optional[int] = None, page_token: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """List rule deployments for the instance.
+
+        Args:
+            page_size: Maximum number of deployments to return per page
+            page_token: Token for the next page of results, if available
+
+        Returns:
+            Dictionary containing rule deployments and pagination info
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _list_rule_deployments(
+            self, page_size=page_size, page_token=page_token
+        )

@@ -227,6 +227,84 @@ def enable_rule(client, rule_id: str, enabled: bool = True) -> Dict[str, Any]:
     return response.json()
 
 
+def get_rule_deployment(client, rule_id: str) -> Dict[str, Any]:
+    """Gets the current deployment for a rule.
+
+    Args:
+        client: ChronicleClient instance.
+        rule_id: Unique ID of the detection rule (for example, "ru_<UUID>" or
+            "ru_<UUID>@v_<seconds>_<nanoseconds>"). If a version suffix isn't
+            specified, the latest version is used.
+
+    Returns:
+        Dictionary containing the rule deployment information.
+
+    Raises:
+        APIError: If the API request fails.
+
+    """
+    url = (
+        f"{client.base_v1_url}/{client.instance_id}/rules/{rule_id}/deployment"
+    )
+    response = client.session.get(url)
+    if response.status_code != 200:
+        raise APIError(f"Failed to get rule deployment: {response.text}")
+    return response.json()
+
+
+def list_rule_deployments(
+    client,
+    page_size: Optional[int] = None,
+    page_token: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Lists rule deployments for the instance.
+
+    Args:
+        client: ChronicleClient instance.
+        page_size: Maximum number of deployments to return per page. If omitted,
+            all pages are fetched and aggregated.
+        page_token: Token for the next page of results, if available.
+
+    Returns:
+        Dictionary containing rule deployment entries. If ``page_size`` is not
+        provided, returns an aggregated object with a ``deployments`` list.
+
+    Raises:
+        APIError: If the API request fails.
+
+    """
+    params: Dict[str, Any] = {}
+    if page_size:
+        params["pageSize"] = page_size
+    if page_token:
+        params["pageToken"] = page_token
+
+    url = f"{client.base_v1_url}/{client.instance_id}/rules/-/deployments"
+
+    if page_size:
+        response = client.session.get(url, params=params)
+        if response.status_code != 200:
+            raise APIError(f"Failed to list rule deployments: {response.text}")
+        return response.json()
+
+    deployments: Dict[str, Any] = {"ruleDeployments": []}
+    more = True
+    while more:
+        response = client.session.get(url, params=params)
+        if response.status_code != 200:
+            raise APIError(f"Failed to list rule deployments: {response.text}")
+        data = response.json()
+        deployments["ruleDeployments"].extend(data["ruleDeployments"])
+
+        if "nextPageToken" in data:
+            params["pageToken"] = data["nextPageToken"]
+        else:
+            params.pop("pageToken", None)
+            more = False
+
+    return deployments
+
+
 def search_rules(client, query: str) -> Dict[str, Any]:
     """Search for rules.
 
