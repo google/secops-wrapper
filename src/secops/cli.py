@@ -288,6 +288,8 @@ def setup_client(args: argparse.Namespace) -> Tuple[SecOpsClient, Any]:
         return client, None
     except (AuthenticationError, SecOpsError) as e:
         print(f"Authentication error: {e}", file=sys.stderr)
+        print("\nFor authentication using ADC, run:", file=sys.stderr)
+        print("  gcloud auth application-default login", file=sys.stderr)
         print("\nFor configuration help, run:", file=sys.stderr)
         print("  secops help --topic config", file=sys.stderr)
         sys.exit(1)
@@ -705,7 +707,7 @@ def setup_log_command(subparsers):
     """Set up the log command parser."""
     log_parser = subparsers.add_parser("log", help="Ingest logs")
     log_subparsers = log_parser.add_subparsers(
-        dest="log_command", help="Log command"
+        help="Log command", required=True
     )
 
     # Ingest log command
