@@ -1302,3 +1302,48 @@ class TestEditChart:
 
         # Verify API call
         chronicle_client.session.post.assert_called_once()
+
+
+class TestExportDashboard:
+    """Test the export_dashboard function."""
+
+    def test_export_dashboard_success(
+        self, chronicle_client: ChronicleClient, response_mock: Mock
+    ) -> None:
+        """Test export_dashboard function with successful response."""
+        response_mock.json.return_value = {
+            "inlineDestination": {
+                "dashboards": [
+                    {"dashboard": {"name": "test-dashboard-1"}},
+                    {"dashboard": {"name": "test-dashboard-2"}},
+                ]
+            }
+        }
+        chronicle_client.session.post.return_value = response_mock
+        dashboard_names = ["test-dashboard-1", "test-dashboard-2"]
+
+        result = dashboard.export_dashboard(chronicle_client, dashboard_names)
+
+        chronicle_client.session.post.assert_called_once()
+        url = f"{chronicle_client.base_url}/{chronicle_client.instance_id}/nativeDashboards:export"
+        qualified_names = [
+            f"{chronicle_client.instance_id}/nativeDashboards/test-dashboard-1",
+            f"{chronicle_client.instance_id}/nativeDashboards/test-dashboard-2",
+        ]
+        payload = {"names": qualified_names}
+        chronicle_client.session.post.assert_called_with(url, json=payload)
+
+        assert len(result["inlineDestination"]["dashboards"]) == 2
+        assert result["inlineDestination"]["dashboards"][0]["dashboard"]["name"] == "test-dashboard-1"
+
+    def test_export_dashboard_error(
+        self, chronicle_client: ChronicleClient, response_mock: Mock
+    ) -> None:
+        """Test export_dashboard function with error response."""
+        response_mock.status_code = 500
+        response_mock.text = "Internal Server Error"
+        chronicle_client.session.post.return_value = response_mock
+        dashboard_names = ["test-dashboard-1"]
+
+        with pytest.raises(APIError, match="Failed to export dashboards"):
+            dashboard.export_dashboard(chronicle_client, dashboard_names)

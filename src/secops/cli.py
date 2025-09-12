@@ -3624,6 +3624,18 @@ def setup_dashboard_command(subparsers):
 
     import_dashboard_parser.set_defaults(func=handle_dashboard_import_command)
 
+    # Export Dashboard
+    export_dashboard_parser = dashboard_subparsers.add_parser(
+        "export", help="Export a dashboard"
+    )
+
+    # Dashboard data arguments
+    export_dashboard_parser.add_argument(
+        "--dashboard-names", "--dashboard_names", help="List of comma-separated dashboard names to export"
+    )
+
+    export_dashboard_parser.set_defaults(func=handle_dashboard_export_command)
+
 
 def handle_dashboard_list_command(args, chronicle):
     """Handle list dashboards command."""
@@ -3985,6 +3997,34 @@ def handle_dashboard_import_command(args, chronicle):
 
         # Call the import_dashboard method
         result = chronicle.import_dashboard(dashboard)
+        output_formatter(result, args.output)
+
+    except APIError as e:
+        print(f"API error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except SecOpsError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        print(f"Error importing dashboard: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_dashboard_export_command(args, chronicle):
+    """Handle export dashboard command."""
+    try:
+        # Initialize variables for the data components
+        dashboard_names = []
+
+        # Process dashboard names from argument
+        dashboard_names_data = args.dashboard_names
+
+
+        # Convert string to list of string
+        dashboard_names = dashboard_names_data.split(",")
+
+        # Call the export_dashboard method
+        result = chronicle.export_dashboard(dashboard_names=dashboard_names)
         output_formatter(result, args.output)
 
     except APIError as e:

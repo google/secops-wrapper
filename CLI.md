@@ -1200,6 +1200,11 @@ secops dashboard import --dashboard-data-file dashboard_data.json --chart-file c
 secops dashboard import --dashboard-data '{"name":"12312321321321"}'
 ```
 
+Export dashboard:
+```bash
+secops dashboard export --dashboard-names 'projects/your-project-id/locations/us/instances/your-instance-id/nativeDashboard/xxxxxxx'
+```
+
 Adding Chart to existing dashboard:
 ```bash
 secops dashboard add-chart --dashboard-id dashboard-id \

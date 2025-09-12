@@ -29,6 +29,7 @@ from secops.chronicle.dashboard import DashboardAccessType, DashboardView
 from secops.chronicle.dashboard import add_chart as _add_chart
 from secops.chronicle.dashboard import create_dashboard as _create_dashboard
 from secops.chronicle.dashboard import import_dashboard as _import_dashboard
+from secops.chronicle.dashboard import export_dashboard as _export_dashboard
 from secops.chronicle.dashboard import delete_dashboard as _delete_dashboard
 from secops.chronicle.dashboard import (
     duplicate_dashboard as _duplicate_dashboard,
@@ -2797,6 +2798,27 @@ class ChronicleClient:
         return _import_dashboard(
             self,
             dashboard=dashboard
+        )
+
+    def export_dashboard(
+            self,
+            dashboard_names: List[str]
+    ) -> Dict[str, Any]:
+        """Create a new native dashboard.
+
+        Args:
+            dashboard: ImportNativeDashboardsInlineSource
+
+        Returns:
+            Dictionary containing the created dashboard details
+
+        Raises:
+            APIError: If the API request fails
+        """
+
+        return _export_dashboard(
+            self,
+            dashboard_names = dashboard_names
         )
 
     def list_dashboards(

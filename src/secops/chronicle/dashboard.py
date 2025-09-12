@@ -162,6 +162,41 @@ def import_dashboard(client, dashboard: Dict[str, Any]) -> Dict[str, Any]:
     return response.json()
 
 
+def export_dashboard(client, dashboard_names: List[str]) -> Dict[str, Any]:
+    """Export native dashboards.
+
+    Args:
+        client: ChronicleClient instance
+        dashboard_names: List of dashboard resource names to export.
+
+    Returns:
+        Dictionary containing the exported dashboards.
+
+    Raises:
+        APIError: If the API request fails.
+    """
+    url = f"{client.base_url}/{client.instance_id}/nativeDashboards:export"
+
+    # Ensure dashboard names are fully qualified
+    qualified_names = []
+    for name in dashboard_names:
+        if not name.startswith("projects/"):
+            name = f"{client.instance_id}/nativeDashboards/{name}"
+        qualified_names.append(name)
+
+    payload = {"names": qualified_names}
+
+    response = client.session.post(url, json=payload)
+
+    if response.status_code != 200:
+        raise APIError(
+            f"Failed to export dashboards: Status {response.status_code}, "
+            f"Response: {response.text}"
+        )
+
+    return response.json()
+
+
 def list_dashboards(
     client,
     page_size: Optional[int] = None,
