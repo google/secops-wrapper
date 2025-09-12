@@ -48,10 +48,14 @@ def main():
                 "ip_address": DataTableColumnType.STRING,
                 "description": DataTableColumnType.STRING,
             },
+            column_options={
+                "ip_address": {"repeatedValues": True}
+            },
             # Initial rows can be provided at creation time
             rows=[
                 ["host1.example.com", "192.168.1.10", "Primary server"],
                 ["host2.example.com", "192.168.1.11", "Backup server"],
+                ["host3.example.com", "192.168.1.10", "Proxy server"],
             ],
         )
         print(f"Created data table: {dt['name']}")

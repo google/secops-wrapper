@@ -695,6 +695,13 @@ secops data-table create \
   --description "Known suspicious IP addresses" \
   --header '{"ip_address":"CIDR","description":"STRING","severity":"STRING"}'
 
+# Basic creation with entity mapping and column options
+secops data-table create \
+  --name "suspicious_ips" \
+  --description "Known suspicious IP addresses" \
+  --header '{"ip_address":"entity.asset.ip","description":"STRING","severity":"STRING"}'
+  --column-options '{"ip_address":{"repeatedValues":true}}'
+
 # Create with initial rows
 secops data-table create \
   --name "malicious_domains" \

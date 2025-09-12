@@ -2330,9 +2330,20 @@ def setup_data_table_command(subparsers):
         required=True,
         help=(
             "Header definition in JSON format. "
-            'Example: \'{"col1":"STRING","col2":"CIDR"}\''
+            'Example: \'{"col1":"STRING","col2":"CIDR"}\' or '
+            'Example: \'{"col1":"entity.asset.ip","col2":"CIDR"}\''
         ),
     )
+    create_parser.add_argument(
+        "--column-options",
+        "--column_options",
+        help=(
+            "Column options in JSON format. "
+            'Example: \'{"col1":{"repeatedValues":true},'
+            '"col2":{"keyColumns":true}}\''
+        ),
+    )
+
     create_parser.add_argument(
         "--rows",
         help=(
@@ -2563,10 +2574,22 @@ def handle_dt_create_command(args, chronicle):
             print(f"Error parsing header: {e}", file=sys.stderr)
             print(
                 "Header should be a JSON object mapping column names to types "
-                "(STRING, REGEX, CIDR).",
+                "(STRING, REGEX, CIDR) or entity mapping.",
                 file=sys.stderr,
             )
             sys.exit(1)
+
+        # Parse column options if provided
+        column_options = None
+        if args.column_options:
+            try:
+                column_options = json.loads(args.column_options)
+            except json.JSONDecodeError as e:
+                print(f"Error parsing column options: {e}", file=sys.stderr)
+                print(
+                    "Column options should be a JSON object.", file=sys.stderr
+                )
+                sys.exit(1)
 
         # Parse rows if provided
         rows = None
@@ -2587,6 +2610,7 @@ def handle_dt_create_command(args, chronicle):
             name=args.name,
             description=args.description,
             header=header,
+            column_options=column_options,
             rows=rows,
             scopes=scopes,
         )

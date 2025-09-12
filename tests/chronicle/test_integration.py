@@ -1329,9 +1329,11 @@ def test_chronicle_data_tables():
                 "ip_address": DataTableColumnType.STRING,
                 "description": DataTableColumnType.STRING,
             },
+            column_options={"ip_address": {"repeatedValues": True}},
             rows=[
                 ["host1.example.com", "192.168.1.10", "Primary server"],
                 ["host2.example.com", "192.168.1.11", "Backup server"],
+                ["host3.example.com", "192.168.1.10", "Proxy server"],
             ],
         )
 
@@ -1347,7 +1349,7 @@ def test_chronicle_data_tables():
         # List rows
         rows = chronicle.list_data_table_rows(dt_name)
         print(f"Found {len(rows)} rows in data table")
-        assert len(rows) == 2  # We added 2 rows during creation
+        assert len(rows) == 3  # We added 3 rows during creation
 
         # Store row IDs for deletion testing
         row_ids = [
@@ -1362,7 +1364,7 @@ def test_chronicle_data_tables():
 
             # Check rows after deletion
             updated_rows = chronicle.list_data_table_rows(dt_name)
-            assert len(updated_rows) == 1  # Should be one less than before
+            assert len(updated_rows) == 2  # Should be one less than before
 
         # Add more rows
         new_rows = [
@@ -1374,7 +1376,7 @@ def test_chronicle_data_tables():
 
         # Check rows after addition
         final_rows = chronicle.list_data_table_rows(dt_name)
-        assert len(final_rows) == 3  # 1 remaining + 2 new ones
+        assert len(final_rows) == 4  # 2 remaining + 2 new ones
 
     except Exception as e:
         print(f"Error during data table test: {e}")

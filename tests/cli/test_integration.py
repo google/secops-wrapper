@@ -1919,6 +1919,7 @@ def test_cli_data_tables(cli_env, common_args):
         header = json.dumps(
             {"hostname": "STRING", "ip_address": "STRING", "description": "STRING"}
         )
+        column_options = json.dumps({"ip_address": {"repeatedValues": True}})
         rows = json.dumps(
             [
                 ["host1.example.com", "192.168.1.10", "Test host 1"],
@@ -1940,6 +1941,8 @@ def test_cli_data_tables(cli_env, common_args):
                 "CLI Test Data Table",
                 "--header",
                 header,
+                "--column-options",
+                column_options,
                 "--rows",
                 rows,
             ]

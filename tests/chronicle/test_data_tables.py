@@ -135,6 +135,95 @@ class TestDataTables:
                 {"col": DataTableColumnType.STRING},
             )
 
+    @patch("secops.chronicle.data_table.REF_LIST_DATA_TABLE_ID_REGEX")
+    def test_create_data_table_with_entity_mapping(
+        self, mock_regex_check: Mock, mock_chronicle_client: Mock
+    ) -> None:
+        """Test successful creation of a data table without rows."""
+        mock_regex_check.match.return_value = True  # Assume name is valid
+        mock_response = Mock()
+        mock_response.status_code = 200
+        expected_dt_name = "projects/test-project/locations/us/instances/test-customer/dataTables/test_dt_123"
+        entity_mapping = "entity.domain.name" # Sample valid entity mapping
+        mock_response.json.return_value = {
+            "name": expected_dt_name,
+            "displayName": "test_dt_123",
+            "description": "Test Description",
+            "createTime": "2025-06-17T10:00:00Z",
+            "columnInfo": [{"originalColumn": "col1", "mappedColumnPath": entity_mapping}],
+            "dataTableUuid": "some-uuid",
+        }
+        mock_chronicle_client.session.post.return_value = mock_response
+
+        dt_name = "test_dt_123"
+        description = "Test Description"
+        header = {"col1": entity_mapping}
+
+        result = create_data_table(mock_chronicle_client, dt_name, description, header)
+
+        assert result["name"] == expected_dt_name
+        assert result["description"] == description
+        mock_chronicle_client.session.post.assert_called_once_with(
+            f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables",
+            params={"dataTableId": dt_name},
+            json={
+                "description": description,
+                "columnInfo": [
+                    {"columnIndex": 0, "originalColumn": "col1", "mappedColumnPath": entity_mapping}
+                ],
+            },
+        )
+
+    @patch("secops.chronicle.data_table.REF_LIST_DATA_TABLE_ID_REGEX")
+    def test_create_data_table_with_column_options(
+        self, mock_regex_check: Mock, mock_chronicle_client: Mock
+    ) -> None:
+        """Test successful creation of a data table without rows, with additional column options."""
+        mock_regex_check.match.return_value = True  # Assume name is valid
+        mock_response = Mock()
+        mock_response.status_code = 200
+        expected_dt_name = "projects/test-project/locations/us/instances/test-customer/dataTables/test_dt_123"
+        mock_response.json.return_value = {
+            "name": expected_dt_name,
+            "displayName": "test_dt_123",
+            "description": "Test Description",
+            "createTime": "2025-06-17T10:00:00Z",
+            "columnInfo": [
+                {"originalColumn": "key", "columnType": "NUMBER", "keyColumn": True},
+                {"originalColumn": "repetitive", "columnType": "STRING", "repeatedValues": True}
+            ],
+            "dataTableUuid": "some-uuid",
+        }
+        mock_chronicle_client.session.post.return_value = mock_response
+
+        dt_name = "test_dt_123"
+        description = "Test Description"
+        header = {
+            "key": DataTableColumnType.NUMBER,
+            "repetitive": DataTableColumnType.STRING
+        }
+        column_options = {
+            "key": {"keyColumn": True},
+            "repetitive": {"repeatedValues": True}
+        }
+
+        result = create_data_table(mock_chronicle_client, dt_name, description, header,
+            column_options=column_options)
+
+        assert result["name"] == expected_dt_name
+        assert result["description"] == description
+        mock_chronicle_client.session.post.assert_called_once_with(
+            f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables",
+            params={"dataTableId": dt_name},
+            json={
+                "description": description,
+                "columnInfo": [
+                    {"columnIndex": 0, "originalColumn": "key", "columnType": "NUMBER", "keyColumn": True},
+                    {"columnIndex": 1, "originalColumn": "repetitive", "columnType": "STRING", "repeatedValues": True}
+                ],
+            },
+        )
+
     def test_get_data_table_success(self, mock_chronicle_client: Mock) -> None:
         """Test successful retrieval of a data table."""
         mock_response = Mock()

@@ -4,7 +4,7 @@ import ipaddress
 import re
 import sys
 from itertools import islice
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from secops.exceptions import APIError, SecOpsError
 
@@ -67,7 +67,8 @@ def create_data_table(
     client: "Any",
     name: str,
     description: str,
-    header: Dict[str, DataTableColumnType],
+    header: Dict[str, Union[DataTableColumnType, str]],
+    column_options: Optional[Dict[str, Dict[str, Any]]] = None,
     rows: Optional[List[List[str]]] = None,
     scopes: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
@@ -77,7 +78,10 @@ def create_data_table(
         client: ChronicleClient instance
         name: The name for the new data table
         description: A user-provided description of the data table
-        header: A dictionary mapping column names to column types
+        header: A dictionary mapping column names to column types or
+                entity proto field mappings
+        column_options: Optional dictionary of column options
+                        syntax: {column_name:{option:value}}
         rows: Optional list of rows for the data table
         scopes: Optional list of scopes for the data table
 
@@ -106,11 +110,25 @@ def create_data_table(
     # Prepare request body
     body_payload = {
         "description": description,
-        "columnInfo": [
-            {"columnIndex": i, "originalColumn": k, "columnType": v.value}
-            for i, (k, v) in enumerate(header.items())
-        ],
+        "columnInfo": [],
     }
+    # Create columnInfo section of request body
+    for i, (column_name, v) in enumerate(header.items()):
+        column = {"columnIndex": i, "originalColumn": column_name}
+
+        # columnType and mappedColumnPath are mutually exclusive
+        if isinstance(v, DataTableColumnType):
+            column["columnType"] = v.value
+        else: # Assume it is an entity mapping (passed as string).
+            column["mappedColumnPath"] = v
+
+        # Merge additional options into column dictionary
+        if column_options:
+            if column_name in column_options:
+                column = column | column_options[column_name]
+
+        # Finally, add column to list of columns
+        body_payload["columnInfo"].append(column)
 
     if scopes:
         body_payload["scopeInfo"] = {"dataAccessScopes": scopes}
