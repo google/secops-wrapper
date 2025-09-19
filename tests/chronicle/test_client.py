@@ -146,6 +146,57 @@ def test_fetch_udm_search_csv_parsing_error(chronicle_client):
         assert "Failed to parse CSV response" in str(exc_info.value)
 
 
+def test_fetch_udm_search_view(chronicle_client, mock_response):
+    mock_response.json.return_value = [{"progress": 1, "complete": True, "validBaselineQuery": True, "baselineEventsCount": 50, "validSnapshotQuery": True, "filteredEventsCount": 50}]
+    """Test fetching UDM search view results."""
+    with patch.object(chronicle_client.session, "post", return_value=mock_response):
+        result = chronicle_client.fetch_udm_search_view(
+            query='metadata.event_type = "PROCESS_LAUNCH" and target.process.file.full_path = /powershell.exe/ nocase',
+            start_time=datetime(2024, 1, 14, 23, 7, tzinfo=timezone.utc),
+                end_time=datetime(2024, 1, 15, 0, 7, tzinfo=timezone.utc),
+                max_events=1
+        )
+
+    assert result[0]["complete"] is True
+
+
+def test_fetch_udm_search_view_syntax_error(chronicle_client):
+    """Test handling of API errors"""
+    error_response = Mock()
+    error_response.status_code = 200
+    error_response.json.return_value =  [{"error": {"code": 400, "message": "something went wrong, please try again later", "status": "INVALID_ARGUMENT"}}]
+
+    with patch.object(chronicle_client.session, "post", return_value=error_response):
+        with pytest.raises(APIError) as exc_info:
+            chronicle_client.fetch_udm_search_view(
+                query='metadata.event_types = "PROCESS_LAUNCH"',
+                start_time=datetime(2024, 1, 14, 23, 7, tzinfo=timezone.utc),
+                end_time=datetime(2024, 1, 15, 0, 7, tzinfo=timezone.utc),
+                max_events=1
+            )
+
+        assert "Chronicle API request failed" in str(exc_info.value)
+
+
+def test_fetch_udm_search_view_parsing_error(chronicle_client):
+    """Test handling of API errors"""
+    error_response = Mock()
+    error_response.status_code = 200
+    error_response.json.text = '[{invalid: json}]'
+    error_response.json.side_effect = ValueError("Invalid JSON")
+
+    with patch.object(chronicle_client.session, "post", return_value=error_response):
+        with pytest.raises(APIError) as exc_info:
+            chronicle_client.fetch_udm_search_view(
+                query='metadata.event_type = "PROCESS_LAUNCH"',
+                start_time=datetime(2024, 1, 14, 23, 7, tzinfo=timezone.utc),
+                end_time=datetime(2024, 1, 15, 0, 7, tzinfo=timezone.utc),
+                max_events=1
+            )
+
+        assert "Failed to parse UDM search response" in str(exc_info.value)
+
+
 def test_validate_query(chronicle_client):
     """Test query validation."""
     mock_response = Mock()
@@ -883,19 +934,19 @@ def test_find_udm_field_values_basic(chronicle_client):
         ],
         "fieldMatchRegex": ".*elev.*"
     }
-    
+
     # Configure the mock session
     chronicle_client.session.get.return_value = mock_response
-    
+
     # Call the method
     result = chronicle_client.find_udm_field_values(query="elev")
-    
+
     # Verify the request was made correctly
     chronicle_client.session.get.assert_called_once_with(
         f"{chronicle_client.base_url}/{chronicle_client.instance_id}:findUdmFieldValues",
         params={"query": "elev"}
     )
-    
+
     # Verify the response was processed correctly
     assert len(result["valueMatches"]) == 2
     assert result["valueMatches"][0]["value"] == "elevated"
@@ -918,19 +969,19 @@ def test_find_udm_field_values_with_page_size(chronicle_client):
             {"field": "principal.process.file.full_path", "count": 12}
         ]
     }
-    
+
     # Configure the mock session
     chronicle_client.session.get.return_value = mock_response
-    
+
     # Call the method with page_size
     result = chronicle_client.find_udm_field_values(query="elev", page_size=1)
-    
+
     # Verify the request was made with correct parameters
     chronicle_client.session.get.assert_called_once_with(
         f"{chronicle_client.base_url}/{chronicle_client.instance_id}:findUdmFieldValues",
         params={"query": "elev", "pageSize": 1}
     )
-    
+
     # Verify the response
     assert len(result["valueMatches"]) == 1
     assert len(result["fieldMatches"]) == 1
@@ -942,14 +993,14 @@ def test_find_udm_field_values_error_response(chronicle_client):
     mock_response = Mock()
     mock_response.status_code = 400
     mock_response.text = "Bad Request: Invalid query parameter"
-    
+
     # Configure the mock session
     chronicle_client.session.get.return_value = mock_response
-    
+
     # Verify that APIError is raised
     with pytest.raises(APIError) as excinfo:
         chronicle_client.find_udm_field_values(query="invalid:query")
-    
+
     # Verify the error message
     assert "Chronicle API request failed" in str(excinfo.value)
     assert "Bad Request: Invalid query parameter" in str(excinfo.value)
@@ -961,14 +1012,14 @@ def test_find_udm_field_values_json_error(chronicle_client):
     mock_response = Mock()
     mock_response.status_code = 200
     mock_response.json.side_effect = ValueError("Invalid JSON")
-    
+
     # Configure the mock session
     chronicle_client.session.get.return_value = mock_response
-    
+
     # Verify that SecOpsError is raised
     with pytest.raises(SecOpsError) as excinfo:
         chronicle_client.find_udm_field_values(query="elev")
-    
+
     # Verify the error message
     assert "Failed to parse response as JSON" in str(excinfo.value)
     assert "Invalid JSON" in str(excinfo.value)

@@ -15,7 +15,7 @@
 """UDM search functionality for Chronicle."""
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from secops.exceptions import APIError, SecOpsError
 
@@ -114,3 +114,102 @@ def find_udm_field_values(
         return response.json()
     except ValueError as e:
         raise SecOpsError(f"Failed to parse response as JSON: {str(e)}") from e
+
+
+def fetch_udm_search_view(
+    client,
+    query: str,
+    start_time: datetime,
+    end_time: datetime,
+    snapshot_query: Optional[str] = 'feedback_summary.status != "CLOSED"',
+    max_events: Optional[int] = 10000,
+    max_detections: Optional[int] = 1000,
+    case_insensitive: bool = True,
+) -> List[Dict[str, Any]]:
+    """Fetch UDM search results in CSV format.
+
+    Args:
+        client: The ChronicleClient instance.
+        query: Chronicle search query to search for. The baseline
+            query is used for this request and its results are cached for
+            subsequent requests, so supplying additional filters in the
+            snapshot_query will not require re-running the baseline query.
+        start_time: Search start time.
+        end_time: Search end time.
+        snapshot_query: Query for filtering alerts. Uses a syntax similar to UDM
+            search, with supported fields including: detection.rule_set,
+            detection.rule_id, detection.rule_name, case_name,
+            feedback_summary.status, feedback_summary.priority, etc.
+        max_events: Maximum number of events to return. If not specified, a
+            default of 10000 events will be returned.
+        max_detections: Maximum number of detections to return. If not
+            specified, a default of 1000 detections will be returned.
+        case_insensitive: Whether to perform case-insensitive search or not.
+
+    Returns:
+        CSV formatted string of results
+
+    Raises:
+        APIError: If the API request fails
+    """
+    url = (
+        f"{client.base_url}/{client.instance_id}"
+        "/legacy:legacyFetchUdmSearchView"
+    )
+
+    search_query = {
+        "baselineQuery": query,
+        "baselineTimeRange": {
+            "startTime": start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            "endTime": end_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        },
+        "caseInsensitive": case_insensitive,
+    }
+
+    if snapshot_query:
+        search_query["detectionOptions"] = {
+            "snapshotQuery": snapshot_query
+        }
+
+    if max_detections:
+        search_query["detectionOptions"] = {
+            "detectionList": {
+                "maxReturnedDetections": max_detections,
+            }
+        }
+
+    if max_events:
+        search_query["eventList"] = {
+            "maxReturnedEvents": max_events,
+        }
+
+    response = client.session.post(
+        url, json=search_query, headers={"Accept": "*/*"}
+    )
+
+    if response.status_code != 200:
+        raise APIError(f"Chronicle API request failed: {response.text}")
+
+    try:
+        json_resp = response.json()
+    except ValueError as e:
+        raise APIError(f"Failed to parse UDM search response: {str(e)}") from e
+
+    final_resp: List[Dict[str, Any]] = []
+    complete: bool = False
+    for resp in json_resp:
+        if not resp.get("complete", "") and not resp.get("error", ""):
+            continue
+
+        if resp.get("error", ""):
+            raise APIError(
+                f"Chronicle API request failed: {resp.get('error', '')}"
+            )
+
+        final_resp.append(resp)
+        complete = True
+
+    if not complete:
+        final_resp = json_resp
+
+    return final_resp

@@ -142,6 +142,9 @@ from secops.chronicle.udm_search import (
     fetch_udm_search_csv,
     find_udm_field_values,
 )
+from secops.chronicle.udm_search import (
+  fetch_udm_search_view,
+)
 from secops.chronicle.validate import validate_query
 
 __all__ = [
@@ -152,6 +155,7 @@ __all__ = [
     # UDM and Search
     "fetch_udm_search_csv",
     "find_udm_field_values",
+    "fetch_udm_search_view",
     "validate_query",
     "get_stats",
     "search_udm",
