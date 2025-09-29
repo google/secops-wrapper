@@ -17,3 +17,5 @@ temp_test_data_tables.py
 tests/config_prbss.py
 tests/config_purple.py
 .tox
+.gemini/
+gha-creds-*.json
