@@ -56,6 +56,21 @@ from secops.chronicle.data_export import (
     fetch_available_log_types as _fetch_available_log_types,
 )
 from secops.chronicle.data_export import get_data_export as _get_data_export
+from secops.chronicle.data_export_v2 import (
+    cancel_data_export_v2 as _cancel_data_export_v2,
+)
+from secops.chronicle.data_export_v2 import (
+    create_data_export_v2 as _create_data_export_v2,
+)
+from secops.chronicle.data_export_v2 import (
+    get_data_export_v2 as _get_data_export_v2,
+)
+from secops.chronicle.data_export_v2 import (
+    list_data_export_v2 as _list_data_export_v2,
+)
+from secops.chronicle.data_export_v2 import (
+    update_data_export_v2 as _update_data_export_v2,
+)
 from secops.chronicle.data_table import DataTableColumnType
 from secops.chronicle.data_table import create_data_table as _create_data_table
 from secops.chronicle.data_table import (
@@ -2300,6 +2315,169 @@ class ChronicleClient:
             self,
             start_time=start_time,
             end_time=end_time,
+            page_size=page_size,
+            page_token=page_token,
+        )
+
+    def get_data_export_v2(self, data_export_id: str) -> Dict[str, Any]:
+        """Get information about a specific data export.
+
+        Args:
+            data_export_id: ID of the data export to retrieve
+
+        Returns:
+            Dictionary containing data export details
+
+        Raises:
+            APIError: If the API request fails
+
+        Example:
+            ```python
+            export = chronicle.get_data_export("export123")
+            print(f"Export status: {export['data_export_status']['stage']}")
+            ```
+        """
+        return _get_data_export_v2(self, data_export_id)
+
+    def create_data_export_v2(
+        self,
+        gcs_bucket: str,
+        start_time: datetime,
+        end_time: datetime,
+        log_types: List[str] = [],
+        export_all_logs: bool = False,
+    ) -> Dict[str, Any]:
+        """Create a new data export job.
+
+        Args:
+            gcs_bucket: GCS bucket path in format
+                "projects/{project}/buckets/{bucket}"
+            start_time: Start time for the export (inclusive)
+            end_time: End time for the export (exclusive)
+            log_type: Optional specific log type to export.
+                If None and export_all_logs is False, no logs will be exported
+            export_all_logs: Whether to export all log types
+
+        Returns:
+            Dictionary containing details of the created data export
+
+        Raises:
+            APIError: If the API request fails
+            ValueError: If invalid parameters are provided
+
+        Example:
+            ```python
+            from datetime import datetime, timedelta
+
+            end_time = datetime.now()
+            start_time = end_time - timedelta(days=1)
+
+            # Export a specific log type
+            export = chronicle.create_data_export(
+                gcs_bucket="projects/my-project/buckets/my-bucket",
+                start_time=start_time,
+                end_time=end_time,
+                log_type="WINDOWS"
+            )
+
+            # Export all logs
+            export = chronicle.create_data_export(
+                gcs_bucket="projects/my-project/buckets/my-bucket",
+                start_time=start_time,
+                end_time=end_time,
+                export_all_logs=True
+            )
+            ```
+        """
+        return _create_data_export_v2(
+            self,
+            gcs_bucket=gcs_bucket,
+            start_time=start_time,
+            end_time=end_time,
+            log_types=log_types,
+            export_all_logs=export_all_logs,
+        )
+
+    def update_data_export_v2(
+        self,
+        data_export_id: str,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+        gcs_bucket: Optional[str] = None,
+        log_types: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Update an existing data export job.
+
+        Note: The job must be in the "IN_QUEUE" state to be updated.
+
+        Args:
+            data_export_id: ID of the data export to update
+            start_time: Optional new start time for the export
+            end_time: Optional new end time for the export
+            gcs_bucket: Optional new GCS bucket path
+            log_types: Optional new list of log types to export
+
+        Returns:
+            Dictionary containing details of the updated data export
+
+        Raises:
+            APIError: If the API request fails
+            ValueError: If invalid parameters are provided
+        """
+        return _update_data_export_v2(
+            self,
+            data_export_id=data_export_id,
+            start_time=start_time,
+            end_time=end_time,
+            gcs_bucket=gcs_bucket,
+            log_types=log_types,
+        )
+
+    def cancel_data_export_v2(self, data_export_id: str) -> Dict[str, Any]:
+        """Cancel an in-progress data export.
+
+        Args:
+            data_export_id: ID of the data export to cancel
+
+        Returns:
+            Dictionary containing details of the cancelled data export
+
+        Raises:
+            APIError: If the API request fails
+
+        Example:
+            ```python
+            result = chronicle.cancel_data_export("export123")
+            print("Export cancellation request submitted")
+            ```
+        """
+        return _cancel_data_export_v2(self, data_export_id)
+
+    def list_data_export_v2(
+        self,
+        filter: Optional[str] = None,
+        page_size: Optional[int] = None,
+        page_token: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """List data export jobs.
+
+        Args:
+            client: ChronicleClient instance
+
+        Returns:
+            Dictionary containing data export list
+
+        Raises:
+            APIError: If the API request fails
+
+        Example:
+            ```python
+            export = chronicle.list_data_export()
+            ```
+        """
+        return _list_data_export_v2(
+            self,
+            filter=filter,
             page_size=page_size,
             page_token=page_token,
         )
