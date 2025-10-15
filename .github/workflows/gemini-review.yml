@@ -70,6 +70,7 @@ jobs:
                     "get_pull_request",
                     "submit_pending_pull_request_review"
                   ],
+                  "allowDirectCommandExecution": true,
                   "env": {
                     "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}",
                     "GITHUB_API_URL": "https://api.github.com"
@@ -85,8 +86,15 @@ jobs:
                   "run_shell_command(tail)",
                   "run_shell_command(ls)",
                   "run_shell_command(find)",
-                  "run_shell_command(pwd)"
-                ]
+                  "run_shell_command(pwd)",
+                  "run_shell_command(git)",
+                  "run_shell_command(gh)",
+                  "run_shell_command(env)",
+                  "run_shell_command(mcp__github__get_pull_request_diff)",
+                  "run_shell_command(mcp__github__get_pull_request_files)",
+                  "run_shell_command(mcp__github__get_pull_request)"
+                ],
+                "disabled": []
               }
             }
           prompt: |-
