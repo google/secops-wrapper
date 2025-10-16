@@ -29,6 +29,7 @@ from secops.chronicle.log_ingest import (
     extract_forwarder_id,
     ingest_udm,
     delete_forwarder,
+    import_entities,
 )
 from secops.exceptions import APIError
 
@@ -969,3 +970,118 @@ def test_delete_forwarder_error(chronicle_client):
     with patch.object(chronicle_client.session, "delete", return_value=error_response):
         with pytest.raises(APIError, match="Failed to delete forwarder"):
             delete_forwarder(client=chronicle_client, forwarder_id="test-forwarder-id")
+
+
+@pytest.fixture
+def mock_entity():
+    """Create a sample entity for testing."""
+    return {
+        "metadata": {
+            "collected_timestamp": "2025-01-01T00:00:00Z",
+            "vendor_name": "TestVendor",
+            "product_name": "TestProduct",
+            "entity_type": "USER",
+        },
+        "entity": {
+            "user": {
+                "userid": "testuser",
+            }
+        },
+    }
+
+
+@pytest.fixture
+def mock_import_entities_response():
+    """Create a mock import entities API response."""
+    mock = Mock()
+    mock.status_code = 200
+    mock.text = "{}"
+    mock.json.return_value = {}
+    return mock
+
+
+def test_import_entities_single_entity(
+    chronicle_client, mock_entity, mock_import_entities_response
+):
+    """Test importing a single entity."""
+    with patch.object(
+        chronicle_client.session, "post", return_value=mock_import_entities_response
+    ):
+        result = import_entities(
+            client=chronicle_client, entities=mock_entity, log_type="TEST_LOG_TYPE"
+        )
+
+        call_args = chronicle_client.session.post.call_args
+        assert call_args is not None
+
+        url = call_args[0][0]
+        assert (
+            "projects/test-project/locations/us/instances/test-customer/entities:import"
+            in url
+        )
+
+        payload = call_args[1]["json"]
+        assert "inline_source" in payload
+        assert "entities" in payload["inline_source"]
+        assert len(payload["inline_source"]["entities"]) == 1
+        assert (
+            payload["inline_source"]["entities"][0]["entity"]["user"]["userid"]
+            == "testuser"
+        )
+        assert payload["inline_source"]["log_type"] == "TEST_LOG_TYPE"
+
+        assert isinstance(result, dict)
+
+
+def test_import_entities_multiple_entities(
+    chronicle_client, mock_entity, mock_import_entities_response
+):
+    """Test importing multiple entities."""
+    entity2 = {
+        "metadata": {
+            "collected_timestamp": "2025-01-01T00:00:00Z",
+            "vendor_name": "TestVendor",
+            "product_name": "TestProduct",
+            "entity_type": "ASSET",
+        },
+        "entity": {
+            "asset": {
+                "hostname": "testhost",
+            }
+        },
+    }
+    entities = [mock_entity, entity2]
+
+    with patch.object(
+        chronicle_client.session, "post", return_value=mock_import_entities_response
+    ):
+        import_entities(
+            client=chronicle_client, entities=entities, log_type="TEST_LOG_TYPE"
+        )
+
+        call_args = chronicle_client.session.post.call_args
+        assert call_args is not None
+
+        payload = call_args[1]["json"]
+        assert len(payload["inline_source"]["entities"]) == 2
+
+
+def test_import_entities_api_error(chronicle_client, mock_entity):
+    """Test error handling when the API request fails."""
+    error_response = Mock()
+    error_response.status_code = 400
+    error_response.text = "Invalid request"
+
+    with patch.object(chronicle_client.session, "post", return_value=error_response):
+        with pytest.raises(APIError, match="Failed to import entities"):
+            import_entities(
+                client=chronicle_client,
+                entities=mock_entity,
+                log_type="TEST_LOG_TYPE",
+            )
+
+
+def test_import_entities_validation_error_empty_entities(chronicle_client):
+    """Test validation error when no entities are provided."""
+    with pytest.raises(ValueError, match="No entities provided"):
+        import_entities(client=chronicle_client, entities=[], log_type="TEST_LOG_TYPE")

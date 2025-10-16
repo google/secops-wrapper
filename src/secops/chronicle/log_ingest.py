@@ -1043,3 +1043,63 @@ def ingest_udm(
             response_data = {"raw_response": response.text}
 
     return response_data
+
+
+def import_entities(
+    client: "ChronicleClient",
+    entities: Union[Dict[str, Any], List[Dict[str, Any]]],
+    log_type: str,
+) -> Dict[str, Any]:
+    """Import entities into Chronicle.
+
+    Args:
+        client: ChronicleClient instance
+        entities: An entity dictionary or a list of entity dictionaries
+        log_type: The log type of the log from which this entity is created
+
+    Returns:
+        Dictionary containing the operation details for the ingestion
+
+    Raises:
+        ValueError: If any required fields are missing or entities malformed
+        APIError: If the API request fails
+    """
+    # Ensure we have a list of entities
+    if isinstance(entities, dict):
+        entities = [entities]
+
+    if not entities:
+        raise ValueError("No entities provided")
+
+    # Prepare the request
+    parent = (
+        f"projects/{client.project_id}/locations/{client.region}"
+        f"/instances/{client.customer_id}"
+    )
+    url = (
+        f"https://{client.region}-chronicle.googleapis.com/v1alpha/"
+        f"{parent}/entities:import"
+    )
+
+    # Format the request body
+    body = {"inline_source": {"entities": entities, "log_type": log_type}}
+
+    # Make the API request
+    response = client.session.post(url, json=body)
+
+    # Check for errors
+    if response.status_code >= 400:
+        error_message = f"Failed to import entities: {response.text}"
+        raise APIError(error_message)
+
+    response_data = {}
+
+    # Parse response if it has content
+    if response.text.strip():
+        try:
+            response_data = response.json()
+        except ValueError:
+            # If JSON parsing fails, provide the raw text in the return value
+            response_data = {"raw_response": response.text}
+
+    return response_data

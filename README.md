@@ -559,6 +559,47 @@ result = chronicle.ingest_udm(udm_events=[network_event, process_event])
 print("Multiple events ingested successfully")
 ```
 
+Import entities into Chronicle:
+
+```python
+# Create a sample entity
+entity = {
+    "metadata": {
+        "collected_timestamp": "2025-01-01T00:00:00Z",
+        "vendor_name": "TestVendor",
+        "product_name": "TestProduct",
+        "entity_type": "USER",
+    },
+    "entity": {
+        "user": {
+            "userid": "testuser",
+        }
+    },
+}
+
+# Import a single entity
+result = chronicle.import_entities(entities=entity, log_type="TEST_LOG_TYPE")
+print(f"Imported entity: {result}")
+
+# Import multiple entities
+entity2 = {
+    "metadata": {
+        "collected_timestamp": "2025-01-01T00:00:00Z",
+        "vendor_name": "TestVendor",
+        "product_name": "TestProduct",
+        "entity_type": "ASSET",
+    },
+    "entity": {
+        "asset": {
+            "hostname": "testhost",
+        }
+    },
+}
+entities = [entity, entity2]
+result = chronicle.import_entities(entities=entities, log_type="TEST_LOG_TYPE")
+print(f"Imported entities: {result}")
+```
+
 ### Data Export
 
 > **Note**: The Data Export API features are currently under test and review. We welcome your feedback and encourage you to submit any issues or unexpected behavior to the issue tracker so we can improve this functionality.

@@ -101,6 +101,7 @@ from secops.chronicle.log_ingest import (
 )
 from secops.chronicle.log_ingest import ingest_log as _ingest_log
 from secops.chronicle.log_ingest import ingest_udm as _ingest_udm
+from secops.chronicle.log_ingest import import_entities as _import_entities
 from secops.chronicle.log_ingest import list_forwarders as _list_forwarders
 from secops.chronicle.log_ingest import update_forwarder as _update_forwarder
 from secops.chronicle.log_types import LogType
@@ -1918,6 +1919,31 @@ class ChronicleClient:
             force_log_type=force_log_type,
             namespace=namespace,
             labels=labels,
+        )
+
+    def import_entities(
+        self,
+        entities: Union[Dict[str, Any], List[Dict[str, Any]]],
+        log_type: str,
+    ) -> Dict[str, Any]:
+        """Import entities into Chronicle.
+
+        Args:
+            client: ChronicleClient instance
+            entities: An entity dictionary or a list of entity dictionaries
+            log_type: The log type of the log from which this entity is created
+
+        Returns:
+            Dictionary containing the operation details for the ingestion
+
+        Raises:
+            ValueError: If any required fields are missing or entities malformed
+            APIError: If the API request fails
+        """
+        return _import_entities(
+            self,
+            entities=entities,
+            log_type=log_type,
         )
 
     def create_forwarder(

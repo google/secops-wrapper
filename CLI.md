@@ -218,6 +218,12 @@ Ingest UDM events:
 secops log ingest-udm --file "/path/to/udm_event.json"
 ```
 
+Import entities:
+
+```bash
+secops log import-entities --type "CUSTOM_LOG_TYPE" --file "/path/to/entities.json"
+```
+
 List available log types:
 
 ```bash

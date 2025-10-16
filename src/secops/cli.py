@@ -847,6 +847,16 @@ def setup_log_command(subparsers):
     )
     udm_parser.set_defaults(func=handle_udm_ingest_command)
 
+    # Ingest entities command
+    entities_parser = log_subparsers.add_parser(
+        "import-entities", help="Import entities"
+    )
+    entities_parser.add_argument(
+        "--file", required=True, help="File containing entity(s)"
+    )
+    entities_parser.add_argument("--type", required=True, help="Log type")
+    entities_parser.set_defaults(func=handle_import_entities_command)
+
     # List log types command
     types_parser = log_subparsers.add_parser(
         "types", help="List available log types"
@@ -941,6 +951,21 @@ def handle_udm_ingest_command(args, chronicle):
             udm_events = json.load(f)
 
         result = chronicle.ingest_udm(udm_events=udm_events)
+        output_formatter(result, args.output)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_import_entities_command(args, chronicle):
+    """Handle import entities command."""
+    try:
+        with open(args.file, "r", encoding="utf-8") as f:
+            entities = json.load(f)
+
+        result = chronicle.import_entities(
+            entities=entities, log_type=args.type
+        )
         output_formatter(result, args.output)
     except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error: {e}", file=sys.stderr)
