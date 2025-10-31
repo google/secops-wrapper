@@ -1,3 +1,5 @@
+from docutils.nodes import description
+
 # Google SecOps SDK for Python
 
 [![PyPI version](https://img.shields.io/pypi/v/secops.svg)](https://pypi.org/project/secops/)
@@ -1712,11 +1714,82 @@ for rule_alert in alerts_response.get('ruleAlerts', []):
 
 If `tooManyAlerts` is True in the response, consider narrowing your search criteria using a smaller time window or more specific filters.
 
-### Rule Sets
+### Curated Rule Sets
 
-Manage curated rule sets:
+Query curated rules:
 
 ```python
+# List all curated rules
+rules = chronicle.list_curated_rules()
+for rule in rules:
+    rule_id = rule.get("name", "").split("/")[-1]
+    display_name = rule.get("description")
+    description = rule.get("description")
+    print(f"Rule: {display_name}, Description: {description}")
+
+# Get a curated rule
+rule = chronicle.get_curated_rule("ur_ttp_lol_Atbroker")
+
+# Get a curated rule set by display name
+# NOTE: This is a linear scan of all curated rules which may be inefficient for large rule sets.
+rule_set = chronicle.get_curated_rule_by_name("Atbroker.exe Abuse")
+```
+
+Query curated rule sets:
+
+```python
+# List all curated rule sets
+rule_sets = chronicle.list_curated_rule_sets()
+for rule_set in rule_sets:
+    rule_set_id = rule_set.get("name", "").split("/")[-1]
+    display_name = rule_set.get("displayName")
+    print(f"Rule Set: {display_name}, ID: {rule_set_id}")
+
+# Get a curated rule set by ID
+rule_set = chronicle.get_curated_rule_set("00ad672e-ebb3-0dd1-2a4d-99bd7c5e5f93")
+```
+
+Query curated rule set categories:
+
+```python
+# List all curated rule set categories
+rule_set_categories = chronicle.list_curated_rule_set_categories()
+for rule_set_category in rule_set_categories:
+    rule_set_category_id = rule_set_category.get("name", "").split("/")[-1]
+    display_name = rule_set_category.get("displayName")
+    print(f"Rule Set Category: {display_name}, ID: {rule_set_category_id}")
+
+# Get a curated rule set category by ID
+rule_set_category = chronicle.get_curated_rule_set_category("110fa43d-7165-2355-1985-a63b7cdf90e8")
+```
+
+Manage curated rule set deployments (turn alerting on or off (either precise or broad) for curated rule sets):
+
+```python
+# List all curated rule set deployments
+rule_set_deployments = chronicle.list_curated_rule_set_deployments()
+for rs_deployment in rule_set_deployments:
+    rule_set_id = rs_deployment.get("name", "").split("/")[-3]
+    category_id = rs_deployment.get("name", "").split("/")[-5]
+    deployment_status = rs_deployment.get("name", "").split("/")[-1]
+    display_name = rs_deployment.get("displayName")
+    alerting = rs_deployment.get("alerting", False)
+    print(
+        f"Rule Set: {display_name},"
+        f"Rule Set ID: {rule_set_id}",
+        f"Category ID: {category_id}",
+        f"Precision: {deployment_status}",
+        f"Alerting: {alerting}",
+    )
+
+# Get curated rule set deployment by ID
+rule_set_deployment = chronicle.get_curated_rule_set_deployment("00ad672e-ebb3-0dd1-2a4d-99bd7c5e5f93")
+
+# Get curated rule set deployment by rule set display name
+# NOTE: This is a linear scan of all curated rules which may be inefficient for large rule sets.
+rule_set_deployment = chronicle.get_curated_rule_set_deployment_by_name("Azure - Network")
+    
+# Update multiple curated rule set deployments
 # Define deployments for rule sets
 deployments = [
     {
@@ -1728,8 +1801,17 @@ deployments = [
     }
 ]
 
-# Update rule set deployments
 chronicle.batch_update_curated_rule_set_deployments(deployments)
+
+# Update a single curated rule set deployment
+chronicle.update_curated_rule_set_deployment(
+    category_id="category-uuid",
+    rule_set_id="ruleset-uuid",
+    precision="broad",
+    enabled=True,
+    alerting=False
+)
+
 ```
 
 ### Rule Validation

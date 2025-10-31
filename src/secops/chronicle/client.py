@@ -223,6 +223,17 @@ from secops.chronicle.rule_retrohunt import (
 from secops.chronicle.rule_retrohunt import get_retrohunt as _get_retrohunt
 from secops.chronicle.rule_set import (
     batch_update_curated_rule_set_deployments as _batch_update_curated_rule_set_deployments,  # pylint: disable=line-too-long
+    list_curated_rule_sets as _list_curated_rule_sets,
+    list_curated_rule_set_categories as _list_curated_rule_set_categories,
+    list_curated_rules as _list_curated_rules,
+    get_curated_rule as _get_curated_rule,
+    get_curated_rule_set_category as _get_curated_rule_set_category,
+    get_curated_rule_set as _get_curated_rule_set,
+    list_curated_rule_set_deployments as _list_curated_rule_set_deployments,
+    get_curated_rule_set_deployment as _get_curated_rule_set_deployment,
+    get_curated_rule_set_deployment_by_name as _get_curated_rule_set_deployment_by_name,
+    get_curated_rule_by_name as _get_curated_rule_by_name,
+    update_curated_rule_set_deployment as _update_curated_rule_set_deployment,
 )
 from secops.chronicle.rule_validation import validate_rule as _validate_rule
 from secops.chronicle.search import search_udm as _search_udm
@@ -1731,6 +1742,213 @@ class ChronicleClient:
             ValueError: If required fields are missing from the deployments
         """
         return _batch_update_curated_rule_set_deployments(self, deployments)
+
+    def list_curated_rule_sets(
+        self,
+        page_size: Optional[int] = None,
+        page_token: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Get a list of all curated rule sets.
+
+        Args:
+            page_size: Number of results to return per page
+            page_token: Token for the page to retrieve
+
+        Returns:
+            Dictionary containing the list of curated rule sets
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _list_curated_rule_sets(self, page_size, page_token)
+
+    def list_curated_rule_set_categories(
+        self,
+        page_size: Optional[int] = None,
+        page_token: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Get a list of all curated rule set categories.
+
+        Args:
+            page_size: Number of results to return per page
+            page_token: Token for the page to retrieve
+
+        Returns:
+            Dictionary containing the list of curated rule set categories
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _list_curated_rule_set_categories(self, page_size, page_token)
+
+    def list_curated_rule_set_deployments(
+        self,
+        page_size: Optional[int] = None,
+        page_token: Optional[str] = None,
+        only_enabled: Optional[bool] = False,
+        only_alerting: Optional[bool] = False,
+    ) -> List[Dict[str, Any]]:
+        """Get a list of all curated rule set deployments.
+
+        Args:
+            page_size: Number of results to return per page
+            page_token: Token for the page to retrieve
+            only_enabled: Only return enabled rule set deployments
+            only_alerting: Only return alerting rule set deployments
+
+        Returns:
+            Dictionary containing the list of curated rule set deployments
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _list_curated_rule_set_deployments(
+            self, page_size, page_token, only_enabled, only_alerting
+        )
+
+    def get_curated_rule_set_deployment(
+        self,
+        rule_set_id: str,
+        precision: str = "precise",
+    ) -> Dict[str, Any]:
+        """Get a curated rule set deployment by ID
+
+        Args:
+            rule_set_id: Unique ID of the curated rule set
+            precision: Precision level ("precise" or "broad")
+
+        Returns:
+            Dictionary containing the curated rule set deployment
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _get_curated_rule_set_deployment(self, rule_set_id, precision)
+
+    def get_curated_rule_set_deployment_by_name(
+        self,
+        display_name: str,
+        precision: str = "precise",
+    ) -> Dict[str, Any]:
+        """Get a curated rule set deployment by human-readable display name
+            NOTE: This is a linear scan of all curated rules,
+            so it may be inefficient for large rule sets.
+
+        Args:
+            display_name: Display name of the curated rule set
+            precision: Precision level ("precise" or "broad")
+
+        Returns:
+            Dictionary containing the curated rule set deployment
+
+        Raises:
+            APIError: If the API request fails
+            SecOpsError: If the rule set is not found or precision is invalid
+        """
+        return _get_curated_rule_set_deployment_by_name(
+            self, display_name, precision
+        )
+
+    def list_curated_rules(
+        self,
+        page_size: Optional[int] = None,
+        page_token: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Get a list of all curated rules.
+
+        Args:
+            page_size: Number of results to return per page
+            page_token: Token for the page to retrieve
+
+        Returns:
+            Dictionary containing the list of curated rules
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _list_curated_rules(self, page_size, page_token)
+
+    def get_curated_rule(self, rule_id: str) -> Dict[str, Any]:
+        """Get a curated rule by ID.
+
+        Args:
+            rule_id: ID of the curated rule
+
+        Returns:
+            Dictionary containing the curated rule
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _get_curated_rule(self, rule_id)
+
+    def get_curated_rule_by_name(self, display_name: str) -> Dict[str, Any]:
+        """Get a curated rule by human-readable display name
+            NOTE: This is a linear scan of all curated rules,
+            so it may be inefficient for large rule sets.
+
+        Args:
+            display_name: Display name of the curated rule
+
+        Returns:
+            Dictionary containing the curated rule
+
+        Raises:
+            APIError: If the API request fails
+            SecOpsError: If the rule is not found
+        """
+        return _get_curated_rule_by_name(self, display_name)
+
+    def update_curated_rule_set_deployment(
+        self, deployment: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Update a curated rule set deployment to enable or disable
+            alerting or change precision.
+
+        Args:
+            deployment: Dict of deployment configuration containing:
+                - category_id: UUID of the category
+                - rule_set_id: UUID of the rule set
+                - precision: Precision level either "broad" or "precise"
+                - enabled: Whether the rule set should be enabled
+                - alerting: Whether alerting should be enabled for the rule set
+
+        Returns:
+            Dictionary containing the updated curated rule set deployment
+
+        Raises:
+            APIError: If the API request fails
+            SecOpsError: If the rule set is not found or precision is invalid
+        """
+        return _update_curated_rule_set_deployment(self, deployment)
+
+    def get_curated_rule_set_category(self, category_id: str) -> Dict[str, Any]:
+        """Get a curated rule set category by ID.
+
+        Args:
+            category_id: ID of the curated rule set category
+
+        Returns:
+            Dictionary containing the curated rule set category
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _get_curated_rule_set_category(self, category_id)
+
+    def get_curated_rule_set(self, rule_set_id: str) -> Dict[str, Any]:
+        """Get a curated rule set by ID.
+
+        Args:
+            rule_set_id: ID of the curated rule set
+
+        Returns:
+            Dictionary containing the curated rule set
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _get_curated_rule_set(self, rule_set_id)
 
     def validate_rule(self, rule_text: str):
         """Validates a YARA-L2 rule against the Chronicle API.

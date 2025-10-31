@@ -569,6 +569,63 @@ secops rule test --file "/path/to/rule.yaral" --time-window 24 > udm_events.json
 
 The `rule test` command outputs UDM events as pure JSON objects that can be piped to a file or processed by other tools. This makes it easy to integrate with other systems or perform additional analysis on the events.
 
+### Curated Rule Set Management
+
+List all curated rules:
+```bash
+secops curated-rule rule list
+```
+Get curated rules:
+```bash
+# Get rule by UUID
+curated-rule rule get --id "ur_ttp_GCP_ServiceAPIDisable"
+
+# Get rule by name
+curated-rule rule get --name "GCP Service API Disable"
+
+```
+
+List all curated rule sets:
+```bash
+secops curated-rule rule-set list
+```
+
+Get specific curated rule set details:
+```bash
+# Get curated rule set by UUID
+secops curated-rule rule-set get --id "f5533b66-9327-9880-93e6-75a738ac2345"
+```
+
+List all curated rule set categories:
+```bash
+secops curated-rule rule-set-category list
+```
+
+Get specific curated rule set category details:
+```bash
+# Get curated rule set category by UUID
+secops curated-rule rule-set-category get --id "db1114d4-569b-5f5d-0fb4-f65aaa766c92"
+```
+
+List all curated rule set deployments:
+```bash
+secops curated-rule rule-set-deployment list
+```
+
+Get specific curated rule set deployment details:
+```bash
+# Get curated rule set deployment by UUID
+secops curated-rule rule-set-deployment get --id "f5533b66-9327-9880-93e6-75a738ac2345"
+
+# Get curated rule set deployment by name
+secops curated-rule rule-set-deployment get --name "Active Breach Priority Host Indicators"
+```
+
+Update curated rule set deployment:
+```bash
+secops curated-rule rule-set-deployment update --category-id "db1114d4-569b-5f5d-0fb4-f65aaa766c92" --rule-set-id "7e52cd71-03c6-97d2-ffcb-b8d7159e08e1" --precision precise --enabled false --alerting false
+```
+
 ### Alert Management
 
 Get alerts:

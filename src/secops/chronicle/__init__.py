@@ -133,7 +133,20 @@ from secops.chronicle.rule_exclusion import (
     update_rule_exclusion_deployment,
 )
 from secops.chronicle.rule_retrohunt import create_retrohunt, get_retrohunt
-from secops.chronicle.rule_set import batch_update_curated_rule_set_deployments
+from secops.chronicle.rule_set import (
+    batch_update_curated_rule_set_deployments,
+    list_curated_rule_sets,
+    list_curated_rule_set_categories,
+    list_curated_rules,
+    get_curated_rule,
+    get_curated_rule_set_category,
+    get_curated_rule_set,
+    list_curated_rule_set_deployments,
+    get_curated_rule_set_deployment,
+    get_curated_rule_set_deployment_by_name,
+    get_curated_rule_by_name,
+    update_curated_rule_set_deployment,
+)
 from secops.chronicle.rule_validation import ValidationResult
 from secops.chronicle.search import search_udm
 from secops.chronicle.stats import get_stats
@@ -228,6 +241,17 @@ __all__ = [
     "get_retrohunt",
     # Rule set operations
     "batch_update_curated_rule_set_deployments",
+    "list_curated_rule_sets",
+    "list_curated_rule_set_categories",
+    "list_curated_rules",
+    "get_curated_rule",
+    "get_curated_rule_set_category",
+    "get_curated_rule_set",
+    "list_curated_rule_set_deployments",
+    "get_curated_rule_set_deployment",
+    "get_curated_rule_set_deployment_by_name",
+    "get_curated_rule_by_name",
+    "update_curated_rule_set_deployment",
     # Native Dashboard
     "add_chart",
     "create_dashboard",
