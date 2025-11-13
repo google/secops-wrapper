@@ -3,18 +3,14 @@
 from unittest.mock import patch, MagicMock
 from argparse import Namespace
 import sys
+import inspect
 from pathlib import Path
 import tempfile
 
-from secops.cli import (
-    main,
-    parse_datetime,
-    setup_client,
-    get_time_range,
-    output_formatter,
-    load_config,
-    save_config,
-)
+from secops.cli import main, setup_client
+from secops.cli.utils.time_utils import parse_datetime, get_time_range
+from secops.cli.utils.config_utils import load_config, save_config
+from secops.cli.utils.formatters import output_formatter
 
 
 def test_parse_datetime():
@@ -53,7 +49,9 @@ def test_get_time_range():
     assert end_time.day == 2
 
     # Test with just end time and default window
-    args = Namespace(start_time=None, end_time="2023-01-02T00:00:00Z", time_window=24)
+    args = Namespace(
+        start_time=None, end_time="2023-01-02T00:00:00Z", time_window=24
+    )
     start_time, end_time = get_time_range(args)
     assert start_time.day == 1  # 24 hours before end_time
     assert end_time.day == 2
@@ -90,15 +88,39 @@ def test_output_formatter_text(mock_print):
     mock_print.assert_called_once_with("simple string")
 
 
-@patch("secops.cli.SecOpsClient")
-def test_setup_client(mock_client_class):
-    """Test client setup."""
-    mock_client = MagicMock()
-    mock_chronicle = MagicMock()
-    mock_client.chronicle.return_value = mock_chronicle
-    mock_client_class.return_value = mock_client
+def test_setup_client(monkeypatch):
+    # Uses monkeypatch to mock SecOpsClient and sys.exit
+    # If the real SecOpsClient is imported SystemExit may
+    # be called during tests
 
-    # Test with service account and Chronicle args
+    # Locate the module object that contains setup_client
+    setup_mod = inspect.getmodule(setup_client)
+
+    # Fake chronicle object returned by FakeClient.chronicle()
+    fake_chronicle = MagicMock(name="Chronicle")
+
+    class FakeClient:
+        def __init__(self, service_account_path):
+            self.service_account_path = service_account_path
+
+        def chronicle(self, customer_id, project_id, region):
+            self.called_with = (customer_id, project_id, region)
+            return fake_chronicle
+
+    # Replace all possible references to SecOpsClient
+    monkeypatch.setattr("secops.SecOpsClient", FakeClient, raising=False)
+    if setup_mod is not None:
+        monkeypatch.setattr(
+            setup_mod, "SecOpsClient", FakeClient, raising=False
+        )
+
+    # Neutralise sys.exit so any lingering call does not kill the test
+    monkeypatch.setattr(
+        "sys.exit",
+        lambda code=0: (_ for _ in ()).throw(RuntimeError(f"sys.exit({code})")),
+        raising=False,
+    )
+
     args = Namespace(
         service_account="path/to/service_account.json",
         customer_id="test-customer",
@@ -108,38 +130,76 @@ def test_setup_client(mock_client_class):
 
     client, chronicle = setup_client(args)
 
-    mock_client_class.assert_called_once_with(
-        service_account_path="path/to/service_account.json"
+    assert isinstance(client, FakeClient)
+    assert client.service_account_path == "path/to/service_account.json"
+    assert client.called_with == ("test-customer", "test-project", "us")
+    assert chronicle is fake_chronicle
+
+
+def test_main_command_dispatch(monkeypatch):
+    # Use monkeypatch to mock sys.exit and argparse behavior
+
+    # Make sys.exit a no-op
+    monkeypatch.setattr("sys.exit", lambda code=0: None, raising=False)
+    monkeypatch.setattr(
+        "argparse.ArgumentParser.error", lambda self, msg: None, raising=False
     )
-    mock_client.chronicle.assert_called_once_with(
-        customer_id="test-customer", project_id="test-project", region="us"
+    monkeypatch.setattr(
+        "argparse.ArgumentParser.exit",
+        lambda self, status=0, message=None: None,
+        raising=False,
     )
-    assert client == mock_client
-    assert chronicle == mock_chronicle
 
+    client_mock = MagicMock()
+    chronicle_mock = MagicMock()
 
-@patch("secops.cli.setup_client")
-@patch("argparse.ArgumentParser.parse_args")
-def test_main_command_dispatch(mock_parse_args, mock_setup_client):
-    """Test main function command dispatch."""
-    # Mock command handler
-    mock_handler = MagicMock()
+    # Patch every lookup of setup_client
+    import inspect, secops.cli as cli_mod
 
-    # Set up args
-    args = Namespace(command="test", func=mock_handler)
-    mock_parse_args.return_value = args
+    monkeypatch.setattr(
+        cli_mod,
+        "setup_client",
+        lambda a: (client_mock, chronicle_mock),
+        raising=True,
+    )
+    main_mod = inspect.getmodule(main)
+    if main_mod is not None:
+        monkeypatch.setattr(
+            main_mod,
+            "setup_client",
+            lambda a: (client_mock, chronicle_mock),
+            raising=False,
+        )
 
-    # Mock client setup
-    mock_client = MagicMock()
-    mock_chronicle = MagicMock()
-    mock_setup_client.return_value = (mock_client, mock_chronicle)
+    captured = {}
 
-    # Call main
-    with patch.object(sys, "argv", ["secops", "test"]):
-        main()
+    def fake_handler(a, chronicle):
+        captured["args"] = a
+        captured["chronicle"] = chronicle
 
-    # Verify handler was called
-    mock_handler.assert_called_once_with(args, mock_chronicle)
+    # Provide all required args
+    args = Namespace(
+        command="test",
+        func=fake_handler,
+        service_account="path/to/service.json",
+        customer_id="test-customer",
+        project_id="test-project",
+        region="us",
+        output_format="text",
+        verbose=False,
+    )
+
+    # Force parser to return our Namespace
+    monkeypatch.setattr(
+        "argparse.ArgumentParser.parse_args", lambda self: args, raising=True
+    )
+    monkeypatch.setattr(sys, "argv", ["secops", "test"])
+
+    main()
+
+    # Verify patched setup_client used
+    assert captured["chronicle"] is chronicle_mock
+    assert captured["args"] is args
 
 
 def test_time_config():
@@ -157,7 +217,7 @@ def test_time_config():
         }
 
         # Save config
-        with patch("secops.cli.CONFIG_FILE", config_file):
+        with patch("secops.cli.constants.CONFIG_FILE", config_file):
             save_config(test_config)
 
             # Load config
