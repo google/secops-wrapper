@@ -126,7 +126,14 @@ class LogRetry(Retry):
         Returns:
             Retry object with incremented retry counters.
         """
-        print(f"Retrying {method} {url} for {response.status} status code....")
+        if response:
+            print(
+                f"Retrying {method} {url} for {response.status} "
+                f"status code...."
+            )
+        else:
+            print(f"Retrying {method} {url} due to error: {error}")
+
         return super().increment(
             method, url, response, error, _pool, _stacktrace
         )
