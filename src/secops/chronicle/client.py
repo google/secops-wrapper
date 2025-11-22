@@ -260,6 +260,7 @@ from secops.chronicle.udm_search import (
 from secops.chronicle.validate import validate_query as _validate_query
 from secops.chronicle.watchlist import (
     list_watchlists as _list_watchlists,
+    get_watchlist as _get_watchlist,
 )
 from secops.exceptions import SecOpsError
 
@@ -575,6 +576,23 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _list_watchlists(self, page_size, page_token)
+
+    def get_watchlist(
+        self,
+        watchlist_id: str,
+    ) -> Dict[str, Any]:
+        """Get a specific watchlist by ID.
+
+        Args:
+            watchlist_id: ID of the watchlist to retrieve
+
+        Returns:
+            Watchlist
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _get_watchlist(self, watchlist_id)
 
     def get_stats(
         self,

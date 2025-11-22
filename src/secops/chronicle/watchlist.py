@@ -19,12 +19,13 @@ from typing import Dict, Any, List, Optional
 from secops.exceptions import APIError, SecOpsError
 from secops.chronicle.utils.request_utils import paginated_request
 
+
 def list_watchlists(
     client,
     page_size: Optional[str] = None,
     page_token: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """ Get a list of all watchlists
+    """Get a list of all watchlists
 
     Args:
         client: ChronicleClient instance
@@ -45,3 +46,21 @@ def list_watchlists(
         page_size=page_size,
         page_token=page_token,
     )
+
+
+def get_watchlist(client, watchlist_id: str) -> Dict[str, Any]:
+    """Get a specific watchlist by ID
+
+    Args:
+        client: ChronicleClient instance
+        watchlist_id: ID of the watchlist to retrieve
+
+    Returns:
+        Watchlist
+
+    Raises:
+        APIError: If the API request fails
+    """
+    return client.session.get(
+        f"{client.base_v1_url}/{client.instance_id}/watchlists/{watchlist_id}",
+    ).json()

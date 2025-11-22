@@ -17,6 +17,7 @@
 from typing import Dict, Any, Optional
 from secops.exceptions import APIError
 
+
 def paginated_request(
     client,
     base_url: str,

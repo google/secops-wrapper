@@ -165,6 +165,7 @@ from secops.chronicle.udm_search import (
 from secops.chronicle.validate import validate_query
 from secops.chronicle.watchlist import (
     list_watchlists,
+    get_watchlist,
 )
 
 __all__ = [
