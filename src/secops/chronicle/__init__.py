@@ -163,6 +163,9 @@ from secops.chronicle.udm_search import (
     find_udm_field_values,
 )
 from secops.chronicle.validate import validate_query
+from secops.chronicle.watchlist import (
+    list_watchlists,
+)
 
 __all__ = [
     # Client
@@ -304,4 +307,6 @@ __all__ = [
     "update_data_table",
     "update_data_table_rows",
     "replace_data_table_rows",
+    # Watchlist
+    "list_watchlists",
 ]
