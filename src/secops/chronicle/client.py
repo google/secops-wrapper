@@ -261,6 +261,7 @@ from secops.chronicle.validate import validate_query as _validate_query
 from secops.chronicle.watchlist import (
     list_watchlists as _list_watchlists,
     get_watchlist as _get_watchlist,
+    delete_watchlist as _delete_watchlist,
 )
 from secops.exceptions import SecOpsError
 
@@ -593,6 +594,28 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _get_watchlist(self, watchlist_id)
+
+    def delete_watchlist(
+        self,
+        watchlist_id: str,
+        force: Optional[bool] = None,
+    ) -> Dict[str, Any]:
+        """Delete a watchlist by ID.
+
+        Args:
+            watchlist_id: ID of the watchlist to delete
+            force: Optional. If set to true, any entities under this
+             watchlist will also be deleted.
+              (Otherwise, the request will only work if the
+               watchlist has no entities.)
+
+        Returns:
+            Deleted watchlist
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _delete_watchlist(self, watchlist_id, force)
 
     def get_stats(
         self,

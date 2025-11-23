@@ -49,7 +49,7 @@ def list_watchlists(
 
 
 def get_watchlist(client, watchlist_id: str) -> Dict[str, Any]:
-    """Get a specific watchlist by ID
+    """Get a watchlist by ID
 
     Args:
         client: ChronicleClient instance
@@ -63,4 +63,30 @@ def get_watchlist(client, watchlist_id: str) -> Dict[str, Any]:
     """
     return client.session.get(
         f"{client.base_v1_url}/{client.instance_id}/watchlists/{watchlist_id}",
+    ).json()
+
+
+def delete_watchlist(
+    client, watchlist_id: str, force: Optional[bool] = None
+) -> Dict[str, Any]:
+    """Delete a watchlist by ID
+
+    Args:
+        client: ChronicleClient instance
+        watchlist_id: ID of the watchlist to delete
+        force: Optional. If set to true, any entities under this
+         watchlist will also be deleted.
+          (Otherwise, the request will only work if the
+           watchlist has no entities.)
+
+    Returns:
+        Deleted watchlist
+
+    Raises:
+        APIError: If the API request fails
+    """
+    params = {"force": force}
+    return client.session.delete(
+        f"{client.base_v1_url}/{client.instance_id}/watchlists/{watchlist_id}",
+        params=params,
     ).json()

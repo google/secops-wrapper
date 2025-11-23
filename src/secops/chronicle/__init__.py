@@ -166,6 +166,7 @@ from secops.chronicle.validate import validate_query
 from secops.chronicle.watchlist import (
     list_watchlists,
     get_watchlist,
+    delete_watchlist,
 )
 
 __all__ = [
@@ -310,4 +311,6 @@ __all__ = [
     "replace_data_table_rows",
     # Watchlist
     "list_watchlists",
+    "get_watchlist",
+    "delete_watchlist",
 ]
