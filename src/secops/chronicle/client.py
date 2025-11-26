@@ -24,7 +24,22 @@ from google.auth.transport import requests as google_auth_requests
 from secops import auth as secops_auth
 from secops.auth import RetryConfig
 from secops.chronicle.alert import get_alerts as _get_alerts
+from secops.chronicle.case import CasePriority
+from secops.chronicle.case import execute_bulk_add_tag as _execute_bulk_add_tag
+from secops.chronicle.case import execute_bulk_assign as _execute_bulk_assign
+from secops.chronicle.case import (
+    execute_bulk_change_priority as _execute_bulk_change_priority,
+)
+from secops.chronicle.case import (
+    execute_bulk_change_stage as _execute_bulk_change_stage,
+)
+from secops.chronicle.case import execute_bulk_close as _execute_bulk_close
+from secops.chronicle.case import execute_bulk_reopen as _execute_bulk_reopen
+from secops.chronicle.case import get_case as _get_case
 from secops.chronicle.case import get_cases_from_list
+from secops.chronicle.case import list_cases as _list_cases
+from secops.chronicle.case import merge_cases as _merge_cases
+from secops.chronicle.case import patch_case as _patch_case
 from secops.chronicle.dashboard import DashboardAccessType, DashboardView
 from secops.chronicle.dashboard import add_chart as _add_chart
 from secops.chronicle.dashboard import create_dashboard as _create_dashboard
@@ -779,6 +794,217 @@ class ChronicleClient:
             ValueError: If more than 1000 case IDs are provided
         """
         return get_cases_from_list(self, case_ids)
+
+    def get_case(self, case_name: str, expand: Optional[str] = None) -> "Case":
+        """Get a single case details.
+
+        Args:
+            case_name: Case resource name or case ID.
+            expand: Optional expand field for getting related resources
+
+        Returns:
+            Case object with case details
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _get_case(self, case_name, expand)
+
+    def list_cases(
+        self,
+        page_size: Optional[int] = None,
+        page_token: Optional[str] = None,
+        filter_query: Optional[str] = None,
+        order_by: Optional[str] = None,
+        expand: Optional[str] = None,
+        distinct_by: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """List cases with optional filtering and pagination.
+
+        Args:
+            page_size: Maximum number of cases to return per page (1-1000).
+                If None, automatically paginates and returns all results.
+            page_token: Token for pagination from previous list call.
+                Only used when page_size is provided.
+            filter_query: Filter expression for filtering cases
+            order_by: Comma-separated list of fields to order by
+            expand: Expand fields (e.g., "tags, products")
+            distinct_by: Field to distinct cases by
+
+        Returns:
+            Dictionary with cases, nextPageToken, and totalSize
+
+        Raises:
+            APIError: If the API request fails
+            ValueError: If page_size is invalid
+        """
+        return _list_cases(
+            self,
+            page_size,
+            page_token,
+            filter_query,
+            order_by,
+            expand,
+            distinct_by,
+        )
+
+    def patch_case(
+        self,
+        case_name: str,
+        case_data: Dict[str, Any],
+        update_mask: Optional[str] = None,
+    ) -> "Case":
+        """Update a case using partial update (PATCH).
+
+        Args:
+            case_name: Case resource name or case ID.
+            case_data: Dictionary containing case fields to update
+            update_mask: Optional comma-separated list of fields to update
+
+        Returns:
+            Updated Case object
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _patch_case(self, case_name, case_data, update_mask)
+
+    def merge_cases(
+        self, case_ids: List[int], case_to_merge_with: int
+    ) -> Dict[str, Any]:
+        """Merge multiple cases into a single case.
+
+        Args:
+            case_ids: List of case IDs to merge
+            case_to_merge_with: ID of the case to merge with
+
+        Returns:
+            Dictionary with newCaseId, isRequestValid, and errors
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _merge_cases(self, case_ids, case_to_merge_with)
+
+    def execute_bulk_add_tag(
+        self, case_ids: List[int], tags: List[str]
+    ) -> Dict[str, Any]:
+        """Add tags to multiple cases in bulk.
+
+        Args:
+            case_ids: List of case IDs to add tags to
+            tags: List of tags to add to the cases
+
+        Returns:
+            Empty dictionary on success
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _execute_bulk_add_tag(self, case_ids, tags)
+
+    def execute_bulk_assign(
+        self, case_ids: List[int], username: str
+    ) -> Dict[str, Any]:
+        """Assign multiple cases to a user in bulk.
+
+        Args:
+            case_ids: List of case IDs to assign
+            username: Username to assign the cases to
+
+        Returns:
+            Empty dictionary on success
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _execute_bulk_assign(self, case_ids, username)
+
+    def execute_bulk_change_priority(
+        self, case_ids: List[int], priority: Union[str, CasePriority]
+    ) -> Dict[str, Any]:
+        """Change priority of multiple cases in bulk.
+
+        Args:
+            case_ids: List of case IDs to change priority for
+            priority: Priority level (CasePriority enum or string).
+                Valid values: PRIORITY_UNSPECIFIED, PRIORITY_INFO,
+                PRIORITY_LOW, PRIORITY_MEDIUM, PRIORITY_HIGH,
+                PRIORITY_CRITICAL
+
+        Returns:
+            Empty dictionary on success
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _execute_bulk_change_priority(self, case_ids, priority)
+
+    def execute_bulk_change_stage(
+        self, case_ids: List[int], stage: str
+    ) -> Dict[str, Any]:
+        """Change stage of multiple cases in bulk.
+
+        Args:
+            case_ids: List of case IDs to change stage for
+            stage: Stage to set for the cases
+
+        Returns:
+            Empty dictionary on success
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _execute_bulk_change_stage(self, case_ids, stage)
+
+    def execute_bulk_close(
+        self,
+        case_ids: List[int],
+        close_reason: str,
+        root_cause: Optional[str] = None,
+        close_comment: Optional[str] = None,
+        dynamic_parameters: Optional[List[Dict[str, Any]]] = None,
+    ) -> Dict[str, Any]:
+        """Close multiple cases in bulk.
+
+        Args:
+            case_ids: List of case IDs to close
+            close_reason: Reason for closing the cases
+            root_cause: Optional root cause for closing cases
+            close_comment: Optional comment to add when closing
+            dynamic_parameters: Optional dynamic parameters for close
+
+        Returns:
+            Empty dictionary on success
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _execute_bulk_close(
+            self,
+            case_ids,
+            close_reason,
+            root_cause,
+            close_comment,
+            dynamic_parameters,
+        )
+
+    def execute_bulk_reopen(
+        self, case_ids: List[int], reopen_comment: str
+    ) -> Dict[str, Any]:
+        """Reopen multiple cases in bulk.
+
+        Args:
+            case_ids: List of case IDs to reopen
+            reopen_comment: Comment to add when reopening cases
+
+        Returns:
+            Empty dictionary on success
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _execute_bulk_reopen(self, case_ids, reopen_comment)
 
     def get_alerts(
         self,

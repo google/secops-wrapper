@@ -15,7 +15,20 @@
 """Chronicle API specific functionality."""
 
 from secops.chronicle.alert import get_alerts
-from secops.chronicle.case import get_cases
+from secops.chronicle.case import (
+    CasePriority,
+    execute_bulk_add_tag,
+    execute_bulk_assign,
+    execute_bulk_change_priority,
+    execute_bulk_change_stage,
+    execute_bulk_close,
+    execute_bulk_reopen,
+    get_case,
+    get_cases,
+    list_cases,
+    merge_cases,
+    patch_case,
+)
 from secops.chronicle.client import (
     ChronicleClient,
     ValueType,
@@ -135,16 +148,16 @@ from secops.chronicle.rule_exclusion import (
 from secops.chronicle.rule_retrohunt import create_retrohunt, get_retrohunt
 from secops.chronicle.rule_set import (
     batch_update_curated_rule_set_deployments,
-    list_curated_rule_sets,
-    list_curated_rule_set_categories,
-    list_curated_rules,
     get_curated_rule,
-    get_curated_rule_set_category,
+    get_curated_rule_by_name,
     get_curated_rule_set,
-    list_curated_rule_set_deployments,
+    get_curated_rule_set_category,
     get_curated_rule_set_deployment,
     get_curated_rule_set_deployment_by_name,
-    get_curated_rule_by_name,
+    list_curated_rule_set_categories,
+    list_curated_rule_set_deployments,
+    list_curated_rule_sets,
+    list_curated_rules,
     update_curated_rule_set_deployment,
 )
 from secops.chronicle.rule_validation import ValidationResult
@@ -182,6 +195,17 @@ __all__ = [
     "list_iocs",
     # Case
     "get_cases",
+    "get_case",
+    "list_cases",
+    "patch_case",
+    "merge_cases",
+    "execute_bulk_add_tag",
+    "execute_bulk_assign",
+    "execute_bulk_change_priority",
+    "execute_bulk_change_stage",
+    "execute_bulk_close",
+    "execute_bulk_reopen",
+    "CasePriority",
     # Alert
     "get_alerts",
     # Log Ingestion
