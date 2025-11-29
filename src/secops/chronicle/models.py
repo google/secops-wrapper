@@ -16,7 +16,7 @@
 import json
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Any, Dict, List, Optional, Union
 
 from secops.exceptions import SecOpsError
@@ -462,3 +462,9 @@ class DashboardChart:
             ]
             if getattr(self, field) is not None
         ]
+
+
+class APIVersion(StrEnum):
+    V1 = "v1"
+    V1BETA = "v1beta"
+    V1ALPHA = "v1alpha"
