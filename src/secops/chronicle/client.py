@@ -262,6 +262,7 @@ from secops.chronicle.watchlist import (
     list_watchlists as _list_watchlists,
     get_watchlist as _get_watchlist,
     delete_watchlist as _delete_watchlist,
+    create_watchlist as _create_watchlist,
 )
 from secops.exceptions import SecOpsError
 
@@ -616,6 +617,31 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _delete_watchlist(self, watchlist_id, force)
+
+    def create_watchlist(
+        self,
+        name: str,
+        display_name: str,
+        multiplying_factor: float,
+        description: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Create a watchlist
+
+        Args:
+            name: Name of the watchlist
+            display_name: Display name of the watchlist
+            multiplying_factor: Multiplying factor for the watchlist
+            description: Optional. Description of the watchlist
+
+        Returns:
+            Created watchlist
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _create_watchlist(
+            self, name, display_name, multiplying_factor, description
+        )
 
     def get_stats(
         self,

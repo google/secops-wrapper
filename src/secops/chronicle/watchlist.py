@@ -90,3 +90,38 @@ def delete_watchlist(
         f"{client.base_v1_url}/{client.instance_id}/watchlists/{watchlist_id}",
         params=params,
     ).json()
+
+
+def create_watchlist(
+    client,
+    name: str,
+    display_name: str,
+    multiplying_factor: float,
+    description: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Create a watchlist
+
+    Args:
+        client: ChronicleClient instance
+        name: Name of the watchlist
+        display_name: Display name of the watchlist
+        multiplying_factor: Multiplying factor for the watchlist
+        description: Optional. Description of the watchlist
+
+    Returns:
+        Created watchlist
+
+    Raises:
+        APIError: If the API request fails
+    """
+
+    return client.session.post(
+        f"{client.base_v1_url}/{client.instance_id}/watchlists",
+        json={
+            "name": name,
+            "displayName": display_name,
+            "multiplyingFactor": multiplying_factor,
+            "description": description,
+            "entityPopulationMechanism": {"manual": {}},
+        },
+    ).json()

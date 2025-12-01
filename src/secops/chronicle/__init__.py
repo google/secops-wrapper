@@ -167,6 +167,7 @@ from secops.chronicle.watchlist import (
     list_watchlists,
     get_watchlist,
     delete_watchlist,
+    create_watchlist,
 )
 
 __all__ = [
@@ -313,4 +314,5 @@ __all__ = [
     "list_watchlists",
     "get_watchlist",
     "delete_watchlist",
+    "create_watchlist",
 ]
