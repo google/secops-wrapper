@@ -285,7 +285,7 @@ def list_parsers(
             parsers.extend(data["parsers"])
 
         if "nextPageToken" in data:
-            params["pageToken"] = data["nextPageToken"]
+            page_token = data["nextPageToken"]
         else:
             more = False
 

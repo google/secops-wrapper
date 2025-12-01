@@ -430,6 +430,70 @@ def test_list_parsers_with_optional_params(chronicle_client, mock_response):
         assert result == expected_parsers
 
 
+def test_list_parsers_multi_page_pagination(chronicle_client, mock_response):
+    """Test list_parsers function with multi-page pagination (Issue 148).
+
+    This test validates that the pagination fix correctly handles the
+    'nextPageToken' field (not 'next_page_token') returned by the API.
+    """
+    log_type = "WINDOWS"
+
+    # First page of parsers with nextPageToken
+    first_page_parsers = [
+        {"name": "pa_windows_1", "id": "pa_windows_1"},
+        {"name": "pa_windows_2", "id": "pa_windows_2"},
+    ]
+
+    # Second page of parsers without nextPageToken (last page)
+    second_page_parsers = [
+        {"name": "pa_windows_3", "id": "pa_windows_3"},
+    ]
+
+    # Mock responses for each page
+    first_response = Mock()
+    first_response.status_code = 200
+    first_response.json.return_value = {
+        "parsers": first_page_parsers,
+        "nextPageToken": "page2_token",
+    }
+
+    second_response = Mock()
+    second_response.status_code = 200
+    second_response.json.return_value = {
+        "parsers": second_page_parsers,
+        # No nextPageToken - this is the last page
+    }
+
+    with patch.object(
+        chronicle_client.session, "get", side_effect=[first_response, second_response]
+    ) as mock_get:
+        result = list_parsers(chronicle_client, log_type=log_type, page_size=2)
+
+        # Verify we made two API calls (one per page)
+        assert mock_get.call_count == 2
+
+        # Verify first call
+        expected_url = (
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}"
+            f"/logTypes/{log_type}/parsers"
+        )
+        first_call = mock_get.call_args_list[0]
+        assert first_call[0][0] == expected_url
+        assert first_call[1]["params"]["pageSize"] == 2
+        assert first_call[1]["params"]["pageToken"] is None
+
+        # Verify second call uses the nextPageToken from first response
+        second_call = mock_get.call_args_list[1]
+        assert second_call[0][0] == expected_url
+        assert second_call[1]["params"]["pageSize"] == 2
+        assert second_call[1]["params"]["pageToken"] == "page2_token"
+
+        # Verify all parsers from both pages are returned
+        expected_all_parsers = first_page_parsers + second_page_parsers
+        assert result == expected_all_parsers
+        assert len(result) == 3
+
+
 # --- run_parser Tests ---
 def test_run_parser_success(chronicle_client, mock_response):
     """Test run_parser function for success."""
