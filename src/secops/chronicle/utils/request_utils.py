@@ -14,7 +14,7 @@
 #
 """Helper functions for Chronicle."""
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, Union
 from secops.exceptions import APIError
 
 
@@ -27,7 +27,7 @@ def paginated_request(
     page_size: Optional[int] = None,
     page_token: Optional[str] = None,
     extra_params: Optional[Dict[str, Any]] = None,
-) -> Dict[str, list[Any]]:
+) -> Union[Dict[str, List[Any]], List[Any]]:
     """
     Helper to get items from endpoints that use pagination.
 
@@ -43,7 +43,9 @@ def paginated_request(
         extra_params: extra query params to include on every request
 
     Returns:
-        List of items from the paginated collection.
+        Union[Dict[str, List[Any]], List[Any]]: List of items from the
+        paginated collection. If the API returns a dictionary, it will
+        return the dictionary. Otherwise, it will return the list of items.
 
     Raises:
         APIError: If the HTTP request fails.
@@ -78,4 +80,7 @@ def paginated_request(
         if not next_token:
             break
 
+    # Return a list if the API returns a list, otherwise return a dict
+    if isinstance(data, list):
+        return results
     return {items_key: results}
