@@ -44,8 +44,8 @@ def activate_parser(
         APIError: If the API request fails
     """
     url = (
-        f"{client.base_url}/{client.instance_id}/logTypes/{log_type}"
-        f"/parsers/{id}:activate"
+        f"{client.base_url}/{client.instance_id}"
+        f"/logTypes/{log_type}/parsers/{id}:activate"
     )
     body = {}
     response = client.session.post(url, json=body)
@@ -75,8 +75,8 @@ def activate_release_candidate_parser(
         APIError: If the API request fails
     """
     url = (
-        f"{client.base_url}/{client.instance_id}/logTypes/{log_type}"
-        f"/parsers/{id}:activateReleaseCandidateParser"
+        f"{client.base_url}/{client.instance_id}"
+        f"/logTypes/{log_type}/parsers/{id}:activateReleaseCandidateParser"
     )
     body = {}
     response = client.session.post(url, json=body)
@@ -105,7 +105,10 @@ def copy_parser(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/logTypes/{log_type}/parsers/{id}:copy"
+    url = (
+        f"{client.base_url}/{client.instance_id}"
+        f"/logTypes/{log_type}/parsers/{id}:copy"
+    )
     body = {}
     response = client.session.post(url, json=body)
 
@@ -169,8 +172,8 @@ def deactivate_parser(
         APIError: If the API request fails
     """
     url = (
-        f"{client.base_url}/{client.instance_id}/logTypes/{log_type}"
-        f"/parsers/{id}:deactivate"
+        f"{client.base_url}/{client.instance_id}"
+        f"/logTypes/{log_type}/parsers/{id}:deactivate"
     )
     body = {}
     response = client.session.post(url, json=body)
@@ -201,7 +204,7 @@ def delete_parser(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/logTypes/{log_type}/parsers/{id}"
+    url = f"{client.base_url}/{client.instance_id}" f"/logTypes/{log_type}/parsers/{id}"
     params = {"force": force}
     response = client.session.delete(url, params=params)
 
@@ -229,7 +232,8 @@ def get_parser(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/logTypes/{log_type}/parsers/{id}"
+    url = f"{client.base_url}/{client.instance_id}/logTypes/{log_type}"
+    url += f"/parsers/{id}"
     response = client.session.get(url)
 
     if response.status_code != 200:
@@ -264,7 +268,8 @@ def list_parsers(
     parsers = []
 
     while more:
-        url = f"{client.base_url}/{client.instance_id}/logTypes/{log_type}/parsers"
+        url = f"{client.base_url}/{client.instance_id}/logTypes/{log_type}"
+        url += "/parsers"
 
         params = {
             "pageSize": page_size,
@@ -362,27 +367,19 @@ def run_parser(
 
     # Check number of logs
     if len(logs) > MAX_LOGS:
-        raise ValueError(
-            f"Number of logs ({len(logs)}) exceeds maximum of {MAX_LOGS}"
-        )
+        raise ValueError(f"Number of logs ({len(logs)}) exceeds maximum of {MAX_LOGS}")
 
     # Validate parser_extension_code type if provided
-    if parser_extension_code is not None and not isinstance(
-        parser_extension_code, str
-    ):
+    if parser_extension_code is not None and not isinstance(parser_extension_code, str):
         raise TypeError(
             "parser_extension_code must be a string or None, got "
             f"{type(parser_extension_code).__name__}"
         )
 
     # Build request
-    url = (
-        f"{client.base_url}/{client.instance_id}/logTypes/{log_type}:runParser"
-    )
+    url = f"{client.base_url}/{client.instance_id}/logTypes/{log_type}:runParser"
 
-    parser = {
-        "cbn": base64.b64encode(parser_code.encode("utf-8")).decode("utf-8")
-    }
+    parser = {"cbn": base64.b64encode(parser_code.encode("utf-8")).decode("utf-8")}
 
     parser_extension = None
     if parser_extension_code:
@@ -395,10 +392,7 @@ def run_parser(
     body = {
         "parser": parser,
         "parser_extension": parser_extension,
-        "log": [
-            base64.b64encode(log.encode("utf-8")).decode("utf-8")
-            for log in logs
-        ],
+        "log": [base64.b64encode(log.encode("utf-8")).decode("utf-8") for log in logs],
         "statedump_allowed": statedump_allowed,
     }
 
