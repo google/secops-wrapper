@@ -17,7 +17,6 @@
 import base64
 from typing import Any, Dict, List, Optional, Union
 
-from secops.chronicle.client import ChronicleClient
 from secops.exceptions import APIError
 
 # Constants for size limits
@@ -27,7 +26,7 @@ MAX_TOTAL_SIZE = 50 * 1024 * 1024  # 50MB total
 
 
 def activate_parser(
-    client: ChronicleClient,
+    client: "ChronicleClient",
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
 ) -> Dict[str, Any]:
@@ -58,7 +57,7 @@ def activate_parser(
 
 
 def activate_release_candidate_parser(
-    client: ChronicleClient,
+    client: "ChronicleClient",
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
 ) -> Dict[str, Any]:
@@ -89,7 +88,7 @@ def activate_release_candidate_parser(
 
 
 def copy_parser(
-    client: ChronicleClient,
+    client: "ChronicleClient",
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
 ) -> Dict[str, Any]:
@@ -120,7 +119,7 @@ def copy_parser(
 
 
 def create_parser(
-    client: ChronicleClient,
+    client: "ChronicleClient",
     log_type: str,
     parser_code: str,
     validated_on_empty_logs: bool = True,
@@ -155,7 +154,7 @@ def create_parser(
 
 
 def deactivate_parser(
-    client: ChronicleClient,
+    client: "ChronicleClient",
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
 ) -> Dict[str, Any]:
@@ -186,7 +185,7 @@ def deactivate_parser(
 
 
 def delete_parser(
-    client: ChronicleClient,
+    client: "ChronicleClient",
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
     force: bool = False,
@@ -217,7 +216,7 @@ def delete_parser(
 
 
 def get_parser(
-    client: ChronicleClient,
+    client: "ChronicleClient",
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
 ) -> Dict[str, Any]:
@@ -245,7 +244,7 @@ def get_parser(
 
 
 def list_parsers(
-    client: ChronicleClient,
+    client: "ChronicleClient",
     log_type: str = "-",
     page_size: int = 100,
     page_token: Optional[Union[str, None]] = None,
@@ -298,7 +297,7 @@ def list_parsers(
 
 
 def run_parser(
-    client: ChronicleClient,
+    client: "ChronicleClient",
     log_type: str,
     parser_code: str,
     parser_extension_code: Optional[str],
