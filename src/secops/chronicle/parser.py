@@ -105,9 +105,7 @@ def copy_parser(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/logTypes/{log_type}/parsers/{id}:copy"
-    )
+    url = f"{client.base_url}/{client.instance_id}/logTypes/{log_type}/parsers/{id}:copy"
     body = {}
     response = client.session.post(url, json=body)
 
@@ -364,19 +362,27 @@ def run_parser(
 
     # Check number of logs
     if len(logs) > MAX_LOGS:
-        raise ValueError(f"Number of logs ({len(logs)}) exceeds maximum of {MAX_LOGS}")
+        raise ValueError(
+            f"Number of logs ({len(logs)}) exceeds maximum of {MAX_LOGS}"
+        )
 
     # Validate parser_extension_code type if provided
-    if parser_extension_code is not None and not isinstance(parser_extension_code, str):
+    if parser_extension_code is not None and not isinstance(
+        parser_extension_code, str
+    ):
         raise TypeError(
             "parser_extension_code must be a string or None, got "
             f"{type(parser_extension_code).__name__}"
         )
 
     # Build request
-    url = f"{client.base_url}/{client.instance_id}/logTypes/{log_type}:runParser"
+    url = (
+        f"{client.base_url}/{client.instance_id}/logTypes/{log_type}:runParser"
+    )
 
-    parser = {"cbn": base64.b64encode(parser_code.encode("utf-8")).decode("utf-8")}
+    parser = {
+        "cbn": base64.b64encode(parser_code.encode("utf-8")).decode("utf-8")
+    }
 
     parser_extension = None
     if parser_extension_code:
@@ -389,7 +395,10 @@ def run_parser(
     body = {
         "parser": parser,
         "parser_extension": parser_extension,
-        "log": [base64.b64encode(log.encode("utf-8")).decode("utf-8") for log in logs],
+        "log": [
+            base64.b64encode(log.encode("utf-8")).decode("utf-8")
+            for log in logs
+        ],
         "statedump_allowed": statedump_allowed,
     }
 
