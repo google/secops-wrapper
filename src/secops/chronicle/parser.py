@@ -15,8 +15,9 @@
 """Parser management functionality for Chronicle."""
 
 import base64
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
+from secops.chronicle.client import ChronicleClient
 from secops.exceptions import APIError
 
 # Constants for size limits
@@ -26,7 +27,7 @@ MAX_TOTAL_SIZE = 50 * 1024 * 1024  # 50MB total
 
 
 def activate_parser(
-    client,
+    client: ChronicleClient,
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
 ) -> Dict[str, Any]:
@@ -57,7 +58,7 @@ def activate_parser(
 
 
 def activate_release_candidate_parser(
-    client,
+    client: ChronicleClient,
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
 ) -> Dict[str, Any]:
@@ -88,7 +89,7 @@ def activate_release_candidate_parser(
 
 
 def copy_parser(
-    client,
+    client: ChronicleClient,
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
 ) -> Dict[str, Any]:
@@ -119,7 +120,7 @@ def copy_parser(
 
 
 def create_parser(
-    client,
+    client: ChronicleClient,
     log_type: str,
     parser_code: str,
     validated_on_empty_logs: bool = True,
@@ -154,7 +155,7 @@ def create_parser(
 
 
 def deactivate_parser(
-    client,
+    client: ChronicleClient,
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
 ) -> Dict[str, Any]:
@@ -185,7 +186,7 @@ def deactivate_parser(
 
 
 def delete_parser(
-    client,
+    client: ChronicleClient,
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
     force: bool = False,
@@ -216,7 +217,7 @@ def delete_parser(
 
 
 def get_parser(
-    client,
+    client: ChronicleClient,
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
 ) -> Dict[str, Any]:
@@ -244,10 +245,10 @@ def get_parser(
 
 
 def list_parsers(
-    client,
+    client: ChronicleClient,
     log_type: str = "-",
     page_size: int = 100,
-    page_token: str = None,
+    page_token: Optional[Union[str, None]] = None,
     filter: str = None,  # pylint: disable=redefined-builtin
 ) -> List[Any]:
     """List parsers.
@@ -297,7 +298,7 @@ def list_parsers(
 
 
 def run_parser(
-    client: "ChronicleClient",
+    client: ChronicleClient,
     log_type: str,
     parser_code: str,
     parser_extension_code: Optional[str],
@@ -368,10 +369,14 @@ def run_parser(
 
     # Check number of logs
     if len(logs) > MAX_LOGS:
-        raise ValueError(f"Number of logs ({len(logs)}) exceeds maximum of {MAX_LOGS}")
+        raise ValueError(
+            f"Number of logs ({len(logs)}) exceeds maximum of {MAX_LOGS}"
+        )
 
     # Validate parser_extension_code type if provided
-    if parser_extension_code is not None and not isinstance(parser_extension_code, str):
+    if parser_extension_code is not None and not isinstance(
+        parser_extension_code, str
+    ):
         raise TypeError(
             "parser_extension_code must be a string or None, got "
             f"{type(parser_extension_code).__name__}"
@@ -381,7 +386,9 @@ def run_parser(
     url = f"{client.base_url}/{client.instance_id}"
     url += f"/logTypes/{log_type}:runParser"
 
-    parser = {"cbn": base64.b64encode(parser_code.encode("utf-8")).decode("utf-8")}
+    parser = {
+        "cbn": base64.b64encode(parser_code.encode("utf-8")).decode("utf-8")
+    }
 
     parser_extension = None
     if parser_extension_code:
@@ -394,7 +401,10 @@ def run_parser(
     body = {
         "parser": parser,
         "parser_extension": parser_extension,
-        "log": [base64.b64encode(log.encode("utf-8")).decode("utf-8") for log in logs],
+        "log": [
+            base64.b64encode(log.encode("utf-8")).decode("utf-8")
+            for log in logs
+        ],
         "statedump_allowed": statedump_allowed,
     }
 
