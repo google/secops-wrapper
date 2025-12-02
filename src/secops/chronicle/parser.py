@@ -204,7 +204,8 @@ def delete_parser(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}" f"/logTypes/{log_type}/parsers/{id}"
+    url = f"{client.base_url}/{client.instance_id}"
+    url += f"/logTypes/{log_type}/parsers/{id}"
     params = {"force": force}
     response = client.session.delete(url, params=params)
 
@@ -232,8 +233,8 @@ def get_parser(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/logTypes/{log_type}"
-    url += f"/parsers/{id}"
+    url = f"{client.base_url}/{client.instance_id}"
+    url += f"/logTypes/{log_type}/parsers/{id}"
     response = client.session.get(url)
 
     if response.status_code != 200:
@@ -268,8 +269,8 @@ def list_parsers(
     parsers = []
 
     while more:
-        url = f"{client.base_url}/{client.instance_id}/logTypes/{log_type}"
-        url += "/parsers"
+        url = f"{client.base_url}/{client.instance_id}"
+        url += f"/logTypes/{log_type}/parsers"
 
         params = {
             "pageSize": page_size,
@@ -377,7 +378,8 @@ def run_parser(
         )
 
     # Build request
-    url = f"{client.base_url}/{client.instance_id}/logTypes/{log_type}:runParser"
+    url = f"{client.base_url}/{client.instance_id}"
+    url += f"/logTypes/{log_type}:runParser"
 
     parser = {"cbn": base64.b64encode(parser_code.encode("utf-8")).decode("utf-8")}
 
