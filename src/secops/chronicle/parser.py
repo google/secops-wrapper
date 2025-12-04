@@ -250,21 +250,25 @@ def get_parser(
 def list_parsers(
     client: "ChronicleClient",
     log_type: str = "-",
-    page_size: int = 100,
-    page_token: Optional[Union[str, None]] = None,
+    page_size: Optional[int] = None,
+    page_token: Optional[str] = None,
     filter: str = None,  # pylint: disable=redefined-builtin
-) -> List[Any]:
+) -> Union[List[Any], Dict[str, Any]]:
     """List parsers.
 
     Args:
         client: ChronicleClient instance
         log_type: Log type to filter by
-        page_size: The maximum number of parsers to return
-        page_token: A page token, received from a previous ListParsers call
+        page_size: The maximum number of parsers to return per page.
+            If provided, returns raw API response with pagination info.
+            If None (default), auto-paginates and returns all parsers.
+        page_token: A page token, received from a previous ListParsers call.
         filter: Optional filter expression
 
     Returns:
-        List of parser dictionaries
+        If page_size is None: List of all parsers.
+        If page_size is provided: List of parsers with next page token if
+            available.
 
     Raises:
         APIError: If the API request fails
@@ -278,11 +282,14 @@ def list_parsers(
             f"/logTypes/{log_type}/parsers"
         )
 
-        params = {
-            "pageSize": page_size,
-            "pageToken": page_token,
-            "filter": filter,
-        }
+        params = {}
+
+        if page_size:
+            params["pageSize"] = page_size
+        if page_token:
+            params["pageToken"] = page_token
+        if filter:
+            params["filter"] = filter
 
         response = client.session.get(url, params=params)
 
@@ -290,6 +297,9 @@ def list_parsers(
             raise APIError(f"Failed to list parsers: {response.text}")
 
         data = response.json()
+
+        if page_size is not None:
+            return data
 
         if "parsers" in data:
             parsers.extend(data["parsers"])
