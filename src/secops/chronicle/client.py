@@ -1959,20 +1959,26 @@ class ChronicleClient:
     def list_parsers(
         self,
         log_type: str = "-",
-        page_size: int = 100,
-        page_token: str = None,
+        page_size: Optional[int] = None,
+        page_token: Optional[str] = None,
         filter: str = None,  # pylint: disable=redefined-builtin
-    ) -> List[Any]:
+    ) -> Union[List[Any], Dict[str, Any]]:
         """List parsers.
 
         Args:
             log_type: Log type to filter by
-            page_size: The maximum number of parsers to return
-            page_token: A page token, received from a previous ListParsers call
+            page_size: The maximum number of parsers to return per page.
+                If provided, returns raw API response with pagination info.
+                If None (default), auto-paginates and returns all parsers.
+            page_token: A page token, received from a previous ListParsers
+                call.
             filter: Optional filter expression
 
         Returns:
-            List of parser dictionaries
+            If page_size is None: List of all parsers
+                (auto-paginated)
+            If page_size is provided: List of parsers with next page token if
+                available.
 
         Raises:
             APIError: If the API request fails

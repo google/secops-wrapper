@@ -390,7 +390,7 @@ def test_list_parsers_single_page_success(chronicle_client, mock_response):
         expected_url = f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logTypes/{log_type}/parsers"
         mock_get.assert_called_once_with(
             expected_url,
-            params={"pageSize": 100, "pageToken": None, "filter": None},
+            params={},
         )
         assert result == expected_parsers
 
@@ -410,7 +410,7 @@ def test_list_parsers_no_parsers_success(chronicle_client, mock_response):
         expected_url = f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logTypes/{log_type}/parsers"
         mock_get.assert_called_once_with(
             expected_url,
-            params={"pageSize": 100, "pageToken": None, "filter": None},
+            params={},
         )
         assert result == []
 
@@ -427,14 +427,20 @@ def test_list_parsers_error(chronicle_client, mock_error_response):
         assert "Failed to list parsers: Error message" in str(exc_info.value)
 
 
-def test_list_parsers_with_optional_params(chronicle_client, mock_response):
-    """Test list_parsers function with custom page_size, page_token, and filter."""
+def test_list_parsers_with_page_size_returns_raw_response(
+    chronicle_client, mock_response
+):
+    """Test list_parsers returns raw API response when page_size is provided."""
     log_type = "CUSTOM_LOG_TYPE"
     page_size = 50
     page_token = "custom_token_xyz"
     filter_query = "name=contains('custom')"
     expected_parsers = [{"name": "pa_custom_1"}]
-    mock_response.json.return_value = {"parsers": expected_parsers}
+    expected_response = {
+        "parsers": expected_parsers,
+        "nextPageToken": "next_token_abc",
+    }
+    mock_response.json.return_value = expected_response
 
     with patch.object(
         chronicle_client.session, "get", return_value=mock_response
@@ -447,7 +453,10 @@ def test_list_parsers_with_optional_params(chronicle_client, mock_response):
             filter=filter_query,
         )
 
-        expected_url = f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logTypes/{log_type}/parsers"
+        expected_url = (
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}"
+            f"/logTypes/{log_type}/parsers"
+        )
         mock_get.assert_called_once_with(
             expected_url,
             params={
@@ -456,14 +465,16 @@ def test_list_parsers_with_optional_params(chronicle_client, mock_response):
                 "filter": filter_query,
             },
         )
-        assert result == expected_parsers
+        # With page_size provided, returns raw response dict
+        assert result == expected_response
+        assert "nextPageToken" in result
 
 
-def test_list_parsers_multi_page_pagination(chronicle_client, mock_response):
-    """Test list_parsers function with multi-page pagination (Issue 148).
+def test_list_parsers_auto_pagination(chronicle_client):
+    """Test list_parsers auto-paginates when page_size is None (default).
 
-    This test validates that the pagination fix correctly handles the
-    'nextPageToken' field (not 'next_page_token') returned by the API.
+    This test validates that the pagination correctly handles the
+    'nextPageToken' field returned by the API and fetches all pages.
     """
     log_type = "WINDOWS"
 
@@ -498,31 +509,63 @@ def test_list_parsers_multi_page_pagination(chronicle_client, mock_response):
         "get",
         side_effect=[first_response, second_response],
     ) as mock_get:
-        result = list_parsers(chronicle_client, log_type=log_type, page_size=2)
+        # No page_size means auto-pagination
+        result = list_parsers(chronicle_client, log_type=log_type)
 
         # Verify we made two API calls (one per page)
         assert mock_get.call_count == 2
 
-        # Verify first call
+        # Verify first call uses default page size of 100
         expected_url = (
             f"{chronicle_client.base_url}/{chronicle_client.instance_id}"
             f"/logTypes/{log_type}/parsers"
         )
         first_call = mock_get.call_args_list[0]
         assert first_call[0][0] == expected_url
-        assert first_call[1]["params"]["pageSize"] == 2
-        assert first_call[1]["params"]["pageToken"] is None
 
         # Verify second call uses the nextPageToken from first response
         second_call = mock_get.call_args_list[1]
         assert second_call[0][0] == expected_url
-        assert second_call[1]["params"]["pageSize"] == 2
         assert second_call[1]["params"]["pageToken"] == "page2_token"
 
-        # Verify all parsers from both pages are returned
+        # Verify all parsers from both pages are returned as a list
         expected_all_parsers = first_page_parsers + second_page_parsers
         assert result == expected_all_parsers
         assert len(result) == 3
+
+
+def test_list_parsers_manual_pagination_single_page(
+    chronicle_client, mock_response
+):
+    """Test list_parsers returns raw response for manual pagination."""
+    log_type = "MANUAL_LOG_TYPE"
+    page_size = 10
+    expected_parsers = [{"name": "pa_manual_1"}]
+    expected_response = {
+        "parsers": expected_parsers,
+        "nextPageToken": "next_page_token",
+    }
+    mock_response.json.return_value = expected_response
+
+    with patch.object(
+        chronicle_client.session, "get", return_value=mock_response
+    ) as mock_get:
+        result = list_parsers(
+            chronicle_client, log_type=log_type, page_size=page_size
+        )
+
+        expected_url = (
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}"
+            f"/logTypes/{log_type}/parsers"
+        )
+        mock_get.assert_called_once_with(
+            expected_url,
+            params={"pageSize": page_size},
+        )
+        # Returns raw response dict, not just the parsers list
+        assert result == expected_response
+        assert "parsers" in result
+        assert "nextPageToken" in result
 
 
 # --- run_parser Tests ---

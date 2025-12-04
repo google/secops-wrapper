@@ -1221,12 +1221,19 @@ print(f"Parser ID: {parser_id}")
 Retrieve, list, copy, activate/deactivate, and delete parsers:
 
 ```python
-# List all parsers
+# List all parsers (returns complete list)
 parsers = chronicle.list_parsers()
 for parser in parsers:
     parser_id = parser.get("name", "").split("/")[-1]
     state = parser.get("state")
     print(f"Parser ID: {parser_id}, State: {state}")
+
+# Manual pagination: get raw API response with nextPageToken
+response = chronicle.list_parsers(page_size=50)
+parsers = response.get("parsers", [])
+next_token = response.get("nextPageToken")
+# Use next_token for subsequent calls:
+# response = chronicle.list_parsers(page_size=50, page_token=next_token)
 
 log_type = "WINDOWS_AD"
     
