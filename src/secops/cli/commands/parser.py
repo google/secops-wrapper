@@ -345,12 +345,12 @@ def handle_parser_run_command(args, chronicle):
         else:
             # If no parser code provided,
             # try to find an active parser for the log type
-            parsers = chronicle.list_parsers(
+            parser_list_response = chronicle.list_parsers(
                 args.log_type,
                 page_size=1,
-                page_token=None,
                 filter="STATE=ACTIVE",
             )
+            parsers = parser_list_response.get("parsers", [])
             if len(parsers) < 1:
                 raise SecOpsError(
                     "No parser file provided and an active parser could not "
