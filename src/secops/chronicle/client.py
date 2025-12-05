@@ -25,6 +25,7 @@ from secops import auth as secops_auth
 from secops.auth import RetryConfig
 from secops.chronicle.alert import get_alerts as _get_alerts
 from secops.chronicle.case import get_cases_from_list
+from secops.chronicle.models import APIVersion
 from secops.chronicle.dashboard import DashboardAccessType, DashboardView
 from secops.chronicle.dashboard import add_chart as _add_chart
 from secops.chronicle.dashboard import create_dashboard as _create_dashboard
@@ -274,6 +275,67 @@ class ValueType(Enum):
     USERNAME = "USERNAME"
 
 
+class BaseUrl(str):
+    """Chronicle base url generation based on version and region.
+
+    Supports production, dev, and staging regions with appropriate
+    domain names.
+    """
+
+    def __new__(cls, version: APIVersion, region: str = "us"):
+        domain = cls._get_domain(region)
+        return super().__new__(cls, f"https://{domain}/{version}")
+
+    def __init__(self, version: APIVersion, region: str = "us"):
+        self._default = version
+        self._region = region
+
+    @staticmethod
+    def _get_domain(region: str) -> str:
+        """Get the appropriate domain for the given region.
+
+        Args:
+            region: Region identifier (e.g., 'us', 'europe', 'dev',
+                'staging')
+
+        Returns:
+            str: Domain name for the region
+        """
+        if region == "dev":
+            return "autopush-chronicle.sandbox.googleapis.com"
+        elif region == "staging":
+            return "staging-chronicle.sandbox.googleapis.com"
+        else:
+            return f"{region}-chronicle.googleapis.com"
+
+    def __call__(
+        self, version: APIVersion = None, allowed: list[APIVersion] = None
+    ) -> str:
+        """
+        Returns the base URL for a specific API version.
+
+        Args:
+            version: (Optional) The API version to use. If not provided,
+            uses the default.
+            allowed: (Optional) A list of allowed API versions for the
+            endpoint.
+
+        Returns:
+            The base URL string.
+
+        Raises:
+            SecOpsError: If the requested API version is not supported.
+        """
+        selected_version = APIVersion(version or self._default)
+        if allowed and selected_version not in allowed:
+            raise SecOpsError(
+                f"API version '{selected_version}' is not supported for this "
+                f"endpoint. Allowed versions: {', '.join(allowed)}"
+            )
+        domain = self._get_domain(self._region)
+        return f"https://{domain}/{selected_version}"
+
+
 def _detect_value_type(value: str) -> tuple[Optional[str], Optional[str]]:
     """Detect value type from a string.
 
@@ -337,6 +399,7 @@ class ChronicleClient:
         extra_scopes: Optional[List[str]] = None,
         credentials: Optional[Any] = None,
         retry_config: Optional[Union[RetryConfig, Dict[str, Any], bool]] = None,
+        default_api_version: Union[APIVersion, str] = APIVersion.V1ALPHA,
     ):
         """Initialize ChronicleClient.
 
@@ -350,48 +413,30 @@ class ChronicleClient:
             credentials: Credentials object
             retry_config: Request retry configurations.
                 If set to false, retry will be disabled.
+            default_api_version: Default API version to use for requests.
         """
         self.project_id = project_id
         self.customer_id = customer_id
         self.region = region
+        self.default_api_version = APIVersion(default_api_version)
         self._default_forwarder_display_name: str = "Wrapper-SDK-Forwarder"
         self._cached_default_forwarder_id: Optional[str] = None
 
         # Format the instance ID to match the expected format
         if region in ["dev", "staging"]:
-            # For dev and staging environments,
-            # use a different instance ID format
+            # Dev and staging use 'us' as the location
             self.instance_id = (
                 f"projects/{project_id}/locations/us/instances/{customer_id}"
             )
-            # Set up the base URL for dev/staging
-            if region == "dev":
-                self.base_url = (
-                    "https://autopush-chronicle.sandbox.googleapis.com/v1alpha"
-                )
-                self.base_v1_url = (
-                    "https://autopush-chronicle.sandbox.googleapis.com/v1"
-                )
-            else:  # staging
-                self.base_url = (
-                    "https://staging-chronicle.sandbox.googleapis.com/v1alpha"
-                )
-                self.base_v1_url = (
-                    "https://staging-chronicle.sandbox.googleapis.com/v1"
-                )
         else:
             # Standard production regions use the normal format
             self.instance_id = (
                 f"projects/{project_id}/locations/{region}/"
                 f"instances/{customer_id}"
             )
-            # Set up the base URL
-            self.base_url = (
-                f"https://{self.region}-chronicle.googleapis.com/v1alpha"
-            )
-            self.base_v1_url = (
-                f"https://{self.region}-chronicle.googleapis.com/v1"
-            )
+
+        # Set up base URLs using BaseUrl for all regions
+        self.base_url = BaseUrl(self.default_api_version, self.region)
 
         # Create a session with authentication
         if session:
