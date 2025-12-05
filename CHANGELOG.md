@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.1] - 2025-12-05
+### Updated
+- Updated Chronicle client to expose API version param for following:
+  - Feed management (list, get, create, delete, disable, enable, generate secret)
+  - Reference list management(create, get, list, update)
+  - Rule management (create, get, list, update, delete, search)
+  - Rule deployment (get, update)
+  - Rule retrohunt (create, get)
+
 ## [0.27.0] - 2025-12-05
 ### Added
 - Chronicle configuration for default API endpoint version to use for all methods
