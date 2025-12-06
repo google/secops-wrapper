@@ -14,9 +14,8 @@
 #
 """Watchlist functionality for Chronicle."""
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 
-from secops.exceptions import APIError, SecOpsError
 from secops.chronicle.utils.request_utils import paginated_request
 
 
