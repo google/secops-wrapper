@@ -16,6 +16,7 @@
 
 from typing import Dict, Any, Optional
 
+from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.request_utils import paginated_request
 
 
@@ -39,7 +40,7 @@ def list_watchlists(
     """
     return paginated_request(
         client,
-        base_url=client.base_v1_url,
+        base_url=client.base_url(APIVersion.V1),
         path="watchlists",
         items_key="watchlists",
         page_size=page_size,
@@ -61,7 +62,7 @@ def get_watchlist(client, watchlist_id: str) -> Dict[str, Any]:
         APIError: If the API request fails
     """
     return client.session.get(
-        f"{client.base_v1_url}/{client.instance_id}/watchlists/{watchlist_id}",
+        f"{client.base_url(APIVersion.V1)}/{client.instance_id}/watchlists/{watchlist_id}",
     ).json()
 
 
@@ -86,7 +87,7 @@ def delete_watchlist(
     """
     params = {"force": force}
     return client.session.delete(
-        f"{client.base_v1_url}/{client.instance_id}/watchlists/{watchlist_id}",
+        f"{client.base_url(APIVersion.V1)}/{client.instance_id}/watchlists/{watchlist_id}",
         params=params,
     ).json()
 
@@ -115,7 +116,7 @@ def create_watchlist(
     """
 
     return client.session.post(
-        f"{client.base_v1_url}/{client.instance_id}/watchlists",
+        f"{client.base_url(APIVersion.V1)}/{client.instance_id}/watchlists",
         json={
             "name": name,
             "displayName": display_name,
