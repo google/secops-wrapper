@@ -15,10 +15,12 @@
 """Helper functions for Chronicle."""
 
 from typing import Dict, Any, Optional, List, Union
+
 from secops.exceptions import APIError
+from secops.chronicle.models import APIVersion
 
 
-def paginated_request(
+def chronicle_paginated_request(
     client,
     base_url: str,
     path: str,
@@ -84,3 +86,63 @@ def paginated_request(
     if isinstance(data, list):
         return results
     return {items_key: results}
+
+
+def chronicle_request(
+    client,
+    method: str,
+    endpoint_path: str,
+    *,
+    api_version: str = APIVersion.V1,
+    params: Optional[Dict[str, Any]] = None,
+    json: Optional[Dict[str, Any]] = None,
+    expected_status: int = 200,
+    error_message: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Perform an HTTP request and return JSON, raising APIError on failure.
+
+    Args:
+        client: requests.Session (or compatible) instance
+        method: HTTP method, e.g. 'GET', 'POST', 'PATCH'
+        endpoint_path: URL path after {base_url}/{instance_id}/
+        api_version: API version to use
+        params: Optional query parameters
+        json: Optional JSON body
+        expected_status: Expected HTTP status code (default: 200)
+        error_message: Optional base error message to include on failure
+
+    Returns:
+        Parsed JSON response.
+
+    Raises:
+        APIError: If the request fails, returns a non-JSON body, or status
+                  code does not match expected_status.
+    """
+    url = f"{client.base_url(api_version)}/{client.instance_id}/{endpoint_path}"
+    response = client.session.request(
+        method=method, url=url, params=params, json=json
+    )
+
+    # Try to parse JSON even on error, so we can get more details
+    try:
+        data = response.json()
+    except ValueError:
+        data = None
+
+    if response.status_code != expected_status:
+        base_msg = error_message or "API request failed"
+        if data is not None:
+            raise APIError(
+                f"{base_msg}: status={response.status_code}, response={data}"
+            ) from None
+
+        raise APIError(
+            f"{base_msg}: status={response.status_code}, response_text={response.text}"
+        ) from None
+
+    if data is None:
+        raise APIError(
+            f"Expected JSON response from {url} but got non-JSON body: {response.text}"
+        )
+
+    return data

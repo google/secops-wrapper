@@ -17,7 +17,10 @@
 from typing import Dict, Any, Optional
 
 from secops.chronicle.models import APIVersion
-from secops.chronicle.utils.request_utils import paginated_request
+from secops.chronicle.utils.request_utils import (
+    chronicle_paginated_request,
+    chronicle_request,
+)
 
 
 def list_watchlists(
@@ -38,7 +41,7 @@ def list_watchlists(
     Raises:
         APIError: If the API request fails
     """
-    return paginated_request(
+    return chronicle_paginated_request(
         client,
         base_url=client.base_url(APIVersion.V1),
         path="watchlists",
@@ -61,9 +64,12 @@ def get_watchlist(client, watchlist_id: str) -> Dict[str, Any]:
     Raises:
         APIError: If the API request fails
     """
-    return client.session.get(
-        f"{client.base_url(APIVersion.V1)}/{client.instance_id}/watchlists/{watchlist_id}",
-    ).json()
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"watchlists/{watchlist_id}",
+        api_version=APIVersion.V1,
+    )
 
 
 def delete_watchlist(
@@ -86,10 +92,13 @@ def delete_watchlist(
         APIError: If the API request fails
     """
     params = {"force": force}
-    return client.session.delete(
-        f"{client.base_url(APIVersion.V1)}/{client.instance_id}/watchlists/{watchlist_id}",
+    return chronicle_request(
+        client,
+        method="DELETE",
+        endpoint_path=f"watchlists/{watchlist_id}",
+        api_version=APIVersion.V1,
         params=params,
-    ).json()
+    )
 
 
 def create_watchlist(
@@ -114,9 +123,11 @@ def create_watchlist(
     Raises:
         APIError: If the API request fails
     """
-
-    return client.session.post(
-        f"{client.base_url(APIVersion.V1)}/{client.instance_id}/watchlists",
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="watchlists",
+        api_version=APIVersion.V1,
         json={
             "name": name,
             "displayName": display_name,
@@ -124,4 +135,4 @@ def create_watchlist(
             "description": description,
             "entityPopulationMechanism": {"manual": {}},
         },
-    ).json()
+    )
