@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.2] - 2025-12-08
+### Updated
+- Parser list method to handle pagination properly
+  - Method auto paginates and returns all when no page size is provided.
+  - When page size is provided, method returns response with next page token.
+
 ## [0.27.1] - 2025-12-05
 ### Updated
 - Updated Chronicle client to expose API version param for following:
