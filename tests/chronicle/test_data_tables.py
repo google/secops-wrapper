@@ -434,7 +434,7 @@ class TestReferenceLists:
         )
 
     @patch("secops.chronicle.reference_list.REF_LIST_DATA_TABLE_ID_REGEX")
-    @patch("secops.chronicle.reference_list._validate_cidr_entries")
+    @patch("secops.chronicle.reference_list.validate_cidr_entries_local")
     def test_create_reference_list_cidr_success(
         self,
         mock_validate_cidr: Mock,
@@ -1286,9 +1286,9 @@ class TestReferenceLists:
     # TODO: Add more unit tests for:
     # - APIError scenarios for each function (e.g., 404 Not Found, 500 Server Error)
     # - Pagination in list_data_tables and list_data_table_rows, list_reference_lists
-    # - create_data_table with CIDR validation failure (_validate_cidr_entries raises SecOpsError)
+    # - create_data_table with CIDR validation failure (validate_cidr_entries_local raises SecOpsError)
     # - create_reference_list with CIDR validation failure
-    # - _validate_cidr_entries itself
+    # - validate_cidr_entries_local itself
     # - REF_LIST_DATA_TABLE_ID_REGEX utility if used directly by other parts (though it's tested via create methods)
     # - Edge cases for row chunking in create_data_table_rows (e.g. single massive row)
     # - delete_data_table_row specific tests (if _delete_data_table_row is complex enough)

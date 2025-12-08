@@ -25,7 +25,7 @@ else:
 
 # Add a local reference to the imported function for backward compatibility
 # with tests
-_validate_cidr_entries = validate_cidr_entries
+validate_cidr_entries_local = validate_cidr_entries
 
 
 class ReferenceListSyntaxType(StrEnum):
@@ -100,7 +100,7 @@ def create_reference_list(
 
     # Validate CIDR entries if using CIDR syntax type
     if syntax_type == ReferenceListSyntaxType.CIDR:
-        _validate_cidr_entries(entries)
+        validate_cidr_entries_local(entries)
 
     response = client.session.post(
         f"{client.base_url(api_version, list(APIVersion))}/"
