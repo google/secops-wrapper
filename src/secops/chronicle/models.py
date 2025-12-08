@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 """Data models for Chronicle API responses."""
+import sys
 import json
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
@@ -20,6 +21,16 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
 from secops.exceptions import SecOpsError
+
+# Use built-in StrEnum if Python 3.11+, otherwise create a compatible version
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+    class StrEnum(str, Enum):
+        """String enum implementation for Python versions before 3.11."""
+
+        def __str__(self) -> str:
+            return self.value
 
 
 class AlertState(str, Enum):
@@ -462,3 +473,9 @@ class DashboardChart:
             ]
             if getattr(self, field) is not None
         ]
+
+
+class APIVersion(StrEnum):
+    V1 = "v1"
+    V1BETA = "v1beta"
+    V1ALPHA = "v1alpha"

@@ -7,6 +7,7 @@ from unittest.mock import (
     call,
 )  # Added call for checking multiple calls if needed
 
+from secops.chronicle.models import APIVersion
 from secops.chronicle.client import ChronicleClient  # This will be the actual client
 
 # We'll need to import the enums and functions once they are in their final place
@@ -25,14 +26,16 @@ from secops.exceptions import APIError, SecOpsError
 
 
 @pytest.fixture
-def mock_chronicle_client() -> Mock:
-    """Provides a mock ChronicleClient with a mock session."""
-    client = Mock(spec=ChronicleClient)
-    client.session = Mock()
-    client.base_url = "https://test-chronicle.googleapis.com/v1alpha"
-    client.base_v1_url = "https://test-chronicle.googleapis.com/v1"
-    client.instance_id = "projects/test-project/locations/us/instances/test-customer"
-    return client
+def mock_chronicle_client():
+    """Provides a ChronicleClient with a mock session for testing."""
+    with patch("secops.auth.SecOpsAuth") as mock_auth:
+        mock_session = Mock()
+        mock_session.headers = {}
+        mock_auth.return_value.session = mock_session
+        return ChronicleClient(
+            customer_id="test-customer",
+            project_id="test-project",
+        )
 
 
 # ---- Test Data Tables ----
@@ -421,7 +424,7 @@ class TestReferenceLists:
         assert result["description"] == description
         assert len(result["entries"]) == 2
         mock_chronicle_client.session.post.assert_called_once_with(
-            f"{mock_chronicle_client.base_v1_url}/{mock_chronicle_client.instance_id}/referenceLists",
+            f"{mock_chronicle_client.base_url(APIVersion.V1)}/{mock_chronicle_client.instance_id}/referenceLists",
             params={"referenceListId": rl_name},
             json={
                 "description": description,
@@ -489,7 +492,7 @@ class TestReferenceLists:
         assert result["description"] == "Full RL details"
         assert len(result["entries"]) == 1
         mock_chronicle_client.session.get.assert_called_once_with(
-            f"{mock_chronicle_client.base_v1_url}/{mock_chronicle_client.instance_id}/referenceLists/{rl_name}",
+            f"{mock_chronicle_client.base_url(APIVersion.V1)}/{mock_chronicle_client.instance_id}/referenceLists/{rl_name}",
             params={"view": ReferenceListView.FULL.value},
         )
 
@@ -518,7 +521,7 @@ class TestReferenceLists:
         assert results[0]["displayName"] == "rl_basic1"
         assert "entries" not in results[0]  # Entries are not in BASIC view
         mock_chronicle_client.session.get.assert_called_once_with(
-            f"{mock_chronicle_client.base_v1_url}/{mock_chronicle_client.instance_id}/referenceLists",
+            f"{mock_chronicle_client.base_url(APIVersion.V1)}/{mock_chronicle_client.instance_id}/referenceLists",
             params={"pageSize": 1000, "view": ReferenceListView.BASIC.value},
         )
 
@@ -564,7 +567,7 @@ class TestReferenceLists:
         assert result["entries"][0]["value"] == "updated_entryX"
 
         mock_chronicle_client.session.patch.assert_called_once_with(
-            f"{mock_chronicle_client.base_v1_url}/{mock_chronicle_client.instance_id}/referenceLists/{rl_name}",
+            f"{mock_chronicle_client.base_url(APIVersion.V1)}/{mock_chronicle_client.instance_id}/referenceLists/{rl_name}",
             json={
                 "description": new_description,
                 "entries": [{"value": "updated_entryX"}, {"value": "new_entryY"}],

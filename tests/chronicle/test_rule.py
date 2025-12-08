@@ -17,6 +17,7 @@
 import pytest
 from unittest.mock import Mock, patch
 from secops.chronicle.client import ChronicleClient
+from secops.chronicle.models import APIVersion
 from secops.chronicle.rule import (
     create_rule,
     get_rule,
@@ -40,7 +41,8 @@ def chronicle_client():
         mock_session.headers = {}
         mock_auth.return_value.session = mock_session
         return ChronicleClient(
-            customer_id="test-customer", project_id="test-project"
+            customer_id="test-customer", project_id="test-project",
+            default_api_version=APIVersion.V1
         )
 
 
@@ -96,7 +98,7 @@ def test_create_rule(chronicle_client, mock_response):
 
         # Assert
         mock_post.assert_called_once_with(
-            f"{chronicle_client.base_v1_url}/{chronicle_client.instance_id}/rules",
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules",
             json={"text": "rule test {}"},
         )
         assert result == mock_response.json.return_value
@@ -127,7 +129,7 @@ def test_get_rule(chronicle_client, mock_response):
 
         # Assert
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_v1_url}/{chronicle_client.instance_id}/rules/{rule_id}"
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/{rule_id}"
         )
         assert result == mock_response.json.return_value
 
@@ -161,7 +163,7 @@ def test_list_rules(chronicle_client, mock_response):
 
         # Assert
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_v1_url}/{chronicle_client.instance_id}/rules",
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules",
             params={"pageSize": 1000, "view": "FULL"},
         )
         assert result == mock_response.json.return_value
@@ -181,7 +183,7 @@ def test_list_rules_empty(chronicle_client, mock_response):
 
         # Assert
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_v1_url}/{chronicle_client.instance_id}/rules",
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules",
             params={"pageSize": 1000, "view": "FULL"},
         )
         assert result == {"rules": []}
@@ -261,7 +263,7 @@ def test_update_rule(chronicle_client, mock_response):
 
         # Assert
         mock_patch.assert_called_once_with(
-            f"{chronicle_client.base_v1_url}/{chronicle_client.instance_id}/rules/{rule_id}",
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/{rule_id}",
             params={"update_mask": "text"},
             json={"text": rule_text},
         )
@@ -298,7 +300,7 @@ def test_delete_rule(chronicle_client, mock_response):
 
         # Assert
         mock_delete.assert_called_once_with(
-            f"{chronicle_client.base_v1_url}/{chronicle_client.instance_id}/rules/{rule_id}",
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/{rule_id}",
             params={},
         )
         assert result == {}
@@ -333,7 +335,7 @@ def test_delete_rule_force(chronicle_client, mock_response):
 
         # Assert
         mock_delete.assert_called_once_with(
-            f"{chronicle_client.base_v1_url}/{chronicle_client.instance_id}/rules/{rule_id}",
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/{rule_id}",
             params={"force": "true"},
         )
         assert result == {}
@@ -352,7 +354,7 @@ def test_enable_rule(chronicle_client, mock_response):
 
         # Assert
         mock_patch.assert_called_once_with(
-            f"{chronicle_client.base_v1_url}/{chronicle_client.instance_id}/rules/{rule_id}/deployment",
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/{rule_id}/deployment",
             params={"update_mask": "enabled"},
             json={"enabled": True},
         )
@@ -372,7 +374,7 @@ def test_disable_rule(chronicle_client, mock_response):
 
         # Assert
         mock_patch.assert_called_once_with(
-            f"{chronicle_client.base_v1_url}/{chronicle_client.instance_id}/rules/{rule_id}/deployment",
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/{rule_id}/deployment",
             params={"update_mask": "enabled"},
             json={"enabled": False},
         )
@@ -409,7 +411,7 @@ def test_search_rules(chronicle_client, mock_response):
 
         # Assert
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_v1_url}/{chronicle_client.instance_id}/rules",
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules",
             params={"pageSize": 1000, "view": "FULL"},
         )
         assert result == mock_response.json.return_value
@@ -570,7 +572,7 @@ def test_get_rule_deployment(chronicle_client, mock_response):
         result = get_rule_deployment(chronicle_client, rule_id)
 
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_v1_url}/{chronicle_client.instance_id}/rules/{rule_id}/deployment"
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/{rule_id}/deployment"
         )
         assert result == mock_response.json.return_value
 
@@ -603,7 +605,7 @@ def test_list_rule_deployments_single_page(chronicle_client, mock_response):
         result = list_rule_deployments(chronicle_client)
 
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_v1_url}/{chronicle_client.instance_id}/rules/-/deployments",
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/-/deployments",
             params={},
         )
         assert result == {
@@ -678,7 +680,7 @@ def test_list_rule_deployments_empty(chronicle_client, mock_response):
 
         # Assert
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_v1_url}/{chronicle_client.instance_id}/rules/-/deployments",
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/-/deployments",
             params={},
         )
         assert result == {"ruleDeployments": []}
@@ -705,7 +707,7 @@ def test_list_rule_deployments_with_filter(chronicle_client, mock_response):
 
         # Assert
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_v1_url}/{chronicle_client.instance_id}/rules/-/deployments",
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/-/deployments",
             params={"filter": filter_query},
         )
         assert result == {
