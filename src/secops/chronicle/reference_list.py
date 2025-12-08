@@ -8,6 +8,7 @@ from secops.chronicle.data_table import (
     REF_LIST_DATA_TABLE_ID_REGEX,
     validate_cidr_entries,
 )
+from secops.chronicle.models import APIVersion
 from secops.exceptions import APIError, SecOpsError
 
 # Use built-in StrEnum if Python 3.11+, otherwise create a compatible version
@@ -66,6 +67,7 @@ def create_reference_list(
     description: str = "",
     entries: List[str] = None,
     syntax_type: ReferenceListSyntaxType = ReferenceListSyntaxType.STRING,
+    api_version: Optional[APIVersion] = APIVersion.V1,
 ) -> Dict[str, Any]:
     """Create a new reference list.
 
@@ -75,6 +77,7 @@ def create_reference_list(
         description: A user-provided description of the reference list
         entries: A list of entries for the reference list
         syntax_type: The syntax type of the reference list
+        api_version: Preferred API version to use. Defaults to V1
 
     Returns:
         Dictionary containing the created reference list
@@ -100,7 +103,8 @@ def create_reference_list(
         _validate_cidr_entries(entries)
 
     response = client.session.post(
-        f"{client.base_v1_url}/{client.instance_id}/referenceLists",
+        f"{client.base_url(api_version, list(APIVersion))}/"
+        f"{client.instance_id}/referenceLists",
         json={
             "description": description,
             "entries": [{"value": x} for x in entries],
@@ -119,7 +123,10 @@ def create_reference_list(
 
 
 def get_reference_list(
-    client: "Any", name: str, view: ReferenceListView = ReferenceListView.FULL
+    client: "Any",
+    name: str,
+    view: ReferenceListView = ReferenceListView.FULL,
+    api_version: Optional[APIVersion] = APIVersion.V1,
 ) -> Dict[str, Any]:
     """Get a single reference list.
 
@@ -128,6 +135,7 @@ def get_reference_list(
         name: The name of the reference list
         view: How much of the ReferenceList to view.
             Defaults to REFERENCE_LIST_VIEW_FULL.
+        api_version: Preferred API version to use. Defaults to V1
 
     Returns:
         Dictionary containing the reference list
@@ -140,7 +148,8 @@ def get_reference_list(
         params["view"] = view.value
 
     response = client.session.get(
-        f"{client.base_v1_url}/{client.instance_id}/referenceLists/{name}",
+        f"{client.base_url(api_version, list(APIVersion))}/"
+        f"{client.instance_id}/referenceLists/{name}",
         params=params if params else None,
     )
 
@@ -156,6 +165,7 @@ def get_reference_list(
 def list_reference_lists(
     client: "Any",
     view: ReferenceListView = ReferenceListView.BASIC,
+    api_version: Optional[APIVersion] = APIVersion.V1,
 ) -> List[Dict[str, Any]]:
     """List reference lists.
 
@@ -163,6 +173,7 @@ def list_reference_lists(
         client: ChronicleClient instance
         view: How much of each ReferenceList to view. Defaults to
             REFERENCE_LIST_VIEW_BASIC.
+        api_version: Preferred API version to use. Defaults to V1
 
     Returns:
         List of reference lists, ordered in ascending alphabetical order by name
@@ -178,7 +189,8 @@ def list_reference_lists(
 
     while True:
         response = client.session.get(
-            f"{client.base_v1_url}/{client.instance_id}/referenceLists",
+            f"{client.base_url(api_version, list(APIVersion))}/"
+            f"{client.instance_id}/referenceLists",
             params=params,
         )
 
@@ -205,6 +217,7 @@ def update_reference_list(
     name: str,
     description: Optional[str] = None,
     entries: Optional[List[str]] = None,
+    api_version: Optional[APIVersion] = APIVersion.V1,
 ) -> Dict[str, Any]:
     """Update a reference list.
 
@@ -213,6 +226,7 @@ def update_reference_list(
         name: The name of the reference list
         description: A user-provided description of the reference list
         entries: A list of entries for the reference list
+        api_version: Preferred API version to use. Defaults to V1
 
     Returns:
         Dictionary containing the updated reference list
@@ -252,7 +266,8 @@ def update_reference_list(
     params = {"updateMask": ",".join(update_paths)}
 
     response = client.session.patch(
-        f"{client.base_v1_url}/{client.instance_id}/referenceLists/{name}",
+        f"{client.base_url(api_version, list(APIVersion))}/"
+        f"{client.instance_id}/referenceLists/{name}",
         json=payload,
         params=params,
     )

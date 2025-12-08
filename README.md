@@ -203,6 +203,37 @@ chronicle = client.chronicle(
 ```
 [See available regions](https://github.com/google/secops-wrapper/blob/main/regions.md)
 
+#### API Version Control
+
+The SDK supports flexible API version selection:
+
+- **Default Version**: Set `default_api_version` during client initialization (default is `v1alpha`)
+- **Per-Method Override**: Many methods accept an `api_version` parameter to override the default for specific calls
+
+**Supported API versions:**
+- `v1` - Stable production API
+- `v1beta` - Beta API with newer features
+- `v1alpha` - Alpha API with experimental features
+
+**Example with per-method version override:**
+```python
+from secops.chronicle.models import APIVersion
+
+# Client defaults to v1alpha
+chronicle = client.chronicle(
+    customer_id="your-chronicle-instance-id",
+    project_id="your-project-id",
+    region="us",
+    default_api_version="v1alpha"
+)
+
+# Use v1 for a specific rule operation
+rule = chronicle.get_rule(
+    rule_id="ru_12345678-1234-1234-1234-123456789abc",
+    api_version=APIVersion.V1  # Override to use v1 for this call
+)
+```
+
 ### Log Ingestion
 
 Ingest raw logs directly into Chronicle:

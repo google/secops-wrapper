@@ -74,6 +74,8 @@ def handle_config_set_command(args, chronicle=None):
         config["project_id"] = args.project_id
     if args.region:
         config["region"] = args.region
+    if hasattr(args, "api_version") and args.api_version:
+        config["api_version"] = args.api_version
     if args.service_account:
         config["service_account"] = args.service_account
     if args.start_time:

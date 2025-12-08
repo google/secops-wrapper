@@ -25,6 +25,7 @@ from secops import auth as secops_auth
 from secops.auth import RetryConfig
 from secops.chronicle.alert import get_alerts as _get_alerts
 from secops.chronicle.case import get_cases_from_list
+from secops.chronicle.models import APIVersion
 from secops.chronicle.dashboard import DashboardAccessType, DashboardView
 from secops.chronicle.dashboard import add_chart as _add_chart
 from secops.chronicle.dashboard import create_dashboard as _create_dashboard
@@ -274,6 +275,67 @@ class ValueType(Enum):
     USERNAME = "USERNAME"
 
 
+class BaseUrl(str):
+    """Chronicle base url generation based on version and region.
+
+    Supports production, dev, and staging regions with appropriate
+    domain names.
+    """
+
+    def __new__(cls, version: APIVersion, region: str = "us"):
+        domain = cls._get_domain(region)
+        return super().__new__(cls, f"https://{domain}/{version}")
+
+    def __init__(self, version: APIVersion, region: str = "us"):
+        self._default = version
+        self._region = region
+
+    @staticmethod
+    def _get_domain(region: str) -> str:
+        """Get the appropriate domain for the given region.
+
+        Args:
+            region: Region identifier (e.g., 'us', 'europe', 'dev',
+                'staging')
+
+        Returns:
+            str: Domain name for the region
+        """
+        if region == "dev":
+            return "autopush-chronicle.sandbox.googleapis.com"
+        elif region == "staging":
+            return "staging-chronicle.sandbox.googleapis.com"
+        else:
+            return f"{region}-chronicle.googleapis.com"
+
+    def __call__(
+        self, version: APIVersion = None, allowed: list[APIVersion] = None
+    ) -> str:
+        """
+        Returns the base URL for a specific API version.
+
+        Args:
+            version: (Optional) The API version to use. If not provided,
+            uses the default.
+            allowed: (Optional) A list of allowed API versions for the
+            endpoint.
+
+        Returns:
+            The base URL string.
+
+        Raises:
+            SecOpsError: If the requested API version is not supported.
+        """
+        selected_version = APIVersion(version or self._default)
+        if allowed and selected_version not in allowed:
+            raise SecOpsError(
+                f"API version '{selected_version}' is not supported for this "
+                f"endpoint. Allowed versions: {', '.join(allowed)}"
+            )
+        domain = self._get_domain(self._region)
+        return f"https://{domain}/{selected_version}"
+
+
 def _detect_value_type(value: str) -> tuple[Optional[str], Optional[str]]:
     """Detect value type from a string.
 
@@ -337,6 +399,7 @@ class ChronicleClient:
         extra_scopes: Optional[List[str]] = None,
         credentials: Optional[Any] = None,
         retry_config: Optional[Union[RetryConfig, Dict[str, Any], bool]] = None,
+        default_api_version: Union[APIVersion, str] = APIVersion.V1ALPHA,
     ):
         """Initialize ChronicleClient.
 
@@ -350,48 +413,30 @@ class ChronicleClient:
             credentials: Credentials object
             retry_config: Request retry configurations.
                 If set to false, retry will be disabled.
+            default_api_version: Default API version to use for requests.
         """
         self.project_id = project_id
         self.customer_id = customer_id
         self.region = region
+        self.default_api_version = APIVersion(default_api_version)
         self._default_forwarder_display_name: str = "Wrapper-SDK-Forwarder"
         self._cached_default_forwarder_id: Optional[str] = None
 
         # Format the instance ID to match the expected format
         if region in ["dev", "staging"]:
-            # For dev and staging environments,
-            # use a different instance ID format
+            # Dev and staging use 'us' as the location
             self.instance_id = (
                 f"projects/{project_id}/locations/us/instances/{customer_id}"
             )
-            # Set up the base URL for dev/staging
-            if region == "dev":
-                self.base_url = (
-                    "https://autopush-chronicle.sandbox.googleapis.com/v1alpha"
-                )
-                self.base_v1_url = (
-                    "https://autopush-chronicle.sandbox.googleapis.com/v1"
-                )
-            else:  # staging
-                self.base_url = (
-                    "https://staging-chronicle.sandbox.googleapis.com/v1alpha"
-                )
-                self.base_v1_url = (
-                    "https://staging-chronicle.sandbox.googleapis.com/v1"
-                )
         else:
             # Standard production regions use the normal format
             self.instance_id = (
                 f"projects/{project_id}/locations/{region}/"
                 f"instances/{customer_id}"
             )
-            # Set up the base URL
-            self.base_url = (
-                f"https://{self.region}-chronicle.googleapis.com/v1alpha"
-            )
-            self.base_v1_url = (
-                f"https://{self.region}-chronicle.googleapis.com/v1"
-            )
+
+        # Set up base URLs using BaseUrl for all regions
+        self.base_url = BaseUrl(self.default_api_version, self.region)
 
         # Create a session with authentication
         if session:
@@ -1042,11 +1087,16 @@ class ChronicleClient:
 
     # Rule Management methods
 
-    def create_rule(self, rule_text: str) -> Dict[str, Any]:
+    def create_rule(
+        self,
+        rule_text: str,
+        api_version: Optional[APIVersion] = APIVersion.V1,
+    ) -> Dict[str, Any]:
         """Creates a new detection rule to find matches in logs.
 
         Args:
             rule_text: Content of the new detection rule, used to evaluate logs.
+            api_version: Preferred API version to use. Defaults to V1
 
         Returns:
             Dictionary containing the created rule information
@@ -1054,15 +1104,20 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _create_rule(self, rule_text)
+        return _create_rule(self, rule_text, api_version)
 
-    def get_rule(self, rule_id: str) -> Dict[str, Any]:
+    def get_rule(
+        self,
+        rule_id: str,
+        api_version: Optional[APIVersion] = APIVersion.V1,
+    ) -> Dict[str, Any]:
         """Get a rule by ID.
 
         Args:
             rule_id: Unique ID of the detection rule to retrieve ("ru_<UUID>" or
               "ru_<UUID>@v_<seconds>_<nanoseconds>"). If a version suffix isn't
               specified we use the rule's latest version.
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Dictionary containing rule information
@@ -1070,50 +1125,170 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _get_rule(self, rule_id)
+        return _get_rule(self, rule_id, api_version)
 
-    def list_feeds(self) -> Dict[str, Any]:
-        return _list_feeds(self)
+    def list_feeds(
+        self,
+        page_size: int = 100,
+        page_token: str = None,
+        api_version: Optional[APIVersion] = None,
+    ) -> List[Dict[str, Any]]:
+        """List feeds.
 
-    def get_feed(self, feed_id: str) -> Dict[str, Any]:
-        return _get_feed(self, feed_id)
+        Args:
+            page_size: The maximum number of feeds to return
+            page_token: A page token, received from a previous ListFeeds call
+            api_version: (Optional) Preferred API version to use.
+
+        Returns:
+            List of feed dictionaries
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _list_feeds(self, page_size, page_token, api_version)
+
+    def get_feed(
+        self, feed_id: str, api_version: Optional[APIVersion] = None
+    ) -> Dict[str, Any]:
+        """Get a feed by ID.
+
+        Args:
+            feed_id: Feed ID
+            api_version: (Optional) Preferred API version to use.
+
+        Returns:
+            Feed dictionary
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _get_feed(self, feed_id, api_version)
 
     def create_feed(
-        self, display_name: str, details: Union[str, Dict[str, Any]]
+        self,
+        display_name: str,
+        details: Union[str, Dict[str, Any]],
+        api_version: Optional[APIVersion] = None,
     ) -> Dict[str, Any]:
+        """Create a new feed.
+
+        Args:
+            display_name: Display name for the feed
+            details: Feed details as JSON string or dict
+            api_version: (Optional) Preferred API version to use.
+
+        Returns:
+            Dictionary containing the created feed
+
+        Raises:
+            APIError: If the API request fails
+        """
         feed_config = CreateFeedModel(
             display_name=display_name, details=details
         )
-        return _create_feed(self, feed_config)
+        return _create_feed(self, feed_config, api_version)
 
     def update_feed(
         self,
         feed_id: str,
         display_name: Optional[str] = None,
         details: Optional[Dict[str, Any]] = None,
+        api_version: Optional[APIVersion] = None,
     ) -> Dict[str, Any]:
+        """Update a feed.
+
+        Args:
+            feed_id: Feed ID
+            display_name: Display name for the feed
+            details: Feed details as dict
+            api_version: (Optional) Preferred API version to use.
+
+        Returns:
+            Dictionary containing the updated feed
+
+        Raises:
+            APIError: If the API request fails
+        """
         feed_config = UpdateFeedModel(
             display_name=display_name, details=details
         )
-        return _update_feed(self, feed_id, feed_config)
+        return _update_feed(self, feed_id, feed_config, api_version)
 
-    def enable_feed(self, feed_id: str) -> Dict[str, Any]:
-        return _enable_feed(self, feed_id)
+    def enable_feed(
+        self, feed_id: str, api_version: Optional[APIVersion] = None
+    ) -> Dict[str, Any]:
+        """Enable a feed.
 
-    def disable_feed(self, feed_id: str) -> Dict[str, Any]:
-        return _disable_feed(self, feed_id)
+        Args:
+            feed_id: Feed ID
+            api_version: (Optional) Preferred API version to use.
 
-    def generate_secret(self, feed_id: str) -> Dict[str, Any]:
-        return _generate_secret(self, feed_id)
+        Returns:
+            Dictionary containing the enabled feed
 
-    def delete_feed(self, feed_id: str) -> Dict[str, Any]:
-        return _delete_feed(self, feed_id)
+        Raises:
+            APIError: If the API request fails
+        """
+        return _enable_feed(self, feed_id, api_version)
+
+    def disable_feed(
+        self, feed_id: str, api_version: Optional[APIVersion] = None
+    ) -> Dict[str, Any]:
+        """Disable a feed.
+
+        Args:
+            feed_id: Feed ID
+            api_version: (Optional) Preferred API version to use.
+
+        Returns:
+            Dictionary containing the disabled feed
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _disable_feed(self, feed_id, api_version)
+
+    def generate_secret(
+        self, feed_id: str, api_version: Optional[APIVersion] = None
+    ) -> Dict[str, Any]:
+        """Generate a secret for a feed.
+
+        Args:
+            feed_id: Feed ID
+            api_version: (Optional) Preferred API version to use.
+
+        Returns:
+            Dictionary containing the secret
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _generate_secret(self, feed_id, api_version)
+
+    def delete_feed(
+        self, feed_id: str, api_version: Optional[APIVersion] = None
+    ) -> None:
+        """Delete a feed.
+
+        Args:
+            feed_id: Feed ID
+            api_version: (Optional) Preferred API version to use.
+
+        Returns:
+            None
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _delete_feed(self, feed_id, api_version)
 
     def list_rules(
         self,
         view: Optional[str] = "FULL",
         page_size: Optional[int] = None,
         page_token: Optional[str] = None,
+        api_version: Optional[APIVersion] = APIVersion.V1,
     ) -> Dict[str, Any]:
         """Gets a list of rules.
 
@@ -1127,6 +1302,7 @@ class ChronicleClient:
                 Defaults to "FULL".
             page_size: Maximum number of rules to return per page.
             page_token: Token for the next page of results, if available.
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Dictionary containing information about rules
@@ -1135,15 +1311,25 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _list_rules(
-            self, view=view, page_size=page_size, page_token=page_token
+            self,
+            view=view,
+            page_size=page_size,
+            page_token=page_token,
+            api_version=api_version,
         )
 
-    def update_rule(self, rule_id: str, rule_text: str) -> Dict[str, Any]:
+    def update_rule(
+        self,
+        rule_id: str,
+        rule_text: str,
+        api_version: Optional[APIVersion] = APIVersion.V1,
+    ) -> Dict[str, Any]:
         """Updates a rule.
 
         Args:
             rule_id: Unique ID of the detection rule to update ("ru_<UUID>")
             rule_text: Updated content of the detection rule
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Dictionary containing the updated rule information
@@ -1151,15 +1337,21 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _update_rule(self, rule_id, rule_text)
+        return _update_rule(self, rule_id, rule_text, api_version)
 
-    def delete_rule(self, rule_id: str, force: bool = False) -> Dict[str, Any]:
+    def delete_rule(
+        self,
+        rule_id: str,
+        force: bool = False,
+        api_version: Optional[APIVersion] = APIVersion.V1,
+    ) -> Dict[str, Any]:
         """Deletes a rule.
 
         Args:
             rule_id: Unique ID of the detection rule to delete ("ru_<UUID>")
             force: If True, deletes the rule even if it has
             associated retrohunts
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Empty dictionary or deletion confirmation
@@ -1167,7 +1359,7 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _delete_rule(self, rule_id, force)
+        return _delete_rule(self, rule_id, force, api_version)
 
     def enable_rule(self, rule_id: str, enabled: bool = True) -> Dict[str, Any]:
         """Enables or disables a rule.
@@ -1185,11 +1377,14 @@ class ChronicleClient:
         """
         return _enable_rule(self, rule_id, enabled)
 
-    def search_rules(self, query: str) -> Dict[str, Any]:
+    def search_rules(
+        self, query: str, api_version: Optional[APIVersion] = APIVersion.V1
+    ) -> Dict[str, Any]:
         """Search for rules.
 
         Args:
             query: Search query string that supports regex
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Dictionary containing search results
@@ -1197,7 +1392,7 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _search_rules(self, query)
+        return _search_rules(self, query, api_version)
 
     def run_rule_test(
         self,
@@ -1486,7 +1681,11 @@ class ChronicleClient:
     # Rule Retrohunt methods
 
     def create_retrohunt(
-        self, rule_id: str, start_time: datetime, end_time: datetime
+        self,
+        rule_id: str,
+        start_time: datetime,
+        end_time: datetime,
+        api_version: Optional[APIVersion] = APIVersion.V1,
     ) -> Dict[str, Any]:
         """Creates a retrohunt for a rule.
 
@@ -1497,6 +1696,7 @@ class ChronicleClient:
             rule_id: Unique ID of the rule to run retrohunt for ("ru_<UUID>")
             start_time: Start time for retrohunt analysis
             end_time: End time for retrohunt analysis
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Dictionary containing operation information for the retrohunt
@@ -1504,15 +1704,23 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _create_retrohunt(self, rule_id, start_time, end_time)
+        return _create_retrohunt(
+            self, rule_id, start_time, end_time, api_version
+        )
 
-    def get_retrohunt(self, rule_id: str, operation_id: str) -> Dict[str, Any]:
+    def get_retrohunt(
+        self,
+        rule_id: str,
+        operation_id: str,
+        api_version: Optional[APIVersion] = APIVersion.V1,
+    ) -> Dict[str, Any]:
         """Get retrohunt status and results.
 
         Args:
             rule_id: Unique ID of the rule the retrohunt is for ("ru_<UUID>" or
               "ru_<UUID>@v_<seconds>_<nanoseconds>")
             operation_id: Operation ID of the retrohunt
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Dictionary containing retrohunt information
@@ -1520,7 +1728,7 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _get_retrohunt(self, rule_id, operation_id)
+        return _get_retrohunt(self, rule_id, operation_id, api_version)
 
     # Parser Management methods
 
@@ -3136,6 +3344,7 @@ class ChronicleClient:
         description: str = "",
         entries: List[str] = None,
         syntax_type: ReferenceListSyntaxType = ReferenceListSyntaxType.STRING,
+        api_version: Optional[APIVersion] = APIVersion.V1,
     ) -> Dict[str, Any]:
         """Create a new reference list.
 
@@ -3144,6 +3353,7 @@ class ChronicleClient:
             description: A user-provided description of the reference list
             entries: A list of entries for the reference list
             syntax_type: The syntax type of the reference list
+            api_version: Preferred API version to use. Defaults to V1
 
         Returns:
             Dictionary containing the created reference list
@@ -3158,11 +3368,14 @@ class ChronicleClient:
             entries = []
 
         return _create_reference_list(
-            self, name, description, entries, syntax_type
+            self, name, description, entries, syntax_type, api_version
         )
 
     def get_reference_list(
-        self, name: str, view: ReferenceListView = ReferenceListView.FULL
+        self,
+        name: str,
+        view: ReferenceListView = ReferenceListView.FULL,
+        api_version: Optional[APIVersion] = APIVersion.V1,
     ) -> Dict[str, Any]:
         """Get a single reference list.
 
@@ -3170,6 +3383,7 @@ class ChronicleClient:
             name: The name of the reference list
             view: How much of the ReferenceList to view.
                 Defaults to REFERENCE_LIST_VIEW_FULL.
+            api_version: Preferred API version to use. Defaults to V1
 
         Returns:
             Dictionary containing the reference list
@@ -3177,17 +3391,19 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _get_reference_list(self, name, view)
+        return _get_reference_list(self, name, view, api_version)
 
     def list_reference_lists(
         self,
         view: ReferenceListView = ReferenceListView.BASIC,
+        api_version: Optional[APIVersion] = APIVersion.V1,
     ) -> List[Dict[str, Any]]:
         """List reference lists.
 
         Args:
             view: How much of each ReferenceList to view.
                 Defaults to REFERENCE_LIST_VIEW_BASIC.
+            api_version: Preferred API version to use. Defaults to V1
 
         Returns:
             List of reference lists, ordered in ascending
@@ -3196,13 +3412,14 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _list_reference_lists(self, view)
+        return _list_reference_lists(self, view, api_version)
 
     def update_reference_list(
         self,
         name: str,
         description: Optional[str] = None,
         entries: Optional[List[str]] = None,
+        api_version: Optional[APIVersion] = APIVersion.V1,
     ) -> Dict[str, Any]:
         """Update a reference list.
 
@@ -3210,6 +3427,7 @@ class ChronicleClient:
             name: The name of the reference list
             description: A user-provided description of the reference list
             entries: A list of entries for the reference list
+            api_version: Preferred API version to use. Defaults to V1
 
         Returns:
             Dictionary containing the updated reference list
@@ -3218,7 +3436,9 @@ class ChronicleClient:
             APIError: If the API request fails
             SecOpsError: If no description or entries are provided to be updated
         """
-        return _update_reference_list(self, name, description, entries)
+        return _update_reference_list(
+            self, name, description, entries, api_version
+        )
 
     def generate_udm_key_value_mappings(
         self,
@@ -3606,11 +3826,14 @@ class ChronicleClient:
         """
         return _get_execute_query(self, query_id=query_id)
 
-    def get_rule_deployment(self, rule_id: str) -> Dict[str, Any]:
+    def get_rule_deployment(
+        self, rule_id: str, api_version: Optional[APIVersion] = APIVersion.V1
+    ) -> Dict[str, Any]:
         """Get the current deployment for a rule.
 
         Args:
             rule_id: Unique ID of the detection rule (e.g., "ru_<UUID>")
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Dictionary containing the rule deployment information
@@ -3618,13 +3841,14 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _get_rule_deployment(self, rule_id)
+        return _get_rule_deployment(self, rule_id, api_version)
 
     def list_rule_deployments(
         self,
         page_size: Optional[int] = None,
         page_token: Optional[str] = None,
         filter_query: Optional[str] = None,
+        api_version: Optional[APIVersion] = APIVersion.V1,
     ) -> Dict[str, Any]:
         """List rule deployments for the instance.
 
@@ -3632,6 +3856,7 @@ class ChronicleClient:
             page_size: Maximum number of deployments to return per page
             page_token: Token for the next page of results, if available
             filter_query: Optional filter query to restrict results
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Dictionary containing rule deployments and pagination info
@@ -3644,6 +3869,7 @@ class ChronicleClient:
             page_size=page_size,
             page_token=page_token,
             filter_query=filter_query,
+            api_version=api_version,
         )
 
     def set_rule_alerting(

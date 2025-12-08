@@ -105,13 +105,18 @@ def _setup_client_core(
         chronicle_kwargs = {}
 
         # Build kwargs with precedence: CLI args > config file > None
-        for arg in required_args + ["region"]:  # region is optional
+        optional_args = ["region", "api_version"]
+        for arg in required_args + optional_args:
             # Check CLI args first
             if hasattr(args, arg) and getattr(args, arg):
-                chronicle_kwargs[arg] = getattr(args, arg)
+                # Map api_version to default_api_version for chronicle()
+                key = "default_api_version" if arg == "api_version" else arg
+                chronicle_kwargs[key] = getattr(args, arg)
             # Fall back to config if not in args
             elif arg in config:
-                chronicle_kwargs[arg] = config[arg]
+                # Map api_version to default_api_version for chronicle()
+                key = "default_api_version" if arg == "api_version" else arg
+                chronicle_kwargs[key] = config[arg]
 
         # Check for missing required arguments
         missing = [

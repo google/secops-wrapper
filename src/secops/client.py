@@ -53,7 +53,11 @@ class SecOpsClient:
         self._chronicle = None
 
     def chronicle(
-        self, customer_id: str, project_id: str, region: str = "us"
+        self,
+        customer_id: str,
+        project_id: str,
+        region: str = "us",
+        default_api_version: Union[str, Any] = "v1alpha",
     ) -> ChronicleClient:
         """Get Chronicle API client.
 
@@ -61,6 +65,8 @@ class SecOpsClient:
             customer_id: Chronicle customer ID
             project_id: GCP project ID
             region: Chronicle API region (default: "us")
+            default_api_version: Default API version for Chronicle requests.
+                Can be "v1", "v1beta", or "v1alpha" (default: "v1alpha").
 
         Returns:
             ChronicleClient instance
@@ -70,4 +76,5 @@ class SecOpsClient:
             project_id=project_id,
             region=region,
             auth=self.auth,
+            default_api_version=default_api_version,
         )
