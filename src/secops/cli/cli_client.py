@@ -31,6 +31,7 @@ from secops.cli.commands.dashboard import setup_dashboard_command
 from secops.cli.commands.dashboard_query import setup_dashboard_query_command
 from secops.cli.commands.forwarder import setup_forwarder_command
 from secops.cli.commands.curated_rule import setup_curated_rules_command
+from secops.cli.commands.watchlist import setup_watchlist_command
 from secops.cli.utils.common_args import (
     add_common_args,
     add_chronicle_args,
@@ -179,6 +180,7 @@ def build_parser() -> argparse.ArgumentParser:
     setup_help_command(subparsers)
     setup_dashboard_command(subparsers)
     setup_dashboard_query_command(subparsers)
+    setup_watchlist_command(subparsers)
 
     return parser
 
