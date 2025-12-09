@@ -32,6 +32,7 @@ def setup_rule_exclusion_command(subparsers):
     re_subparsers = re_parser.add_subparsers(
         dest="re_command", help="Rule exclusion command"
     )
+    re_parser.set_defaults(func=lambda args, _: re_parser.print_help())
 
     # Create rule exclusion command
     create_parser = re_subparsers.add_parser(

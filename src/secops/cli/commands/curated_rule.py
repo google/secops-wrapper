@@ -96,7 +96,8 @@ def setup_curated_rules_command(subparsers):
 
     # ---- rule-set ----
     rule_set = lvl1.add_parser("rule-set", help="Manage curated rule sets")
-    rule_set_subparser = rule_set.add_subparsers(dest="rset_cmd", required=True)
+    rule_set_subparser = rule_set.add_subparsers(dest="rset_cmd")
+    rule_set.set_defaults(func=lambda args, _: rule_set.print_help())
 
     rule_set_list = rule_set_subparser.add_parser(
         "list", help="List curated rule sets"
@@ -117,7 +118,10 @@ def setup_curated_rules_command(subparsers):
         "rule-set-category", help="Manage curated rule set categories"
     )
     rule_set_cat_subparser = rule_set_cat.add_subparsers(
-        dest="rcat_cmd", required=True
+        dest="rcat_cmd"
+    )
+    rule_set_cat.set_defaults(
+        func=lambda args, _: rule_set_cat.print_help()
     )
 
     rule_set_cat_list = rule_set_cat_subparser.add_parser(
@@ -141,7 +145,10 @@ def setup_curated_rules_command(subparsers):
         "rule-set-deployment", help="Manage curated rule set deployments"
     )
     rule_set_deployment_subparser = rule_set_deployment.add_subparsers(
-        dest="rdep_cmd", required=True
+        dest="rdep_cmd"
+    )
+    rule_set_deployment.set_defaults(
+        func=lambda args, _: rule_set_deployment.print_help()
     )
 
     rule_set_deployment_list = rule_set_deployment_subparser.add_parser(

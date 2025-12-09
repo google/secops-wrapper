@@ -29,6 +29,9 @@ def setup_forwarder_command(subparsers):
     forwarder_subparsers = forwarder_parser.add_subparsers(
         dest="forwarder_command", help="Forwarder command"
     )
+    forwarder_parser.set_defaults(
+        func=lambda args, _: forwarder_parser.print_help()
+    )
 
     # Create forwarder command
     create_parser = forwarder_subparsers.add_parser(

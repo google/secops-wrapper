@@ -27,6 +27,7 @@ def setup_data_table_command(subparsers):
     dt_subparsers = dt_parser.add_subparsers(
         dest="dt_command", help="Data table command"
     )
+    dt_parser.set_defaults(func=lambda args, _: dt_parser.print_help())
 
     # List data tables command
     list_parser = dt_subparsers.add_parser("list", help="List data tables")
