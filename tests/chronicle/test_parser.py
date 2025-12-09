@@ -15,10 +15,15 @@
 """Tests for Chronicle parser functions."""
 
 import base64
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
+
 from secops.chronicle.client import ChronicleClient
 from secops.chronicle.parser import (
+    MAX_LOG_SIZE,
+    MAX_LOGS,
+    MAX_TOTAL_SIZE,
     activate_parser,
     activate_release_candidate_parser,
     copy_parser,
@@ -28,9 +33,6 @@ from secops.chronicle.parser import (
     get_parser,
     list_parsers,
     run_parser,
-    MAX_LOG_SIZE,
-    MAX_LOGS,
-    MAX_TOTAL_SIZE,
 )
 from secops.exceptions import APIError
 
@@ -100,7 +102,9 @@ def test_activate_parser_error(chronicle_client, mock_error_response):
 
 
 # --- activate_release_candidate_parser Tests ---
-def test_activate_release_candidate_parser_success(chronicle_client, mock_response):
+def test_activate_release_candidate_parser_success(
+    chronicle_client, mock_response
+):
     """Test activate_release_candidate_parser function for success."""
     log_type = "SOME_LOG_TYPE"
     parser_id = "pa_67890"
@@ -118,7 +122,9 @@ def test_activate_release_candidate_parser_success(chronicle_client, mock_respon
         assert result == {}
 
 
-def test_activate_release_candidate_parser_error(chronicle_client, mock_error_response):
+def test_activate_release_candidate_parser_error(
+    chronicle_client, mock_error_response
+):
     """Test activate_release_candidate_parser function for API error."""
     log_type = "SOME_LOG_TYPE"
     parser_id = "pa_67890"
@@ -127,7 +133,9 @@ def test_activate_release_candidate_parser_error(chronicle_client, mock_error_re
         chronicle_client.session, "post", return_value=mock_error_response
     ):
         with pytest.raises(APIError) as exc_info:
-            activate_release_candidate_parser(chronicle_client, log_type, parser_id)
+            activate_release_candidate_parser(
+                chronicle_client, log_type, parser_id
+            )
         assert "Failed to activate parser: Error message" in str(exc_info.value)
 
 
@@ -166,7 +174,9 @@ def test_copy_parser_error(chronicle_client, mock_error_response):
 
 
 # --- create_parser Tests ---
-def test_create_parser_success_default_validation(chronicle_client, mock_response):
+def test_create_parser_success_default_validation(
+    chronicle_client, mock_response
+):
     """Test create_parser function for success with default validated_on_empty_logs."""
     log_type = "NIX_SYSTEM"
     parser_code = "filter {}"
@@ -186,14 +196,18 @@ def test_create_parser_success_default_validation(chronicle_client, mock_respons
         mock_post.assert_called_once_with(
             expected_url,
             json={
-                "cbn": base64.b64encode(parser_code.encode("utf-8")).decode("utf-8"),
+                "cbn": base64.b64encode(parser_code.encode("utf-8")).decode(
+                    "utf-8"
+                ),
                 "validated_on_empty_logs": True,
             },
         )
         assert result == expected_parser_info
 
 
-def test_create_parser_success_with_validation_false(chronicle_client, mock_response):
+def test_create_parser_success_with_validation_false(
+    chronicle_client, mock_response
+):
     """Test create_parser function for success with validated_on_empty_logs=False."""
     log_type = "NIX_SYSTEM"
     parser_code = "filter {}"
@@ -208,14 +222,19 @@ def test_create_parser_success_with_validation_false(chronicle_client, mock_resp
         chronicle_client.session, "post", return_value=mock_response
     ) as mock_post:
         result = create_parser(
-            chronicle_client, log_type, parser_code, validated_on_empty_logs=False
+            chronicle_client,
+            log_type,
+            parser_code,
+            validated_on_empty_logs=False,
         )
 
         expected_url = f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logTypes/{log_type}/parsers"
         mock_post.assert_called_once_with(
             expected_url,
             json={
-                "cbn": base64.b64encode(parser_code.encode("utf-8")).decode("utf-8"),
+                "cbn": base64.b64encode(parser_code.encode("utf-8")).decode(
+                    "utf-8"
+                ),
                 "validated_on_empty_logs": False,
             },
         )
@@ -262,7 +281,9 @@ def test_deactivate_parser_error(chronicle_client, mock_error_response):
     ):
         with pytest.raises(APIError) as exc_info:
             deactivate_parser(chronicle_client, log_type, parser_id)
-        assert "Failed to deactivate parser: Error message" in str(exc_info.value)
+        assert "Failed to deactivate parser: Error message" in str(
+            exc_info.value
+        )
 
 
 # --- delete_parser Tests ---
@@ -278,7 +299,9 @@ def test_delete_parser_success_no_force(chronicle_client, mock_response):
         result = delete_parser(chronicle_client, log_type, parser_id)
 
         expected_url = f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logTypes/{log_type}/parsers/{parser_id}"
-        mock_delete.assert_called_once_with(expected_url, params={"force": False})
+        mock_delete.assert_called_once_with(
+            expected_url, params={"force": False}
+        )
         assert result == {}
 
 
@@ -291,10 +314,14 @@ def test_delete_parser_success_with_force(chronicle_client, mock_response):
     with patch.object(
         chronicle_client.session, "delete", return_value=mock_response
     ) as mock_delete:
-        result = delete_parser(chronicle_client, log_type, parser_id, force=True)
+        result = delete_parser(
+            chronicle_client, log_type, parser_id, force=True
+        )
 
         expected_url = f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logTypes/{log_type}/parsers/{parser_id}"
-        mock_delete.assert_called_once_with(expected_url, params={"force": True})
+        mock_delete.assert_called_once_with(
+            expected_url, params={"force": True}
+        )
         assert result == {}
 
 
@@ -362,7 +389,8 @@ def test_list_parsers_single_page_success(chronicle_client, mock_response):
 
         expected_url = f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logTypes/{log_type}/parsers"
         mock_get.assert_called_once_with(
-            expected_url, params={"pageSize": 100, "pageToken": None, "filter": None}
+            expected_url,
+            params={},
         )
         assert result == expected_parsers
 
@@ -381,7 +409,8 @@ def test_list_parsers_no_parsers_success(chronicle_client, mock_response):
 
         expected_url = f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logTypes/{log_type}/parsers"
         mock_get.assert_called_once_with(
-            expected_url, params={"pageSize": 100, "pageToken": None, "filter": None}
+            expected_url,
+            params={},
         )
         assert result == []
 
@@ -398,14 +427,20 @@ def test_list_parsers_error(chronicle_client, mock_error_response):
         assert "Failed to list parsers: Error message" in str(exc_info.value)
 
 
-def test_list_parsers_with_optional_params(chronicle_client, mock_response):
-    """Test list_parsers function with custom page_size, page_token, and filter."""
+def test_list_parsers_with_page_size_returns_raw_response(
+    chronicle_client, mock_response
+):
+    """Test list_parsers returns raw API response when page_size is provided."""
     log_type = "CUSTOM_LOG_TYPE"
     page_size = 50
     page_token = "custom_token_xyz"
     filter_query = "name=contains('custom')"
     expected_parsers = [{"name": "pa_custom_1"}]
-    mock_response.json.return_value = {"parsers": expected_parsers}
+    expected_response = {
+        "parsers": expected_parsers,
+        "nextPageToken": "next_token_abc",
+    }
+    mock_response.json.return_value = expected_response
 
     with patch.object(
         chronicle_client.session, "get", return_value=mock_response
@@ -418,7 +453,10 @@ def test_list_parsers_with_optional_params(chronicle_client, mock_response):
             filter=filter_query,
         )
 
-        expected_url = f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logTypes/{log_type}/parsers"
+        expected_url = (
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}"
+            f"/logTypes/{log_type}/parsers"
+        )
         mock_get.assert_called_once_with(
             expected_url,
             params={
@@ -427,7 +465,107 @@ def test_list_parsers_with_optional_params(chronicle_client, mock_response):
                 "filter": filter_query,
             },
         )
-        assert result == expected_parsers
+        # With page_size provided, returns raw response dict
+        assert result == expected_response
+        assert "nextPageToken" in result
+
+
+def test_list_parsers_auto_pagination(chronicle_client):
+    """Test list_parsers auto-paginates when page_size is None (default).
+
+    This test validates that the pagination correctly handles the
+    'nextPageToken' field returned by the API and fetches all pages.
+    """
+    log_type = "WINDOWS"
+
+    # First page of parsers with nextPageToken
+    first_page_parsers = [
+        {"name": "pa_windows_1", "id": "pa_windows_1"},
+        {"name": "pa_windows_2", "id": "pa_windows_2"},
+    ]
+
+    # Second page of parsers without nextPageToken (last page)
+    second_page_parsers = [
+        {"name": "pa_windows_3", "id": "pa_windows_3"},
+    ]
+
+    # Mock responses for each page
+    first_response = Mock()
+    first_response.status_code = 200
+    first_response.json.return_value = {
+        "parsers": first_page_parsers,
+        "nextPageToken": "page2_token",
+    }
+
+    second_response = Mock()
+    second_response.status_code = 200
+    second_response.json.return_value = {
+        "parsers": second_page_parsers,
+        # No nextPageToken - this is the last page
+    }
+
+    with patch.object(
+        chronicle_client.session,
+        "get",
+        side_effect=[first_response, second_response],
+    ) as mock_get:
+        # No page_size means auto-pagination
+        result = list_parsers(chronicle_client, log_type=log_type)
+
+        # Verify we made two API calls (one per page)
+        assert mock_get.call_count == 2
+
+        # Verify first call uses default page size of 100
+        expected_url = (
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}"
+            f"/logTypes/{log_type}/parsers"
+        )
+        first_call = mock_get.call_args_list[0]
+        assert first_call[0][0] == expected_url
+
+        # Verify second call uses the nextPageToken from first response
+        second_call = mock_get.call_args_list[1]
+        assert second_call[0][0] == expected_url
+        assert second_call[1]["params"]["pageToken"] == "page2_token"
+
+        # Verify all parsers from both pages are returned as a list
+        expected_all_parsers = first_page_parsers + second_page_parsers
+        assert result == expected_all_parsers
+        assert len(result) == 3
+
+
+def test_list_parsers_manual_pagination_single_page(
+    chronicle_client, mock_response
+):
+    """Test list_parsers returns raw response for manual pagination."""
+    log_type = "MANUAL_LOG_TYPE"
+    page_size = 10
+    expected_parsers = [{"name": "pa_manual_1"}]
+    expected_response = {
+        "parsers": expected_parsers,
+        "nextPageToken": "next_page_token",
+    }
+    mock_response.json.return_value = expected_response
+
+    with patch.object(
+        chronicle_client.session, "get", return_value=mock_response
+    ) as mock_get:
+        result = list_parsers(
+            chronicle_client, log_type=log_type, page_size=page_size
+        )
+
+        expected_url = (
+            f"{chronicle_client.base_url}/{chronicle_client.instance_id}"
+            f"/logTypes/{log_type}/parsers"
+        )
+        mock_get.assert_called_once_with(
+            expected_url,
+            params={"pageSize": page_size},
+        )
+        # Returns raw response dict, not just the parsers list
+        assert result == expected_response
+        assert "parsers" in result
+        assert "nextPageToken" in result
 
 
 # --- run_parser Tests ---
@@ -473,9 +611,11 @@ def test_run_parser_success(chronicle_client, mock_response):
         assert request_body["parser"]["cbn"] == base64.b64encode(
             parser_code.encode("utf8")
         ).decode("utf-8")
-        assert request_body["parser_extension"]["cbn_snippet"] == base64.b64encode(
-            parser_extension_code.encode("utf8")
-        ).decode("utf-8")
+        assert request_body["parser_extension"][
+            "cbn_snippet"
+        ] == base64.b64encode(parser_extension_code.encode("utf8")).decode(
+            "utf-8"
+        )
         assert len(request_body["log"]) == 2
         assert request_body["log"][0] == base64.b64encode(
             logs[0].encode("utf8")
@@ -584,7 +724,9 @@ def test_run_parser_error(chronicle_client, mock_error_response):
                 logs=logs,
             )
         # Check for the new detailed error message format
-        assert "Failed to evaluate parser for log type 'WINDOWS'" in str(exc_info.value)
+        assert "Failed to evaluate parser for log type 'WINDOWS'" in str(
+            exc_info.value
+        )
         assert "Bad request" in str(exc_info.value)
 
 
@@ -718,7 +860,9 @@ def test_run_parser_validation_invalid_extension_type(chronicle_client):
             parser_extension_code=123,  # type: ignore
             logs=["test log"],
         )
-    assert "parser_extension_code must be a string or None" in str(exc_info.value)
+    assert "parser_extension_code must be a string or None" in str(
+        exc_info.value
+    )
 
 
 def test_run_parser_detailed_error_400(chronicle_client, mock_response):
@@ -726,7 +870,9 @@ def test_run_parser_detailed_error_400(chronicle_client, mock_response):
     mock_response.status_code = 400
     mock_response.text = "Invalid log type: INVALID_TYPE"
 
-    with patch.object(chronicle_client.session, "post", return_value=mock_response):
+    with patch.object(
+        chronicle_client.session, "post", return_value=mock_response
+    ):
         with pytest.raises(APIError) as exc_info:
             run_parser(
                 chronicle_client,
@@ -736,7 +882,9 @@ def test_run_parser_detailed_error_400(chronicle_client, mock_response):
                 logs=["test log"],
             )
         error_msg = str(exc_info.value)
-        assert "Failed to evaluate parser for log type 'INVALID_TYPE'" in error_msg
+        assert (
+            "Failed to evaluate parser for log type 'INVALID_TYPE'" in error_msg
+        )
         assert "Bad request" in error_msg
         assert "Log type 'INVALID_TYPE' may not be valid" in error_msg
 
@@ -746,7 +894,9 @@ def test_run_parser_detailed_error_404(chronicle_client, mock_response):
     mock_response.status_code = 404
     mock_response.text = "Not found"
 
-    with patch.object(chronicle_client.session, "post", return_value=mock_response):
+    with patch.object(
+        chronicle_client.session, "post", return_value=mock_response
+    ):
         with pytest.raises(APIError) as exc_info:
             run_parser(
                 chronicle_client,
@@ -764,7 +914,9 @@ def test_run_parser_detailed_error_413(chronicle_client, mock_response):
     mock_response.status_code = 413
     mock_response.text = "Request entity too large"
 
-    with patch.object(chronicle_client.session, "post", return_value=mock_response):
+    with patch.object(
+        chronicle_client.session, "post", return_value=mock_response
+    ):
         with pytest.raises(APIError) as exc_info:
             run_parser(
                 chronicle_client,
