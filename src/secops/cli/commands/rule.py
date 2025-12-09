@@ -32,6 +32,7 @@ def setup_rule_command(subparsers):
     rule_subparsers = rule_parser.add_subparsers(
         dest="rule_command", help="Rule command"
     )
+    rule_parser.set_defaults(func=lambda args, _: rule_parser.print_help())
 
     # List rules command
     list_parser = rule_subparsers.add_parser("list", help="List rules")

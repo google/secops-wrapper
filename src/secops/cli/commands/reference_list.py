@@ -31,6 +31,7 @@ def setup_reference_list_command(subparsers):
     rl_subparsers = rl_parser.add_subparsers(
         dest="rl_command", help="Reference list command"
     )
+    rl_parser.set_defaults(func=lambda args, _: rl_parser.print_help())
 
     # List reference lists command
     list_parser = rl_subparsers.add_parser("list", help="List reference lists")
