@@ -137,12 +137,14 @@ def chronicle_request(
             ) from None
 
         raise APIError(
-            f"{base_msg}: status={response.status_code}, response_text={response.text}"
+            f"{base_msg}: status={response.status_code},"
+            f" response_text={response.text}"
         ) from None
 
     if data is None:
         raise APIError(
-            f"Expected JSON response from {url} but got non-JSON body: {response.text}"
+            f"Expected JSON response from {url}"
+            f" but got non-JSON body: {response.text}"
         )
 
     return data
