@@ -14,10 +14,11 @@
 #
 """Curated rule set functionality for Chronicle."""
 
-from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
-from secops.exceptions import APIError, SecOpsError
+from typing import Any
+
 from secops.chronicle.models import AlertState, ListBasis
+from secops.exceptions import APIError, SecOpsError
 
 
 def _paginated_request(
@@ -25,10 +26,10 @@ def _paginated_request(
     path: str,
     items_key: str,
     *,
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
-    extra_params: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    page_size: int | None = None,
+    page_token: str | None = None,
+    extra_params: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Helper to get items from endpoints that use pagination.
 
@@ -82,9 +83,9 @@ def _paginated_request(
 
 def list_curated_rule_sets(
     client,
-    page_size: Optional[str] = None,
-    page_token: Optional[str] = None,
-) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
+    page_size: str | None = None,
+    page_token: str | None = None,
+) -> list[dict[str, Any]] | dict[str, Any]:
     """Get a list of all curated rule sets
 
     Args:
@@ -113,7 +114,7 @@ def list_curated_rule_sets(
     return result.get("curatedRuleSets", [])
 
 
-def get_curated_rule_set(client, rule_set_id: str) -> Dict[str, Any]:
+def get_curated_rule_set(client, rule_set_id: str) -> dict[str, Any]:
     """Get a curated rule set by ID
 
     Args:
@@ -140,9 +141,9 @@ def get_curated_rule_set(client, rule_set_id: str) -> Dict[str, Any]:
 
 def list_curated_rule_set_categories(
     client,
-    page_size: Optional[str] = None,
-    page_token: Optional[str] = None,
-) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
+    page_size: str | None = None,
+    page_token: str | None = None,
+) -> list[dict[str, Any]] | dict[str, Any]:
     """Get a list of all curated rule set categories
 
     Args:
@@ -171,7 +172,7 @@ def list_curated_rule_set_categories(
     return result.get("curatedRuleSetCategories", [])
 
 
-def get_curated_rule_set_category(client, category_id: str) -> Dict[str, Any]:
+def get_curated_rule_set_category(client, category_id: str) -> dict[str, Any]:
     """Get a curated rule set category by ID
 
     Args:
@@ -200,9 +201,9 @@ def get_curated_rule_set_category(client, category_id: str) -> Dict[str, Any]:
 
 def list_curated_rules(
     client,
-    page_size: Optional[str] = None,
-    page_token: Optional[str] = None,
-) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
+    page_size: str | None = None,
+    page_token: str | None = None,
+) -> list[dict[str, Any]] | dict[str, Any]:
     """Get a list of all curated rules
 
     Args:
@@ -231,7 +232,7 @@ def list_curated_rules(
     return result.get("curatedRules", [])
 
 
-def get_curated_rule(client, rule_id: str) -> Dict[str, Any]:
+def get_curated_rule(client, rule_id: str) -> dict[str, Any]:
     """Get a curated rule by ID
 
     Args:
@@ -257,7 +258,7 @@ def get_curated_rule(client, rule_id: str) -> Dict[str, Any]:
     return response.json()
 
 
-def get_curated_rule_by_name(client, display_name: str) -> Dict[str, Any]:
+def get_curated_rule_by_name(client, display_name: str) -> dict[str, Any]:
     """Get a curated rule by display name
         NOTE: This is a linear scan of all curated rules,
         so it may be inefficient for large rule sets.
@@ -285,11 +286,11 @@ def get_curated_rule_by_name(client, display_name: str) -> Dict[str, Any]:
 
 def list_curated_rule_set_deployments(
     client,
-    page_size: Optional[str] = None,
-    page_token: Optional[str] = None,
-    only_enabled: Optional[bool] = False,
-    only_alerting: Optional[bool] = False,
-) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
+    page_size: str | None = None,
+    page_token: str | None = None,
+    only_enabled: bool | None = False,
+    only_alerting: bool | None = False,
+) -> list[dict[str, Any]] | dict[str, Any]:
     """Get a list of all curated rule set deployment statuses
 
     Args:
@@ -358,7 +359,7 @@ def get_curated_rule_set_deployment(
     client,
     rule_set_id: str,
     precision: str = "precise",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get the deployment status of a curated rule set by ID
 
     Args:
@@ -401,7 +402,7 @@ def get_curated_rule_set_deployment_by_name(
     client,
     display_name: str,
     precision: str = "precise",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get the deployment status of a curated rule set by its display name
         NOTE: This is a linear scan of all curated rule sets,
         so it may be inefficient for large rule sets.
@@ -440,8 +441,8 @@ def get_curated_rule_set_deployment_by_name(
 
 
 def update_curated_rule_set_deployment(
-    client, deployment: Dict[str, Any]
-) -> Dict[str, Any]:
+    client, deployment: dict[str, Any]
+) -> dict[str, Any]:
     """Update a curated rule set deployment to enable or disable
             alerting or change precision.
 
@@ -504,8 +505,8 @@ def update_curated_rule_set_deployment(
 
 
 def batch_update_curated_rule_set_deployments(
-    client, deployments: List[Dict[str, Any]]
-) -> Dict[str, Any]:
+    client, deployments: list[dict[str, Any]]
+) -> dict[str, Any]:
     """Batch update curated rule set deployments.
 
     Args:
@@ -597,15 +598,15 @@ def batch_update_curated_rule_set_deployments(
 def search_curated_detections(
     client,
     rule_id: str,
-    start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None,
-    list_basis: Union[ListBasis, str] = None,
-    alert_state: Optional[Union[AlertState, str]] = None,
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
-    max_resp_size_bytes: Optional[int] = None,
-    include_nested_detections: Optional[bool] = False,
-) -> Dict[str, Any]:
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
+    list_basis: ListBasis | str = None,
+    alert_state: AlertState | str | None = None,
+    page_size: int | None = None,
+    page_token: str | None = None,
+    max_resp_size_bytes: int | None = None,
+    include_nested_detections: bool | None = False,
+) -> dict[str, Any]:
     """Search for detections generated by a specific curated rule.
 
     Args:

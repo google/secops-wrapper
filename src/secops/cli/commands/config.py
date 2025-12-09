@@ -15,12 +15,12 @@
 """Google SecOps CLI config commands"""
 
 from secops.cli.constants import CONFIG_FILE
-from secops.cli.utils.config_utils import load_config, save_config
 from secops.cli.utils.common_args import (
     add_chronicle_args,
     add_common_args,
     add_time_range_args,
 )
+from secops.cli.utils.config_utils import load_config, save_config
 
 
 def setup_config_command(subparsers):

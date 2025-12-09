@@ -15,9 +15,11 @@
 """UDM search functionality for Chronicle."""
 
 from datetime import datetime
-from typing import Dict, Any
-from secops.exceptions import APIError
+from typing import Any
+
 import requests
+
+from secops.exceptions import APIError
 
 
 def search_udm(
@@ -30,7 +32,7 @@ def search_udm(
     max_attempts: int = 30,
     timeout: int = 30,
     debug: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Perform a UDM search query using the Chronicle V1alpha API.
 
     Args:

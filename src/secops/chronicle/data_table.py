@@ -4,7 +4,7 @@ import ipaddress
 import re
 import sys
 from itertools import islice
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from secops.exceptions import APIError, SecOpsError
 
@@ -25,7 +25,7 @@ else:
 REF_LIST_DATA_TABLE_ID_REGEX = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,254}$")
 
 
-def validate_cidr_entries(entries: List[str]) -> None:
+def validate_cidr_entries(entries: list[str]) -> None:
     """Check if IP addresses are valid CIDR notation.
 
     Args:
@@ -67,11 +67,11 @@ def create_data_table(
     client: "Any",
     name: str,
     description: str,
-    header: Dict[str, Union[DataTableColumnType, str]],
-    column_options: Optional[Dict[str, Dict[str, Any]]] = None,
-    rows: Optional[List[List[str]]] = None,
-    scopes: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    header: dict[str, DataTableColumnType | str],
+    column_options: dict[str, dict[str, Any]] | None = None,
+    rows: list[list[str]] | None = None,
+    scopes: list[str] | None = None,
+) -> dict[str, Any]:
     """Create a new data table.
 
     Args:
@@ -161,8 +161,8 @@ def create_data_table(
 
 
 def create_data_table_rows(
-    client: "Any", name: str, rows: List[List[str]]
-) -> List[Dict[str, Any]]:
+    client: "Any", name: str, rows: list[list[str]]
+) -> list[dict[str, Any]]:
     """Create data table rows, chunking if necessary.
 
     Args:
@@ -213,8 +213,8 @@ def create_data_table_rows(
 
 
 def _create_data_table_rows(
-    client: "Any", name: str, rows: List[List[str]]
-) -> Dict[str, Any]:
+    client: "Any", name: str, rows: list[list[str]]
+) -> dict[str, Any]:
     """Create a batch of data table rows.
 
     Args:
@@ -252,7 +252,7 @@ def delete_data_table(
     client: "Any",
     name: str,
     force: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Delete a data table.
 
     Args:
@@ -291,8 +291,8 @@ def delete_data_table(
 def delete_data_table_rows(
     client: "Any",
     name: str,
-    row_ids: List[str],
-) -> List[Dict[str, Any]]:
+    row_ids: list[str],
+) -> list[dict[str, Any]]:
     """Delete data table rows.
 
     Args:
@@ -316,7 +316,7 @@ def _delete_data_table_row(
     client: "Any",
     table_id: str,
     row_guid: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Delete a single data table row.
 
     Args:
@@ -352,7 +352,7 @@ def _delete_data_table_row(
 def get_data_table(
     client: "Any",
     name: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get data table details.
 
     Args:
@@ -380,8 +380,8 @@ def get_data_table(
 
 def list_data_tables(
     client: "Any",
-    order_by: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    order_by: str | None = None,
+) -> list[dict[str, Any]]:
     """List data tables.
 
     Args:
@@ -428,8 +428,8 @@ def list_data_tables(
 def list_data_table_rows(
     client: "Any",
     name: str,
-    order_by: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    order_by: str | None = None,
+) -> list[dict[str, Any]]:
     """List data table rows.
 
     Args:
@@ -478,10 +478,10 @@ def list_data_table_rows(
 def update_data_table(
     client: "Any",
     name: str,
-    description: Optional[str] = None,
-    row_time_to_live: Optional[str] = None,
-    update_mask: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    description: str | None = None,
+    row_time_to_live: str | None = None,
+    update_mask: list[str] | None = None,
+) -> dict[str, Any]:
     """Update a existing data table.
 
     Args:
@@ -536,7 +536,7 @@ def update_data_table(
     return response.json()
 
 
-def _estimate_row_json_size(row: List[str]) -> int:
+def _estimate_row_json_size(row: list[str]) -> int:
     """Estimate the size of a row when formatted as JSON.
 
     Args:
@@ -558,8 +558,8 @@ def _estimate_row_json_size(row: List[str]) -> int:
 
 
 def replace_data_table_rows(
-    client: "Any", name: str, rows: List[List[str]]
-) -> List[Dict[str, Any]]:
+    client: "Any", name: str, rows: list[list[str]]
+) -> list[dict[str, Any]]:
     """Replace all rows in a data table with new rows.
 
     Args:
@@ -665,8 +665,8 @@ def replace_data_table_rows(
 def update_data_table_rows(
     client: "Any",
     name: str,
-    row_updates: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
+    row_updates: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     """Update data table rows in bulk, chunking if necessary.
 
     Args:
@@ -726,8 +726,8 @@ def update_data_table_rows(
 def _update_data_table_rows(
     client: "Any",
     name: str,
-    row_updates: List[Dict[str, Any]],
-) -> Dict[str, Any]:
+    row_updates: list[dict[str, Any]],
+) -> dict[str, Any]:
     """Update a batch of data table rows.
 
     Args:

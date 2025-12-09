@@ -14,7 +14,7 @@
 
 """Main client for Google SecOps SDK."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 from google.auth.credentials import Credentials
 
@@ -27,11 +27,11 @@ class SecOpsClient:
 
     def __init__(
         self,
-        credentials: Optional[Credentials] = None,
-        service_account_path: Optional[str] = None,
-        service_account_info: Optional[Dict[str, Any]] = None,
-        impersonate_service_account: Optional[str] = None,
-        retry_config: Optional[Union[RetryConfig, Dict[str, Any], bool]] = None,
+        credentials: Credentials | None = None,
+        service_account_path: str | None = None,
+        service_account_info: dict[str, Any] | None = None,
+        impersonate_service_account: str | None = None,
+        retry_config: RetryConfig | dict[str, Any] | bool | None = None,
     ):
         """Initialize the SecOps client.
 
@@ -57,7 +57,7 @@ class SecOpsClient:
         customer_id: str,
         project_id: str,
         region: str = "us",
-        default_api_version: Union[str, Any] = "v1alpha",
+        default_api_version: str | Any = "v1alpha",
     ) -> ChronicleClient:
         """Get Chronicle API client.
 

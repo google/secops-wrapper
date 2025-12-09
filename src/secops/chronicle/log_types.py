@@ -20,21 +20,21 @@ log types, validate log types, and suggest appropriate log types based on
 product or vendor.
 """
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from secops.chronicle.client import ChronicleClient
 
 
 # Cache for log types to avoid repeated API calls
-_LOG_TYPES_CACHE: Optional[List[Dict[str, Any]]] = None
+_LOG_TYPES_CACHE: list[dict[str, Any]] | None = None
 
 
 def _fetch_log_types_from_api(
     client: "ChronicleClient",
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    page_size: int | None = None,
+    page_token: str | None = None,
+) -> list[dict[str, Any]]:
     """Fetch log types from Chronicle API with pagination.
 
     Args:
@@ -49,14 +49,14 @@ def _fetch_log_types_from_api(
         Exception: If request fails.
     """
     url = f"{client.base_url}/{client.instance_id}/logTypes"
-    all_log_types: List[Dict[str, Any]] = []
+    all_log_types: list[dict[str, Any]] = []
 
     # Determine if we should fetch all pages or just one
     fetch_all_pages = page_size is None
     current_page_token = page_token
 
     while True:
-        params: Dict[str, Any] = {}
+        params: dict[str, Any] = {}
 
         # Set page size (use default of 1000 if fetching all pages)
         params["pageSize"] = page_size if page_size else 1000
@@ -84,9 +84,9 @@ def _fetch_log_types_from_api(
 
 def load_log_types(
     client: "ChronicleClient",
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    page_size: int | None = None,
+    page_token: str | None = None,
+) -> list[dict[str, Any]]:
     """Load and cache log types from Chronicle.
 
     Args:
@@ -119,9 +119,9 @@ def load_log_types(
 
 def get_all_log_types(
     client: "ChronicleClient",
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    page_size: int | None = None,
+    page_token: str | None = None,
+) -> list[dict[str, Any]]:
     """Get all available Chronicle log types.
 
     Args:
@@ -169,7 +169,7 @@ def is_valid_log_type(
 def get_log_type_description(
     log_type_id: str,
     client: "ChronicleClient",
-) -> Optional[str]:
+) -> str | None:
     """Get the description for a log type ID.
 
     Args:
@@ -195,7 +195,7 @@ def search_log_types(
     case_sensitive: bool = False,
     search_in_description: bool = True,
     client: "ChronicleClient" = None,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Search for log types matching a search term.
 
     Args:

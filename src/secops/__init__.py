@@ -16,7 +16,7 @@
 
 __version__ = "0.1.2"
 
-from secops.client import SecOpsClient
 from secops.auth import SecOpsAuth
+from secops.client import SecOpsClient
 
 __all__ = ["SecOpsClient", "SecOpsAuth"]

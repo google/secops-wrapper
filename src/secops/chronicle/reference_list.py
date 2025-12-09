@@ -2,7 +2,7 @@
 
 import sys
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from secops.chronicle.data_table import (
     REF_LIST_DATA_TABLE_ID_REGEX,
@@ -65,10 +65,10 @@ def create_reference_list(
     client: "Any",
     name: str,
     description: str = "",
-    entries: List[str] = None,
+    entries: list[str] = None,
     syntax_type: ReferenceListSyntaxType = ReferenceListSyntaxType.STRING,
-    api_version: Optional[APIVersion] = APIVersion.V1,
-) -> Dict[str, Any]:
+    api_version: APIVersion | None = APIVersion.V1,
+) -> dict[str, Any]:
     """Create a new reference list.
 
     Args:
@@ -126,8 +126,8 @@ def get_reference_list(
     client: "Any",
     name: str,
     view: ReferenceListView = ReferenceListView.FULL,
-    api_version: Optional[APIVersion] = APIVersion.V1,
-) -> Dict[str, Any]:
+    api_version: APIVersion | None = APIVersion.V1,
+) -> dict[str, Any]:
     """Get a single reference list.
 
     Args:
@@ -165,8 +165,8 @@ def get_reference_list(
 def list_reference_lists(
     client: "Any",
     view: ReferenceListView = ReferenceListView.BASIC,
-    api_version: Optional[APIVersion] = APIVersion.V1,
-) -> List[Dict[str, Any]]:
+    api_version: APIVersion | None = APIVersion.V1,
+) -> list[dict[str, Any]]:
     """List reference lists.
 
     Args:
@@ -215,10 +215,10 @@ def list_reference_lists(
 def update_reference_list(
     client: "Any",
     name: str,
-    description: Optional[str] = None,
-    entries: Optional[List[str]] = None,
-    api_version: Optional[APIVersion] = APIVersion.V1,
-) -> Dict[str, Any]:
+    description: str | None = None,
+    entries: list[str] | None = None,
+    api_version: APIVersion | None = APIVersion.V1,
+) -> dict[str, Any]:
     """Update a reference list.
 
     Args:

@@ -15,7 +15,6 @@
 """Google SecOps CLI datetime utils"""
 
 import argparse
-from typing import Tuple
 from datetime import datetime, timedelta, timezone
 
 
@@ -33,7 +32,7 @@ def parse_datetime(dt_str: str) -> datetime:
     return datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
 
 
-def get_time_range(args: argparse.Namespace) -> Tuple[datetime, datetime]:
+def get_time_range(args: argparse.Namespace) -> tuple[datetime, datetime]:
     """Get start and end time from arguments.
 
     Args:

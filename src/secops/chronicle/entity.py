@@ -15,32 +15,32 @@
 """
 Provides entity search, analysis and summarization functionality for Chronicle.
 """
-import re
 import ipaddress
+import re
 from datetime import datetime
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
-from secops.exceptions import APIError
 from secops.chronicle.models import (
+    AlertCount,
     Entity,
     EntityMetadata,
     EntityMetrics,
-    TimeInterval,
-    TimelineBucket,
-    Timeline,
-    WidgetMetadata,
     EntitySummary,
-    AlertCount,
-    PrevalenceData,
+    FileMetadataAndProperties,
     FileProperty,
     FilePropertyGroup,
-    FileMetadataAndProperties,
+    PrevalenceData,
+    TimeInterval,
+    Timeline,
+    TimelineBucket,
+    WidgetMetadata,
 )
+from secops.exceptions import APIError
 
 
 def _detect_value_type_for_query(
     value: str,
-) -> Tuple[Optional[str], Optional[str]]:
+) -> tuple[str | None, str | None]:
     """Detect query fragment and preferred entity type from input value.
 
     Args:
@@ -147,7 +147,7 @@ def _summarize_entity_by_id(
     return_prevalence: bool,
     include_all_udm_types: bool,
     page_size: int,
-    page_token: Optional[str],
+    page_token: str | None,
 ) -> dict:
     """Fetch entity summary data using the entity ID.
 
@@ -203,10 +203,10 @@ def summarize_entity(
     value: str,
     start_time: datetime,
     end_time: datetime,
-    preferred_entity_type: Optional[str] = None,
+    preferred_entity_type: str | None = None,
     include_all_udm_types: bool = True,
     page_size: int = 1000,
-    page_token: Optional[str] = None,
+    page_token: str | None = None,
 ) -> EntitySummary:
     """Get comprehensive summary information about an entity.
 
@@ -263,9 +263,9 @@ def summarize_entity(
         ) from e
 
     # Identify primary entity and collect all entities
-    all_entities: List[Entity] = []
-    primary_entity: Optional[Entity] = None
-    primary_entity_id: Optional[str] = None
+    all_entities: list[Entity] = []
+    primary_entity: Entity | None = None
+    primary_entity_id: str | None = None
 
     for summary_data in query_data.get("entitySummaries", []):
         for entity_data in summary_data.get("entity", []):

@@ -15,7 +15,7 @@
 """Parser management functionality for Chronicle."""
 
 import base64
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from secops.exceptions import APIError
 
@@ -29,7 +29,7 @@ def activate_parser(
     client: "ChronicleClient",
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Activate a custom parser.
 
     Args:
@@ -60,7 +60,7 @@ def activate_release_candidate_parser(
     client: "ChronicleClient",
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Activate the release candidate parser making it live for that customer.
 
     Args:
@@ -91,7 +91,7 @@ def copy_parser(
     client: "ChronicleClient",
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Makes a copy of a prebuilt parser.
 
     Args:
@@ -123,7 +123,7 @@ def create_parser(
     log_type: str,
     parser_code: str,
     validated_on_empty_logs: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Creates a new parser.
 
     Args:
@@ -157,7 +157,7 @@ def deactivate_parser(
     client: "ChronicleClient",
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Deactivate a custom parser.
 
     Args:
@@ -189,7 +189,7 @@ def delete_parser(
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
     force: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Delete a parser.
 
     Args:
@@ -221,7 +221,7 @@ def get_parser(
     client: "ChronicleClient",
     log_type: str,
     id: str,  # pylint: disable=redefined-builtin
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get a Parser by ID.
 
     Args:
@@ -250,10 +250,10 @@ def get_parser(
 def list_parsers(
     client: "ChronicleClient",
     log_type: str = "-",
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
+    page_size: int | None = None,
+    page_token: str | None = None,
     filter: str = None,  # pylint: disable=redefined-builtin
-) -> Union[List[Any], Dict[str, Any]]:
+) -> list[Any] | dict[str, Any]:
     """List parsers.
 
     Args:
@@ -316,10 +316,10 @@ def run_parser(
     client: "ChronicleClient",
     log_type: str,
     parser_code: str,
-    parser_extension_code: Optional[str],
-    logs: List[str],
+    parser_extension_code: str | None,
+    logs: list[str],
     statedump_allowed: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Run parser against sample logs.
 
     Args:

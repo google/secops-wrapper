@@ -16,12 +16,12 @@
 
 import sys
 
-from secops.cli.utils.time_utils import get_time_range
-from secops.cli.utils.formatters import output_formatter
 from secops.cli.utils.common_args import (
-    add_time_range_args,
     add_pagination_args,
+    add_time_range_args,
 )
+from secops.cli.utils.formatters import output_formatter
+from secops.cli.utils.time_utils import get_time_range
 
 
 def setup_search_command(subparsers):
