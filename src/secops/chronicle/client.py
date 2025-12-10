@@ -18,7 +18,7 @@ import re
 from collections.abc import Iterator
 from datetime import datetime
 from enum import Enum
-from typing import Any, Literal, Union
+from typing import Any, Literal, Union, Optional, Dict
 
 from google.auth.transport import requests as google_auth_requests
 
