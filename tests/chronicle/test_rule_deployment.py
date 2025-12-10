@@ -22,6 +22,7 @@ from secops.chronicle.rule import (
     enable_rule,
     set_rule_alerting,
 )
+from secops.chronicle.models import APIVersion
 from secops.chronicle.client import ChronicleClient
 from secops.exceptions import APIError, SecOpsError
 
@@ -46,7 +47,7 @@ def response_mock():
 
 
 def _deployment_url(client: ChronicleClient, rule_id: str) -> str:
-    return f"{client.base_v1_url}/{client.instance_id}/rules/{rule_id}/deployment"
+    return f"{client.base_url(APIVersion.V1)}/{client.instance_id}/rules/{rule_id}/deployment"
 
 
 def test_update_rule_deployment_enabled(chronicle_client, response_mock):

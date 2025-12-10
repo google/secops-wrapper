@@ -15,13 +15,19 @@
 """Retrohunt functionality for Chronicle rules."""
 
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any
+
+from secops.chronicle.models import APIVersion
 from secops.exceptions import APIError
 
 
 def create_retrohunt(
-    client, rule_id: str, start_time: datetime, end_time: datetime
-) -> Dict[str, Any]:
+    client,
+    rule_id: str,
+    start_time: datetime,
+    end_time: datetime,
+    api_version: APIVersion | None = APIVersion.V1,
+) -> dict[str, Any]:
     """Creates a retrohunt for a rule.
 
     A retrohunt applies a rule to historical data within the specified
@@ -32,6 +38,7 @@ def create_retrohunt(
         rule_id: Unique ID of the rule to run retrohunt for ("ru_<UUID>")
         start_time: Start time for retrohunt analysis
         end_time: End time for retrohunt analysis
+        api_version: Preferred API version to use. Defaults to V1
 
     Returns:
         Dictionary containing operation information for the retrohunt
@@ -40,7 +47,8 @@ def create_retrohunt(
         APIError: If the API request fails
     """
     url = (
-        f"{client.base_v1_url}/{client.instance_id}/rules/{rule_id}/retrohunts"
+        f"{client.base_url(api_version, list(APIVersion))}/"
+        f"{client.instance_id}/rules/{rule_id}/retrohunts"
     )
 
     body = {
@@ -58,7 +66,12 @@ def create_retrohunt(
     return response.json()
 
 
-def get_retrohunt(client, rule_id: str, operation_id: str) -> Dict[str, Any]:
+def get_retrohunt(
+    client,
+    rule_id: str,
+    operation_id: str,
+    api_version: APIVersion | None = APIVersion.V1,
+) -> dict[str, Any]:
     """Get retrohunt status and results.
 
     Args:
@@ -66,6 +79,7 @@ def get_retrohunt(client, rule_id: str, operation_id: str) -> Dict[str, Any]:
         rule_id: Unique ID of the rule the retrohunt is for ("ru_<UUID>" or
           "ru_<UUID>@v_<seconds>_<nanoseconds>")
         operation_id: Operation ID of the retrohunt
+        api_version: Preferred API version to use. Defaults to V1
 
     Returns:
         Dictionary containing retrohunt information
@@ -74,8 +88,8 @@ def get_retrohunt(client, rule_id: str, operation_id: str) -> Dict[str, Any]:
         APIError: If the API request fails
     """
     url = (
-        f"{client.base_v1_url}/{client.instance_id}/rules/{rule_id}"
-        f"/retrohunts/{operation_id}"
+        f"{client.base_url(api_version, list(APIVersion))}/"
+        f"{client.instance_id}/rules/{rule_id}/retrohunts/{operation_id}"
     )
 
     response = client.session.get(url)

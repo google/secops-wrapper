@@ -14,8 +14,9 @@
 #
 """IOC functionality for Chronicle."""
 
-from typing import Dict, Any
 from datetime import datetime
+from typing import Any
+
 from secops.exceptions import APIError
 
 
@@ -26,7 +27,7 @@ def list_iocs(
     max_matches: int = 1000,
     add_mandiant_attributes: bool = True,
     prioritized_only: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """List IoCs from Chronicle.
 
     Args:

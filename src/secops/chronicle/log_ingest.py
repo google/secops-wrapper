@@ -19,8 +19,9 @@ import copy
 import json
 import re
 import uuid
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any
 
 from secops.chronicle.log_types import is_valid_log_type
 from secops.exceptions import APIError
@@ -42,7 +43,7 @@ _LOG_TYPE_ALIASES = {}
 MULTI_LINE_LOG_FORMATS = ["WINDOWS", "XML", "JSON"]
 
 
-def register_log_splitter(log_types: Union[str, List[str]]) -> Callable:
+def register_log_splitter(log_types: str | list[str]) -> Callable:
     """Register a function as a log splitter for specific log types.
 
     Args:
@@ -121,7 +122,7 @@ def initialize_multi_line_formats() -> None:
             _LOG_TYPE_ALIASES[variant.upper()] = base_format.upper()
 
 
-def split_logs(log_type: str, log_content: str) -> List[str]:
+def split_logs(log_type: str, log_content: str) -> list[str]:
     """Split a log content string into individual log entries based on log type.
 
     Args:
@@ -159,7 +160,7 @@ def split_logs(log_type: str, log_content: str) -> List[str]:
         "CLOUDFLARE",
     ]
 )
-def split_json_logs(log_content: str) -> List[str]:
+def split_json_logs(log_content: str) -> list[str]:
     """Split JSON log content into individual JSON objects.
 
     This splitter handles multi-line JSON formats:
@@ -221,7 +222,7 @@ def split_json_logs(log_content: str) -> List[str]:
         "WINDOWS_FIREWALL",
     ]
 )
-def split_windows_logs(log_content: str) -> List[str]:
+def split_windows_logs(log_content: str) -> list[str]:
     """Split Windows Event logs.
 
     This function handles various Windows log formats including single events
@@ -281,7 +282,7 @@ def split_windows_logs(log_content: str) -> List[str]:
         "VMRAY_FLOG_XML",
     ]
 )
-def split_xml_logs(log_content: str) -> List[str]:
+def split_xml_logs(log_content: str) -> list[str]:
     """Split XML format logs.
 
     Attempts to identify and separate individual XML documents.
@@ -312,14 +313,14 @@ def split_xml_logs(log_content: str) -> List[str]:
 def create_forwarder(
     client: "ChronicleClient",
     display_name: str,
-    metadata: Optional[Dict[str, Any]] = None,
+    metadata: dict[str, Any] | None = None,
     upload_compression: bool = False,
     enable_server: bool = False,
-    regex_filters: Optional[List[Dict[str, Any]]] = None,
-    graceful_timeout: Optional[str] = None,
-    drain_timeout: Optional[str] = None,
-    http_settings: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    regex_filters: list[dict[str, Any]] | None = None,
+    graceful_timeout: str | None = None,
+    drain_timeout: str | None = None,
+    http_settings: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Create a new forwarder in Chronicle.
 
     Args:
@@ -385,9 +386,9 @@ def create_forwarder(
 
 def list_forwarders(
     client: "ChronicleClient",
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    page_size: int | None = None,
+    page_token: str | None = None,
+) -> dict[str, Any]:
     """List forwarders in Chronicle.
 
     Args:
@@ -433,7 +434,7 @@ def list_forwarders(
 
 def get_forwarder(
     client: "ChronicleClient", forwarder_id: str
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get a forwarder by ID.
 
     Args:
@@ -461,16 +462,16 @@ def get_forwarder(
 def update_forwarder(
     client: "ChronicleClient",
     forwarder_id: str,
-    display_name: Optional[str] = None,
-    metadata: Optional[Dict[str, Any]] = None,
-    upload_compression: Optional[bool] = None,
-    enable_server: Optional[bool] = None,
-    regex_filters: Optional[List[Dict[str, Any]]] = None,
-    graceful_timeout: Optional[str] = None,
-    drain_timeout: Optional[str] = None,
-    http_settings: Optional[Dict[str, Any]] = None,
-    update_mask: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    display_name: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    upload_compression: bool | None = None,
+    enable_server: bool | None = None,
+    regex_filters: list[dict[str, Any]] | None = None,
+    graceful_timeout: str | None = None,
+    drain_timeout: str | None = None,
+    http_settings: dict[str, Any] | None = None,
+    update_mask: list[str] | None = None,
+) -> dict[str, Any]:
     """Update an existing forwarder.
 
     Args:
@@ -589,7 +590,7 @@ def update_forwarder(
 def delete_forwarder(
     client: "ChronicleClient",
     forwarder_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Delete a forwarder from Chronicle.
 
     Args:
@@ -614,7 +615,7 @@ def delete_forwarder(
 
 def _find_forwarder_by_display_name(
     client: "ChronicleClient", display_name: str
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """Find an existing forwarder by its display name.
 
     This function calls list_forwarders which handles pagination to get
@@ -647,8 +648,8 @@ def _find_forwarder_by_display_name(
 
 
 def get_or_create_forwarder(
-    client: "ChronicleClient", display_name: Optional[str] = None
-) -> Dict[str, Any]:
+    client: "ChronicleClient", display_name: str | None = None
+) -> dict[str, Any]:
     """Get an existing forwarder by name or create a new one if none exists.
 
     This function now includes caching for the default forwarder to reduce
@@ -778,14 +779,14 @@ def extract_forwarder_id(forwarder_name: str) -> str:
 def ingest_log(
     client: "ChronicleClient",
     log_type: str,
-    log_message: Union[str, List[str]],
-    log_entry_time: Optional[datetime] = None,
-    collection_time: Optional[datetime] = None,
-    namespace: Optional[str] = None,
-    labels: Optional[Dict[str, str]] = None,
-    forwarder_id: Optional[str] = None,
+    log_message: str | list[str],
+    log_entry_time: datetime | None = None,
+    collection_time: datetime | None = None,
+    namespace: str | None = None,
+    labels: dict[str, str] | None = None,
+    forwarder_id: str | None = None,
     force_log_type: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Ingest one or more logs into Chronicle.
 
     Args:
@@ -914,9 +915,9 @@ def ingest_log(
 
 def ingest_udm(
     client: "ChronicleClient",
-    udm_events: Union[Dict[str, Any], List[Dict[str, Any]]],
+    udm_events: dict[str, Any] | list[dict[str, Any]],
     add_missing_ids: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Ingest UDM events directly into Chronicle.
 
     Args:
@@ -1047,9 +1048,9 @@ def ingest_udm(
 
 def import_entities(
     client: "ChronicleClient",
-    entities: Union[Dict[str, Any], List[Dict[str, Any]]],
+    entities: dict[str, Any] | list[dict[str, Any]],
     log_type: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Import entities into Chronicle.
 
     Args:

@@ -39,6 +39,17 @@ You can also save your service account path:
 secops config set --service-account "/path/to/service-account.json" --customer-id "your-instance-id" --project-id "your-project-id" --region "us"
 ```
 
+Set the default API version for Chronicle API calls:
+
+```bash
+secops config set --api-version "v1"
+```
+
+**Supported API versions:**
+- `v1` - Stable production API (recommended)
+- `v1beta` - Beta API with newer features
+- `v1alpha` - Alpha API with experimental features (default)
+
 Additionally, you can set default time parameters:
 
 ```bash
@@ -92,10 +103,18 @@ These parameters can be used with most commands:
 - `--customer-id ID` - Chronicle instance ID
 - `--project-id ID` - GCP project ID
 - `--region REGION` - Chronicle API region (default: us)
+- `--api-version VERSION` - Chronicle API version (v1, v1beta, v1alpha; default: v1alpha)
 - `--output FORMAT` - Output format (json, text)
 - `--start-time TIME` - Start time in ISO format (YYYY-MM-DDTHH:MM:SSZ)
 - `--end-time TIME` - End time in ISO format (YYYY-MM-DDTHH:MM:SSZ)
 - `--time-window HOURS` - Time window in hours (alternative to start/end time)
+
+You can override the configured API version on a per-command basis:
+
+```bash
+# Use v1 for a specific command, even if config has v1alpha
+secops rule list --api-version v1
+```
 
 ## Commands
 

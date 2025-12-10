@@ -4,37 +4,33 @@ Command line entrypoint for SecOps CLI
 
 import argparse
 import sys
-from typing import Tuple, Dict
 
 from secops import SecOpsClient
 from secops.chronicle import ChronicleClient
+from secops.cli.commands.alert import setup_alert_command
+from secops.cli.commands.case import setup_case_command
 from secops.cli.commands.config import setup_config_command
-from secops.cli.commands.search import setup_search_command
-from secops.cli.commands.udm_search import setup_udm_search_view_command
-from secops.cli.commands.stats import setup_stats_command
+from secops.cli.commands.curated_rule import setup_curated_rules_command
+from secops.cli.commands.dashboard import setup_dashboard_command
+from secops.cli.commands.dashboard_query import setup_dashboard_query_command
+from secops.cli.commands.data_table import setup_data_table_command
 from secops.cli.commands.entity import setup_entity_command
+from secops.cli.commands.export import setup_export_command
+from secops.cli.commands.feed import setup_feed_command
+from secops.cli.commands.forwarder import setup_forwarder_command
+from secops.cli.commands.gemini import setup_gemini_command
+from secops.cli.commands.help import setup_help_command
 from secops.cli.commands.iocs import setup_iocs_command
 from secops.cli.commands.log import setup_log_command
 from secops.cli.commands.parser import setup_parser_command
-from secops.cli.commands.feed import setup_feed_command
-from secops.cli.commands.rule import setup_rule_command
-from secops.cli.commands.alert import setup_alert_command
-from secops.cli.commands.case import setup_case_command
-from secops.cli.commands.export import setup_export_command
-from secops.cli.commands.gemini import setup_gemini_command
-from secops.cli.commands.help import setup_help_command
-from secops.cli.commands.data_table import setup_data_table_command
-from secops.cli.commands.reference_list import setup_reference_list_command
-from secops.cli.commands.rule_exclusion import setup_rule_exclusion_command
 from secops.cli.commands.parser_extension import setup_parser_extension_command
-from secops.cli.commands.dashboard import setup_dashboard_command
-from secops.cli.commands.dashboard_query import setup_dashboard_query_command
-from secops.cli.commands.forwarder import setup_forwarder_command
-from secops.cli.commands.curated_rule import setup_curated_rules_command
-from secops.cli.utils.common_args import (
-    add_common_args,
-    add_chronicle_args,
-)
+from secops.cli.commands.reference_list import setup_reference_list_command
+from secops.cli.commands.rule import setup_rule_command
+from secops.cli.commands.rule_exclusion import setup_rule_exclusion_command
+from secops.cli.commands.search import setup_search_command
+from secops.cli.commands.stats import setup_stats_command
+from secops.cli.commands.udm_search import setup_udm_search_view_command
+from secops.cli.utils.common_args import add_chronicle_args, add_common_args
 from secops.cli.utils.config_utils import load_config
 from secops.exceptions import AuthenticationError, SecOpsError
 
@@ -86,8 +82,8 @@ def setup_client(
 def _setup_client_core(
     args: argparse.Namespace,
     client: SecOpsClient,
-    config: Dict[str, str],
-) -> Tuple[SecOpsClient, ChronicleClient]:
+    config: dict[str, str],
+) -> tuple[SecOpsClient, ChronicleClient]:
     """Set up and return SecOpsClient and Chronicle client based on args or
     config file. Args take precedence over config file.
 
@@ -105,13 +101,18 @@ def _setup_client_core(
         chronicle_kwargs = {}
 
         # Build kwargs with precedence: CLI args > config file > None
-        for arg in required_args + ["region"]:  # region is optional
+        optional_args = ["region", "api_version"]
+        for arg in required_args + optional_args:
             # Check CLI args first
             if hasattr(args, arg) and getattr(args, arg):
-                chronicle_kwargs[arg] = getattr(args, arg)
+                # Map api_version to default_api_version for chronicle()
+                key = "default_api_version" if arg == "api_version" else arg
+                chronicle_kwargs[key] = getattr(args, arg)
             # Fall back to config if not in args
             elif arg in config:
-                chronicle_kwargs[arg] = config[arg]
+                # Map api_version to default_api_version for chronicle()
+                key = "default_api_version" if arg == "api_version" else arg
+                chronicle_kwargs[key] = config[arg]
 
         # Check for missing required arguments
         missing = [

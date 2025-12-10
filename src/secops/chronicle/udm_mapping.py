@@ -16,7 +16,7 @@
 
 import base64
 import sys
-from typing import Any, Dict, Optional
+from typing import Any
 
 from secops.exceptions import APIError
 
@@ -46,9 +46,9 @@ def generate_udm_key_value_mappings(
     client,
     log_format: RowLogFormat,
     log: str,
-    use_array_bracket_notation: Optional[bool] = None,
-    compress_array_fields: Optional[bool] = None,
-) -> Dict[str, Any]:
+    use_array_bracket_notation: bool | None = None,
+    compress_array_fields: bool | None = None,
+) -> dict[str, Any]:
     """Generate key-value mappings for a UDM field using Chronicle V1alpha API.
 
     This function retrieves all unique values for the specified UDM field

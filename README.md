@@ -203,6 +203,37 @@ chronicle = client.chronicle(
 ```
 [See available regions](https://github.com/google/secops-wrapper/blob/main/regions.md)
 
+#### API Version Control
+
+The SDK supports flexible API version selection:
+
+- **Default Version**: Set `default_api_version` during client initialization (default is `v1alpha`)
+- **Per-Method Override**: Many methods accept an `api_version` parameter to override the default for specific calls
+
+**Supported API versions:**
+- `v1` - Stable production API
+- `v1beta` - Beta API with newer features
+- `v1alpha` - Alpha API with experimental features
+
+**Example with per-method version override:**
+```python
+from secops.chronicle.models import APIVersion
+
+# Client defaults to v1alpha
+chronicle = client.chronicle(
+    customer_id="your-chronicle-instance-id",
+    project_id="your-project-id",
+    region="us",
+    default_api_version="v1alpha"
+)
+
+# Use v1 for a specific rule operation
+rule = chronicle.get_rule(
+    rule_id="ru_12345678-1234-1234-1234-123456789abc",
+    api_version=APIVersion.V1  # Override to use v1 for this call
+)
+```
+
 ### Log Ingestion
 
 Ingest raw logs directly into Chronicle:
@@ -1190,12 +1221,19 @@ print(f"Parser ID: {parser_id}")
 Retrieve, list, copy, activate/deactivate, and delete parsers:
 
 ```python
-# List all parsers
+# List all parsers (returns complete list)
 parsers = chronicle.list_parsers()
 for parser in parsers:
     parser_id = parser.get("name", "").split("/")[-1]
     state = parser.get("state")
     print(f"Parser ID: {parser_id}, State: {state}")
+
+# Manual pagination: get raw API response with nextPageToken
+response = chronicle.list_parsers(page_size=50)
+parsers = response.get("parsers", [])
+next_token = response.get("nextPageToken")
+# Use next_token for subsequent calls:
+# response = chronicle.list_parsers(page_size=50, page_token=next_token)
 
 log_type = "WINDOWS_AD"
     

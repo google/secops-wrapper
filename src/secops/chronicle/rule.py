@@ -14,27 +14,35 @@
 #
 """Rule management functionality for Chronicle."""
 
-from typing import Dict, Any, Iterator, Optional, List, Literal
-from datetime import datetime, timezone
 import json
-from secops.exceptions import APIError, SecOpsError
 import re
+from collections.abc import Iterator
+from datetime import datetime, timezone
+from typing import Any, Literal
+
+from secops.chronicle.models import APIVersion
+from secops.exceptions import APIError, SecOpsError
 
 
-def create_rule(client, rule_text: str) -> Dict[str, Any]:
+def create_rule(
+    client, rule_text: str, api_version: APIVersion | None = APIVersion.V1
+) -> dict[str, Any]:
     """Creates a new detection rule to find matches in logs.
 
     Args:
         client: ChronicleClient instance
         rule_text: Content of the new detection rule, used to evaluate logs.
-
+        api_version: Preferred API version to use. Defaults to V1
     Returns:
         Dictionary containing the created rule information
 
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_v1_url}/{client.instance_id}/rules"
+    url = (
+        f"{client.base_url(api_version, list(APIVersion))}/"
+        f"{client.instance_id}/rules"
+    )
 
     body = {
         "text": rule_text,
@@ -48,7 +56,9 @@ def create_rule(client, rule_text: str) -> Dict[str, Any]:
     return response.json()
 
 
-def get_rule(client, rule_id: str) -> Dict[str, Any]:
+def get_rule(
+    client, rule_id: str, api_version: APIVersion | None = APIVersion.V1
+) -> dict[str, Any]:
     """Get a rule by ID.
 
     Args:
@@ -63,7 +73,10 @@ def get_rule(client, rule_id: str) -> Dict[str, Any]:
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_v1_url}/{client.instance_id}/rules/{rule_id}"
+    url = (
+        f"{client.base_url(api_version, list(APIVersion))}/"
+        f"{client.instance_id}/rules/{rule_id}"
+    )
 
     response = client.session.get(url)
 
@@ -75,10 +88,11 @@ def get_rule(client, rule_id: str) -> Dict[str, Any]:
 
 def list_rules(
     client,
-    view: Optional[str] = "FULL",
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    view: str | None = "FULL",
+    page_size: int | None = None,
+    page_token: str | None = None,
+    api_version: APIVersion | None = APIVersion.V1,
+) -> dict[str, Any]:
     """Gets a list of rules.
 
     Args:
@@ -92,6 +106,7 @@ def list_rules(
             Defaults to "FULL".
         page_size: Maximum number of rules to return per page.
         page_token: Token for the next page of results, if available.
+        api_version: (Optional) Preferred API version to use.
 
     Returns:
         Dictionary containing information about rules
@@ -106,7 +121,10 @@ def list_rules(
         params["pageToken"] = page_token
 
     while more:
-        url = f"{client.base_v1_url}/{client.instance_id}/rules"
+        url = (
+            f"{client.base_url(api_version, list(APIVersion))}/"
+            f"{client.instance_id}/rules"
+        )
         response = client.session.get(url, params=params)
 
         if response.status_code != 200:
@@ -136,7 +154,12 @@ def list_rules(
     return rules
 
 
-def update_rule(client, rule_id: str, rule_text: str) -> Dict[str, Any]:
+def update_rule(
+    client,
+    rule_id: str,
+    rule_text: str,
+    api_version: APIVersion | None = APIVersion.V1,
+) -> dict[str, Any]:
     """Updates a rule.
 
     Args:
@@ -150,7 +173,10 @@ def update_rule(client, rule_id: str, rule_text: str) -> Dict[str, Any]:
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_v1_url}/{client.instance_id}/rules/{rule_id}"
+    url = (
+        f"{client.base_url(api_version, list(APIVersion))}/"
+        f"{client.instance_id}/rules/{rule_id}"
+    )
 
     body = {
         "text": rule_text,
@@ -166,7 +192,12 @@ def update_rule(client, rule_id: str, rule_text: str) -> Dict[str, Any]:
     return response.json()
 
 
-def delete_rule(client, rule_id: str, force: bool = False) -> Dict[str, Any]:
+def delete_rule(
+    client,
+    rule_id: str,
+    force: bool = False,
+    api_version: APIVersion | None = APIVersion.V1,
+) -> dict[str, Any]:
     """Deletes a rule.
 
     Args:
@@ -180,7 +211,10 @@ def delete_rule(client, rule_id: str, force: bool = False) -> Dict[str, Any]:
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_v1_url}/{client.instance_id}/rules/{rule_id}"
+    url = (
+        f"{client.base_url(api_version, list(APIVersion))}/"
+        f"{client.instance_id}/rules/{rule_id}"
+    )
 
     params = {}
     if force:
@@ -195,7 +229,7 @@ def delete_rule(client, rule_id: str, force: bool = False) -> Dict[str, Any]:
     return response.json()
 
 
-def enable_rule(client, rule_id: str, enabled: bool = True) -> Dict[str, Any]:
+def enable_rule(client, rule_id: str, enabled: bool = True) -> dict[str, Any]:
     """Enables or disables a rule.
 
     Args:
@@ -214,7 +248,7 @@ def enable_rule(client, rule_id: str, enabled: bool = True) -> Dict[str, Any]:
 
 def set_rule_alerting(
     client, rule_id: str, alerting_enabled: bool = True
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Enables or disables alerting for a rule deployment.
 
     Args:
@@ -231,7 +265,9 @@ def set_rule_alerting(
     return update_rule_deployment(client, rule_id, alerting=alerting_enabled)
 
 
-def get_rule_deployment(client, rule_id: str) -> Dict[str, Any]:
+def get_rule_deployment(
+    client, rule_id: str, api_version: APIVersion | None = APIVersion.V1
+) -> dict[str, Any]:
     """Gets the current deployment for a rule.
 
     Args:
@@ -248,7 +284,8 @@ def get_rule_deployment(client, rule_id: str) -> Dict[str, Any]:
 
     """
     url = (
-        f"{client.base_v1_url}/{client.instance_id}/rules/{rule_id}/deployment"
+        f"{client.base_url(api_version, list(APIVersion))}/"
+        f"{client.instance_id}/rules/{rule_id}/deployment"
     )
     response = client.session.get(url)
     if response.status_code != 200:
@@ -258,10 +295,11 @@ def get_rule_deployment(client, rule_id: str) -> Dict[str, Any]:
 
 def list_rule_deployments(
     client,
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
-    filter_query: Optional[str] = None,
-) -> Dict[str, Any]:
+    page_size: int | None = None,
+    page_token: str | None = None,
+    filter_query: str | None = None,
+    api_version: APIVersion | None = APIVersion.V1,
+) -> dict[str, Any]:
     """Lists rule deployments for the instance.
 
     Args:
@@ -280,7 +318,7 @@ def list_rule_deployments(
         APIError: If the API request fails.
 
     """
-    params: Dict[str, Any] = {}
+    params: dict[str, Any] = {}
     if page_size:
         params["pageSize"] = page_size
     if page_token:
@@ -288,7 +326,10 @@ def list_rule_deployments(
     if filter_query:
         params["filter"] = filter_query
 
-    url = f"{client.base_v1_url}/{client.instance_id}/rules/-/deployments"
+    url = (
+        f"{client.base_url(api_version, list(APIVersion))}/"
+        f"{client.instance_id}/rules/-/deployments"
+    )
 
     if page_size:
         response = client.session.get(url, params=params)
@@ -296,7 +337,7 @@ def list_rule_deployments(
             raise APIError(f"Failed to list rule deployments: {response.text}")
         return response.json()
 
-    deployments: Dict[str, Any] = {"ruleDeployments": []}
+    deployments: dict[str, Any] = {"ruleDeployments": []}
     more = True
     while more:
         response = client.session.get(url, params=params)
@@ -318,7 +359,9 @@ def list_rule_deployments(
     return deployments
 
 
-def search_rules(client, query: str) -> Dict[str, Any]:
+def search_rules(
+    client, query: str, api_version: APIVersion | None = APIVersion.V1
+) -> dict[str, Any]:
     """Search for rules.
 
     Args:
@@ -336,7 +379,7 @@ def search_rules(client, query: str) -> Dict[str, Any]:
     except re.error as e:
         raise SecOpsError(f"Invalid regular expression: {query}") from e
 
-    rules = list_rules(client)
+    rules = list_rules(client, api_version=api_version)
     results = {"rules": []}
     for rule in rules["rules"]:
         rule_text = rule.get("text", "")
@@ -355,7 +398,7 @@ def run_rule_test(
     end_time: datetime,
     max_results: int = 100,
     timeout: int = 300,
-) -> Iterator[Dict[str, Any]]:
+) -> Iterator[dict[str, Any]]:
     """Tests a rule against historical data and returns matches.
 
     This function connects to the legacy:legacyRunTestRule streaming
@@ -467,11 +510,12 @@ def update_rule_deployment(
     client,
     rule_id: str,
     *,
-    enabled: Optional[bool] = None,
-    alerting: Optional[bool] = None,
-    archived: Optional[bool] = None,
-    run_frequency: Optional[Literal["LIVE", "HOURLY", "DAILY"]] = None,
-) -> Dict[str, Any]:
+    enabled: bool | None = None,
+    alerting: bool | None = None,
+    archived: bool | None = None,
+    run_frequency: Literal["LIVE", "HOURLY", "DAILY"] | None = None,
+    api_version: APIVersion | None = APIVersion.V1,
+) -> dict[str, Any]:
     """Update deployment settings for a rule.
 
     This wraps the RuleDeployment update behavior and supports partial updates
@@ -503,11 +547,12 @@ def update_rule_deployment(
           they are specified by the caller.
     """
     url = (
-        f"{client.base_v1_url}/{client.instance_id}/rules/{rule_id}/deployment"
+        f"{client.base_url(api_version, list(APIVersion))}/"
+        f"{client.instance_id}/rules/{rule_id}/deployment"
     )
 
-    body: Dict[str, Any] = {}
-    fields: List[str] = []
+    body: dict[str, Any] = {}
+    fields: list[str] = []
 
     if enabled is not None:
         body["enabled"] = enabled

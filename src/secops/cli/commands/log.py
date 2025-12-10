@@ -14,8 +14,8 @@
 #
 """Google SecOps CLI log commands"""
 
-import sys
 import json
+import sys
 
 from secops.cli.utils.formatters import output_formatter
 
@@ -115,7 +115,7 @@ def handle_log_ingest_command(args, chronicle):
     try:
         log_message = args.message
         if args.file:
-            with open(args.file, "r", encoding="utf-8") as f:
+            with open(args.file, encoding="utf-8") as f:
                 log_message = f.read()
 
         # Process labels if provided
@@ -161,7 +161,7 @@ def handle_log_ingest_command(args, chronicle):
 def handle_udm_ingest_command(args, chronicle):
     """Handle UDM ingestion command."""
     try:
-        with open(args.file, "r", encoding="utf-8") as f:
+        with open(args.file, encoding="utf-8") as f:
             udm_events = json.load(f)
 
         result = chronicle.ingest_udm(udm_events=udm_events)
@@ -203,7 +203,7 @@ def handle_generate_udm_mapping_command(args, chronicle):
     try:
         log = ""
         if args.log_file:
-            with open(args.log_file, "r", encoding="utf-8") as f:
+            with open(args.log_file, encoding="utf-8") as f:
                 log = f.read()
         elif args.log:
             log = args.log

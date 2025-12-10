@@ -15,12 +15,14 @@
 """
 Provides ingestion feed management functionality for Chronicle.
 """
-from secops.exceptions import APIError
-from dataclasses import dataclass, asdict
-from typing import Dict, Any, List, TypedDict, Optional, Union, Annotated
-import sys
-import os
 import json
+import os
+import sys
+from dataclasses import asdict, dataclass
+from typing import Annotated, Any, TypedDict
+
+from secops.chronicle.models import APIVersion
+from secops.exceptions import APIError
 
 # Use built-in StrEnum if Python 3.11+, otherwise create a compatible version
 if sys.version_info >= (3, 11):
@@ -35,6 +37,10 @@ else:
             return self.value
 
 
+# List of Allowed version for feed endpoints
+ALLOWED_ENDPOINT_VERSIONS = [APIVersion.V1ALPHA, APIVersion.V1BETA]
+
+
 @dataclass
 class CreateFeedModel:
     """Model for creating a feed.
@@ -47,7 +53,7 @@ class CreateFeedModel:
 
     display_name: Annotated[str, "Display name for the feed"]
     details: Annotated[
-        Union[str, Dict[str, Any]], "Feed details as JSON string or dict"
+        str | dict[str, Any], "Feed details as JSON string or dict"
     ]
 
     def __post_init__(self):
@@ -58,7 +64,7 @@ class CreateFeedModel:
             except json.JSONDecodeError as e:
                 raise ValueError(f"Invalid JSON string for details: {e}") from e
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return asdict(self)
 
@@ -74,10 +80,10 @@ class UpdateFeedModel:
     """
 
     display_name: Annotated[
-        Optional[str], "Optional display name for the feed"
+        str | None, "Optional display name for the feed"
     ] = None
     details: Annotated[
-        Optional[Union[str, Dict[str, Any]]],
+        str | dict[str, Any] | None,
         "Optional feed details as JSON string or dict",
     ] = None
 
@@ -89,7 +95,7 @@ class UpdateFeedModel:
             except json.JSONDecodeError as e:
                 raise ValueError(f"Invalid JSON string for details: {e}") from e
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return asdict(self)
 
@@ -124,14 +130,18 @@ class FeedSecret(TypedDict):
 
 
 def list_feeds(
-    client, page_size: int = 100, page_token: str = None
-) -> List[Feed]:
+    client,
+    page_size: int = 100,
+    page_token: str = None,
+    api_version: APIVersion | None = None,
+) -> list[Feed]:
     """List feeds.
 
     Args:
         client: ChronicleClient instance
         page_size: The maximum number of feeds to return
         page_token: A page token, received from a previous ListFeeds call
+        api_version: (Optional) Preferred API version to use.
 
     Returns:
         List of feed dictionaries
@@ -141,7 +151,10 @@ def list_feeds(
     """
     feeds: list[dict] = []
 
-    url = f"{client.base_url}/{client.instance_id}/feeds"
+    url = (
+        f"{client.base_url(api_version, ALLOWED_ENDPOINT_VERSIONS)}/"
+        f"{client.instance_id}/feeds"
+    )
     more = True
     while more:
         params = {"pageSize": page_size, "pageToken": page_token}
@@ -161,12 +174,15 @@ def list_feeds(
     return feeds
 
 
-def get_feed(client, feed_id: str) -> Feed:
+def get_feed(
+    client, feed_id: str, api_version: APIVersion | None = None
+) -> Feed:
     """Get a feed by ID.
 
     Args:
         client: ChronicleClient instance
         feed_id: Feed ID
+        api_version: (Optional) Preferred API version to use.
 
     Returns:
         Feed dictionary
@@ -175,7 +191,10 @@ def get_feed(client, feed_id: str) -> Feed:
         APIError: If the API request fails
     """
     feed_id = os.path.basename(feed_id)
-    url = f"{client.base_url}/{client.instance_id}/feeds/{feed_id}"
+    url = (
+        f"{client.base_url(api_version, ALLOWED_ENDPOINT_VERSIONS)}/"
+        f"{client.instance_id}/feeds/{feed_id}"
+    )
     response = client.session.get(url)
     if response.status_code != 200:
         raise APIError(f"Failed to get feed: {response.text}")
@@ -183,12 +202,17 @@ def get_feed(client, feed_id: str) -> Feed:
     return response.json()
 
 
-def create_feed(client, feed_config: CreateFeedModel) -> Feed:
+def create_feed(
+    client,
+    feed_config: CreateFeedModel,
+    api_version: APIVersion | None = None,
+) -> Feed:
     """Create a new feed.
 
     Args:
         client: ChronicleClient instance
         feed_config: Feed configuration model
+        api_version: (Optional) Preferred API version to use.
 
     Returns:
         Created feed dictionary
@@ -196,7 +220,10 @@ def create_feed(client, feed_config: CreateFeedModel) -> Feed:
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/feeds"
+    url = (
+        f"{client.base_url(api_version, ALLOWED_ENDPOINT_VERSIONS)}/"
+        f"{client.instance_id}/feeds"
+    )
     response = client.session.post(url, json=feed_config.to_dict())
     if response.status_code != 200:
         raise APIError(f"Failed to create feed: {response.text}")
@@ -208,7 +235,8 @@ def update_feed(
     client,
     feed_id: str,
     feed_config: CreateFeedModel,
-    update_mask: Optional[Union[List[str], None]] = None,
+    update_mask: list[str] | None | None = None,
+    api_version: APIVersion | None = None,
 ) -> Feed:
     """Update an existing feed.
 
@@ -217,6 +245,7 @@ def update_feed(
         feed_id: Feed ID
         feed_config: Feed configuration model
         update_mask: Optional list of fields to update
+        api_version: (Optional) Preferred API version to use.
 
     Returns:
         Updated feed dictionary
@@ -224,7 +253,10 @@ def update_feed(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/feeds/{feed_id}"
+    url = (
+        f"{client.base_url(api_version, ALLOWED_ENDPOINT_VERSIONS)}/"
+        f"{client.instance_id}/feeds/{feed_id}"
+    )
 
     if update_mask is None:
         update_mask = []
@@ -246,28 +278,37 @@ def update_feed(
     return response.json()
 
 
-def delete_feed(client, feed_id: str) -> None:
+def delete_feed(
+    client, feed_id: str, api_version: APIVersion | None = None
+) -> None:
     """Delete a feed.
 
     Args:
         client: ChronicleClient instance
         feed_id: Feed ID
+        api_version: (Optional) Preferred API version to use.
 
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/feeds/{feed_id}"
+    url = (
+        f"{client.base_url(api_version, ALLOWED_ENDPOINT_VERSIONS)}/"
+        f"{client.instance_id}/feeds/{feed_id}"
+    )
     response = client.session.delete(url)
     if response.status_code != 200:
         raise APIError(f"Failed to delete feed: {response.text}")
 
 
-def disable_feed(client, feed_id: str) -> Feed:
+def disable_feed(
+    client, feed_id: str, api_version: APIVersion | None = None
+) -> Feed:
     """Disable a feed.
 
     Args:
         client: ChronicleClient instance
         feed_id: Feed ID
+        api_version: (Optional) Preferred API version to use.
 
     Returns:
         Disabled feed dictionary
@@ -275,7 +316,10 @@ def disable_feed(client, feed_id: str) -> Feed:
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/feeds/{feed_id}:disable"
+    url = (
+        f"{client.base_url(api_version, ALLOWED_ENDPOINT_VERSIONS)}/"
+        f"{client.instance_id}/feeds/{feed_id}:disable"
+    )
     response = client.session.post(url)
     if response.status_code != 200:
         raise APIError(f"Failed to disable feed: {response.text}")
@@ -283,12 +327,15 @@ def disable_feed(client, feed_id: str) -> Feed:
     return response.json()
 
 
-def enable_feed(client, feed_id: str) -> Feed:
+def enable_feed(
+    client, feed_id: str, api_version: APIVersion | None = None
+) -> Feed:
     """Enable a feed.
 
     Args:
         client: ChronicleClient instance
         feed_id: Feed ID
+        api_version: (Optional) Preferred API version to use.
 
     Returns:
         Enabled feed dictionary
@@ -296,7 +343,10 @@ def enable_feed(client, feed_id: str) -> Feed:
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/feeds/{feed_id}:enable"
+    url = (
+        f"{client.base_url(api_version, ALLOWED_ENDPOINT_VERSIONS)}/"
+        f"{client.instance_id}/feeds/{feed_id}:enable"
+    )
     response = client.session.post(url)
     if response.status_code != 200:
         raise APIError(f"Failed to enable feed: {response.text}")
@@ -304,12 +354,15 @@ def enable_feed(client, feed_id: str) -> Feed:
     return response.json()
 
 
-def generate_secret(client, feed_id: str) -> FeedSecret:
+def generate_secret(
+    client, feed_id: str, api_version: APIVersion | None = None
+) -> FeedSecret:
     """Generate a secret for a feed.
 
     Args:
         client: ChronicleClient instance
         feed_id: Feed ID
+        api_version: (Optional) Preferred API version to use.
 
     Returns:
         Dictionary containing the generated secret
@@ -318,7 +371,8 @@ def generate_secret(client, feed_id: str) -> FeedSecret:
         APIError: If the API request fails
     """
     url = (
-        f"{client.base_url}/{client.instance_id}/feeds/{feed_id}:generateSecret"
+        f"{client.base_url(api_version, ALLOWED_ENDPOINT_VERSIONS)}/"
+        f"{client.instance_id}/feeds/{feed_id}:generateSecret"
     )
     response = client.session.post(url)
     if response.status_code != 200:

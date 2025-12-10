@@ -15,12 +15,12 @@
 """Google SecOps CLI config commands"""
 
 from secops.cli.constants import CONFIG_FILE
-from secops.cli.utils.config_utils import load_config, save_config
 from secops.cli.utils.common_args import (
     add_chronicle_args,
     add_common_args,
     add_time_range_args,
 )
+from secops.cli.utils.config_utils import load_config, save_config
 
 
 def setup_config_command(subparsers):
@@ -74,6 +74,8 @@ def handle_config_set_command(args, chronicle=None):
         config["project_id"] = args.project_id
     if args.region:
         config["region"] = args.region
+    if hasattr(args, "api_version") and args.api_version:
+        config["api_version"] = args.api_version
     if args.service_account:
         config["service_account"] = args.service_account
     if args.start_time:

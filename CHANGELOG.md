@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.0] - 2025-12-10
+### Updated
+- Minimum python version support to 3.10 from 3.9 as python 3.9 has reached its end of life.
+
+## [0.27.2] - 2025-12-08
+### Updated
+- Parser list method to handle pagination properly
+  - Method auto paginates and returns all when no page size is provided.
+  - When page size is provided, method returns response with next page token.
+
+## [0.27.1] - 2025-12-05
+### Updated
+- Updated Chronicle client to expose API version param for following:
+  - Feed management (list, get, create, delete, disable, enable, generate secret)
+  - Reference list management(create, get, list, update)
+  - Rule management (create, get, list, update, delete, search)
+  - Rule deployment (get, update)
+  - Rule retrohunt (create, get)
+
+## [0.27.0] - 2025-12-05
+### Added
+- Chronicle configuration for default API endpoint version to use for all methods
+### Updated
+- Following module's methods to add support for configuring API endpoint version:
+  - Feed management (list, get, create, delete, disable, enable, generate secret)
+  - Reference list management(create, get, list, update)
+  - Rule management (create, get, list, update, delete, search)
+  - Rule deployment (get, update)
+  - Rule retrohunt (create, get)
+
 ## [0.26.0] - 2025-11-26
 ### Added
 - Search curated rule detection method support
