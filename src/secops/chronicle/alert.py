@@ -15,11 +15,12 @@
 """Alert functionality for Chronicle."""
 
 import json
+import re
 import time
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional
+from typing import Any
+
 from secops.exceptions import APIError
-import re
 
 
 def _fix_json_formatting(data):
@@ -54,13 +55,13 @@ def get_alerts(
     client,
     start_time: datetime,
     end_time: datetime,
-    snapshot_query: Optional[str] = 'feedback_summary.status != "CLOSED"',
-    baseline_query: Optional[str] = None,
-    max_alerts: Optional[int] = 1000,
-    enable_cache: Optional[bool] = None,
+    snapshot_query: str | None = 'feedback_summary.status != "CLOSED"',
+    baseline_query: str | None = None,
+    max_alerts: int | None = 1000,
+    enable_cache: bool | None = None,
     max_attempts: int = 30,
     poll_interval: float = 1.0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get alerts from Chronicle.
 
     This function uses the legacy:legacyFetchAlertsView endpoint to retrieve

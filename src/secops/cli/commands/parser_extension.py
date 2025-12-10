@@ -17,9 +17,9 @@
 import sys
 from typing import Any
 
-from secops.exceptions import APIError
-from secops.cli.utils.formatters import output_formatter
 from secops.cli.utils.common_args import add_pagination_args
+from secops.cli.utils.formatters import output_formatter
+from secops.exceptions import APIError
 
 
 def setup_parser_extension_command(subparsers: Any) -> None:
@@ -163,9 +163,9 @@ def handle_parser_extension_create_command(args, chronicle):
             log = args.log
         elif args.log_file:
             try:
-                with open(args.log_file, "r", encoding="utf-8") as f:
+                with open(args.log_file, encoding="utf-8") as f:
                     log = f.read().strip()
-            except IOError as e:
+            except OSError as e:
                 print(f"Error reading log file: {e}", file=sys.stderr)
                 sys.exit(1)
 
@@ -175,9 +175,9 @@ def handle_parser_extension_create_command(args, chronicle):
             parser_config = args.parser_config
         elif args.parser_config_file:
             try:
-                with open(args.parser_config_file, "r", encoding="utf-8") as f:
+                with open(args.parser_config_file, encoding="utf-8") as f:
                     parser_config = f.read().strip()
-            except IOError as e:
+            except OSError as e:
                 print(f"Error reading CBN snippet file: {e}", file=sys.stderr)
                 sys.exit(1)
 

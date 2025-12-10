@@ -16,9 +16,10 @@
 
 Provides access to Chronicle's Gemini conversational AI interface.
 """
-from typing import Dict, Any, List, Optional
-from secops.exceptions import APIError
 import re
+from typing import Any
+
+from secops.exceptions import APIError
 
 
 class Block:
@@ -28,9 +29,7 @@ class Block:
     (text, code, HTML, etc.) returned in a Gemini conversation response.
     """
 
-    def __init__(
-        self, block_type: str, content: str, title: Optional[str] = None
-    ):
+    def __init__(self, block_type: str, content: str, title: str | None = None):
         """Initialize a response block.
 
         Args:
@@ -81,8 +80,8 @@ class SuggestedAction:
         self,
         display_text: str,
         action_type: str,
-        use_case_id: Optional[str] = None,
-        navigation: Optional[NavigationAction] = None,
+        use_case_id: str | None = None,
+        navigation: NavigationAction | None = None,
     ):
         """Initialize a suggested action.
 
@@ -117,11 +116,11 @@ class GeminiResponse:
         name: str,
         input_query: str,
         create_time: str,
-        blocks: List[Block],
-        suggested_actions: Optional[List[SuggestedAction]] = None,
-        references: Optional[List[Block]] = None,
-        groundings: Optional[List[str]] = None,
-        raw_response: Optional[Dict[str, Any]] = None,
+        blocks: list[Block],
+        suggested_actions: list[SuggestedAction] | None = None,
+        references: list[Block] | None = None,
+        groundings: list[str] | None = None,
+        raw_response: dict[str, Any] | None = None,
     ):
         """Initialize a Gemini response.
 
@@ -156,7 +155,7 @@ class GeminiResponse:
         )
 
     @classmethod
-    def from_api_response(cls, response: Dict[str, Any]) -> "GeminiResponse":
+    def from_api_response(cls, response: dict[str, Any]) -> "GeminiResponse":
         """Create a GeminiResponse object from an API response.
 
         Args:
@@ -287,7 +286,7 @@ class GeminiResponse:
 
         return "\n\n".join(all_content) if all_content else ""
 
-    def get_code_blocks(self) -> List[Block]:
+    def get_code_blocks(self) -> list[Block]:
         """Get all CODE blocks.
 
         Returns:
@@ -295,7 +294,7 @@ class GeminiResponse:
         """
         return [block for block in self.blocks if block.block_type == "CODE"]
 
-    def get_html_blocks(self) -> List[Block]:
+    def get_html_blocks(self) -> list[Block]:
         """Get all HTML blocks.
 
         Returns:
@@ -303,7 +302,7 @@ class GeminiResponse:
         """
         return [block for block in self.blocks if block.block_type == "HTML"]
 
-    def get_raw_response(self) -> Dict[str, Any]:
+    def get_raw_response(self) -> dict[str, Any]:
         """Get the raw API response as a dictionary.
 
         This provides access to the complete, unprocessed API response for
@@ -412,9 +411,9 @@ def opt_in_to_gemini(client) -> bool:
 def query_gemini(
     client,
     query: str,
-    conversation_id: Optional[str] = None,
+    conversation_id: str | None = None,
     context_uri: str = "/search",
-    context_body: Optional[Dict[str, Any]] = None,
+    context_body: dict[str, Any] | None = None,
     attempt_opt_in: bool = True,
 ) -> GeminiResponse:
     """Query Chronicle Gemini with a prompt.

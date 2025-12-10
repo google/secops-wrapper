@@ -15,13 +15,14 @@
 """
 Provides ingestion feed management functionality for Chronicle.
 """
-from secops.exceptions import APIError
-from dataclasses import dataclass, asdict
-from secops.chronicle.models import APIVersion
-from typing import Dict, Any, List, TypedDict, Optional, Union, Annotated
-import sys
-import os
 import json
+import os
+import sys
+from dataclasses import asdict, dataclass
+from typing import Annotated, Any, TypedDict
+
+from secops.chronicle.models import APIVersion
+from secops.exceptions import APIError
 
 # Use built-in StrEnum if Python 3.11+, otherwise create a compatible version
 if sys.version_info >= (3, 11):
@@ -52,7 +53,7 @@ class CreateFeedModel:
 
     display_name: Annotated[str, "Display name for the feed"]
     details: Annotated[
-        Union[str, Dict[str, Any]], "Feed details as JSON string or dict"
+        str | dict[str, Any], "Feed details as JSON string or dict"
     ]
 
     def __post_init__(self):
@@ -63,7 +64,7 @@ class CreateFeedModel:
             except json.JSONDecodeError as e:
                 raise ValueError(f"Invalid JSON string for details: {e}") from e
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return asdict(self)
 
@@ -79,10 +80,10 @@ class UpdateFeedModel:
     """
 
     display_name: Annotated[
-        Optional[str], "Optional display name for the feed"
+        str | None, "Optional display name for the feed"
     ] = None
     details: Annotated[
-        Optional[Union[str, Dict[str, Any]]],
+        str | dict[str, Any] | None,
         "Optional feed details as JSON string or dict",
     ] = None
 
@@ -94,7 +95,7 @@ class UpdateFeedModel:
             except json.JSONDecodeError as e:
                 raise ValueError(f"Invalid JSON string for details: {e}") from e
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return asdict(self)
 
@@ -132,8 +133,8 @@ def list_feeds(
     client,
     page_size: int = 100,
     page_token: str = None,
-    api_version: Optional[APIVersion] = None,
-) -> List[Feed]:
+    api_version: APIVersion | None = None,
+) -> list[Feed]:
     """List feeds.
 
     Args:
@@ -174,7 +175,7 @@ def list_feeds(
 
 
 def get_feed(
-    client, feed_id: str, api_version: Optional[APIVersion] = None
+    client, feed_id: str, api_version: APIVersion | None = None
 ) -> Feed:
     """Get a feed by ID.
 
@@ -204,7 +205,7 @@ def get_feed(
 def create_feed(
     client,
     feed_config: CreateFeedModel,
-    api_version: Optional[APIVersion] = None,
+    api_version: APIVersion | None = None,
 ) -> Feed:
     """Create a new feed.
 
@@ -234,8 +235,8 @@ def update_feed(
     client,
     feed_id: str,
     feed_config: CreateFeedModel,
-    update_mask: Optional[Union[List[str], None]] = None,
-    api_version: Optional[APIVersion] = None,
+    update_mask: list[str] | None | None = None,
+    api_version: APIVersion | None = None,
 ) -> Feed:
     """Update an existing feed.
 
@@ -278,7 +279,7 @@ def update_feed(
 
 
 def delete_feed(
-    client, feed_id: str, api_version: Optional[APIVersion] = None
+    client, feed_id: str, api_version: APIVersion | None = None
 ) -> None:
     """Delete a feed.
 
@@ -300,7 +301,7 @@ def delete_feed(
 
 
 def disable_feed(
-    client, feed_id: str, api_version: Optional[APIVersion] = None
+    client, feed_id: str, api_version: APIVersion | None = None
 ) -> Feed:
     """Disable a feed.
 
@@ -327,7 +328,7 @@ def disable_feed(
 
 
 def enable_feed(
-    client, feed_id: str, api_version: Optional[APIVersion] = None
+    client, feed_id: str, api_version: APIVersion | None = None
 ) -> Feed:
     """Enable a feed.
 
@@ -354,7 +355,7 @@ def enable_feed(
 
 
 def generate_secret(
-    client, feed_id: str, api_version: Optional[APIVersion] = None
+    client, feed_id: str, api_version: APIVersion | None = None
 ) -> FeedSecret:
     """Generate a secret for a feed.
 

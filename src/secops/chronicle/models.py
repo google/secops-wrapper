@@ -13,12 +13,12 @@
 # limitations under the License.
 #
 """Data models for Chronicle API responses."""
-import sys
 import json
+import sys
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from secops.exceptions import SecOpsError
 
@@ -99,7 +99,7 @@ class DomainInfo:
 class AssetInfo:
     """Information about an asset entity."""
 
-    ip: List[str]
+    ip: list[str]
 
 
 @dataclass
@@ -109,7 +109,7 @@ class Entity:
     name: str
     metadata: EntityMetadata
     metric: EntityMetrics
-    entity: Dict  # Can contain domain or asset info
+    entity: dict  # Can contain domain or asset info
 
 
 @dataclass
@@ -133,7 +133,7 @@ class TimelineBucket:
 class Timeline:
     """Timeline information."""
 
-    buckets: List[TimelineBucket]
+    buckets: list[TimelineBucket]
     bucket_size: str
 
 
@@ -166,16 +166,16 @@ class FilePropertyGroup:
     """Represents a group of file properties."""
 
     title: str
-    properties: List[FileProperty]
+    properties: list[FileProperty]
 
 
 @dataclass
 class FileMetadataAndProperties:
     """Represents file metadata and properties."""
 
-    metadata: List[FileProperty]
-    properties: List[FilePropertyGroup]
-    query_state: Optional[str] = None
+    metadata: list[FileProperty]
+    properties: list[FilePropertyGroup]
+    query_state: str | None = None
 
 
 @dataclass
@@ -184,16 +184,16 @@ class EntitySummary:
     Complete entity summary response, potentially combining multiple API calls.
     """
 
-    primary_entity: Optional[Entity] = None
-    related_entities: List[Entity] = field(default_factory=list)
-    alert_counts: Optional[List[AlertCount]] = None
-    timeline: Optional[Timeline] = None
-    widget_metadata: Optional[WidgetMetadata] = None
-    prevalence: Optional[List[PrevalenceData]] = None
-    tpd_prevalence: Optional[List[PrevalenceData]] = None
-    file_metadata_and_properties: Optional[FileMetadataAndProperties] = None
+    primary_entity: Entity | None = None
+    related_entities: list[Entity] = field(default_factory=list)
+    alert_counts: list[AlertCount] | None = None
+    timeline: Timeline | None = None
+    widget_metadata: WidgetMetadata | None = None
+    prevalence: list[PrevalenceData] | None = None
+    tpd_prevalence: list[PrevalenceData] | None = None
+    file_metadata_and_properties: FileMetadataAndProperties | None = None
     has_more_alerts: bool = False
-    next_page_token: Optional[str] = None
+    next_page_token: str | None = None
 
 
 class DataExportStage(str, Enum):
@@ -212,8 +212,8 @@ class DataExportStatus:
     """Status of a data export request."""
 
     stage: DataExportStage
-    progress_percentage: Optional[int] = None
-    error: Optional[str] = None
+    progress_percentage: int | None = None
+    error: str | None = None
 
 
 @dataclass
@@ -225,7 +225,7 @@ class DataExport:
     end_time: datetime
     gcs_bucket: str
     data_export_status: DataExportStatus
-    log_type: Optional[str] = None
+    log_type: str | None = None
     export_all_logs: bool = False
 
 
@@ -255,8 +255,8 @@ class Case:
         stage: str,
         priority: str,
         status: str,
-        soar_platform_info: Optional[SoarPlatformInfo] = None,
-        alert_ids: Optional[list[str]] = None,
+        soar_platform_info: SoarPlatformInfo | None = None,
+        alert_ids: list[str] | None = None,
     ):
         self.id = id
         self.display_name = display_name
@@ -291,7 +291,7 @@ class CaseList:
         self.cases = cases
         self._case_map = {case.id: case for case in cases}
 
-    def get_case(self, case_id: str) -> Optional[Case]:
+    def get_case(self, case_id: str) -> Case | None:
         """Get a case by ID."""
         return self._case_map.get(case_id)
 
@@ -330,11 +330,11 @@ class TileType(str, Enum):
 class InputInterval:
     """Input interval values to query."""
 
-    time_window: Optional[Dict[str, Any]] = None
-    relative_time: Optional[Dict[str, Any]] = None
+    time_window: dict[str, Any] | None = None
+    relative_time: dict[str, Any] | None = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]):
+    def from_dict(cls, data: dict[str, Any]):
         """Create from a dictionary."""
         return cls(
             time_window=data.get("time_window") or data.get("timeWindow"),
@@ -352,7 +352,7 @@ class InputInterval:
                 "One of `time_window` or `relative_time` must be set."
             )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to a dictionary."""
         result = {}
         if self.time_window:
@@ -367,7 +367,7 @@ class DashboardQuery:
     """Dashboard query Model."""
 
     query: str
-    input: Union[InputInterval, str]
+    input: InputInterval | str
     name: str
     etag: str
 
@@ -381,7 +381,7 @@ class DashboardQuery:
             raise SecOpsError(f"Value must be valid JSON string: {e}") from e
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]):
+    def from_dict(cls, data: dict[str, Any]):
         """Create from a dictionary."""
         return cls(
             query=data.get("query"),
@@ -394,13 +394,13 @@ class DashboardQuery:
             etag=data.get("etag"),
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to a dictionary."""
         return asdict(
             self, dict_factory=lambda x: {k: v for (k, v) in x if v is not None}
         )
 
-    def update_fields(self) -> List[str]:
+    def update_fields(self) -> list[str]:
         """Return a list of fields that have been modified."""
         return [
             f"dashboard_query.{field}"
@@ -415,12 +415,12 @@ class DashboardChart:
 
     name: str
     etag: str
-    display_name: Optional[str] = None
-    description: Optional[str] = None
-    tile_type: Optional[TileType] = None
-    visualization: Optional[Union[Dict[str, Any], str]] = None
-    drill_down_config: Optional[Union[Dict[str, Any], str]] = None
-    chart_datasource: Optional[Union[Dict[str, Any], str]] = None
+    display_name: str | None = None
+    description: str | None = None
+    tile_type: TileType | None = None
+    visualization: dict[str, Any] | str | None = None
+    drill_down_config: dict[str, Any] | str | None = None
+    chart_datasource: dict[str, Any] | str | None = None
 
     def __post_init__(self):
         """Post init to handle field validation and transformation."""
@@ -437,7 +437,7 @@ class DashboardChart:
             raise SecOpsError(f"Value must be valid JSON string: {e}") from e
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]):
+    def from_dict(cls, data: dict[str, Any]):
         """Create from a dictionary."""
         return cls(
             name=data.get("name"),
@@ -454,13 +454,13 @@ class DashboardChart:
             ),
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to a dictionary."""
         return asdict(
             self, dict_factory=lambda x: {k: v for (k, v) in x if v is not None}
         )
 
-    def update_fields(self) -> List[str]:
+    def update_fields(self) -> list[str]:
         """Return a list of fields that have been modified."""
         return [
             f"dashboard_chart.{field}"
