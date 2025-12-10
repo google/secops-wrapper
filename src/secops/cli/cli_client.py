@@ -30,6 +30,7 @@ from secops.cli.commands.rule_exclusion import setup_rule_exclusion_command
 from secops.cli.commands.search import setup_search_command
 from secops.cli.commands.stats import setup_stats_command
 from secops.cli.commands.udm_search import setup_udm_search_view_command
+from secops.cli.commands.watchlist import setup_watchlist_command
 from secops.cli.utils.common_args import add_chronicle_args, add_common_args
 from secops.cli.utils.config_utils import load_config
 from secops.exceptions import AuthenticationError, SecOpsError
