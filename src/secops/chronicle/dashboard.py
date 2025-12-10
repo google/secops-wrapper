@@ -19,7 +19,7 @@ This module provides functions to manage dashboard and charts.
 
 import json
 import sys
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from secops.chronicle.models import (
     DashboardChart,
@@ -60,10 +60,10 @@ def create_dashboard(
     client,
     display_name: str,
     access_type: DashboardAccessType,
-    description: Optional[str] = None,
-    filters: Optional[Union[List[Dict[str, Any]], str]] = None,
-    charts: Optional[Union[List[Dict[str, Any]], str]] = None,
-) -> Dict[str, Any]:
+    description: str | None = None,
+    filters: list[dict[str, Any]] | str | None = None,
+    charts: list[dict[str, Any]] | str | None = None,
+) -> dict[str, Any]:
     """Create a new native dashboard.
 
     Args:
@@ -125,7 +125,7 @@ def create_dashboard(
     return response.json()
 
 
-def import_dashboard(client, dashboard: Dict[str, Any]) -> Dict[str, Any]:
+def import_dashboard(client, dashboard: dict[str, Any]) -> dict[str, Any]:
     """Import a native dashboard.
 
     Args:
@@ -162,7 +162,7 @@ def import_dashboard(client, dashboard: Dict[str, Any]) -> Dict[str, Any]:
     return response.json()
 
 
-def export_dashboard(client, dashboard_names: List[str]) -> Dict[str, Any]:
+def export_dashboard(client, dashboard_names: list[str]) -> dict[str, Any]:
     """Export native dashboards.
 
     Args:
@@ -199,9 +199,9 @@ def export_dashboard(client, dashboard_names: List[str]) -> Dict[str, Any]:
 
 def list_dashboards(
     client,
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    page_size: int | None = None,
+    page_token: str | None = None,
+) -> dict[str, Any]:
     """List all available dashboards in Basic View.
 
     Args:
@@ -233,8 +233,8 @@ def list_dashboards(
 def get_dashboard(
     client,
     dashboard_id: str,
-    view: Optional[DashboardView] = None,
-) -> Dict[str, Any]:
+    view: DashboardView | None = None,
+) -> dict[str, Any]:
     """Get information about a specific dashboard.
 
     Args:
@@ -272,11 +272,11 @@ def get_dashboard(
 def update_dashboard(
     client,
     dashboard_id: str,
-    display_name: Optional[str] = None,
-    description: Optional[str] = None,
-    filters: Optional[Union[List[Dict[str, Any]], str]] = None,
-    charts: Optional[Union[List[Dict[str, Any]], str]] = None,
-) -> Dict[str, Any]:
+    display_name: str | None = None,
+    description: str | None = None,
+    filters: list[dict[str, Any]] | str | None = None,
+    charts: list[dict[str, Any]] | str | None = None,
+) -> dict[str, Any]:
     """Update an existing dashboard.
 
     Args:
@@ -346,7 +346,7 @@ def update_dashboard(
     return response.json()
 
 
-def delete_dashboard(client, dashboard_id: str) -> Dict[str, Any]:
+def delete_dashboard(client, dashboard_id: str) -> dict[str, Any]:
     """Delete a dashboard.
 
     Args:
@@ -381,8 +381,8 @@ def duplicate_dashboard(
     dashboard_id: str,
     display_name: str,
     access_type: DashboardAccessType,
-    description: Optional[str] = None,
-) -> Dict[str, Any]:
+    description: str | None = None,
+) -> dict[str, Any]:
     """Duplicate a existing dashboard.
 
     Args:
@@ -430,16 +430,16 @@ def add_chart(
     client,
     dashboard_id: str,
     display_name: str,
-    chart_layout: Union[Dict[str, Any], str],
-    tile_type: Optional[TileType] = None,
-    chart_datasource: Optional[Union[Dict[str, Any], str]] = None,
-    visualization: Optional[Union[Dict[str, Any], str]] = None,
-    drill_down_config: Optional[Union[Dict[str, Any], str]] = None,
-    description: Optional[str] = None,
-    query: Optional[str] = None,
-    interval: Optional[Union[InputInterval, Dict[str, Any], str]] = None,
+    chart_layout: dict[str, Any] | str,
+    tile_type: TileType | None = None,
+    chart_datasource: dict[str, Any] | str | None = None,
+    visualization: dict[str, Any] | str | None = None,
+    drill_down_config: dict[str, Any] | str | None = None,
+    description: str | None = None,
+    query: str | None = None,
+    interval: InputInterval | dict[str, Any] | str | None = None,
     **kwargs,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Add a chart to a dashboard.
 
     Args:
@@ -533,7 +533,7 @@ def add_chart(
     return response.json()
 
 
-def get_chart(client, chart_id: str) -> Dict[str, Any]:
+def get_chart(client, chart_id: str) -> dict[str, Any]:
     """Get detail for dashboard chart.
 
     Args:
@@ -561,7 +561,7 @@ def remove_chart(
     client,
     dashboard_id: str,
     chart_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Remove a chart from a dashboard.
 
     Args:
@@ -602,13 +602,9 @@ def remove_chart(
 def edit_chart(
     client,
     dashboard_id: str,
-    dashboard_query: Optional[
-        Union[Dict[str, Any], DashboardQuery, str]
-    ] = None,
-    dashboard_chart: Optional[
-        Union[Dict[str, Any], DashboardChart, str]
-    ] = None,
-) -> Dict[str, Any]:
+    dashboard_query: None | (dict[str, Any] | DashboardQuery | str) = None,
+    dashboard_chart: None | (dict[str, Any] | DashboardChart | str) = None,
+) -> dict[str, Any]:
     """Edit an existing chart in a dashboard.
 
     Args:

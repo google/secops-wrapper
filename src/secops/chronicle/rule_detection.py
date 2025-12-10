@@ -14,23 +14,24 @@
 #
 """Detection functionality for Chronicle rules."""
 
-from typing import Dict, Any, Optional, Literal
 from datetime import datetime
+from typing import Any, Literal
+
 from secops.exceptions import APIError
 
 
 def list_detections(
     client,
     rule_id: str,
-    start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
     list_basis: Literal[
         "LIST_BASIS_UNSPECIFIED", "CREATED_TIME", "DETECTION_TIME"
     ] = "LIST_BASIS_UNSPECIFIED",
-    alert_state: Optional[str] = None,
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    alert_state: str | None = None,
+    page_size: int | None = None,
+    page_token: str | None = None,
+) -> dict[str, Any]:
     """List detections for a rule.
 
     Args:
@@ -112,7 +113,7 @@ def list_detections(
     return response.json()
 
 
-def list_errors(client, rule_id: str) -> Dict[str, Any]:
+def list_errors(client, rule_id: str) -> dict[str, Any]:
     """List execution errors for a rule.
 
     Args:

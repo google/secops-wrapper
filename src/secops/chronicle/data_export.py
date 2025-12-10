@@ -18,9 +18,10 @@ This module provides functions to interact with the Chronicle Data Export API,
 allowing users to export Chronicle data to Google Cloud Storage buckets.
 """
 
-from typing import Dict, Any, Optional, List
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
+
 from secops.exceptions import APIError
 
 
@@ -74,7 +75,7 @@ def _get_formatted_log_type(client, log_type: str) -> str:
     return log_type
 
 
-def get_data_export(client, data_export_id: str) -> Dict[str, Any]:
+def get_data_export(client, data_export_id: str) -> dict[str, Any]:
     """Get information about a specific data export.
 
     Args:
@@ -111,10 +112,10 @@ def create_data_export(
     gcs_bucket: str,
     start_time: datetime,
     end_time: datetime,
-    log_type: Optional[str] = None,
-    log_types: Optional[List[str]] = None,
+    log_type: str | None = None,
+    log_types: list[str] | None = None,
     export_all_logs: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create a new data export job.
 
     Args:
@@ -223,7 +224,7 @@ def create_data_export(
     return response.json()
 
 
-def cancel_data_export(client, data_export_id: str) -> Dict[str, Any]:
+def cancel_data_export(client, data_export_id: str) -> dict[str, Any]:
     """Cancel an in-progress data export.
 
     Args:
@@ -259,9 +260,9 @@ def fetch_available_log_types(
     client,
     start_time: datetime,
     end_time: datetime,
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    page_size: int | None = None,
+    page_token: str | None = None,
+) -> dict[str, Any]:
     """Fetch available log types for export within a time range.
 
     Args:
@@ -360,11 +361,11 @@ def fetch_available_log_types(
 def update_data_export(
     client,
     data_export_id: str,
-    start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None,
-    gcs_bucket: Optional[str] = None,
-    log_types: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
+    gcs_bucket: str | None = None,
+    log_types: list[str] | None = None,
+) -> dict[str, Any]:
     """Update an existing data export job.
 
     Note: The job must be in the "IN_QUEUE" state to be updated.
@@ -431,10 +432,10 @@ def update_data_export(
 
 def list_data_export(
     client,
-    filters: Optional[str] = None,
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    filters: str | None = None,
+    page_size: int | None = None,
+    page_token: str | None = None,
+) -> dict[str, Any]:
     """List data export jobs.
 
     Args:

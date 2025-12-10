@@ -17,8 +17,8 @@
 import sys
 
 from secops.cli.utils.common_args import add_time_range_args
-from secops.cli.utils.time_utils import get_time_range
 from secops.cli.utils.formatters import output_formatter
+from secops.cli.utils.time_utils import get_time_range
 
 
 def setup_udm_search_view_command(subparsers):
@@ -99,9 +99,9 @@ def handle_udm_search_view_command(args, chronicle):
     query = args.query
     if args.query_file:
         try:
-            with open(args.query_file, "r", encoding="utf-8") as f:
+            with open(args.query_file, encoding="utf-8") as f:
                 query = f.read()
-        except IOError as e:
+        except OSError as e:
             print(f"Error reading query file: {e}", file=sys.stderr)
             sys.exit(1)
 

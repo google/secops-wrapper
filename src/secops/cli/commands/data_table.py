@@ -368,9 +368,9 @@ def handle_dt_replace_rows_command(args, chronicle):
                 sys.exit(1)
         elif args.rows_file:
             try:
-                with open(args.rows_file, "r", encoding="utf-8") as f:
+                with open(args.rows_file, encoding="utf-8") as f:
                     rows = json.load(f)
-            except (json.JSONDecodeError, IOError) as e:
+            except (json.JSONDecodeError, OSError) as e:
                 print(f"Error reading from file: {e}", file=sys.stderr)
                 sys.exit(1)
         else:
@@ -445,9 +445,9 @@ def handle_dt_update_rows_command(args, chronicle):
                 sys.exit(1)
         elif args.rows_file:
             try:
-                with open(args.rows_file, "r", encoding="utf-8") as f:
+                with open(args.rows_file, encoding="utf-8") as f:
                     row_updates = json.load(f)
-            except (json.JSONDecodeError, IOError) as e:
+            except (json.JSONDecodeError, OSError) as e:
                 print(f"Error reading from file: {e}", file=sys.stderr)
                 sys.exit(1)
         else:
