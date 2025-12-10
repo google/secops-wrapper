@@ -29,11 +29,13 @@ def setup_curated_rules_command(subparsers):
     top = subparsers.add_parser(
         "curated-rule", help="Manage curated rules and rule sets"
     )
-    lvl1 = top.add_subparsers(dest="curated_cmd", required=True)
+    lvl1 = top.add_subparsers(dest="curated_cmd")
+    top.set_defaults(func=lambda args, _: top.print_help())
 
     # ---- rules ----
     rules = lvl1.add_parser("rule", help="Manage curated rules")
-    rules_sp = rules.add_subparsers(dest="rule_cmd", required=True)
+    rules_sp = rules.add_subparsers(dest="rule_cmd")
+    rules.set_defaults(func=lambda args, _: rules.print_help())
 
     rules_list = rules_sp.add_parser("list", help="List curated rules")
     add_pagination_args(rules_list)
@@ -117,12 +119,8 @@ def setup_curated_rules_command(subparsers):
     rule_set_cat = lvl1.add_parser(
         "rule-set-category", help="Manage curated rule set categories"
     )
-    rule_set_cat_subparser = rule_set_cat.add_subparsers(
-        dest="rcat_cmd"
-    )
-    rule_set_cat.set_defaults(
-        func=lambda args, _: rule_set_cat.print_help()
-    )
+    rule_set_cat_subparser = rule_set_cat.add_subparsers(dest="rcat_cmd")
+    rule_set_cat.set_defaults(func=lambda args, _: rule_set_cat.print_help())
 
     rule_set_cat_list = rule_set_cat_subparser.add_parser(
         "list", help="List curated rule set categories"

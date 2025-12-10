@@ -31,13 +31,17 @@ def setup_search_command(subparsers):
         subparsers: Subparsers object to add to
     """
     search_parser = subparsers.add_parser("search", help="Search UDM events")
-    search_parser.add_argument("--query", help="UDM query string")
-    search_parser.add_argument(
+
+    # Create mutually exclusive group for query types
+    query_group = search_parser.add_mutually_exclusive_group(required=True)
+    query_group.add_argument("--query", help="UDM query string")
+    query_group.add_argument(
         "--nl-query",
         "--nl_query",
         dest="nl_query",
         help="Natural language query",
     )
+
     search_parser.add_argument(
         "--max-events",
         "--max_events",
@@ -81,7 +85,7 @@ def handle_search_command(args, chronicle):
     start_time, end_time = get_time_range(args)
 
     try:
-        if args.csv and args.fields:
+        if args.csv and args.fields and args.query:
             fields = [f.strip() for f in args.fields.split(",")]
             result = chronicle.fetch_udm_search_csv(
                 query=args.query,
