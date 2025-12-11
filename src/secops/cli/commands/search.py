@@ -33,7 +33,7 @@ def setup_search_command(subparsers):
     search_parser = subparsers.add_parser("search", help="Search UDM events")
 
     # Create mutually exclusive group for query types
-    query_group = search_parser.add_mutually_exclusive_group(required=True)
+    query_group = search_parser.add_mutually_exclusive_group()
     query_group.add_argument("--query", help="UDM query string")
     query_group.add_argument(
         "--nl-query",
@@ -82,6 +82,13 @@ def handle_search_command(args, chronicle):
         args: Command line arguments
         chronicle: Chronicle client
     """
+    # Require query or nl_query
+    if not args.query and not args.nl_query:
+        print(
+            "\nError: One of --query or --nl-query is required", file=sys.stderr
+        )
+        sys.exit(1)
+
     start_time, end_time = get_time_range(args)
 
     try:

@@ -329,8 +329,8 @@ class BaseUrl(str):
         selected_version = APIVersion(version or self._default)
         if allowed and selected_version not in allowed:
             raise SecOpsError(
-                f"API version '{selected_version}' is not supported for this "
-                f"endpoint. Allowed versions: {', '.join(allowed)}"
+                f'API version "{selected_version}" is not supported for this '
+                f'endpoint. Allowed versions: {", ".join(allowed)}'
             )
         domain = self._get_domain(self._region)
         return f"https://{domain}/{selected_version}"
