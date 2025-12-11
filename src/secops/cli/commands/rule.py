@@ -17,13 +17,13 @@
 import json
 import sys
 
-from secops.exceptions import APIError
-from secops.cli.utils.time_utils import get_time_range
-from secops.cli.utils.formatters import output_formatter
 from secops.cli.utils.common_args import (
-    add_time_range_args,
     add_pagination_args,
+    add_time_range_args,
 )
+from secops.cli.utils.formatters import output_formatter
+from secops.cli.utils.time_utils import get_time_range
+from secops.exceptions import APIError
 
 
 def setup_rule_command(subparsers):
@@ -253,7 +253,7 @@ def handle_rule_get_command(args, chronicle):
 def handle_rule_create_command(args, chronicle):
     """Handle rule create command."""
     try:
-        with open(args.file, "r", encoding="utf-8") as f:
+        with open(args.file, encoding="utf-8") as f:
             rule_text = f.read()
 
         result = chronicle.create_rule(rule_text)
@@ -266,7 +266,7 @@ def handle_rule_create_command(args, chronicle):
 def handle_rule_update_command(args, chronicle):
     """Handle rule update command."""
     try:
-        with open(args.file, "r", encoding="utf-8") as f:
+        with open(args.file, encoding="utf-8") as f:
             rule_text = f.read()
 
         result = chronicle.update_rule(args.id, rule_text)
@@ -300,7 +300,7 @@ def handle_rule_delete_command(args, chronicle):
 def handle_rule_validate_command(args, chronicle):
     """Handle rule validate command."""
     try:
-        with open(args.file, "r", encoding="utf-8") as f:
+        with open(args.file, encoding="utf-8") as f:
             rule_text = f.read()
 
         result = chronicle.validate_rule(rule_text)
@@ -325,7 +325,7 @@ def handle_rule_test_command(args, chronicle):
     as JSON objects.
     """
     try:
-        with open(args.file, "r", encoding="utf-8") as f:
+        with open(args.file, encoding="utf-8") as f:
             rule_text = f.read()
 
         start_time, end_time = get_time_range(args)

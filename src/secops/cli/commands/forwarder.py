@@ -17,8 +17,8 @@
 import json
 import sys
 
-from secops.exceptions import APIError
 from secops.cli.utils.common_args import add_pagination_args
+from secops.exceptions import APIError
 
 
 def setup_forwarder_command(subparsers):

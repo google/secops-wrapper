@@ -14,7 +14,8 @@
 #
 """Statistics functionality for Chronicle searches."""
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any
+
 from secops.exceptions import APIError
 
 
@@ -28,7 +29,7 @@ def get_stats(
     max_events: int = 10000,
     case_insensitive: bool = True,
     max_attempts: int = 30,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get statistics from a Chronicle search query using
     the Chronicle V1alpha API.
@@ -91,7 +92,7 @@ def get_stats(
     return process_stats_results(results["stats"])
 
 
-def process_stats_results(stats: Dict[str, Any]) -> Dict[str, Any]:
+def process_stats_results(stats: dict[str, Any]) -> dict[str, Any]:
     """Process stats search results.
 
     Args:

@@ -14,7 +14,8 @@
 #
 """Rule validation functionality for Chronicle."""
 
-from typing import Dict, Optional, NamedTuple
+from typing import NamedTuple
+
 from secops.exceptions import APIError
 
 
@@ -29,8 +30,8 @@ class ValidationResult(NamedTuple):
     """
 
     success: bool
-    message: Optional[str] = None
-    position: Optional[Dict[str, int]] = None
+    message: str | None = None
+    position: dict[str, int] | None = None
 
 
 def validate_rule(client, rule_text: str) -> ValidationResult:

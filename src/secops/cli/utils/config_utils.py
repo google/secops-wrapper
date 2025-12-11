@@ -16,12 +16,12 @@
 
 import json
 import sys
-from typing import Any, Dict
+from typing import Any
 
 from secops.cli.constants import CONFIG_DIR, CONFIG_FILE
 
 
-def load_config() -> Dict[str, Any]:
+def load_config() -> dict[str, Any]:
     """Load configuration from config file.
 
     Returns:
@@ -31,9 +31,9 @@ def load_config() -> Dict[str, Any]:
         return {}
 
     try:
-        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        with open(CONFIG_FILE, encoding="utf-8") as f:
             return json.load(f)
-    except (json.JSONDecodeError, IOError):
+    except (json.JSONDecodeError, OSError):
         print(
             f"Warning: Failed to load config from {CONFIG_FILE}",
             file=sys.stderr,
@@ -41,7 +41,7 @@ def load_config() -> Dict[str, Any]:
         return {}
 
 
-def save_config(config: Dict[str, Any]) -> None:
+def save_config(config: dict[str, Any]) -> None:
     """Save configuration to config file.
 
     Args:
@@ -53,7 +53,7 @@ def save_config(config: Dict[str, Any]) -> None:
     try:
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2)
-    except IOError as e:
+    except OSError as e:
         print(
             f"Error: Failed to save config to {CONFIG_FILE}: {e}",
             file=sys.stderr,

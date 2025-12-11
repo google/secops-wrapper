@@ -15,7 +15,7 @@
 """Retrohunt functionality for Chronicle rules."""
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 from secops.chronicle.models import APIVersion
 from secops.exceptions import APIError
@@ -26,8 +26,8 @@ def create_retrohunt(
     rule_id: str,
     start_time: datetime,
     end_time: datetime,
-    api_version: Optional[APIVersion] = APIVersion.V1,
-) -> Dict[str, Any]:
+    api_version: APIVersion | None = APIVersion.V1,
+) -> dict[str, Any]:
     """Creates a retrohunt for a rule.
 
     A retrohunt applies a rule to historical data within the specified
@@ -70,8 +70,8 @@ def get_retrohunt(
     client,
     rule_id: str,
     operation_id: str,
-    api_version: Optional[APIVersion] = APIVersion.V1,
-) -> Dict[str, Any]:
+    api_version: APIVersion | None = APIVersion.V1,
+) -> dict[str, Any]:
     """Get retrohunt status and results.
 
     Args:

@@ -18,19 +18,19 @@ This module provides functions to execute and get dashboard query.
 """
 
 import json
-from secops.chronicle.models import InputInterval
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
+from secops.chronicle.models import InputInterval
 from secops.exceptions import APIError
 
 
 def execute_query(
     client,
     query: str,
-    interval: Union[InputInterval, Dict[str, Any], str],
-    filters: Optional[Union[List[Dict[str, Any]], str]] = None,
-    clear_cache: Optional[bool] = None,
-) -> Dict[str, Any]:
+    interval: InputInterval | dict[str, Any] | str,
+    filters: list[dict[str, Any]] | str | None = None,
+    clear_cache: bool | None = None,
+) -> dict[str, Any]:
     """Execute a dashboard query and retrieve results.
 
     Args:
@@ -78,7 +78,7 @@ def execute_query(
     return response.json()
 
 
-def get_execute_query(client, query_id: str) -> Dict[str, Any]:
+def get_execute_query(client, query_id: str) -> dict[str, Any]:
     """Get a dashboard query details.
 
     Args:

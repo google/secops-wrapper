@@ -14,11 +14,12 @@
 #
 """Query validation functionality for Chronicle."""
 
-from typing import Dict, Any
+from typing import Any
+
 from secops.exceptions import APIError
 
 
-def validate_query(client, query: str) -> Dict[str, Any]:
+def validate_query(client, query: str) -> dict[str, Any]:
     """Validate a UDM query against the Chronicle API.
 
     Args:

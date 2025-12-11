@@ -15,10 +15,11 @@
 """Authentication handling for Google SecOps SDK."""
 
 import sys
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
 from http import HTTPStatus
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any
 
 import google.auth
 import google.auth.transport.requests
@@ -91,7 +92,7 @@ class RetryConfig:
     )
     backoff_factor: float = 0.3
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the config to a dictionary for urllib3.Retry."""
         return asdict(self)
 
@@ -105,12 +106,12 @@ class LogRetry(Retry):
 
     def increment(
         self,
-        method: Optional[str] = None,
-        url: Optional[str] = None,
-        response: Optional[BaseHTTPResponse] = None,
-        error: Optional[Exception] = None,
-        _pool: Optional[ConnectionPool] = None,
-        _stacktrace: Optional[TracebackType] = None,
+        method: str | None = None,
+        url: str | None = None,
+        response: BaseHTTPResponse | None = None,
+        error: Exception | None = None,
+        _pool: ConnectionPool | None = None,
+        _stacktrace: TracebackType | None = None,
     ) -> Retry:
         """Return a new Retry object with incremented retry counters and logs
         retry attempt.
@@ -148,12 +149,12 @@ class SecOpsAuth:
 
     def __init__(
         self,
-        credentials: Optional[Credentials] = None,
-        service_account_path: Optional[str] = None,
-        service_account_info: Optional[Dict[str, Any]] = None,
-        impersonate_service_account: Optional[str] = None,
-        scopes: Optional[List[str]] = None,
-        retry_config: Optional[Union[RetryConfig, Dict[str, Any], bool]] = None,
+        credentials: Credentials | None = None,
+        service_account_path: str | None = None,
+        service_account_info: dict[str, Any] | None = None,
+        impersonate_service_account: str | None = None,
+        scopes: list[str] | None = None,
+        retry_config: RetryConfig | dict[str, Any] | bool | None = None,
     ):
         """Initialize authentication for SecOps.
 
@@ -179,10 +180,10 @@ class SecOpsAuth:
 
     def _get_credentials(
         self,
-        credentials: Optional[Credentials],
-        service_account_path: Optional[str],
-        service_account_info: Optional[Dict[str, Any]],
-        impersonate_service_account: Optional[str],
+        credentials: Credentials | None,
+        service_account_path: str | None,
+        service_account_info: dict[str, Any] | None,
+        impersonate_service_account: str | None,
     ) -> Credentials:
         """Get credentials from various sources."""
         try:

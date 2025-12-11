@@ -147,7 +147,7 @@ def handle_entity_command(args, chronicle):
 def handle_import_entities_command(args, chronicle):
     """Handle import entities command."""
     try:
-        with open(args.file, "r", encoding="utf-8") as f:
+        with open(args.file, encoding="utf-8") as f:
             entities = json.load(f)
 
         result = chronicle.import_entities(

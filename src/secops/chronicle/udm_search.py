@@ -15,7 +15,7 @@
 """UDM search functionality for Chronicle."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from secops.exceptions import APIError, SecOpsError
 
@@ -81,8 +81,8 @@ def fetch_udm_search_csv(
 
 
 def find_udm_field_values(
-    client, query: str, page_size: Optional[int] = None
-) -> Dict[str, Any]:
+    client, query: str, page_size: int | None = None
+) -> dict[str, Any]:
     """Fetch UDM field values that match a query.
 
     Args:
@@ -121,11 +121,11 @@ def fetch_udm_search_view(
     query: str,
     start_time: datetime,
     end_time: datetime,
-    snapshot_query: Optional[str] = 'feedback_summary.status != "CLOSED"',
-    max_events: Optional[int] = 10000,
-    max_detections: Optional[int] = 1000,
+    snapshot_query: str | None = 'feedback_summary.status != "CLOSED"',
+    max_events: int | None = 10000,
+    max_detections: int | None = 1000,
     case_insensitive: bool = True,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Fetch UDM search result view.
 
     Args:
@@ -193,7 +193,7 @@ def fetch_udm_search_view(
     except ValueError as e:
         raise APIError(f"Failed to parse UDM search response: {str(e)}") from e
 
-    final_resp: List[Dict[str, Any]] = []
+    final_resp: list[dict[str, Any]] = []
     complete: bool = False
     for resp in json_resp:
         if not resp.get("complete", "") and not resp.get("error", ""):
