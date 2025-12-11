@@ -23,9 +23,7 @@ from secops.cli.utils.formatters import output_formatter
 def setup_log_command(subparsers):
     """Set up the log command parser."""
     log_parser = subparsers.add_parser("log", help="Ingest logs")
-    log_subparsers = log_parser.add_subparsers(
-        help="Log command"
-    )
+    log_subparsers = log_parser.add_subparsers(help="Log command")
     log_parser.set_defaults(func=lambda args, _: log_parser.print_help())
 
     # Ingest log command
