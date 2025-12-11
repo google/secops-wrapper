@@ -1336,10 +1336,10 @@ class ChronicleClient:
 
     def list_log_processing_pipelines(
         self,
-        page_size: Optional[int] = None,
-        page_token: Optional[str] = None,
-        filter_expr: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_expr: str | None = None,
+    ) -> dict[str, Any]:
         """Lists log processing pipelines.
 
         Args:
@@ -1357,7 +1357,7 @@ class ChronicleClient:
             self, page_size, page_token, filter_expr
         )
 
-    def get_log_processing_pipeline(self, pipeline_id: str) -> Dict[str, Any]:
+    def get_log_processing_pipeline(self, pipeline_id: str) -> dict[str, Any]:
         """Gets a log processing pipeline by ID.
 
         Args:
@@ -1373,9 +1373,9 @@ class ChronicleClient:
 
     def create_log_processing_pipeline(
         self,
-        pipeline: Dict[str, Any],
-        pipeline_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        pipeline: dict[str, Any],
+        pipeline_id: str | None = None,
+    ) -> dict[str, Any]:
         """Creates a new log processing pipeline.
 
         Args:
@@ -1393,9 +1393,9 @@ class ChronicleClient:
     def patch_log_processing_pipeline(
         self,
         pipeline_id: str,
-        pipeline: Dict[str, Any],
-        update_mask: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        pipeline: dict[str, Any],
+        update_mask: str | None = None,
+    ) -> dict[str, Any]:
         """Updates a log processing pipeline.
 
         Args:
@@ -1414,8 +1414,8 @@ class ChronicleClient:
         )
 
     def delete_log_processing_pipeline(
-        self, pipeline_id: str, etag: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, pipeline_id: str, etag: str | None = None
+    ) -> dict[str, Any]:
         """Deletes a log processing pipeline.
 
         Args:
@@ -1431,8 +1431,8 @@ class ChronicleClient:
         return _delete_log_processing_pipeline(self, pipeline_id, etag)
 
     def associate_streams(
-        self, pipeline_id: str, streams: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, pipeline_id: str, streams: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Associates streams with a pipeline.
 
         Args:
@@ -1448,8 +1448,8 @@ class ChronicleClient:
         return _associate_streams(self, pipeline_id, streams)
 
     def dissociate_streams(
-        self, pipeline_id: str, streams: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, pipeline_id: str, streams: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Dissociates streams from a pipeline.
 
         Args:
@@ -1465,8 +1465,8 @@ class ChronicleClient:
         return _dissociate_streams(self, pipeline_id, streams)
 
     def fetch_associated_pipeline(
-        self, stream: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, stream: dict[str, Any]
+    ) -> dict[str, Any]:
         """Fetches the pipeline associated with a stream.
 
         Args:
@@ -1482,9 +1482,9 @@ class ChronicleClient:
 
     def fetch_sample_logs_by_streams(
         self,
-        streams: List[Dict[str, Any]],
-        sample_logs_count: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        streams: list[dict[str, Any]],
+        sample_logs_count: int | None = None,
+    ) -> dict[str, Any]:
         """Fetches sample logs for specified streams.
 
         Args:
@@ -1501,9 +1501,9 @@ class ChronicleClient:
 
     def test_pipeline(
         self,
-        pipeline: Dict[str, Any],
-        input_logs: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        pipeline: dict[str, Any],
+        input_logs: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """Tests a pipeline with input logs.
 
         Args:
