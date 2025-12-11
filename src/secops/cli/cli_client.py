@@ -22,6 +22,9 @@ from secops.cli.commands.gemini import setup_gemini_command
 from secops.cli.commands.help import setup_help_command
 from secops.cli.commands.iocs import setup_iocs_command
 from secops.cli.commands.log import setup_log_command
+from secops.cli.commands.log_processing import (
+    setup_log_processing_command,
+)
 from secops.cli.commands.parser import setup_parser_command
 from secops.cli.commands.parser_extension import setup_parser_extension_command
 from secops.cli.commands.reference_list import setup_reference_list_command
@@ -158,6 +161,7 @@ def build_parser() -> argparse.ArgumentParser:
     setup_entity_command(subparsers)
     setup_iocs_command(subparsers)
     setup_log_command(subparsers)
+    setup_log_processing_command(subparsers)
     setup_parser_command(subparsers)
     setup_parser_extension_command(subparsers)
     setup_feed_command(subparsers)
