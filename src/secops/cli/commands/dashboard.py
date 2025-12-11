@@ -30,7 +30,9 @@ def setup_dashboard_command(subparsers):
     dashboard_subparsers = dashboard_parser.add_subparsers(
         dest="dashboard_command",
         help="Dashboard command to execute",
-        required=True,
+    )
+    dashboard_parser.set_defaults(
+        func=lambda args, _: dashboard_parser.print_help()
     )
 
     # List dashboards

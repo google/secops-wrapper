@@ -28,7 +28,9 @@ def setup_dashboard_query_command(subparsers):
     dashboard_query_subparsers = dashboard_query_parser.add_subparsers(
         dest="dashboard_query_command",
         help="Dashboard query command to execute",
-        required=True,
+    )
+    dashboard_query_parser.set_defaults(
+        func=lambda args, _: dashboard_query_parser.print_help()
     )
 
     # Execute query

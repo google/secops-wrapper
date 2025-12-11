@@ -32,9 +32,8 @@ def setup_config_command(subparsers):
     config_parser = subparsers.add_parser(
         "config", help="Manage CLI configuration"
     )
-    config_subparsers = config_parser.add_subparsers(
-        help="Config command", required=True
-    )
+    config_subparsers = config_parser.add_subparsers(help="Config command")
+    config_parser.set_defaults(func=lambda args: config_parser.print_help())
 
     # Set config command
     set_parser = config_subparsers.add_parser(
