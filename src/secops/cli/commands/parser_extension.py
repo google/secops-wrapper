@@ -32,7 +32,8 @@ def setup_parser_extension_command(subparsers: Any) -> None:
         "parser-extension",
         help="Manage parser extensions",
     )
-    parser_ext_sub = parser_ext.add_subparsers(dest="subcommand", required=True)
+    parser_ext_sub = parser_ext.add_subparsers(dest="subcommand")
+    parser_ext.set_defaults(func=lambda args, _: parser_ext.print_help())
 
     # Create parser extension
     create = parser_ext_sub.add_parser(

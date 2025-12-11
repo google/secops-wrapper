@@ -25,6 +25,7 @@ def setup_feed_command(subparsers):
     feed_subparsers = feed_parser.add_subparsers(
         dest="feed_command", help="Feed command"
     )
+    feed_parser.set_defaults(func=lambda args, _: feed_parser.print_help())
 
     # List feeds command
     list_parser = feed_subparsers.add_parser("list", help="List feeds")

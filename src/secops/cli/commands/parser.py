@@ -18,6 +18,7 @@ def setup_parser_command(subparsers):
     parser_subparsers = parser_parser.add_subparsers(
         dest="parser_command", help="Parser command"
     )
+    parser_parser.set_defaults(func=lambda args, _: parser_parser.print_help())
 
     # --- Activate Parser Command ---
     activate_parser_sub = parser_subparsers.add_parser(

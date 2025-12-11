@@ -30,6 +30,7 @@ def setup_export_command(subparsers):
     export_subparsers = export_parser.add_subparsers(
         dest="export_command", help="Export command"
     )
+    export_parser.set_defaults(func=lambda args, _: export_parser.print_help())
 
     # List available log types command
     log_types_parser = export_subparsers.add_parser(
