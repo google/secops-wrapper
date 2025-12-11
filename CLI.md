@@ -485,6 +485,36 @@ secops parser-extension activate --log-type OKTA --id "1234567890"
 secops parser-extension delete --log-type OKTA --id "1234567890"
 ```
 
+### Watchlist Management
+
+List watchlists:
+
+```bash
+# List all watchlists
+secops watchlist list
+
+# List watchlist with pagination 
+secops watchlist list --page-size 50
+```
+
+Get watchlist details:
+
+```bash
+secops watchlist get --watchlist-id "abc-123-def"
+```
+
+Create a new watchlist:
+
+```bash
+secops watchlist create --name "my_watchlist" --display-name "my_watchlist" --description "My watchlist description" --multiplying-factor 1.5
+```
+
+Delete a watchlist:
+
+```bash
+secops watchlist delete --watchlist-id "abc-123-def"
+```
+
 ### Rule Management
 
 List detection rules:
