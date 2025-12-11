@@ -14,17 +14,17 @@
 #
 """Provides log processing pipeline management for Chronicle."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from secops.exceptions import APIError
 
 
 def list_log_processing_pipelines(
     client,
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
-    filter_expr: Optional[str] = None,
-) -> Dict[str, Any]:
+    page_size: int | None = None,
+    page_token: str | None = None,
+    filter_expr: str | None = None,
+) -> dict[str, Any]:
     """Lists log processing pipelines.
 
     Args:
@@ -45,7 +45,7 @@ def list_log_processing_pipelines(
     """
     url = f"{client.base_url}/{client.instance_id}/logProcessingPipelines"
 
-    params: Dict[str, Any] = {}
+    params: dict[str, Any] = {}
     if page_size is not None:
         params["pageSize"] = page_size
     if page_token:
@@ -62,7 +62,7 @@ def list_log_processing_pipelines(
     return response.json()
 
 
-def get_log_processing_pipeline(client, pipeline_id: str) -> Dict[str, Any]:
+def get_log_processing_pipeline(client, pipeline_id: str) -> dict[str, Any]:
     """Gets a log processing pipeline by ID.
 
     Args:
@@ -91,9 +91,9 @@ def get_log_processing_pipeline(client, pipeline_id: str) -> Dict[str, Any]:
 
 def create_log_processing_pipeline(
     client,
-    pipeline: Dict[str, Any],
-    pipeline_id: Optional[str] = None,
-) -> Dict[str, Any]:
+    pipeline: dict[str, Any],
+    pipeline_id: str | None = None,
+) -> dict[str, Any]:
     """Creates a new log processing pipeline.
 
     Args:
@@ -114,7 +114,7 @@ def create_log_processing_pipeline(
     """
     url = f"{client.base_url}/{client.instance_id}/logProcessingPipelines"
 
-    params: Dict[str, Any] = {}
+    params: dict[str, Any] = {}
     if pipeline_id:
         params["logProcessingPipelineId"] = pipeline_id
 
@@ -130,9 +130,9 @@ def create_log_processing_pipeline(
 def patch_log_processing_pipeline(
     client,
     pipeline_id: str,
-    pipeline: Dict[str, Any],
-    update_mask: Optional[str] = None,
-) -> Dict[str, Any]:
+    pipeline: dict[str, Any],
+    update_mask: str | None = None,
+) -> dict[str, Any]:
     """Updates a log processing pipeline.
 
     Args:
@@ -155,7 +155,7 @@ def patch_log_processing_pipeline(
         f"logProcessingPipelines/{pipeline_id}"
     )
 
-    params: Dict[str, Any] = {}
+    params: dict[str, Any] = {}
     if update_mask:
         params["updateMask"] = update_mask
 
@@ -169,8 +169,8 @@ def patch_log_processing_pipeline(
 
 
 def delete_log_processing_pipeline(
-    client, pipeline_id: str, etag: Optional[str] = None
-) -> Dict[str, Any]:
+    client, pipeline_id: str, etag: str | None = None
+) -> dict[str, Any]:
     """Deletes a log processing pipeline.
 
     Args:
@@ -190,7 +190,7 @@ def delete_log_processing_pipeline(
         f"logProcessingPipelines/{pipeline_id}"
     )
 
-    params: Dict[str, Any] = {}
+    params: dict[str, Any] = {}
     if etag:
         params["etag"] = etag
 
@@ -204,8 +204,8 @@ def delete_log_processing_pipeline(
 
 
 def associate_streams(
-    client, pipeline_id: str, streams: List[Dict[str, Any]]
-) -> Dict[str, Any]:
+    client, pipeline_id: str, streams: list[dict[str, Any]]
+) -> dict[str, Any]:
     """Associates streams with a log processing pipeline.
 
     Args:
@@ -236,8 +236,8 @@ def associate_streams(
 
 
 def dissociate_streams(
-    client, pipeline_id: str, streams: List[Dict[str, Any]]
-) -> Dict[str, Any]:
+    client, pipeline_id: str, streams: list[dict[str, Any]]
+) -> dict[str, Any]:
     """Dissociates streams from a log processing pipeline.
 
     Args:
@@ -267,7 +267,7 @@ def dissociate_streams(
     return response.json()
 
 
-def fetch_associated_pipeline(client, stream: Dict[str, Any]) -> Dict[str, Any]:
+def fetch_associated_pipeline(client, stream: dict[str, Any]) -> dict[str, Any]:
     """Fetches the pipeline associated with a specific stream.
 
     Args:
@@ -298,9 +298,9 @@ def fetch_associated_pipeline(client, stream: Dict[str, Any]) -> Dict[str, Any]:
 
 def fetch_sample_logs_by_streams(
     client,
-    streams: List[Dict[str, Any]],
-    sample_logs_count: Optional[int] = None,
-) -> Dict[str, Any]:
+    streams: list[dict[str, Any]],
+    sample_logs_count: int | None = None,
+) -> dict[str, Any]:
     """Fetches sample logs for specified streams.
 
     Args:
@@ -324,7 +324,7 @@ def fetch_sample_logs_by_streams(
         f"logProcessingPipelines:fetchSampleLogsByStreams"
     )
 
-    body: Dict[str, Any] = {"streams": streams}
+    body: dict[str, Any] = {"streams": streams}
     if sample_logs_count is not None:
         body["sampleLogsCount"] = sample_logs_count
 
@@ -339,9 +339,9 @@ def fetch_sample_logs_by_streams(
 
 def test_pipeline(
     client,
-    pipeline: Dict[str, Any],
-    input_logs: List[Dict[str, Any]],
-) -> Dict[str, Any]:
+    pipeline: dict[str, Any],
+    input_logs: list[dict[str, Any]],
+) -> dict[str, Any]:
     """Tests a log processing pipeline with input logs.
 
     Args:
