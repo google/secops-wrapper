@@ -150,10 +150,13 @@ def patch_log_processing_pipeline(
     Raises:
         APIError: If the API request fails.
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"logProcessingPipelines/{pipeline_id}"
-    )
+    if "/projects/" not in pipeline_id:
+        url = (
+            f"{client.base_url}/{client.instance_id}/"
+            f"logProcessingPipelines/{pipeline_id}"
+        )
+    else:
+        url = f"{client.base_url}/{pipeline_id}"
 
     params: dict[str, Any] = {}
     if update_mask:
@@ -287,7 +290,10 @@ def fetch_associated_pipeline(client, stream: dict[str, Any]) -> dict[str, Any]:
         f"logProcessingPipelines:fetchAssociatedPipeline"
     )
 
-    params = {"stream": stream}
+    # Pass stream fields as separate query parameters with stream. prefix
+    params = {}
+    for key, value in stream.items():
+        params[f"stream.{key}"] = value
 
     response = client.session.get(url, params=params)
     if response.status_code != 200:
