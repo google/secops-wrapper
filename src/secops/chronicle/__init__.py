@@ -78,6 +78,18 @@ from secops.chronicle.log_types import (
     is_valid_log_type,
     search_log_types,
 )
+from secops.chronicle.log_processing_pipelines import (
+    associate_streams,
+    create_log_processing_pipeline,
+    delete_log_processing_pipeline,
+    dissociate_streams,
+    fetch_associated_pipeline,
+    fetch_sample_logs_by_streams,
+    get_log_processing_pipeline,
+    list_log_processing_pipelines,
+    patch_log_processing_pipeline,
+    test_pipeline,
+)
 from secops.chronicle.models import (
     AlertCount,
     AlertState,
@@ -304,4 +316,15 @@ __all__ = [
     "update_data_table",
     "update_data_table_rows",
     "replace_data_table_rows",
+    # Log Processing Pipelines
+    "list_log_processing_pipelines",
+    "get_log_processing_pipeline",
+    "create_log_processing_pipeline",
+    "patch_log_processing_pipeline",
+    "delete_log_processing_pipeline",
+    "associate_streams",
+    "dissociate_streams",
+    "fetch_associated_pipeline",
+    "fetch_sample_logs_by_streams",
+    "test_pipeline",
 ]
