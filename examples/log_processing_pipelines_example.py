@@ -2,9 +2,11 @@
 """Example usage of the Google SecOps SDK for Log Processing Pipelines."""
 
 import argparse
+import base64
 import json
 import time
 import uuid
+from datetime import datetime, timezone
 
 from secops import SecOpsClient
 
@@ -74,8 +76,11 @@ def example_create_and_get_pipeline(chronicle):
         "processors": [
             {
                 "filterProcessor": {
-                    "include": {"logMatchType": "LOG_MATCH_TYPE_UNSPECIFIED"},
-                    "errorMode": "ERROR_MODE_UNSPECIFIED",
+                    "include": {
+                        "logMatchType": "REGEXP",
+                        "logBodies": [".*"],
+                    },
+                    "errorMode": "IGNORE",
                 }
             }
         ],
@@ -143,8 +148,11 @@ def example_update_pipeline(chronicle):
         "processors": [
             {
                 "filterProcessor": {
-                    "include": {"logMatchType": "LOG_MATCH_TYPE_UNSPECIFIED"},
-                    "errorMode": "ERROR_MODE_UNSPECIFIED",
+                    "include": {
+                        "logMatchType": "REGEXP",
+                        "logBodies": [".*"],
+                    },
+                    "errorMode": "IGNORE",
                 }
             }
         ],
@@ -170,6 +178,7 @@ def example_update_pipeline(chronicle):
             "name": created_pipeline.get("name"),
             "displayName": f"Updated {display_name}",
             "description": "Updated description via SDK",
+            "processors": created_pipeline.get("processors"),
         }
 
         print("\nUpdating pipeline...")
@@ -213,8 +222,11 @@ def example_stream_association(chronicle):
         "processors": [
             {
                 "filterProcessor": {
-                    "include": {"logMatchType": "LOG_MATCH_TYPE_UNSPECIFIED"},
-                    "errorMode": "ERROR_MODE_UNSPECIFIED",
+                    "include": {
+                        "logMatchType": "REGEXP",
+                        "logBodies": [".*"],
+                    },
+                    "errorMode": "IGNORE",
                 }
             }
         ],
@@ -282,17 +294,30 @@ def example_test_pipeline(chronicle):
         "processors": [
             {
                 "filterProcessor": {
-                    "include": {"logMatchType": "LOG_MATCH_TYPE_UNSPECIFIED"},
-                    "errorMode": "ERROR_MODE_UNSPECIFIED",
+                    "include": {
+                        "logMatchType": "REGEXP",
+                        "logBodies": [".*"],
+                    },
+                    "errorMode": "IGNORE",
                 }
             }
         ],
     }
 
-    # Sample input logs
+    # Sample input logs with proper Log resource structure
+    current_time = datetime.now(timezone.utc).isoformat()
+
     input_logs = [
-        {"logText": "Sample log entry 1"},
-        {"logText": "Sample log entry 2"},
+        {
+            "data": base64.b64encode(b"Sample log entry 1").decode("utf-8"),
+            "logEntryTime": current_time,
+            "collectionTime": current_time,
+        },
+        {
+            "data": base64.b64encode(b"Sample log entry 2").decode("utf-8"),
+            "logEntryTime": current_time,
+            "collectionTime": current_time,
+        },
     ]
 
     try:
@@ -347,6 +372,34 @@ def example_fetch_associated_pipeline(chronicle):
         )
 
 
+def example_fetch_sample_logs(chronicle):
+    """Example 7: Fetch Sample Logs by Streams."""
+    print("\n=== Example 7: Fetch Sample Logs by Streams ===")
+
+    # Define streams to fetch sample logs from
+    # Note: Replace with actual log type or feed ID from your environment
+    streams = [{"logType": "WINEVTLOG"}]
+
+    try:
+        print(f"\nFetching sample logs for streams: {json.dumps(streams)}")
+        result = chronicle.fetch_sample_logs_by_streams(
+            streams=streams, sample_logs_count=5
+        )
+
+        logs = result.get("logs", [])
+        print(f"\nFetched {len(logs)} sample log(s)")
+
+        if logs:
+            print("\nFirst sample log:")
+            print(json.dumps(logs[0], indent=2))
+        else:
+            print("No sample logs available for the specified streams.")
+
+    except Exception as e:
+        print(f"Error fetching sample logs: {e}")
+        print("Note: Make sure the streams exist and have ingested logs.")
+
+
 # Map of example functions
 EXAMPLES = {
     "1": example_list_pipelines,
@@ -355,6 +408,7 @@ EXAMPLES = {
     "4": example_stream_association,
     "5": example_test_pipeline,
     "6": example_fetch_associated_pipeline,
+    "7": example_fetch_sample_logs,
 }
 
 
@@ -376,7 +430,7 @@ def main():
         "--example",
         "-e",
         help=(
-            "Example number to run (1-6). "
+            "Example number to run (1-7). "
             "If not specified, runs all examples."
         ),
     )
