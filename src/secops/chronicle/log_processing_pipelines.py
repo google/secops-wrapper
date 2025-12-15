@@ -75,10 +75,13 @@ def get_log_processing_pipeline(client, pipeline_id: str) -> dict[str, Any]:
     Raises:
         APIError: If the API request fails.
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"logProcessingPipelines/{pipeline_id}"
-    )
+    if not pipeline_id.startswith("projects/"):
+        url = (
+            f"{client.base_url}/{client.instance_id}/"
+            f"logProcessingPipelines/{pipeline_id}"
+        )
+    else:
+        url = f"{client.base_url}/{pipeline_id}"
 
     response = client.session.get(url)
     if response.status_code != 200:
@@ -150,7 +153,7 @@ def patch_log_processing_pipeline(
     Raises:
         APIError: If the API request fails.
     """
-    if "/projects/" not in pipeline_id:
+    if not pipeline_id.startswith("projects/"):
         url = (
             f"{client.base_url}/{client.instance_id}/"
             f"logProcessingPipelines/{pipeline_id}"
@@ -188,10 +191,13 @@ def delete_log_processing_pipeline(
     Raises:
         APIError: If the API request fails.
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"logProcessingPipelines/{pipeline_id}"
-    )
+    if not pipeline_id.startswith("projects/"):
+        url = (
+            f"{client.base_url}/{client.instance_id}/"
+            f"logProcessingPipelines/{pipeline_id}"
+        )
+    else:
+        url = f"{client.base_url}/{pipeline_id}"
 
     params: dict[str, Any] = {}
     if etag:
@@ -224,11 +230,13 @@ def associate_streams(
     Raises:
         APIError: If the API request fails.
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"logProcessingPipelines/{pipeline_id}:associateStreams"
-    )
-
+    if not pipeline_id.startswith("projects/"):
+        url = (
+            f"{client.base_url}/{client.instance_id}/"
+            f"logProcessingPipelines/{pipeline_id}:associateStreams"
+        )
+    else:
+        url = f"{client.base_url}/{pipeline_id}:associateStreams"
     body = {"streams": streams}
 
     response = client.session.post(url, json=body)
@@ -256,10 +264,13 @@ def dissociate_streams(
     Raises:
         APIError: If the API request fails.
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"logProcessingPipelines/{pipeline_id}:dissociateStreams"
-    )
+    if not pipeline_id.startswith("projects/"):
+        url = (
+            f"{client.base_url}/{client.instance_id}/"
+            f"logProcessingPipelines/{pipeline_id}:dissociateStreams"
+        )
+    else:
+        url = f"{client.base_url}/{pipeline_id}:dissociateStreams"
 
     body = {"streams": streams}
 
