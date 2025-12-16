@@ -341,7 +341,7 @@ def fetch_sample_logs_by_streams(
         f"logProcessingPipelines:fetchSampleLogsByStreams"
     )
 
-    body: dict[str, Any] = {"streams": streams}
+    body = {"streams": streams}
     if sample_logs_count is not None:
         body["sampleLogsCount"] = sample_logs_count
 

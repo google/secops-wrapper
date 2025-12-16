@@ -518,6 +518,252 @@ chronicle.delete_forwarder(forwarder_id="1234567890")
 print("Forwarder deleted successfully")
 ```
 
+### Log Processing Pipelines
+
+Chronicle log processing pipelines allow you to transform, filter, and enrich log data before it is stored in Chronicle. Common use cases include removing empty key-value pairs, redacting sensitive data, adding ingestion labels, filtering logs by field values, and extracting host information. Pipelines can be associated with log types (with optional collector IDs) and feeds, providing flexible control over your data ingestion workflow.
+
+The SDK provides comprehensive methods for managing pipelines, associating streams, testing configurations, and fetching sample logs.
+
+#### List pipelines
+
+Retrieve all log processing pipelines in your Chronicle instance:
+
+```python
+# Get all pipelines
+result = chronicle.list_log_processing_pipelines()
+pipelines = result.get("logProcessingPipelines", [])
+
+for pipeline in pipelines:
+    pipeline_id = pipeline["name"].split("/")[-1]
+    print(f"Pipeline: {pipeline['displayName']} (ID: {pipeline_id})")
+
+# List with pagination
+result = chronicle.list_log_processing_pipelines(
+    page_size=50,
+    page_token="next_page_token"
+)
+```
+
+#### Get pipeline details
+
+Retrieve details about a specific pipeline:
+
+```python
+# Get pipeline by ID
+pipeline_id = "1234567890"
+pipeline = chronicle.get_log_processing_pipeline(pipeline_id)
+
+print(f"Name: {pipeline['displayName']}")
+print(f"Description: {pipeline.get('description', 'N/A')}")
+print(f"Processors: {len(pipeline.get('processors', []))}")
+```
+
+#### Create a pipeline
+
+Create a new log processing pipeline with processors:
+
+```python
+# Define pipeline configuration
+pipeline_config = {
+    "displayName": "My Custom Pipeline",
+    "description": "Filters and transforms application logs",
+    "processors": [
+        {
+            "filterProcessor": {
+                "include": {
+                    "logMatchType": "REGEXP",
+                    "logBodies": [".*error.*", ".*warning.*"],
+                },
+                "errorMode": "IGNORE",
+            }
+        }
+    ],
+    "customMetadata": [
+        {"key": "environment", "value": "production"},
+        {"key": "team", "value": "security"}
+    ]
+}
+
+# Create the pipeline (server generates ID)
+created_pipeline = chronicle.create_log_processing_pipeline(
+    pipeline=pipeline_config
+)
+
+pipeline_id = created_pipeline["name"].split("/")[-1]
+print(f"Created pipeline with ID: {pipeline_id}")
+```
+
+#### Update a pipeline
+
+Update an existing pipeline's configuration:
+
+```python
+# Get the existing pipeline first
+pipeline = chronicle.get_log_processing_pipeline(pipeline_id)
+
+# Update specific fields
+updated_config = {
+    "name": pipeline["name"], 
+    "description": "Updated description",
+    "processors": pipeline["processors"]
+}
+
+# Patch with update mask
+updated_pipeline = chronicle.patch_log_processing_pipeline(
+    pipeline_id=pipeline_id,
+    pipeline=updated_config,
+    update_mask="description"
+)
+
+print(f"Updated: {updated_pipeline['displayName']}")
+```
+
+#### Delete a pipeline
+
+Delete an existing pipeline:
+
+```python
+# Delete by ID
+chronicle.delete_log_processing_pipeline(pipeline_id)
+print("Pipeline deleted successfully")
+
+# Delete with etag for concurrency control
+chronicle.delete_log_processing_pipeline(
+    pipeline_id=pipeline_id,
+    etag="etag_value"
+)
+```
+
+#### Associate streams with a pipeline
+
+Associate log streams (by log type or feed) with a pipeline:
+
+```python
+# Associate by log type
+streams = [
+    {"logType": "WINEVTLOG"},
+    {"logType": "LINUX"}
+]
+
+chronicle.associate_streams(
+    pipeline_id=pipeline_id,
+    streams=streams
+)
+print("Streams associated successfully")
+
+# Associate by feed ID
+feed_streams = [
+    {"feed": "feed-uuid-1"},
+    {"feed": "feed-uuid-2"}
+]
+
+chronicle.associate_streams(
+    pipeline_id=pipeline_id,
+    streams=feed_streams
+)
+```
+
+#### Dissociate streams from a pipeline
+
+Remove stream associations from a pipeline:
+
+```python
+# Dissociate streams
+streams = [{"logType": "WINEVTLOG"}]
+
+chronicle.dissociate_streams(
+    pipeline_id=pipeline_id,
+    streams=streams
+)
+print("Streams dissociated successfully")
+```
+
+#### Fetch associated pipeline
+
+Find which pipeline is associated with a specific stream:
+
+```python
+# Find pipeline for a log type
+stream_query = {"logType": "WINEVTLOG"}
+associated = chronicle.fetch_associated_pipeline(stream=stream_query)
+
+if associated:
+    print(f"Associated pipeline: {associated['name']}")
+else:
+    print("No pipeline associated with this stream")
+
+# Find pipeline for a feed
+feed_query = {"feed": "feed-uuid"}
+associated = chronicle.fetch_associated_pipeline(stream=feed_query)
+```
+
+#### Fetch sample logs
+
+Retrieve sample logs for specific streams:
+
+```python
+# Fetch sample logs for log types
+streams = [
+    {"logType": "WINEVTLOG"},
+    {"logType": "LINUX"}
+]
+
+result = chronicle.fetch_sample_logs_by_streams(
+    streams=streams,
+    sample_logs_count=10
+)
+
+for log in result.get("logs", []):
+    print(f"Log: {log}")
+```
+
+#### Test a pipeline
+
+Test a pipeline configuration against sample logs before deployment:
+
+```python
+import base64
+from datetime import datetime, timezone
+
+# Define pipeline to test
+pipeline_config = {
+    "displayName": "Test Pipeline",
+    "processors": [
+        {
+            "filterProcessor": {
+                "include": {
+                    "logMatchType": "REGEXP",
+                    "logBodies": [".*"],
+                },
+                "errorMode": "IGNORE",
+            }
+        }
+    ]
+}
+
+# Create test logs with base64-encoded data
+current_time = datetime.now(timezone.utc).isoformat()
+log_data = base64.b64encode(b"Sample log entry").decode("utf-8")
+
+input_logs = [
+    {
+        "data": log_data,
+        "logEntryTime": current_time,
+        "collectionTime": current_time,
+    }
+]
+
+# Test the pipeline
+result = chronicle.test_pipeline(
+    pipeline=pipeline_config,
+    input_logs=input_logs
+)
+
+print(f"Processed {len(result.get('logs', []))} logs")
+for processed_log in result.get("logs", []):
+    print(f"Result: {processed_log}")
+```
+
 5. Use custom timestamps:
 ```python
 from datetime import datetime, timedelta, timezone
