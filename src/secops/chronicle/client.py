@@ -1379,7 +1379,11 @@ class ChronicleClient:
         """Creates a new log processing pipeline.
 
         Args:
-            pipeline: Pipeline configuration dict.
+            pipeline: Pipeline configuration dict containing:
+                - displayName: Display name for the pipeline
+                - description: Optional description
+                - processors: List of processor configurations
+                - customMetadata: Optional custom metadata list
             pipeline_id: Optional ID for the pipeline.
 
         Returns:
@@ -1400,7 +1404,11 @@ class ChronicleClient:
 
         Args:
             pipeline_id: ID of the pipeline to update.
-            pipeline: Pipeline configuration with fields to update.
+            pipeline: Pipeline configuration with fields to update containing:
+                - displayName: Display name for the pipeline
+                - description: Optional description
+                - processors: List of processor configurations
+                - customMetadata: Optional custom metadata list
             update_mask: Optional comma-separated list of fields.
 
         Returns:
