@@ -139,7 +139,7 @@ from secops.chronicle.log_processing_pipelines import (
     list_log_processing_pipelines as _list_log_processing_pipelines,
 )
 from secops.chronicle.log_processing_pipelines import (
-    patch_log_processing_pipeline as _patch_log_processing_pipeline,
+    update_log_processing_pipeline as _update_log_processing_pipeline,
 )
 from secops.chronicle.log_processing_pipelines import (
     test_pipeline as _test_pipeline,
@@ -1394,7 +1394,7 @@ class ChronicleClient:
         """
         return _create_log_processing_pipeline(self, pipeline, pipeline_id)
 
-    def patch_log_processing_pipeline(
+    def update_log_processing_pipeline(
         self,
         pipeline_id: str,
         pipeline: dict[str, Any],
@@ -1417,7 +1417,7 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails.
         """
-        return _patch_log_processing_pipeline(
+        return _update_log_processing_pipeline(
             self, pipeline_id, pipeline, update_mask
         )
 

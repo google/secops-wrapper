@@ -40,7 +40,7 @@ def load_json_or_file(value: str) -> Any:
     except json.JSONDecodeError as e:
         print(f"Error parsing JSON from file: {e}", file=sys.stderr)
         sys.exit(1)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error reading file: {e}", file=sys.stderr)
         sys.exit(1)
 
@@ -72,7 +72,7 @@ def load_string_or_file(value: str) -> str:
         if file_path.exists() and file_path.is_file():
             with open(file_path, encoding="utf-8") as f:
                 return f.read()
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error reading file: {e}", file=sys.stderr)
         sys.exit(1)
 
