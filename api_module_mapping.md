@@ -300,6 +300,16 @@ Following shows mapping between SecOps [REST Resource](https://cloud.google.com/
 |logTypes.patch                                                                |v1alpha|                                                            |                                       |
 |logTypes.runParser                                                            |v1alpha|chronicle.parser.run_parser                                 |secops parser run                      |
 |logTypes.updateLogTypeSetting                                                 |v1alpha|                                                            |                                       |
+|logProcessingPipelines.associateStreams                                       |v1alpha|chronicle.log_processing_pipelines.associate_streams        |secops log-processing associate-streams|
+|logProcessingPipelines.create                                                 |v1alpha|chronicle.log_processing_pipelines.create_log_processing_pipeline|secops log-processing create           |
+|logProcessingPipelines.delete                                                 |v1alpha|chronicle.log_processing_pipelines.delete_log_processing_pipeline|secops log-processing delete           |
+|logProcessingPipelines.dissociateStreams                                      |v1alpha|chronicle.log_processing_pipelines.dissociate_streams       |secops log-processing dissociate-streams|
+|logProcessingPipelines.fetchAssociatedPipeline                                |v1alpha|chronicle.log_processing_pipelines.fetch_associated_pipeline|secops log-processing fetch-associated |
+|logProcessingPipelines.fetchSampleLogsByStreams                               |v1alpha|chronicle.log_processing_pipelines.fetch_sample_logs_by_streams|secops log-processing fetch-sample-logs|
+|logProcessingPipelines.get                                                    |v1alpha|chronicle.log_processing_pipelines.get_log_processing_pipeline|secops log-processing get              |
+|logProcessingPipelines.list                                                   |v1alpha|chronicle.log_processing_pipelines.list_log_processing_pipelines|secops log-processing list             |
+|logProcessingPipelines.patch                                                  |v1alpha|chronicle.log_processing_pipelines.update_log_processing_pipeline|secops log-processing update           |
+|logProcessingPipelines.testPipeline                                           |v1alpha|chronicle.log_processing_pipelines.test_pipeline            |secops log-processing test             |
 |logs.classify                                                                 |v1alpha|                                                            |                                       |
 | nativeDashboards.addChart                                                      | v1alpha |chronicle.dashboard.add_chart                                                              |secops dashboard add-chart                                         |
 | nativeDashboards.create                                                        | v1alpha |chronicle.dashboard.create_dashboard                                                              |secops dashboard create                                         |
