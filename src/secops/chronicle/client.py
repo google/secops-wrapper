@@ -114,6 +114,36 @@ from secops.chronicle.log_types import (
 )
 from secops.chronicle.log_types import is_valid_log_type as _is_valid_log_type
 from secops.chronicle.log_types import search_log_types as _search_log_types
+from secops.chronicle.log_processing_pipelines import (
+    associate_streams as _associate_streams,
+)
+from secops.chronicle.log_processing_pipelines import (
+    create_log_processing_pipeline as _create_log_processing_pipeline,
+)
+from secops.chronicle.log_processing_pipelines import (
+    delete_log_processing_pipeline as _delete_log_processing_pipeline,
+)
+from secops.chronicle.log_processing_pipelines import (
+    dissociate_streams as _dissociate_streams,
+)
+from secops.chronicle.log_processing_pipelines import (
+    fetch_associated_pipeline as _fetch_associated_pipeline,
+)
+from secops.chronicle.log_processing_pipelines import (
+    fetch_sample_logs_by_streams as _fetch_sample_logs_by_streams,
+)
+from secops.chronicle.log_processing_pipelines import (
+    get_log_processing_pipeline as _get_log_processing_pipeline,
+)
+from secops.chronicle.log_processing_pipelines import (
+    list_log_processing_pipelines as _list_log_processing_pipelines,
+)
+from secops.chronicle.log_processing_pipelines import (
+    update_log_processing_pipeline as _update_log_processing_pipeline,
+)
+from secops.chronicle.log_processing_pipelines import (
+    test_pipeline as _test_pipeline,
+)
 from secops.chronicle.models import (
     APIVersion,
     CaseList,
@@ -1301,6 +1331,200 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _delete_feed(self, feed_id, api_version)
+
+    # Log Processing Pipeline methods
+
+    def list_log_processing_pipelines(
+        self,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_expr: str | None = None,
+    ) -> dict[str, Any]:
+        """Lists log processing pipelines.
+
+        Args:
+            page_size: Maximum number of pipelines to return.
+            page_token: Page token for pagination.
+            filter_expr: Filter expression to restrict results.
+
+        Returns:
+            Dictionary containing pipelines and pagination info.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _list_log_processing_pipelines(
+            self, page_size, page_token, filter_expr
+        )
+
+    def get_log_processing_pipeline(self, pipeline_id: str) -> dict[str, Any]:
+        """Gets a log processing pipeline by ID.
+
+        Args:
+            pipeline_id: ID of the pipeline to retrieve.
+
+        Returns:
+            Dictionary containing pipeline information.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_log_processing_pipeline(self, pipeline_id)
+
+    def create_log_processing_pipeline(
+        self,
+        pipeline: dict[str, Any],
+        pipeline_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Creates a new log processing pipeline.
+
+        Args:
+            pipeline: Pipeline configuration dict containing:
+                - displayName: Display name for the pipeline
+                - description: Optional description
+                - processors: List of processor configurations
+                - customMetadata: Optional custom metadata list
+            pipeline_id: Optional ID for the pipeline.
+
+        Returns:
+            Dictionary containing the created pipeline.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _create_log_processing_pipeline(self, pipeline, pipeline_id)
+
+    def update_log_processing_pipeline(
+        self,
+        pipeline_id: str,
+        pipeline: dict[str, Any],
+        update_mask: str | None = None,
+    ) -> dict[str, Any]:
+        """Updates a log processing pipeline.
+
+        Args:
+            pipeline_id: ID of the pipeline to update.
+            pipeline: Pipeline configuration with fields to update containing:
+                - displayName: Display name for the pipeline
+                - description: Optional description
+                - processors: List of processor configurations
+                - customMetadata: Optional custom metadata list
+            update_mask: Optional comma-separated list of fields.
+
+        Returns:
+            Dictionary containing the updated pipeline.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _update_log_processing_pipeline(
+            self, pipeline_id, pipeline, update_mask
+        )
+
+    def delete_log_processing_pipeline(
+        self, pipeline_id: str, etag: str | None = None
+    ) -> dict[str, Any]:
+        """Deletes a log processing pipeline.
+
+        Args:
+            pipeline_id: ID of the pipeline to delete.
+            etag: Optional etag for optimistic concurrency control.
+
+        Returns:
+            Empty dictionary on success.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _delete_log_processing_pipeline(self, pipeline_id, etag)
+
+    def associate_streams(
+        self, pipeline_id: str, streams: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """Associates streams with a pipeline.
+
+        Args:
+            pipeline_id: ID of the pipeline.
+            streams: List of stream dicts.
+
+        Returns:
+            Empty dictionary on success.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _associate_streams(self, pipeline_id, streams)
+
+    def dissociate_streams(
+        self, pipeline_id: str, streams: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """Dissociates streams from a pipeline.
+
+        Args:
+            pipeline_id: ID of the pipeline.
+            streams: List of stream dicts.
+
+        Returns:
+            Empty dictionary on success.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _dissociate_streams(self, pipeline_id, streams)
+
+    def fetch_associated_pipeline(
+        self, stream: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Fetches the pipeline associated with a stream.
+
+        Args:
+            stream: Stream dict (logType or feedId).
+
+        Returns:
+            Dictionary containing the associated pipeline.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _fetch_associated_pipeline(self, stream)
+
+    def fetch_sample_logs_by_streams(
+        self,
+        streams: list[dict[str, Any]],
+        sample_logs_count: int | None = None,
+    ) -> dict[str, Any]:
+        """Fetches sample logs for specified streams.
+
+        Args:
+            streams: List of stream dicts.
+            sample_logs_count: Number of sample logs per stream.
+
+        Returns:
+            Dictionary containing sample logs.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _fetch_sample_logs_by_streams(self, streams, sample_logs_count)
+
+    def test_pipeline(
+        self,
+        pipeline: dict[str, Any],
+        input_logs: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Tests a pipeline with input logs.
+
+        Args:
+            pipeline: Pipeline configuration to test.
+            input_logs: List of log objects to process.
+
+        Returns:
+            Dictionary containing processed logs.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _test_pipeline(self, pipeline, input_logs)
 
     def list_rules(
         self,

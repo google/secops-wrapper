@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.0] - 2025-12-17
+### Added
+- Support for following log/data processing pipeline methods:
+  - List pipelines
+  - Create pipeline
+  - Get pipeline details
+  - Update pipeline
+  - Delete pipeline
+  - Associate stream to pipeline
+  - Dissociate stream from pipeline
+  - Fetch associated pipeline using stream
+  - Fetch sample logs by stream
+  - Test pipeline
+
 ## [0.28.1] - 2025-12-11
 ### Updated
 - CLI to show help when required sub-command/argument not provided.
