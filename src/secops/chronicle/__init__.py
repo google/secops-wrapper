@@ -87,7 +87,7 @@ from secops.chronicle.log_processing_pipelines import (
     fetch_sample_logs_by_streams,
     get_log_processing_pipeline,
     list_log_processing_pipelines,
-    patch_log_processing_pipeline,
+    update_log_processing_pipeline,
     test_pipeline,
 )
 from secops.chronicle.models import (
@@ -326,7 +326,7 @@ __all__ = [
     "list_log_processing_pipelines",
     "get_log_processing_pipeline",
     "create_log_processing_pipeline",
-    "patch_log_processing_pipeline",
+    "update_log_processing_pipeline",
     "delete_log_processing_pipeline",
     "associate_streams",
     "dissociate_streams",

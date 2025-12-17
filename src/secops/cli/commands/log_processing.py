@@ -226,7 +226,7 @@ def handle_update_command(args, chronicle):
             print("Error: pipeline must be a JSON object", file=sys.stderr)
             sys.exit(1)
 
-        result = chronicle.patch_log_processing_pipeline(
+        result = chronicle.update_log_processing_pipeline(
             pipeline_id=args.id,
             pipeline=pipeline_config,
             update_mask=args.update_mask,

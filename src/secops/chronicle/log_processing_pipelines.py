@@ -20,7 +20,7 @@ from secops.exceptions import APIError
 
 
 def list_log_processing_pipelines(
-    client,
+    client: "ChronicleClient",
     page_size: int | None = None,
     page_token: str | None = None,
     filter_expr: str | None = None,
@@ -62,7 +62,9 @@ def list_log_processing_pipelines(
     return response.json()
 
 
-def get_log_processing_pipeline(client, pipeline_id: str) -> dict[str, Any]:
+def get_log_processing_pipeline(
+    client: "ChronicleClient", pipeline_id: str
+) -> dict[str, Any]:
     """Gets a log processing pipeline by ID.
 
     Args:
@@ -93,7 +95,7 @@ def get_log_processing_pipeline(client, pipeline_id: str) -> dict[str, Any]:
 
 
 def create_log_processing_pipeline(
-    client,
+    client: "ChronicleClient",
     pipeline: dict[str, Any],
     pipeline_id: str | None = None,
 ) -> dict[str, Any]:
@@ -130,8 +132,8 @@ def create_log_processing_pipeline(
     return response.json()
 
 
-def patch_log_processing_pipeline(
-    client,
+def update_log_processing_pipeline(
+    client: "ChronicleClient",
     pipeline_id: str,
     pipeline: dict[str, Any],
     update_mask: str | None = None,
@@ -175,7 +177,7 @@ def patch_log_processing_pipeline(
 
 
 def delete_log_processing_pipeline(
-    client, pipeline_id: str, etag: str | None = None
+    client: "ChronicleClient", pipeline_id: str, etag: str | None = None
 ) -> dict[str, Any]:
     """Deletes a log processing pipeline.
 
@@ -213,7 +215,7 @@ def delete_log_processing_pipeline(
 
 
 def associate_streams(
-    client, pipeline_id: str, streams: list[dict[str, Any]]
+    client: "ChronicleClient", pipeline_id: str, streams: list[dict[str, Any]]
 ) -> dict[str, Any]:
     """Associates streams with a log processing pipeline.
 
@@ -247,7 +249,7 @@ def associate_streams(
 
 
 def dissociate_streams(
-    client, pipeline_id: str, streams: list[dict[str, Any]]
+    client: "ChronicleClient", pipeline_id: str, streams: list[dict[str, Any]]
 ) -> dict[str, Any]:
     """Dissociates streams from a log processing pipeline.
 
@@ -281,7 +283,9 @@ def dissociate_streams(
     return response.json()
 
 
-def fetch_associated_pipeline(client, stream: dict[str, Any]) -> dict[str, Any]:
+def fetch_associated_pipeline(
+    client: "ChronicleClient", stream: dict[str, Any]
+) -> dict[str, Any]:
     """Fetches the pipeline associated with a specific stream.
 
     Args:
@@ -314,7 +318,7 @@ def fetch_associated_pipeline(client, stream: dict[str, Any]) -> dict[str, Any]:
 
 
 def fetch_sample_logs_by_streams(
-    client,
+    client: "ChronicleClient",
     streams: list[dict[str, Any]],
     sample_logs_count: int | None = None,
 ) -> dict[str, Any]:
@@ -355,7 +359,7 @@ def fetch_sample_logs_by_streams(
 
 
 def test_pipeline(
-    client,
+    client: "ChronicleClient",
     pipeline: dict[str, Any],
     input_logs: list[dict[str, Any]],
 ) -> dict[str, Any]:

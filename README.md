@@ -609,7 +609,7 @@ updated_config = {
 }
 
 # Patch with update mask
-updated_pipeline = chronicle.patch_log_processing_pipeline(
+updated_pipeline = chronicle.update_log_processing_pipeline(
     pipeline_id=pipeline_id,
     pipeline=updated_config,
     update_mask="description"

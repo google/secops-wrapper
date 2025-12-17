@@ -22,7 +22,7 @@ from secops.chronicle.log_processing_pipelines import (
     list_log_processing_pipelines,
     get_log_processing_pipeline,
     create_log_processing_pipeline,
-    patch_log_processing_pipeline,
+    update_log_processing_pipeline,
     delete_log_processing_pipeline,
     associate_streams,
     dissociate_streams,
@@ -225,8 +225,8 @@ def test_create_log_processing_pipeline_error(
         assert "Failed to create log processing pipeline" in str(exc_info.value)
 
 
-def test_patch_log_processing_pipeline(chronicle_client, mock_response):
-    """Test patch_log_processing_pipeline function."""
+def test_update_log_processing_pipeline(chronicle_client, mock_response):
+    """Test update_log_processing_pipeline function."""
     pipeline_id = "pipeline_12345"
     pipeline_config = {
         "name": "projects/test-project/locations/us/instances/test-customer/logProcessingPipelines/pipeline_12345",
@@ -237,7 +237,7 @@ def test_patch_log_processing_pipeline(chronicle_client, mock_response):
     with patch.object(
         chronicle_client.session, "patch", return_value=mock_response
     ) as mock_patch:
-        result = patch_log_processing_pipeline(
+        result = update_log_processing_pipeline(
             chronicle_client, pipeline_id, pipeline_config
         )
 
@@ -249,10 +249,10 @@ def test_patch_log_processing_pipeline(chronicle_client, mock_response):
         assert result == mock_response.json.return_value
 
 
-def test_patch_log_processing_pipeline_with_update_mask(
+def test_update_log_processing_pipeline_with_update_mask(
     chronicle_client, mock_response
 ):
-    """Test patch_log_processing_pipeline with update mask."""
+    """Test update_log_processing_pipeline with update mask."""
     pipeline_id = "pipeline_12345"
     pipeline_config = {
         "name": "projects/test-project/locations/us/instances/test-customer/logProcessingPipelines/pipeline_12345",
@@ -263,7 +263,7 @@ def test_patch_log_processing_pipeline_with_update_mask(
     with patch.object(
         chronicle_client.session, "patch", return_value=mock_response
     ) as mock_patch:
-        result = patch_log_processing_pipeline(
+        result = update_log_processing_pipeline(
             chronicle_client,
             pipeline_id,
             pipeline_config,
@@ -278,10 +278,10 @@ def test_patch_log_processing_pipeline_with_update_mask(
         assert result == mock_response.json.return_value
 
 
-def test_patch_log_processing_pipeline_with_full_name(
+def test_update_log_processing_pipeline_with_full_name(
     chronicle_client, mock_response
 ):
-    """Test patch_log_processing_pipeline with full resource name."""
+    """Test update_log_processing_pipeline with full resource name."""
     full_name = "projects/test-project/locations/us/instances/test-customer/logProcessingPipelines/pipeline_12345"
     pipeline_config = {
         "name": full_name,
@@ -291,7 +291,7 @@ def test_patch_log_processing_pipeline_with_full_name(
     with patch.object(
         chronicle_client.session, "patch", return_value=mock_response
     ) as mock_patch:
-        result = patch_log_processing_pipeline(
+        result = update_log_processing_pipeline(
             chronicle_client, full_name, pipeline_config
         )
 
@@ -303,10 +303,10 @@ def test_patch_log_processing_pipeline_with_full_name(
         assert result == mock_response.json.return_value
 
 
-def test_patch_log_processing_pipeline_error(
+def test_update_log_processing_pipeline_error(
     chronicle_client, mock_error_response
 ):
-    """Test patch_log_processing_pipeline with error response."""
+    """Test update_log_processing_pipeline with error response."""
     pipeline_id = "pipeline_12345"
     pipeline_config = {"displayName": "Updated Pipeline"}
 
@@ -314,7 +314,7 @@ def test_patch_log_processing_pipeline_error(
         chronicle_client.session, "patch", return_value=mock_error_response
     ):
         with pytest.raises(APIError) as exc_info:
-            patch_log_processing_pipeline(
+            update_log_processing_pipeline(
                 chronicle_client, pipeline_id, pipeline_config
             )
 

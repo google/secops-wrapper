@@ -182,7 +182,7 @@ def example_update_pipeline(chronicle):
         }
 
         print("\nUpdating pipeline...")
-        updated_pipeline = chronicle.patch_log_processing_pipeline(
+        updated_pipeline = chronicle.update_log_processing_pipeline(
             pipeline_id=pipeline_id,
             pipeline=updated_pipeline_config,
             update_mask="displayName,description",
