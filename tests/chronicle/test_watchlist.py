@@ -191,7 +191,7 @@ def test_delete_watchlist_success(chronicle_client):
             method="DELETE",
             endpoint_path="watchlists/watchlist-123",
             api_version=APIVersion.V1,
-            params={"force": None},
+            params={},
         )
 
 
