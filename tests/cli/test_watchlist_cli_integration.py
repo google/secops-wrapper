@@ -36,11 +36,7 @@ def test_cli_watchlist_list_and_get(cli_env, common_args):
 
     # 1. List watchlists
     print("1. Listing watchlists")
-    list_cmd = (
-        ["secops"]
-        + common_args
-        + ["watchlist", "list"]
-    )
+    list_cmd = ["secops"] + common_args + ["watchlist", "list"]
 
     list_result = subprocess.run(
         list_cmd,
@@ -63,7 +59,9 @@ def test_cli_watchlist_list_and_get(cli_env, common_args):
 
     first_watchlist = watchlists[0]
     assert "name" in first_watchlist, "Missing 'name' in watchlist"
-    assert "displayName" in first_watchlist, "Missing 'displayName' in watchlist"
+    assert (
+        "displayName" in first_watchlist
+    ), "Missing 'displayName' in watchlist"
 
     # Extract watchlist ID (name is a resource path, ID is last component)
     watchlist_name = first_watchlist["name"]
@@ -95,22 +93,26 @@ def test_cli_watchlist_list_and_get(cli_env, common_args):
     assert get_result.returncode == 0, f"Command failed: {get_result.stderr}"
 
     watchlist_data = json.loads(get_result.stdout)
-    assert isinstance(watchlist_data, dict), "Expected dict response from watchlist get"
-    assert watchlist_data.get("name") == watchlist_name, "Watchlist name doesn't match"
+    assert isinstance(
+        watchlist_data, dict
+    ), "Expected dict response from watchlist get"
+    assert (
+        watchlist_data.get("name") == watchlist_name
+    ), "Watchlist name doesn't match"
     assert (
         watchlist_data.get("displayName") == display_name
     ), "Watchlist display name doesn't match"
 
 
 @pytest.mark.integration
-def test_cli_watchlist_create_and_delete(cli_env, common_args):
-    """Test CLI commands for creating and deleting a watchlist.
+def test_cli_watchlist_create_update_delete(cli_env, common_args):
+    """Test CLI commands for creating, updating, and deleting a watchlist.
 
     Args:
         cli_env: Environment variables for CLI execution.
         common_args: Common CLI arguments.
     """
-    print("\nTesting watchlist create and delete commands")
+    print("\nTesting watchlist create, update, and delete commands")
 
     # Use a timestamped name to avoid collisions
     ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
@@ -145,10 +147,12 @@ def test_cli_watchlist_create_and_delete(cli_env, common_args):
         text=True,
     )
 
-    assert create_result.returncode == 0, f"Create failed: {create_result.stderr}"
+    assert (
+        create_result.returncode == 0
+    ), f"Create failed: {create_result.stderr}"
 
     created_data = json.loads(create_result.stdout)
-    assert isinstance(created_data, dict), "Expected dict response from watchlist create"
+    assert isinstance(created_data, dict), "Expected dict response"
     assert created_data.get("name"), "Missing 'name' in created watchlist"
     assert (
         created_data.get("displayName") == display_name
@@ -158,8 +162,56 @@ def test_cli_watchlist_create_and_delete(cli_env, common_args):
     created_id = created_name.split("/")[-1]
     print(f"Created watchlist: {display_name} (ID: {created_id})")
 
-    # 2. Get created watchlist to verify
-    print("\n2. Verifying created watchlist via get command")
+    # 2. Update watchlist
+    print("\n2. Updating watchlist")
+    updated_display_name = f"Updated Watchlist {ts}"
+    updated_multiplying_factor = 2.5
+    updated_description = "Updated integration test watchlist"
+
+    update_cmd = (
+        ["secops"]
+        + common_args
+        + [
+            "watchlist",
+            "update",
+            "--watchlist-id",
+            created_id,
+            "--display-name",
+            updated_display_name,
+            "--multiplying-factor",
+            str(updated_multiplying_factor),
+            "--description",
+            updated_description,
+            "--pinned",
+            "true",
+        ]
+    )
+
+    update_result = subprocess.run(
+        update_cmd,
+        env=cli_env,
+        capture_output=True,
+        text=True,
+    )
+
+    assert (
+        update_result.returncode == 0
+    ), f"Update failed: {update_result.stderr}"
+
+    update_data = json.loads(update_result.stdout)
+    assert isinstance(update_data, dict), "Expected dict response"
+    assert (
+        update_data.get("displayName") == updated_display_name
+    ), "Updated display name mismatch"
+    assert (
+        update_data.get("multiplyingFactor") == updated_multiplying_factor
+    ), "Updated multiplying factor mismatch"
+    user_prefs = update_data.get("watchlistUserPreferences", {})
+    assert user_prefs.get("pinned") is True, "Watchlist should be pinned"
+    print(f"Updated watchlist: {updated_display_name}")
+
+    # 3. Verify updates via get command
+    print("\n3. Verifying updates via get command")
     get_cmd = (
         ["secops"]
         + common_args
@@ -183,11 +235,12 @@ def test_cli_watchlist_create_and_delete(cli_env, common_args):
     get_data = json.loads(get_result.stdout)
     assert get_data.get("name") == created_name, "Get watchlist name mismatch"
     assert (
-        get_data.get("displayName") == display_name
+        get_data.get("displayName") == updated_display_name
     ), "Get watchlist display name mismatch"
+    print("Verified updates successfully")
 
-    # 3. Delete created watchlist
-    print("\n3. Deleting created watchlist")
+    # 4. Delete created watchlist (cleanup)
+    print("\n4. Deleting created watchlist")
     delete_cmd = (
         ["secops"]
         + common_args
@@ -206,9 +259,10 @@ def test_cli_watchlist_create_and_delete(cli_env, common_args):
         text=True,
     )
 
-    assert delete_result.returncode == 0, f"Delete failed: {delete_result.stderr}"
+    assert (
+        delete_result.returncode == 0
+    ), f"Delete failed: {delete_result.stderr}"
 
-    # Response from delete may be empty or contain metadata; just ensure it's valid JSON
     if delete_result.stdout.strip():
         delete_data = json.loads(delete_result.stdout)
         assert isinstance(

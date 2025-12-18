@@ -314,6 +314,7 @@ from secops.chronicle.watchlist import (
     get_watchlist as _get_watchlist,
     delete_watchlist as _delete_watchlist,
     create_watchlist as _create_watchlist,
+    update_watchlist as _update_watchlist,
 )
 from secops.exceptions import SecOpsError
 
@@ -692,6 +693,49 @@ class ChronicleClient:
         """
         return _create_watchlist(
             self, name, display_name, multiplying_factor, description
+        )
+
+    def update_watchlist(
+        self,
+        watchlist_id: str,
+        display_name: Optional[str] = None,
+        description: Optional[str] = None,
+        multiplying_factor: Optional[float] = None,
+        entity_population_mechanism: Optional[Dict[str, Any]] = None,
+        watchlist_user_preferences: Optional[Dict[str, Any]] = None,
+        update_mask: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Update a watchlist.
+
+        Args:
+            watchlist_id: ID of the watchlist to update.
+            display_name: Optional. Display name of the watchlist.
+                Must be 1-63 characters.
+            description: Optional. Description of the watchlist.
+            multiplying_factor: Optional. Weight applied to risk score
+                for entities in this watchlist. Default is 1.0.
+            entity_population_mechanism: Optional. Mechanism to populate
+                entities in the watchlist. Example: {"manual": {}}.
+            watchlist_user_preferences: Optional. User preferences for
+                watchlist configuration. Example: {"pinned": True}.
+            update_mask: Optional. Comma-separated list of fields to
+                update. If not provided, all non-None fields are updated.
+
+        Returns:
+            Updated watchlist.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _update_watchlist(
+            self,
+            watchlist_id,
+            display_name,
+            description,
+            multiplying_factor,
+            entity_population_mechanism,
+            watchlist_user_preferences,
+            update_mask,
         )
 
     def get_stats(

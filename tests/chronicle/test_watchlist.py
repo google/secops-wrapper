@@ -26,6 +26,7 @@ from secops.chronicle.watchlist import (
     get_watchlist,
     delete_watchlist,
     create_watchlist,
+    update_watchlist,
 )
 from secops.exceptions import APIError
 
@@ -296,3 +297,159 @@ def test_create_watchlist_without_description(chronicle_client):
                 "entityPopulationMechanism": {"manual": {}},
             },
         )
+
+
+# -- update_watchlist tests --
+
+
+def test_update_watchlist_success_all_fields(chronicle_client):
+    """Test update_watchlist with all fields provided."""
+    expected = {
+        "name": "watchlist-123",
+        "displayName": "Updated Watchlist",
+        "description": "Updated description",
+        "multiplyingFactor": 2.5,
+        "entityPopulationMechanism": {"manual": {}},
+        "watchlistUserPreferences": {"pinned": True},
+    }
+
+    with patch(
+        "secops.chronicle.watchlist.chronicle_request",
+        return_value=expected,
+    ) as mock_request:
+        result = update_watchlist(
+            chronicle_client,
+            watchlist_id="watchlist-123",
+            display_name="Updated Watchlist",
+            description="Updated description",
+            multiplying_factor=2.5,
+            entity_population_mechanism={"manual": {}},
+            watchlist_user_preferences={"pinned": True},
+        )
+
+        assert result == expected
+
+        mock_request.assert_called_once_with(
+            chronicle_client,
+            method="PATCH",
+            endpoint_path="watchlists/watchlist-123",
+            api_version=APIVersion.V1,
+            params={
+                "updateMask": (
+                    "display_name,description,multiplying_factor,"
+                    "entity_population_mechanism,watchlist_user_preferences"
+                )
+            },
+            json={
+                "displayName": "Updated Watchlist",
+                "description": "Updated description",
+                "multiplyingFactor": 2.5,
+                "entityPopulationMechanism": {"manual": {}},
+                "watchlistUserPreferences": {"pinned": True},
+            },
+        )
+
+
+def test_update_watchlist_single_field(chronicle_client):
+    """Test update_watchlist with only display_name."""
+    expected = {
+        "name": "watchlist-123",
+        "displayName": "New Name",
+    }
+
+    with patch(
+        "secops.chronicle.watchlist.chronicle_request",
+        return_value=expected,
+    ) as mock_request:
+        result = update_watchlist(
+            chronicle_client,
+            watchlist_id="watchlist-123",
+            display_name="New Name",
+        )
+
+        assert result == expected
+
+        mock_request.assert_called_once_with(
+            chronicle_client,
+            method="PATCH",
+            endpoint_path="watchlists/watchlist-123",
+            api_version=APIVersion.V1,
+            params={"updateMask": "display_name"},
+            json={"displayName": "New Name"},
+        )
+
+
+def test_update_watchlist_explicit_update_mask(chronicle_client):
+    """Test update_watchlist with explicit update_mask overrides auto-mask."""
+    expected = {
+        "name": "watchlist-123",
+        "displayName": "Updated Name",
+        "description": "Updated desc",
+    }
+
+    with patch(
+        "secops.chronicle.watchlist.chronicle_request",
+        return_value=expected,
+    ) as mock_request:
+        result = update_watchlist(
+            chronicle_client,
+            watchlist_id="watchlist-123",
+            display_name="Updated Name",
+            description="Updated desc",
+            update_mask="display_name",
+        )
+
+        assert result == expected
+
+        mock_request.assert_called_once_with(
+            chronicle_client,
+            method="PATCH",
+            endpoint_path="watchlists/watchlist-123",
+            api_version=APIVersion.V1,
+            params={"updateMask": "display_name"},
+            json={
+                "displayName": "Updated Name",
+                "description": "Updated desc",
+            },
+        )
+
+
+def test_update_watchlist_no_fields(chronicle_client):
+    """Test update_watchlist with no optional fields (edge case)."""
+    expected = {"name": "watchlist-123"}
+
+    with patch(
+        "secops.chronicle.watchlist.chronicle_request",
+        return_value=expected,
+    ) as mock_request:
+        result = update_watchlist(
+            chronicle_client,
+            watchlist_id="watchlist-123",
+        )
+
+        assert result == expected
+
+        mock_request.assert_called_once_with(
+            chronicle_client,
+            method="PATCH",
+            endpoint_path="watchlists/watchlist-123",
+            api_version=APIVersion.V1,
+            params=None,
+            json={},
+        )
+
+
+def test_update_watchlist_error(chronicle_client):
+    """Test update_watchlist raises APIError on failure."""
+    with patch(
+        "secops.chronicle.watchlist.chronicle_request",
+        side_effect=APIError("Failed to update watchlist watchlist-123"),
+    ):
+        with pytest.raises(APIError) as exc_info:
+            update_watchlist(
+                chronicle_client,
+                watchlist_id="watchlist-123",
+                display_name="New Name",
+            )
+
+        assert "Failed to update watchlist" in str(exc_info.value)

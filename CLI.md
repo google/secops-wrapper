@@ -690,6 +690,19 @@ Create a new watchlist:
 secops watchlist create --name "my_watchlist" --display-name "my_watchlist" --description "My watchlist description" --multiplying-factor 1.5
 ```
 
+Update a watchlist:
+
+```bash
+# Update display name and description
+secops watchlist update --watchlist-id "abc-123-def" --display-name "Updated Name" --description "Updated description"
+
+# Update multiplying factor and pin the watchlist
+secops watchlist update --watchlist-id "abc-123-def" --multiplying-factor 2.0 --pinned true
+
+# Update entity population mechanism (JSON string or file path)
+secops watchlist update --watchlist-id "abc-123-def" --entity-population-mechanism '{"manual": {}}'
+```
+
 Delete a watchlist:
 
 ```bash

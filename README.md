@@ -1719,6 +1719,21 @@ watchlist = chronicle.create_watchlist(
 )
 ```
 
+### Updating a Watchlist
+
+Update a watchlist by ID:
+
+```python
+updated_watchlist = chronicle.update_watchlist(
+    watchlist_id="abc-123-def",
+    display_name="Updated Watchlist Name",
+    description="Updated description",
+    multiplying_factor=2.0,
+    entity_population_mechanism={"manual": {}},
+    watchlist_user_preferences={"pinned": True}
+)
+```
+
 ### Deleting a Watchlist
 
 Delete a watchlist by ID:

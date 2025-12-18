@@ -180,6 +180,7 @@ from secops.chronicle.watchlist import (
     get_watchlist,
     delete_watchlist,
     create_watchlist,
+    update_watchlist,
 )
 
 __all__ = [
@@ -338,4 +339,5 @@ __all__ = [
     "get_watchlist",
     "delete_watchlist",
     "create_watchlist",
+    "update_watchlist",
 ]

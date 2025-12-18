@@ -21,6 +21,7 @@ from secops.cli.utils.common_args import (
     add_time_range_args,
     add_pagination_args,
 )
+from secops.cli.utils.input_utils import load_json_or_file
 
 
 def setup_watchlist_command(subparsers):
@@ -94,6 +95,60 @@ def setup_watchlist_command(subparsers):
     )
     create_parser.set_defaults(func=handle_watchlist_create_command)
 
+    # update command
+    update_parser = lvl1.add_parser("update", help="Update watchlist by ID")
+    update_parser.add_argument(
+        "--watchlist-id",
+        type=str,
+        help="ID of the watchlist to update",
+        dest="watchlist_id",
+        required=True,
+    )
+    update_parser.add_argument(
+        "--display-name",
+        type=str,
+        help="New display name for the watchlist",
+        dest="display_name",
+        required=False,
+    )
+    update_parser.add_argument(
+        "--description",
+        type=str,
+        help="New description for the watchlist",
+        dest="description",
+        required=False,
+    )
+    update_parser.add_argument(
+        "--multiplying-factor",
+        type=float,
+        help="New multiplying factor for the watchlist",
+        dest="multiplying_factor",
+        required=False,
+    )
+    update_parser.add_argument(
+        "--pinned",
+        type=str,
+        choices=["true", "false"],
+        help="Pin or unpin the watchlist on dashboard",
+        dest="pinned",
+        required=False,
+    )
+    update_parser.add_argument(
+        "--entity-population-mechanism",
+        type=str,
+        help="Entity population mechanism as JSON string or file path",
+        dest="entity_population_mechanism",
+        required=False,
+    )
+    update_parser.add_argument(
+        "--update-mask",
+        type=str,
+        help="Comma-separated list of fields to update",
+        dest="update_mask",
+        required=False,
+    )
+    update_parser.set_defaults(func=handle_watchlist_update_command)
+
 
 def handle_watchlist_list_command(args, chronicle):
     """List watchlists"""
@@ -140,4 +195,35 @@ def handle_watchlist_create_command(args, chronicle):
         output_formatter(out, getattr(args, "output", "json"))
     except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error creating watchlist: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_watchlist_update_command(args, chronicle):
+    """Update watchlist by ID."""
+    try:
+        # Build watchlist_user_preferences if pinned is provided
+        watchlist_user_preferences = None
+        if args.pinned is not None:
+            watchlist_user_preferences = {
+                "pinned": args.pinned.lower() == "true"
+            }
+
+        # Parse entity_population_mechanism if provided
+        entity_population_mechanism = None
+        epm_value = getattr(args, "entity_population_mechanism", None)
+        if epm_value is not None:
+            entity_population_mechanism = load_json_or_file(epm_value)
+
+        out = chronicle.update_watchlist(
+            watchlist_id=args.watchlist_id,
+            display_name=getattr(args, "display_name", None),
+            description=getattr(args, "description", None),
+            multiplying_factor=getattr(args, "multiplying_factor", None),
+            entity_population_mechanism=entity_population_mechanism,
+            watchlist_user_preferences=watchlist_user_preferences,
+            update_mask=getattr(args, "update_mask", None),
+        )
+        output_formatter(out, getattr(args, "output", "json"))
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        print(f"Error updating watchlist: {e}", file=sys.stderr)
         sys.exit(1)
