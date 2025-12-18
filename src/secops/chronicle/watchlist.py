@@ -24,11 +24,11 @@ from secops.chronicle.utils.request_utils import (
 
 
 def list_watchlists(
-    client,
-    page_size: Optional[str] = None,
+    client: "ChronicleClient",
+    page_size: Optional[int] = None,
     page_token: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Get a list of all watchlists
+    """Get a list of watchlists.
 
     Args:
         client: ChronicleClient instance
@@ -51,7 +51,9 @@ def list_watchlists(
     )
 
 
-def get_watchlist(client, watchlist_id: str) -> Dict[str, Any]:
+def get_watchlist(
+    client: "ChronicleClient", watchlist_id: str
+) -> Dict[str, Any]:
     """Get a watchlist by ID
 
     Args:
@@ -73,7 +75,7 @@ def get_watchlist(client, watchlist_id: str) -> Dict[str, Any]:
 
 
 def delete_watchlist(
-    client, watchlist_id: str, force: Optional[bool] = None
+    client: "ChronicleClient", watchlist_id: str, force: Optional[bool] = None
 ) -> Dict[str, Any]:
     """Delete a watchlist by ID
 
@@ -91,7 +93,11 @@ def delete_watchlist(
     Raises:
         APIError: If the API request fails
     """
-    params = {"force": force}
+    params = {}
+
+    if force is not None:
+        params["force"] = force
+
     return chronicle_request(
         client,
         method="DELETE",
@@ -102,7 +108,7 @@ def delete_watchlist(
 
 
 def create_watchlist(
-    client,
+    client: "ChronicleClient",
     name: str,
     display_name: str,
     multiplying_factor: float,

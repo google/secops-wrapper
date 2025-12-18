@@ -20,8 +20,11 @@ from secops.exceptions import APIError
 from secops.chronicle.models import APIVersion
 
 
+DEFAULT_PAGE_SIZE = 1000
+
+
 def chronicle_paginated_request(
-    client,
+    client: "ChronicleClient",
     base_url: str,
     path: str,
     items_key: str,
@@ -30,8 +33,7 @@ def chronicle_paginated_request(
     page_token: Optional[str] = None,
     extra_params: Optional[Dict[str, Any]] = None,
 ) -> Union[Dict[str, List[Any]], List[Any]]:
-    """
-    Helper to get items from endpoints that use pagination.
+    """Helper to get items from endpoints that use pagination.
 
     Args:
         client: ChronicleClient instance
@@ -59,7 +61,7 @@ def chronicle_paginated_request(
     while True:
         # Build params each loop to prevent stale keys being
         # included in the next request
-        params = {"pageSize": 1000 if not page_size else page_size}
+        params = {"pageSize": DEFAULT_PAGE_SIZE if not page_size else page_size}
         if next_token:
             params["pageToken"] = next_token
         if extra_params:
@@ -89,7 +91,7 @@ def chronicle_paginated_request(
 
 
 def chronicle_request(
-    client,
+    client: "ChronicleClient",
     method: str,
     endpoint_path: str,
     *,

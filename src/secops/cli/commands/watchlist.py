@@ -59,6 +59,11 @@ def setup_watchlist_command(subparsers):
         dest="watchlist_id",
         required=True,
     )
+    delete_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Flag to remove entities under watchlist",
+    )
     delete_parser.set_defaults(func=handle_watchlist_delete_command)
 
     # create command
@@ -116,7 +121,7 @@ def handle_watchlist_get_command(args, chronicle):
 def handle_watchlist_delete_command(args, chronicle):
     """Delete watchlist by ID"""
     try:
-        out = chronicle.delete_watchlist(args.watchlist_id)
+        out = chronicle.delete_watchlist(args.watchlist_id, args.force)
         output_formatter(out, getattr(args, "output", "json"))
     except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error deleting watchlist: {e}", file=sys.stderr)

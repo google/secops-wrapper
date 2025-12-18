@@ -81,7 +81,7 @@ def test_list_watchlists_success(chronicle_client):
     ) as mock_paginated:
         result = list_watchlists(
             chronicle_client,
-            page_size="10",
+            page_size=10,
             page_token="next-token",
         )
 
@@ -92,7 +92,7 @@ def test_list_watchlists_success(chronicle_client):
             base_url=chronicle_client.base_url(APIVersion.V1),
             path="watchlists",
             items_key="watchlists",
-            page_size="10",
+            page_size=10,
             page_token="next-token",
         )
 
