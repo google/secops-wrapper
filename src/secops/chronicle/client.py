@@ -18,7 +18,7 @@ import re
 from collections.abc import Iterator
 from datetime import datetime
 from enum import Enum
-from typing import Any, Literal, Union, Optional, Dict
+from typing import Any, Literal, Union
 
 from google.auth.transport import requests as google_auth_requests
 
@@ -614,9 +614,9 @@ class ChronicleClient:
 
     def list_watchlists(
         self,
-        page_size: Optional[int] = None,
-        page_token: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        page_size: int | None = None,
+        page_token: str | None = None,
+    ) -> dict[str, Any]:
         """Get a list of all watchlists.
 
         Args:
@@ -634,7 +634,7 @@ class ChronicleClient:
     def get_watchlist(
         self,
         watchlist_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get a specific watchlist by ID.
 
         Args:
@@ -651,8 +651,8 @@ class ChronicleClient:
     def delete_watchlist(
         self,
         watchlist_id: str,
-        force: Optional[bool] = None,
-    ) -> Dict[str, Any]:
+        force: bool | None = None,
+    ) -> dict[str, Any]:
         """Delete a watchlist by ID.
 
         Args:
@@ -675,8 +675,8 @@ class ChronicleClient:
         name: str,
         display_name: str,
         multiplying_factor: float,
-        description: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        description: str | None = None,
+    ) -> dict[str, Any]:
         """Create a watchlist
 
         Args:
@@ -698,13 +698,13 @@ class ChronicleClient:
     def update_watchlist(
         self,
         watchlist_id: str,
-        display_name: Optional[str] = None,
-        description: Optional[str] = None,
-        multiplying_factor: Optional[float] = None,
-        entity_population_mechanism: Optional[Dict[str, Any]] = None,
-        watchlist_user_preferences: Optional[Dict[str, Any]] = None,
-        update_mask: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        display_name: str | None = None,
+        description: str | None = None,
+        multiplying_factor: float | None = None,
+        entity_population_mechanism: dict[str, Any] | None = None,
+        watchlist_user_preferences: dict[str, Any] | None = None,
+        update_mask: str | None = None,
+    ) -> dict[str, Any]:
         """Update a watchlist.
 
         Args:

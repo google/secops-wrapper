@@ -14,7 +14,7 @@
 #
 """Watchlist functionality for Chronicle."""
 
-from typing import Dict, Any, Optional
+from typing import Any
 
 from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.request_utils import (
@@ -25,9 +25,9 @@ from secops.chronicle.utils.request_utils import (
 
 def list_watchlists(
     client: "ChronicleClient",
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    page_size: int | None = None,
+    page_token: str | None = None,
+) -> dict[str, Any]:
     """Get a list of watchlists.
 
     Args:
@@ -53,7 +53,7 @@ def list_watchlists(
 
 def get_watchlist(
     client: "ChronicleClient", watchlist_id: str
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get a watchlist by ID
 
     Args:
@@ -75,8 +75,8 @@ def get_watchlist(
 
 
 def delete_watchlist(
-    client: "ChronicleClient", watchlist_id: str, force: Optional[bool] = None
-) -> Dict[str, Any]:
+    client: "ChronicleClient", watchlist_id: str, force: bool | None = None
+) -> dict[str, Any]:
     """Delete a watchlist by ID
 
     Args:
@@ -112,8 +112,8 @@ def create_watchlist(
     name: str,
     display_name: str,
     multiplying_factor: float,
-    description: Optional[str] = None,
-) -> Dict[str, Any]:
+    description: str | None = None,
+) -> dict[str, Any]:
     """Create a watchlist
 
     Args:
@@ -147,13 +147,13 @@ def create_watchlist(
 def update_watchlist(
     client: "ChronicleClient",
     watchlist_id: str,
-    display_name: Optional[str] = None,
-    description: Optional[str] = None,
-    multiplying_factor: Optional[float] = None,
-    entity_population_mechanism: Optional[Dict[str, Any]] = None,
-    watchlist_user_preferences: Optional[Dict[str, Any]] = None,
-    update_mask: Optional[str] = None,
-) -> Dict[str, Any]:
+    display_name: str | None = None,
+    description: str | None = None,
+    multiplying_factor: float | None = None,
+    entity_population_mechanism: dict[str, Any] | None = None,
+    watchlist_user_preferences: dict[str, Any] | None = None,
+    update_mask: str | None = None,
+) -> dict[str, Any]:
     """Update a watchlist.
 
     Args:

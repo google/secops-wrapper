@@ -14,7 +14,7 @@
 #
 """Helper functions for Chronicle."""
 
-from typing import Dict, Any, Optional, List, Union
+from typing import Any
 
 from secops.exceptions import APIError
 from secops.chronicle.models import APIVersion
@@ -29,10 +29,10 @@ def chronicle_paginated_request(
     path: str,
     items_key: str,
     *,
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
-    extra_params: Optional[Dict[str, Any]] = None,
-) -> Union[Dict[str, List[Any]], List[Any]]:
+    page_size: int | None = None,
+    page_token: str | None = None,
+    extra_params: dict[str, Any] | None = None,
+) -> dict[str, list[Any]] | list[Any]:
     """Helper to get items from endpoints that use pagination.
 
     Args:
@@ -101,11 +101,11 @@ def chronicle_request(
     endpoint_path: str,
     *,
     api_version: str = APIVersion.V1,
-    params: Optional[Dict[str, Any]] = None,
-    json: Optional[Dict[str, Any]] = None,
+    params: dict[str, Any] | None = None,
+    json: dict[str, Any] | None = None,
     expected_status: int = 200,
-    error_message: Optional[str] = None,
-) -> Dict[str, Any]:
+    error_message: str | None = None,
+) -> dict[str, Any]:
     """Perform an HTTP request and return JSON, raising APIError on failure.
 
     Args:
