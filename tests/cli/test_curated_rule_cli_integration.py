@@ -17,8 +17,10 @@
 These tests require valid credentials and API access.
 """
 import json
-import pytest
 import subprocess
+from datetime import datetime, timedelta, timezone
+
+import pytest
 
 
 @pytest.mark.integration
@@ -535,6 +537,188 @@ def test_cli_curated_rule_set_deployments(cli_env, common_args):
             print(f"Successfully restored deployment to original state")
         except Exception as cleanup_error:
             print(f"Warning: Failed to restore original state: {cleanup_error}")
+
+
+@pytest.mark.integration
+def test_cli_search_curated_detections(cli_env, common_args):
+    """Test CLI command for searching curated detections.
+    """
+
+    print("\nTesting curated-rule rule search-detections command")
+
+    # Step 1: Get a valid rule ID first
+    print("1. Getting a valid rule ID for testing")
+    list_rules_cmd = ["secops"] + common_args + ["curated-rule", "rule", "list"]
+
+    list_result = subprocess.run(
+        list_rules_cmd, env=cli_env, capture_output=True, text=True
+    )
+
+    assert list_result.returncode == 0, f"Failed: {list_result.stderr}"
+
+    rules = json.loads(list_result.stdout)
+    assert len(rules) > 0, "No curated rules found for testing"
+
+    first_rule = rules[0]
+    rule_id = first_rule["name"].split("/")[-1]
+    rule_name = first_rule["displayName"]
+    print(f"Using rule: {rule_name} (ID: {rule_id})")
+
+    # Calculate time range for search (last 30 days)
+    end_time = datetime.now(timezone.utc)
+    start_time = end_time - timedelta(days=30)
+    start_time_str = start_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+    end_time_str = end_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    # Step 2: Test basic search with time range and DETECTION_TIME
+    print("\n2. Searching detections with DETECTION_TIME basis")
+    search_cmd = (
+        ["secops"]
+        + common_args
+        + [
+            "curated-rule",
+            "search-detections",
+            "--rule-id",
+            rule_id,
+            "--start-time",
+            start_time_str,
+            "--end-time",
+            end_time_str,
+            "--list-basis",
+            "DETECTION_TIME",
+        ]
+    )
+
+    search_result = subprocess.run(
+        search_cmd, env=cli_env, capture_output=True, text=True
+    )
+
+    assert (
+        search_result.returncode == 0
+    ), f"Search failed: {search_result.stderr}"
+
+    result_data = json.loads(search_result.stdout)
+    assert isinstance(result_data, dict), "Expected dict response"
+    assert "curatedDetections" in result_data, "Missing curatedDetections"
+    detections = result_data["curatedDetections"]
+    assert isinstance(detections, list), "Expected list of detections"
+    print(f"Found {len(detections)} detections with DETECTION_TIME")
+
+    # Step 3: Test search with ALERTING filter
+    print("\n3. Searching detections with ALERTING filter")
+    search_alerting_cmd = (
+        ["secops"]
+        + common_args
+        + [
+            "curated-rule",
+            "search-detections",
+            "--rule-id",
+            rule_id,
+            "--start-time",
+            start_time_str,
+            "--end-time",
+            end_time_str,
+            "--list-basis",
+            "DETECTION_TIME",
+            "--alert-state",
+            "ALERTING",
+        ]
+    )
+
+    alerting_result = subprocess.run(
+        search_alerting_cmd, env=cli_env, capture_output=True, text=True
+    )
+
+    assert (
+        alerting_result.returncode == 0
+    ), f"Alerting search failed: {alerting_result.stderr}"
+
+    alerting_data = json.loads(alerting_result.stdout)
+    assert "curatedDetections" in alerting_data
+    print(
+        f"Found {len(alerting_data['curatedDetections'])} "
+        f"ALERTING detections"
+    )
+
+    # Step 4: Test search with CREATED_TIME basis
+    print("\n4. Searching detections with CREATED_TIME basis")
+    search_created_cmd = (
+        ["secops"]
+        + common_args
+        + [
+            "curated-rule",
+            "search-detections",
+            "--rule-id",
+            rule_id,
+            "--start-time",
+            start_time_str,
+            "--end-time",
+            end_time_str,
+            "--list-basis",
+            "CREATED_TIME",
+        ]
+    )
+
+    created_result = subprocess.run(
+        search_created_cmd, env=cli_env, capture_output=True, text=True
+    )
+
+    assert (
+        created_result.returncode == 0
+    ), f"Created time search failed: {created_result.stderr}"
+
+    created_data = json.loads(created_result.stdout)
+    assert "curatedDetections" in created_data
+    print(f"Found {len(created_data['curatedDetections'])} detections")
+
+    # Step 5: Test search with pagination
+    print("\n5. Testing manual pagination with page_size")
+    search_paged_cmd = (
+        ["secops"]
+        + common_args
+        + [
+            "curated-rule",
+            "search-detections",
+            "--rule-id",
+            rule_id,
+            "--start-time",
+            start_time_str,
+            "--end-time",
+            end_time_str,
+            "--list-basis",
+            "DETECTION_TIME",
+            "--page-size",
+            "10",
+        ]
+    )
+
+    paged_result = subprocess.run(
+        search_paged_cmd, env=cli_env, capture_output=True, text=True
+    )
+
+    assert (
+        paged_result.returncode == 0
+    ), f"Paged search failed: {paged_result.stderr}"
+
+    paged_data = json.loads(paged_result.stdout)
+    assert "curatedDetections" in paged_data
+    detections_paged = paged_data["curatedDetections"]
+    assert len(detections_paged) <= 10, "Page size limit exceeded"
+    print(f"Retrieved {len(detections_paged)} detections (page_size=10)")
+
+    # Check pagination token if results might span pages
+    if len(detections_paged) == 10:
+        has_token = "nextPageToken" in paged_data
+        print(f"NextPageToken present: {has_token}")
+
+    # Step 6: Verify detection structure if any detections exist
+    if len(detections) > 0:
+        print("\n6. Verifying detection structure")
+        detection = detections[0]
+        assert "id" in detection, "Missing detection ID"
+        print(f"Sample detection ID: {detection.get('id', 'N/A')[:50]}...")
+
+    print("\nTest CLI search-detections completed successfully")
 
 
 if __name__ == "__main__":

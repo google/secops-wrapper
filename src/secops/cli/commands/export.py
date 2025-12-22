@@ -16,12 +16,12 @@
 
 import sys
 
-from secops.cli.utils.time_utils import get_time_range
-from secops.cli.utils.formatters import output_formatter
 from secops.cli.utils.common_args import (
-    add_time_range_args,
     add_pagination_args,
+    add_time_range_args,
 )
+from secops.cli.utils.formatters import output_formatter
+from secops.cli.utils.time_utils import get_time_range
 
 
 def setup_export_command(subparsers):
@@ -30,6 +30,7 @@ def setup_export_command(subparsers):
     export_subparsers = export_parser.add_subparsers(
         dest="export_command", help="Export command"
     )
+    export_parser.set_defaults(func=lambda args, _: export_parser.print_help())
 
     # List available log types command
     log_types_parser = export_subparsers.add_parser(

@@ -17,8 +17,8 @@
 import json
 import sys
 
-from secops.exceptions import APIError
 from secops.cli.utils.common_args import add_pagination_args
+from secops.exceptions import APIError
 
 
 def setup_forwarder_command(subparsers):
@@ -28,6 +28,9 @@ def setup_forwarder_command(subparsers):
     )
     forwarder_subparsers = forwarder_parser.add_subparsers(
         dest="forwarder_command", help="Forwarder command"
+    )
+    forwarder_parser.set_defaults(
+        func=lambda args, _: forwarder_parser.print_help()
     )
 
     # Create forwarder command

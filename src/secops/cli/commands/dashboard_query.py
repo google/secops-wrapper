@@ -28,7 +28,9 @@ def setup_dashboard_query_command(subparsers):
     dashboard_query_subparsers = dashboard_query_parser.add_subparsers(
         dest="dashboard_query_command",
         help="Dashboard query command to execute",
-        required=True,
+    )
+    dashboard_query_parser.set_defaults(
+        func=lambda args, _: dashboard_query_parser.print_help()
     )
 
     # Execute query
@@ -87,9 +89,9 @@ def handle_dashboard_query_execute_command(args, chronicle):
         query = args.query if args.query else None
         if args.query_file:
             try:
-                with open(args.query_file, "r", encoding="utf-8") as f:
+                with open(args.query_file, encoding="utf-8") as f:
                     query = f.read()
-            except IOError as e:
+            except OSError as e:
                 print(f"Error reading query file: {e}", file=sys.stderr)
                 sys.exit(1)
 

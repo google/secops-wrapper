@@ -17,8 +17,33 @@
 import sys
 from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
+from typing import Any
+
+from secops.chronicle.models import Case, CaseList
 from secops.exceptions import APIError
-from secops.chronicle.models import CaseList, Case
+
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+    from enum import Enum
+
+    class StrEnum(str, Enum):
+        """String enum implementation for Python < 3.11."""
+
+        def __str__(self) -> str:
+            return self.value
+
+
+class CasePriority(StrEnum):
+    """Priority levels for cases."""
+
+    UNSPECIFIED = "PRIORITY_UNSPECIFIED"
+    INFO = "PRIORITY_INFO"
+    LOW = "PRIORITY_LOW"
+    MEDIUM = "PRIORITY_MEDIUM"
+    HIGH = "PRIORITY_HIGH"
+    CRITICAL = "PRIORITY_CRITICAL"
+
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum
@@ -45,14 +70,14 @@ class CasePriority(StrEnum):
 
 def get_cases(
     client,
-    start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
     page_size: int = 100,
-    page_token: Optional[str] = None,
-    case_ids: Optional[List[str]] = None,
-    asset_identifiers: Optional[List[str]] = None,
-    tenant_id: Optional[str] = None,
-) -> Dict[str, Any]:
+    page_token: str | None = None,
+    case_ids: list[str] | None = None,
+    asset_identifiers: list[str] | None = None,
+    tenant_id: str | None = None,
+) -> dict[str, Any]:
     """Get case data from Chronicle.
 
     Args:
@@ -116,7 +141,7 @@ def get_cases(
         raise APIError(f"Failed to parse cases response: {str(e)}") from e
 
 
-def get_cases_from_list(client, case_ids: List[str]) -> CaseList:
+def get_cases_from_list(client, case_ids: list[str]) -> CaseList:
     """Get cases from Chronicle.
 
     Args:

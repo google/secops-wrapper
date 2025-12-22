@@ -31,6 +31,7 @@ def setup_reference_list_command(subparsers):
     rl_subparsers = rl_parser.add_subparsers(
         dest="rl_command", help="Reference list command"
     )
+    rl_parser.set_defaults(func=lambda args, _: rl_parser.print_help())
 
     # List reference lists command
     list_parser = rl_subparsers.add_parser("list", help="List reference lists")
@@ -131,9 +132,9 @@ def handle_rl_create_command(args, chronicle):
         entries = []
         if args.entries_file:
             try:
-                with open(args.entries_file, "r", encoding="utf-8") as f:
+                with open(args.entries_file, encoding="utf-8") as f:
                     entries = [line.strip() for line in f if line.strip()]
-            except IOError as e:
+            except OSError as e:
                 print(f"Error reading entries file: {e}", file=sys.stderr)
                 sys.exit(1)
         elif args.entries:
@@ -160,9 +161,9 @@ def handle_rl_update_command(args, chronicle):
         entries = None
         if args.entries_file:
             try:
-                with open(args.entries_file, "r", encoding="utf-8") as f:
+                with open(args.entries_file, encoding="utf-8") as f:
                     entries = [line.strip() for line in f if line.strip()]
-            except IOError as e:
+            except OSError as e:
                 print(f"Error reading entries file: {e}", file=sys.stderr)
                 sys.exit(1)
         elif args.entries:

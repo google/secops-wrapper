@@ -39,6 +39,17 @@ You can also save your service account path:
 secops config set --service-account "/path/to/service-account.json" --customer-id "your-instance-id" --project-id "your-project-id" --region "us"
 ```
 
+Set the default API version for Chronicle API calls:
+
+```bash
+secops config set --api-version "v1"
+```
+
+**Supported API versions:**
+- `v1` - Stable production API (recommended)
+- `v1beta` - Beta API with newer features
+- `v1alpha` - Alpha API with experimental features (default)
+
 Additionally, you can set default time parameters:
 
 ```bash
@@ -92,10 +103,18 @@ These parameters can be used with most commands:
 - `--customer-id ID` - Chronicle instance ID
 - `--project-id ID` - GCP project ID
 - `--region REGION` - Chronicle API region (default: us)
+- `--api-version VERSION` - Chronicle API version (v1, v1beta, v1alpha; default: v1alpha)
 - `--output FORMAT` - Output format (json, text)
 - `--start-time TIME` - Start time in ISO format (YYYY-MM-DDTHH:MM:SSZ)
 - `--end-time TIME` - End time in ISO format (YYYY-MM-DDTHH:MM:SSZ)
 - `--time-window HOURS` - Time window in hours (alternative to start/end time)
+
+You can override the configured API version on a per-command basis:
+
+```bash
+# Use v1 for a specific command, even if config has v1alpha
+secops rule list --api-version v1
+```
 
 ## Commands
 
@@ -306,6 +325,187 @@ secops log generate-udm-mapping \
 --compress-array-fields "false"
 ```
 
+### Log Processing Pipelines
+
+Chronicle log processing pipelines allow you to transform, filter, and enrich log data before it is stored in Chronicle. Common use cases include removing empty key-value pairs, redacting sensitive data, adding ingestion labels, filtering logs by field values, and extracting host information. Pipelines can be associated with log types (with optional collector IDs) and feeds, providing flexible control over your data ingestion workflow.
+
+The CLI provides comprehensive commands for managing pipelines, associating streams, testing configurations, and fetching sample logs.
+
+#### List pipelines
+
+```bash
+# List all log processing pipelines
+secops log-processing list
+
+# List with pagination
+secops log-processing list --page-size 50
+
+# List with filter expression
+secops log-processing list --filter "displayName:production*"
+
+# List with pagination token
+secops log-processing list --page-size 50 --page-token "next_page_token"
+```
+
+#### Get pipeline details
+
+```bash
+# Get a specific pipeline by ID
+secops log-processing get --id "1234567890"
+```
+
+#### Create a pipeline
+
+```bash
+# Create from inline JSON
+secops log-processing create --pipeline '{"displayName":"My Pipeline","description":"Filters error logs","processors":[{"filterProcessor":{"include":{"logMatchType":"REGEXP","logBodies":[".*error.*"]},"errorMode":"IGNORE"}}]}'
+```
+
+# Create from JSON file
+secops log-processing create --pipeline pipeline_config.json
+
+Example `pipeline_config.json`:
+```json
+{
+  "displayName": "Production Pipeline",
+  "description": "Filters and transforms production logs",
+  "processors": [
+    {
+      "filterProcessor": {
+        "include": {
+          "logMatchType": "REGEXP",
+          "logBodies": [".*error.*", ".*warning.*"]
+        },
+        "errorMode": "IGNORE"
+      }
+    }
+  ],
+  "customMetadata": [
+    {"key": "environment", "value": "production"},
+    {"key": "team", "value": "security"}
+  ]
+}
+```
+
+#### Update a pipeline
+
+```bash
+# Update from JSON file with update mask
+secops log-processing update --id "1234567890" --pipeline updated_config.json --update-mask "description"
+
+# Update from inline JSON
+secops log-processing update --id "1234567890" --pipeline '{description":"Updated description"}' --update-mask "description"
+```
+
+#### Delete a pipeline
+
+```bash
+# Delete a pipeline by ID
+secops log-processing delete --id "1234567890"
+
+# Delete with etag for concurrency control
+secops log-processing delete --id "1234567890" --etag "etag_value"
+```
+
+#### Associate streams with a pipeline
+
+Associate log streams (by log type or feed) with a pipeline:
+
+```bash
+# Associate by log type (inline)
+secops log-processing associate-streams --id "1234567890" --streams '[{"logType":"WINEVTLOG"},{"logType":"LINUX"}]'
+
+# Associate by feed ID
+secops log-processing associate-streams --id "1234567890" --streams '[{"feed":"feed-uuid-1"},{"feed":"feed-uuid-2"}]'
+
+# Associate by log type (from file)
+secops log-processing associate-streams --id "1234567890" --streams streams.json
+```
+
+Example `streams.json`:
+```json
+[
+  {"logType": "WINEVTLOG"},
+  {"logType": "LINUX"},
+  {"logType": "OKTA"}
+]
+```
+
+#### Dissociate streams from a pipeline
+
+```bash
+# Dissociate streams (from file)
+secops log-processing dissociate-streams --id "1234567890" --streams streams.json
+
+# Dissociate streams (inline)
+secops log-processing dissociate-streams --id "1234567890" --streams '[{"logType":"WINEVTLOG"}]'
+```
+
+#### Fetch associated pipeline
+
+Find which pipeline is associated with a specific stream:
+
+```bash
+# Find pipeline for a log type (inline)
+secops log-processing fetch-associated --stream '{"logType":"WINEVTLOG"}'
+
+# Find pipeline for a feed
+secops log-processing fetch-associated --stream '{"feed":"feed-uuid"}'
+
+# Find pipeline for a log type (from file)
+secops log-processing fetch-associated --stream stream_query.json
+```
+
+Example `stream_query.json`:
+```json
+{
+  "logType": "WINEVTLOG"
+}
+```
+
+#### Fetch sample logs
+
+Retrieve sample logs for specific streams:
+
+```bash
+# Fetch sample logs for log types (from file)
+secops log-processing fetch-sample-logs --streams streams.json --count 10
+
+# Fetch sample logs (inline)
+secops log-processing fetch-sample-logs --streams '[{"logType":"WINEVTLOG"},{"logType":"LINUX"}]' --count 5
+
+# Fetch sample logs for feeds
+secops log-processing fetch-sample-logs --streams '[{"feed":"feed-uuid"}]' --count 10
+```
+
+#### Test a pipeline
+
+Test a pipeline configuration against sample logs before deployment:
+
+```bash
+# Test with inline JSON
+secops log-processing test --pipeline '{"displayName":"Test","processors":[{"filterProcessor":{"include":{"logMatchType":"REGEXP","logBodies":[".*"]},"errorMode":"IGNORE"}}]}' --input-logs input_logs.json
+
+# Test with files
+secops log-processing test --pipeline pipeline_config.json --input-logs test_logs.json
+```
+
+Example `input_logs.json` (logs must have base64-encoded data):
+```json
+[
+  {
+    "data": "U2FtcGxlIGxvZyBlbnRyeQ==",
+    "logEntryTime": "2024-01-01T00:00:00Z",
+    "collectionTime": "2024-01-01T00:00:00Z"
+  },
+  {
+    "data": "QW5vdGhlciBsb2cgZW50cnk=",
+    "logEntryTime": "2024-01-01T00:01:00Z",
+    "collectionTime": "2024-01-01T00:01:00Z"
+  }
+]
+```
+
 ### Parser Management
 
 Parsers in Chronicle are used to process and normalize raw log data into UDM (Unified Data Model) format. The CLI provides comprehensive parser management capabilities.
@@ -466,6 +666,49 @@ secops parser-extension activate --log-type OKTA --id "1234567890"
 secops parser-extension delete --log-type OKTA --id "1234567890"
 ```
 
+### Watchlist Management
+
+List watchlists:
+
+```bash
+# List all watchlists
+secops watchlist list
+
+# List watchlist with pagination 
+secops watchlist list --page-size 50
+```
+
+Get watchlist details:
+
+```bash
+secops watchlist get --watchlist-id "abc-123-def"
+```
+
+Create a new watchlist:
+
+```bash
+secops watchlist create --name "my_watchlist" --display-name "my_watchlist" --description "My watchlist description" --multiplying-factor 1.5
+```
+
+Update a watchlist:
+
+```bash
+# Update display name and description
+secops watchlist update --watchlist-id "abc-123-def" --display-name "Updated Name" --description "Updated description"
+
+# Update multiplying factor and pin the watchlist
+secops watchlist update --watchlist-id "abc-123-def" --multiplying-factor 2.0 --pinned true
+
+# Update entity population mechanism (JSON string or file path)
+secops watchlist update --watchlist-id "abc-123-def" --entity-population-mechanism '{"manual": {}}'
+```
+
+Delete a watchlist:
+
+```bash
+secops watchlist delete --watchlist-id "abc-123-def"
+```
+
 ### Rule Management
 
 List detection rules:
@@ -587,10 +830,28 @@ secops curated-rule rule list
 Get curated rules:
 ```bash
 # Get rule by UUID
-curated-rule rule get --id "ur_ttp_GCP_ServiceAPIDisable"
+secops curated-rule rule get --id "ur_ttp_GCP_ServiceAPIDisable"
 
 # Get rule by name
-curated-rule rule get --name "GCP Service API Disable"
+secops curated-rule rule get --name "GCP Service API Disable"
+```
+
+Search for curated rule detections:
+```bash
+secops curated-rule search-detections \
+  --rule-id "ur_ttp_GCP_MassSecretDeletion" \
+  --start-time "2024-01-01T00:00:00Z" \
+  --end-time "2024-01-31T23:59:59Z" \
+  --list-basis "DETECTION_TIME" \
+  --alert-state "ALERTING"
+
+# Search with pagination
+secops curated-rule search-detections \
+  --rule-id "ur_ttp_GCP_MassSecretDeletion" \
+  --start-time "2024-01-01T00:00:00Z" \
+  --end-time "2024-01-31T23:59:59Z" \
+  --list-basis "DETECTION_TIME" \
+  --page-size 50
 
 ```
 

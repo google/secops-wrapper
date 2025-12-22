@@ -6,7 +6,7 @@ This guide provides comprehensive instructions for setting up and running tests 
 
 ### Prerequisites
 
-- Python 3.9+
+- Python 3.10+
 - Chronicle Instance Details:
     - Customer ID
     - Project Number

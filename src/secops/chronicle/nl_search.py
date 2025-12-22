@@ -16,7 +16,8 @@
 
 import time
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any
+
 from secops.exceptions import APIError
 
 
@@ -104,7 +105,7 @@ def nl_search(
     max_events: int = 10000,
     case_insensitive: bool = True,
     max_attempts: int = 30,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Perform a search using natural language that is translated to UDM.
 
     Args:

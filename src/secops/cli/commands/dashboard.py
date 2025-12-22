@@ -17,9 +17,9 @@
 import json
 import sys
 
+from secops.cli.utils.common_args import add_pagination_args
 from secops.cli.utils.formatters import output_formatter
 from secops.exceptions import APIError, SecOpsError
-from secops.cli.utils.common_args import add_pagination_args
 
 
 def setup_dashboard_command(subparsers):
@@ -30,7 +30,9 @@ def setup_dashboard_command(subparsers):
     dashboard_subparsers = dashboard_parser.add_subparsers(
         dest="dashboard_command",
         help="Dashboard command to execute",
-        required=True,
+    )
+    dashboard_parser.set_defaults(
+        func=lambda args, _: dashboard_parser.print_help()
     )
 
     # List dashboards
@@ -405,11 +407,11 @@ def handle_dashboard_create_command(args, chronicle):
         filters = args.filters if args.filters else None
         charts = args.charts if args.charts else None
         if args.filters_file:
-            with open(args.filters_file, "r", encoding="utf-8") as f:
+            with open(args.filters_file, encoding="utf-8") as f:
                 filters = f.read()
 
         if args.charts_file:
-            with open(args.charts_file, "r", encoding="utf-8") as f:
+            with open(args.charts_file, encoding="utf-8") as f:
                 charts = f.read()
 
         result = chronicle.create_dashboard(
@@ -435,17 +437,17 @@ def handle_dashboard_update_command(args, chronicle):
         charts = args.charts if args.charts else None
         if args.filters_file:
             try:
-                with open(args.filters_file, "r", encoding="utf-8") as f:
+                with open(args.filters_file, encoding="utf-8") as f:
                     filters = f.read()
-            except IOError as e:
+            except OSError as e:
                 print(f"Error reading filters file: {e}", file=sys.stderr)
                 sys.exit(1)
 
         if args.charts_file:
             try:
-                with open(args.charts_file, "r", encoding="utf-8") as f:
+                with open(args.charts_file, encoding="utf-8") as f:
                     charts = f.read()
-            except IOError as e:
+            except OSError as e:
                 print(f"Error reading charts file: {e}", file=sys.stderr)
                 sys.exit(1)
 
@@ -503,26 +505,26 @@ def handle_dashboard_add_chart_command(args, chronicle):
         query = args.query if args.query else None
         if args.query_file:
             try:
-                with open(args.query_file, "r", encoding="utf-8") as f:
+                with open(args.query_file, encoding="utf-8") as f:
                     query = f.read()
-            except IOError as e:
+            except OSError as e:
                 print(f"Error reading query file: {e}", file=sys.stderr)
                 sys.exit(1)
         chart_layout = args.chart_layout if args.chart_layout else None
         if args.chart_layout_file:
             try:
-                with open(args.chart_layout_file, "r", encoding="utf-8") as f:
+                with open(args.chart_layout_file, encoding="utf-8") as f:
                     chart_layout = f.read()
-            except IOError as e:
+            except OSError as e:
                 print(f"Error reading chart layout file: {e}", file=sys.stderr)
                 sys.exit(1)
 
         visualization = args.visualization if args.visualization else None
         if args.visualization_file:
             try:
-                with open(args.visualization_file, "r", encoding="utf-8") as f:
+                with open(args.visualization_file, encoding="utf-8") as f:
                     visualization = f.read()
-            except IOError as e:
+            except OSError as e:
                 print(f"Error reading visualization file: {e}", file=sys.stderr)
                 sys.exit(1)
 
@@ -531,11 +533,9 @@ def handle_dashboard_add_chart_command(args, chronicle):
         )
         if args.drill_down_config_file:
             try:
-                with open(
-                    args.drill_down_config_file, "r", encoding="utf-8"
-                ) as f:
+                with open(args.drill_down_config_file, encoding="utf-8") as f:
                     drill_down_config = f.read()
-            except IOError as e:
+            except OSError as e:
                 print(
                     f"Error reading drill down config file: {e}",
                     file=sys.stderr,
@@ -547,11 +547,9 @@ def handle_dashboard_add_chart_command(args, chronicle):
         )
         if args.chart_datasource_file:
             try:
-                with open(
-                    args.chart_datasource_file, "r", encoding="utf-8"
-                ) as f:
+                with open(args.chart_datasource_file, encoding="utf-8") as f:
                     chart_datasource = f.read()
-            except IOError as e:
+            except OSError as e:
                 print(
                     f"Error reading chart datasource file: {e}",
                     file=sys.stderr,
@@ -616,10 +614,10 @@ def handle_dashboard_edit_chart_command(args, chronicle):
         if args.dashboard_query_from_file:
             try:
                 with open(
-                    args.dashboard_query_from_file, "r", encoding="utf-8"
+                    args.dashboard_query_from_file, encoding="utf-8"
                 ) as f:
                     dashboard_query = f.read()
-            except IOError as e:
+            except OSError as e:
                 print(
                     f"Error reading dashboard query file: {e}", file=sys.stderr
                 )
@@ -628,10 +626,10 @@ def handle_dashboard_edit_chart_command(args, chronicle):
         if args.dashboard_chart_from_file:
             try:
                 with open(
-                    args.dashboard_chart_from_file, "r", encoding="utf-8"
+                    args.dashboard_chart_from_file, encoding="utf-8"
                 ) as f:
                     dashboard_chart = f.read()
-            except IOError as e:
+            except OSError as e:
                 print(
                     f"Error reading dashboard chart file: {e}", file=sys.stderr
                 )
@@ -664,9 +662,9 @@ def handle_dashboard_import_command(args, chronicle):
             dashboard_data = args.dashboard_data
         elif args.dashboard_data_file:
             try:
-                with open(args.dashboard_data_file, "r", encoding="utf-8") as f:
+                with open(args.dashboard_data_file, encoding="utf-8") as f:
                     dashboard_data = f.read()
-            except IOError as e:
+            except OSError as e:
                 print(
                     f"Error reading dashboard data file: {e}", file=sys.stderr
                 )
@@ -677,9 +675,9 @@ def handle_dashboard_import_command(args, chronicle):
             chart_data = args.chart_data
         elif args.chart_data_file:
             try:
-                with open(args.chart_data_file, "r", encoding="utf-8") as f:
+                with open(args.chart_data_file, encoding="utf-8") as f:
                     chart_data = f.read()
-            except IOError as e:
+            except OSError as e:
                 print(f"Error reading chart data file: {e}", file=sys.stderr)
                 sys.exit(1)
 
@@ -688,9 +686,9 @@ def handle_dashboard_import_command(args, chronicle):
             query_data = args.query_data
         elif args.query_data_file:
             try:
-                with open(args.query_data_file, "r", encoding="utf-8") as f:
+                with open(args.query_data_file, encoding="utf-8") as f:
                     query_data = f.read()
-            except IOError as e:
+            except OSError as e:
                 print(f"Error reading query data file: {e}", file=sys.stderr)
                 sys.exit(1)
 

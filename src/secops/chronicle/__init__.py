@@ -85,6 +85,18 @@ from secops.chronicle.log_ingest import (
     list_forwarders,
     update_forwarder,
 )
+from secops.chronicle.log_processing_pipelines import (
+    associate_streams,
+    create_log_processing_pipeline,
+    delete_log_processing_pipeline,
+    dissociate_streams,
+    fetch_associated_pipeline,
+    fetch_sample_logs_by_streams,
+    get_log_processing_pipeline,
+    list_log_processing_pipelines,
+    test_pipeline,
+    update_log_processing_pipeline,
+)
 from secops.chronicle.log_types import (
     get_all_log_types,
     get_log_type_description,
@@ -93,6 +105,7 @@ from secops.chronicle.log_types import (
 )
 from secops.chronicle.models import (
     AlertCount,
+    AlertState,
     Case,
     CaseList,
     DataExport,
@@ -104,6 +117,7 @@ from secops.chronicle.models import (
     EntitySummary,
     FileMetadataAndProperties,
     InputInterval,
+    ListBasis,
     PrevalenceData,
     SoarPlatformInfo,
     TileType,
@@ -158,6 +172,7 @@ from secops.chronicle.rule_set import (
     list_curated_rule_set_deployments,
     list_curated_rule_sets,
     list_curated_rules,
+    search_curated_detections,
     update_curated_rule_set_deployment,
 )
 from secops.chronicle.rule_validation import ValidationResult
@@ -173,6 +188,13 @@ from secops.chronicle.udm_search import (
     find_udm_field_values,
 )
 from secops.chronicle.validate import validate_query
+from secops.chronicle.watchlist import (
+    list_watchlists,
+    get_watchlist,
+    delete_watchlist,
+    create_watchlist,
+    update_watchlist,
+)
 
 __all__ = [
     # Client
@@ -275,6 +297,7 @@ __all__ = [
     "get_curated_rule_set_deployment_by_name",
     "get_curated_rule_by_name",
     "update_curated_rule_set_deployment",
+    "search_curated_detections",
     # Native Dashboard
     "add_chart",
     "create_dashboard",
@@ -299,6 +322,7 @@ __all__ = [
     "WidgetMetadata",
     "EntitySummary",
     "AlertCount",
+    "AlertState",
     "Case",
     "SoarPlatformInfo",
     "CaseList",
@@ -314,6 +338,7 @@ __all__ = [
     "DashboardAccessType",
     "DashboardView",
     "InputInterval",
+    "ListBasis",
     "TileType",
     # Data Table and Reference List
     "DataTableColumnType",
@@ -322,4 +347,21 @@ __all__ = [
     "update_data_table",
     "update_data_table_rows",
     "replace_data_table_rows",
+    # Log Processing Pipelines
+    "list_log_processing_pipelines",
+    "get_log_processing_pipeline",
+    "create_log_processing_pipeline",
+    "update_log_processing_pipeline",
+    "delete_log_processing_pipeline",
+    "associate_streams",
+    "dissociate_streams",
+    "fetch_associated_pipeline",
+    "fetch_sample_logs_by_streams",
+    "test_pipeline",
+    # Watchlist
+    "list_watchlists",
+    "get_watchlist",
+    "delete_watchlist",
+    "create_watchlist",
+    "update_watchlist",
 ]

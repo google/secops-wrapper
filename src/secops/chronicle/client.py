@@ -15,9 +15,10 @@
 """Chronicle API client."""
 import ipaddress
 import re
+from collections.abc import Iterator
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Iterator, List, Literal, Optional, Union
+from typing import Any, Literal, Union
 
 from google.auth.transport import requests as google_auth_requests
 
@@ -117,9 +118,9 @@ from secops.chronicle.log_ingest import get_forwarder as _get_forwarder
 from secops.chronicle.log_ingest import (
     get_or_create_forwarder as _get_or_create_forwarder,
 )
+from secops.chronicle.log_ingest import import_entities as _import_entities
 from secops.chronicle.log_ingest import ingest_log as _ingest_log
 from secops.chronicle.log_ingest import ingest_udm as _ingest_udm
-from secops.chronicle.log_ingest import import_entities as _import_entities
 from secops.chronicle.log_ingest import list_forwarders as _list_forwarders
 from secops.chronicle.log_ingest import update_forwarder as _update_forwarder
 from secops.chronicle.log_types import get_all_log_types as _get_all_log_types
@@ -128,7 +129,38 @@ from secops.chronicle.log_types import (
 )
 from secops.chronicle.log_types import is_valid_log_type as _is_valid_log_type
 from secops.chronicle.log_types import search_log_types as _search_log_types
+from secops.chronicle.log_processing_pipelines import (
+    associate_streams as _associate_streams,
+)
+from secops.chronicle.log_processing_pipelines import (
+    create_log_processing_pipeline as _create_log_processing_pipeline,
+)
+from secops.chronicle.log_processing_pipelines import (
+    delete_log_processing_pipeline as _delete_log_processing_pipeline,
+)
+from secops.chronicle.log_processing_pipelines import (
+    dissociate_streams as _dissociate_streams,
+)
+from secops.chronicle.log_processing_pipelines import (
+    fetch_associated_pipeline as _fetch_associated_pipeline,
+)
+from secops.chronicle.log_processing_pipelines import (
+    fetch_sample_logs_by_streams as _fetch_sample_logs_by_streams,
+)
+from secops.chronicle.log_processing_pipelines import (
+    get_log_processing_pipeline as _get_log_processing_pipeline,
+)
+from secops.chronicle.log_processing_pipelines import (
+    list_log_processing_pipelines as _list_log_processing_pipelines,
+)
+from secops.chronicle.log_processing_pipelines import (
+    update_log_processing_pipeline as _update_log_processing_pipeline,
+)
+from secops.chronicle.log_processing_pipelines import (
+    test_pipeline as _test_pipeline,
+)
 from secops.chronicle.models import (
+    APIVersion,
     CaseList,
     DashboardChart,
     DashboardQuery,
@@ -240,16 +272,37 @@ from secops.chronicle.rule_retrohunt import (
 from secops.chronicle.rule_retrohunt import get_retrohunt as _get_retrohunt
 from secops.chronicle.rule_set import (
     batch_update_curated_rule_set_deployments as _batch_update_curated_rule_set_deployments,  # pylint: disable=line-too-long
-    list_curated_rule_sets as _list_curated_rule_sets,
-    list_curated_rule_set_categories as _list_curated_rule_set_categories,
-    list_curated_rules as _list_curated_rules,
-    get_curated_rule as _get_curated_rule,
-    get_curated_rule_set_category as _get_curated_rule_set_category,
-    get_curated_rule_set as _get_curated_rule_set,
-    list_curated_rule_set_deployments as _list_curated_rule_set_deployments,
-    get_curated_rule_set_deployment as _get_curated_rule_set_deployment,
-    get_curated_rule_set_deployment_by_name as _get_curated_rule_set_deployment_by_name,
+)
+from secops.chronicle.rule_set import get_curated_rule as _get_curated_rule
+from secops.chronicle.rule_set import (
     get_curated_rule_by_name as _get_curated_rule_by_name,
+)
+from secops.chronicle.rule_set import (
+    get_curated_rule_set as _get_curated_rule_set,
+)
+from secops.chronicle.rule_set import (
+    get_curated_rule_set_category as _get_curated_rule_set_category,
+)
+from secops.chronicle.rule_set import (
+    get_curated_rule_set_deployment as _get_curated_rule_set_deployment,
+)
+from secops.chronicle.rule_set import (
+    get_curated_rule_set_deployment_by_name as _get_curated_rule_set_deployment_by_name,  # pylint: disable=line-too-long
+)
+from secops.chronicle.rule_set import (
+    list_curated_rule_set_categories as _list_curated_rule_set_categories,
+)
+from secops.chronicle.rule_set import (
+    list_curated_rule_set_deployments as _list_curated_rule_set_deployments,
+)
+from secops.chronicle.rule_set import (
+    list_curated_rule_sets as _list_curated_rule_sets,
+)
+from secops.chronicle.rule_set import list_curated_rules as _list_curated_rules
+from secops.chronicle.rule_set import (
+    search_curated_detections as _search_curated_detections,
+)
+from secops.chronicle.rule_set import (
     update_curated_rule_set_deployment as _update_curated_rule_set_deployment,
 )
 from secops.chronicle.rule_validation import validate_rule as _validate_rule
@@ -271,6 +324,13 @@ from secops.chronicle.udm_search import (
     find_udm_field_values as _find_udm_field_values,
 )
 from secops.chronicle.validate import validate_query as _validate_query
+from secops.chronicle.watchlist import (
+    list_watchlists as _list_watchlists,
+    get_watchlist as _get_watchlist,
+    delete_watchlist as _delete_watchlist,
+    create_watchlist as _create_watchlist,
+    update_watchlist as _update_watchlist,
+)
 from secops.exceptions import SecOpsError
 
 
@@ -288,7 +348,68 @@ class ValueType(Enum):
     USERNAME = "USERNAME"
 
 
-def _detect_value_type(value: str) -> tuple[Optional[str], Optional[str]]:
+class BaseUrl(str):
+    """Chronicle base url generation based on version and region.
+
+    Supports production, dev, and staging regions with appropriate
+    domain names.
+    """
+
+    def __new__(cls, version: APIVersion, region: str = "us"):
+        domain = cls._get_domain(region)
+        return super().__new__(cls, f"https://{domain}/{version}")
+
+    def __init__(self, version: APIVersion, region: str = "us"):
+        self._default = version
+        self._region = region
+
+    @staticmethod
+    def _get_domain(region: str) -> str:
+        """Get the appropriate domain for the given region.
+
+        Args:
+            region: Region identifier (e.g., 'us', 'europe', 'dev',
+                'staging')
+
+        Returns:
+            str: Domain name for the region
+        """
+        if region == "dev":
+            return "autopush-chronicle.sandbox.googleapis.com"
+        elif region == "staging":
+            return "staging-chronicle.sandbox.googleapis.com"
+        else:
+            return f"{region}-chronicle.googleapis.com"
+
+    def __call__(
+        self, version: APIVersion = None, allowed: list[APIVersion] = None
+    ) -> str:
+        """
+        Returns the base URL for a specific API version.
+
+        Args:
+            version: (Optional) The API version to use. If not provided,
+            uses the default.
+            allowed: (Optional) A list of allowed API versions for the
+            endpoint.
+
+        Returns:
+            The base URL string.
+
+        Raises:
+            SecOpsError: If the requested API version is not supported.
+        """
+        selected_version = APIVersion(version or self._default)
+        if allowed and selected_version not in allowed:
+            raise SecOpsError(
+                f'API version "{selected_version}" is not supported for this '
+                f'endpoint. Allowed versions: {", ".join(allowed)}'
+            )
+        domain = self._get_domain(self._region)
+        return f"https://{domain}/{selected_version}"
+
+
+def _detect_value_type(value: str) -> tuple[str | None, str | None]:
     """Detect value type from a string.
 
     Args:
@@ -346,11 +467,12 @@ class ChronicleClient:
         project_id: str,
         customer_id: str,
         region: str = "us",
-        auth: Optional[Any] = None,
-        session: Optional[Any] = None,
-        extra_scopes: Optional[List[str]] = None,
-        credentials: Optional[Any] = None,
-        retry_config: Optional[Union[RetryConfig, Dict[str, Any], bool]] = None,
+        auth: Any | None = None,
+        session: Any | None = None,
+        extra_scopes: list[str] | None = None,
+        credentials: Any | None = None,
+        retry_config: RetryConfig | dict[str, Any] | bool | None = None,
+        default_api_version: APIVersion | str = APIVersion.V1ALPHA,
     ):
         """Initialize ChronicleClient.
 
@@ -364,48 +486,30 @@ class ChronicleClient:
             credentials: Credentials object
             retry_config: Request retry configurations.
                 If set to false, retry will be disabled.
+            default_api_version: Default API version to use for requests.
         """
         self.project_id = project_id
         self.customer_id = customer_id
         self.region = region
+        self.default_api_version = APIVersion(default_api_version)
         self._default_forwarder_display_name: str = "Wrapper-SDK-Forwarder"
-        self._cached_default_forwarder_id: Optional[str] = None
+        self._cached_default_forwarder_id: str | None = None
 
         # Format the instance ID to match the expected format
         if region in ["dev", "staging"]:
-            # For dev and staging environments,
-            # use a different instance ID format
+            # Dev and staging use 'us' as the location
             self.instance_id = (
                 f"projects/{project_id}/locations/us/instances/{customer_id}"
             )
-            # Set up the base URL for dev/staging
-            if region == "dev":
-                self.base_url = (
-                    "https://autopush-chronicle.sandbox.googleapis.com/v1alpha"
-                )
-                self.base_v1_url = (
-                    "https://autopush-chronicle.sandbox.googleapis.com/v1"
-                )
-            else:  # staging
-                self.base_url = (
-                    "https://staging-chronicle.sandbox.googleapis.com/v1alpha"
-                )
-                self.base_v1_url = (
-                    "https://staging-chronicle.sandbox.googleapis.com/v1"
-                )
         else:
             # Standard production regions use the normal format
             self.instance_id = (
                 f"projects/{project_id}/locations/{region}/"
                 f"instances/{customer_id}"
             )
-            # Set up the base URL
-            self.base_url = (
-                f"https://{self.region}-chronicle.googleapis.com/v1alpha"
-            )
-            self.base_v1_url = (
-                f"https://{self.region}-chronicle.googleapis.com/v1"
-            )
+
+        # Set up base URLs using BaseUrl for all regions
+        self.base_url = BaseUrl(self.default_api_version, self.region)
 
         # Create a session with authentication
         if session:
@@ -469,9 +573,9 @@ class ChronicleClient:
         query: str,
         start_time: datetime,
         end_time: datetime,
-        snapshot_query: Optional[str] = 'feedback_summary.status != "CLOSED"',
-        max_events: Optional[int] = 10000,
-        max_detections: Optional[int] = 1000,
+        snapshot_query: str | None = 'feedback_summary.status != "CLOSED"',
+        max_events: int | None = 10000,
+        max_detections: int | None = 1000,
         case_insensitive: bool = True,
     ) -> str:
         """Fetch UDM Search View results.
@@ -509,7 +613,7 @@ class ChronicleClient:
             case_insensitive,
         )
 
-    def validate_query(self, query: str) -> Dict[str, Any]:
+    def validate_query(self, query: str) -> dict[str, Any]:
         """Validate a Chronicle search query.
 
         Args:
@@ -523,6 +627,132 @@ class ChronicleClient:
         """
         return _validate_query(self, query)
 
+    def list_watchlists(
+        self,
+        page_size: int | None = None,
+        page_token: str | None = None,
+    ) -> dict[str, Any]:
+        """Get a list of all watchlists.
+
+        Args:
+            page_size: Maximum number of watchlists to return per page
+            page_token: Token for the next page of results, if available
+
+        Returns:
+            Dictionary with list of watchlists
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _list_watchlists(self, page_size, page_token)
+
+    def get_watchlist(
+        self,
+        watchlist_id: str,
+    ) -> dict[str, Any]:
+        """Get a specific watchlist by ID.
+
+        Args:
+            watchlist_id: ID of the watchlist to retrieve
+
+        Returns:
+            Watchlist
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _get_watchlist(self, watchlist_id)
+
+    def delete_watchlist(
+        self,
+        watchlist_id: str,
+        force: bool | None = None,
+    ) -> dict[str, Any]:
+        """Delete a watchlist by ID.
+
+        Args:
+            watchlist_id: ID of the watchlist to delete
+            force: Optional. If set to true, any entities under this
+             watchlist will also be deleted.
+              (Otherwise, the request will only work if the
+               watchlist has no entities.)
+
+        Returns:
+            Deleted watchlist
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _delete_watchlist(self, watchlist_id, force)
+
+    def create_watchlist(
+        self,
+        name: str,
+        display_name: str,
+        multiplying_factor: float,
+        description: str | None = None,
+    ) -> dict[str, Any]:
+        """Create a watchlist
+
+        Args:
+            name: Name of the watchlist
+            display_name: Display name of the watchlist
+            multiplying_factor: Multiplying factor for the watchlist
+            description: Optional. Description of the watchlist
+
+        Returns:
+            Created watchlist
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _create_watchlist(
+            self, name, display_name, multiplying_factor, description
+        )
+
+    def update_watchlist(
+        self,
+        watchlist_id: str,
+        display_name: str | None = None,
+        description: str | None = None,
+        multiplying_factor: float | None = None,
+        entity_population_mechanism: dict[str, Any] | None = None,
+        watchlist_user_preferences: dict[str, Any] | None = None,
+        update_mask: str | None = None,
+    ) -> dict[str, Any]:
+        """Update a watchlist.
+
+        Args:
+            watchlist_id: ID of the watchlist to update.
+            display_name: Optional. Display name of the watchlist.
+                Must be 1-63 characters.
+            description: Optional. Description of the watchlist.
+            multiplying_factor: Optional. Weight applied to risk score
+                for entities in this watchlist. Default is 1.0.
+            entity_population_mechanism: Optional. Mechanism to populate
+                entities in the watchlist. Example: {"manual": {}}.
+            watchlist_user_preferences: Optional. User preferences for
+                watchlist configuration. Example: {"pinned": True}.
+            update_mask: Optional. Comma-separated list of fields to
+                update. If not provided, all non-None fields are updated.
+
+        Returns:
+            Updated watchlist.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _update_watchlist(
+            self,
+            watchlist_id,
+            display_name,
+            description,
+            multiplying_factor,
+            entity_population_mechanism,
+            watchlist_user_preferences,
+            update_mask,
+        )
+
     def get_stats(
         self,
         query: str,
@@ -533,7 +763,7 @@ class ChronicleClient:
         max_events: int = 10000,
         case_insensitive: bool = True,
         max_attempts: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get statistics from a Chronicle search query.
 
         Args:
@@ -567,7 +797,7 @@ class ChronicleClient:
             max_attempts,
         )
 
-    def _process_stats_results(self, results: Dict[str, Any]) -> Dict[str, Any]:
+    def _process_stats_results(self, results: dict[str, Any]) -> dict[str, Any]:
         """Process stats search results.
 
         Args:
@@ -636,7 +866,7 @@ class ChronicleClient:
         max_attempts: int = 30,
         timeout: int = 30,
         debug: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Search UDM events in Chronicle.
 
         Args:
@@ -672,8 +902,8 @@ class ChronicleClient:
         )
 
     def find_udm_field_values(
-        self, query: str, page_size: Optional[int] = None
-    ) -> Dict[str, Any]:
+        self, query: str, page_size: int | None = None
+    ) -> dict[str, Any]:
         """Fetch UDM field values that match a query.
 
         Args:
@@ -693,10 +923,10 @@ class ChronicleClient:
         value: str,
         start_time: datetime,
         end_time: datetime,
-        preferred_entity_type: Optional[str] = None,
+        preferred_entity_type: str | None = None,
         include_all_udm_types: bool = True,
         page_size: int = 1000,
-        page_token: Optional[str] = None,
+        page_token: str | None = None,
     ) -> EntitySummary:
         """
         Get comprehensive summary information about an entity
@@ -1011,7 +1241,7 @@ class ChronicleClient:
         start_time: datetime,
         end_time: datetime,
         snapshot_query: str = 'feedback_summary.status != "CLOSED"',
-        baseline_query: Optional[str] = None,
+        baseline_query: str | None = None,
         max_alerts: int = 1000,
         enable_cache: bool = True,
         max_attempts: int = 30,
@@ -1112,11 +1342,11 @@ class ChronicleClient:
     def create_parser_extension(
         self,
         log_type: str,
-        log: Optional[str] = None,
-        parser_config: Optional[str] = None,
-        field_extractors: Optional[Union[str, Dict[str, Any]]] = None,
-        dynamic_parsing: Optional[Union[str, Dict[str, Any]]] = None,
-    ) -> Dict[str, Any]:
+        log: str | None = None,
+        parser_config: str | None = None,
+        field_extractors: str | dict[str, Any] | None = None,
+        dynamic_parsing: str | dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Create a new parser extension.
 
         Args:
@@ -1175,7 +1405,7 @@ class ChronicleClient:
 
     def get_parser_extension(
         self, log_type: str, extension_id: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get details of a parser extension.
 
         Args:
@@ -1190,9 +1420,9 @@ class ChronicleClient:
     def list_parser_extensions(
         self,
         log_type: str,
-        page_size: Optional[int] = None,
-        page_token: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        page_size: int | None = None,
+        page_token: str | None = None,
+    ) -> dict[str, Any]:
         """List parser extensions.
 
         Args:
@@ -1232,9 +1462,7 @@ class ChronicleClient:
         _delete_parser_extension(self, log_type, extension_id)
 
     # pylint: disable=function-redefined
-    def _detect_value_type(
-        self, value: str
-    ) -> tuple[Optional[str], Optional[str]]:
+    def _detect_value_type(self, value: str) -> tuple[str | None, str | None]:
         """
         Instance method version of _detect_value_type for
         backward compatibility.
@@ -1267,11 +1495,16 @@ class ChronicleClient:
 
     # Rule Management methods
 
-    def create_rule(self, rule_text: str) -> Dict[str, Any]:
+    def create_rule(
+        self,
+        rule_text: str,
+        api_version: APIVersion | None = APIVersion.V1,
+    ) -> dict[str, Any]:
         """Creates a new detection rule to find matches in logs.
 
         Args:
             rule_text: Content of the new detection rule, used to evaluate logs.
+            api_version: Preferred API version to use. Defaults to V1
 
         Returns:
             Dictionary containing the created rule information
@@ -1279,15 +1512,20 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _create_rule(self, rule_text)
+        return _create_rule(self, rule_text, api_version)
 
-    def get_rule(self, rule_id: str) -> Dict[str, Any]:
+    def get_rule(
+        self,
+        rule_id: str,
+        api_version: APIVersion | None = APIVersion.V1,
+    ) -> dict[str, Any]:
         """Get a rule by ID.
 
         Args:
             rule_id: Unique ID of the detection rule to retrieve ("ru_<UUID>" or
               "ru_<UUID>@v_<seconds>_<nanoseconds>"). If a version suffix isn't
               specified we use the rule's latest version.
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Dictionary containing rule information
@@ -1295,51 +1533,365 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _get_rule(self, rule_id)
+        return _get_rule(self, rule_id, api_version)
 
-    def list_feeds(self) -> Dict[str, Any]:
-        return _list_feeds(self)
+    def list_feeds(
+        self,
+        page_size: int = 100,
+        page_token: str = None,
+        api_version: APIVersion | None = None,
+    ) -> list[dict[str, Any]]:
+        """List feeds.
 
-    def get_feed(self, feed_id: str) -> Dict[str, Any]:
-        return _get_feed(self, feed_id)
+        Args:
+            page_size: The maximum number of feeds to return
+            page_token: A page token, received from a previous ListFeeds call
+            api_version: (Optional) Preferred API version to use.
+
+        Returns:
+            List of feed dictionaries
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _list_feeds(self, page_size, page_token, api_version)
+
+    def get_feed(
+        self, feed_id: str, api_version: APIVersion | None = None
+    ) -> dict[str, Any]:
+        """Get a feed by ID.
+
+        Args:
+            feed_id: Feed ID
+            api_version: (Optional) Preferred API version to use.
+
+        Returns:
+            Feed dictionary
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _get_feed(self, feed_id, api_version)
 
     def create_feed(
-        self, display_name: str, details: Union[str, Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self,
+        display_name: str,
+        details: str | dict[str, Any],
+        api_version: APIVersion | None = None,
+    ) -> dict[str, Any]:
+        """Create a new feed.
+
+        Args:
+            display_name: Display name for the feed
+            details: Feed details as JSON string or dict
+            api_version: (Optional) Preferred API version to use.
+
+        Returns:
+            Dictionary containing the created feed
+
+        Raises:
+            APIError: If the API request fails
+        """
         feed_config = CreateFeedModel(
             display_name=display_name, details=details
         )
-        return _create_feed(self, feed_config)
+        return _create_feed(self, feed_config, api_version)
 
     def update_feed(
         self,
         feed_id: str,
-        display_name: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        display_name: str | None = None,
+        details: dict[str, Any] | None = None,
+        api_version: APIVersion | None = None,
+    ) -> dict[str, Any]:
+        """Update a feed.
+
+        Args:
+            feed_id: Feed ID
+            display_name: Display name for the feed
+            details: Feed details as dict
+            api_version: (Optional) Preferred API version to use.
+
+        Returns:
+            Dictionary containing the updated feed
+
+        Raises:
+            APIError: If the API request fails
+        """
         feed_config = UpdateFeedModel(
             display_name=display_name, details=details
         )
-        return _update_feed(self, feed_id, feed_config)
+        return _update_feed(self, feed_id, feed_config, api_version)
 
-    def enable_feed(self, feed_id: str) -> Dict[str, Any]:
-        return _enable_feed(self, feed_id)
+    def enable_feed(
+        self, feed_id: str, api_version: APIVersion | None = None
+    ) -> dict[str, Any]:
+        """Enable a feed.
 
-    def disable_feed(self, feed_id: str) -> Dict[str, Any]:
-        return _disable_feed(self, feed_id)
+        Args:
+            feed_id: Feed ID
+            api_version: (Optional) Preferred API version to use.
 
-    def generate_secret(self, feed_id: str) -> Dict[str, Any]:
-        return _generate_secret(self, feed_id)
+        Returns:
+            Dictionary containing the enabled feed
 
-    def delete_feed(self, feed_id: str) -> Dict[str, Any]:
-        return _delete_feed(self, feed_id)
+        Raises:
+            APIError: If the API request fails
+        """
+        return _enable_feed(self, feed_id, api_version)
+
+    def disable_feed(
+        self, feed_id: str, api_version: APIVersion | None = None
+    ) -> dict[str, Any]:
+        """Disable a feed.
+
+        Args:
+            feed_id: Feed ID
+            api_version: (Optional) Preferred API version to use.
+
+        Returns:
+            Dictionary containing the disabled feed
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _disable_feed(self, feed_id, api_version)
+
+    def generate_secret(
+        self, feed_id: str, api_version: APIVersion | None = None
+    ) -> dict[str, Any]:
+        """Generate a secret for a feed.
+
+        Args:
+            feed_id: Feed ID
+            api_version: (Optional) Preferred API version to use.
+
+        Returns:
+            Dictionary containing the secret
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _generate_secret(self, feed_id, api_version)
+
+    def delete_feed(
+        self, feed_id: str, api_version: APIVersion | None = None
+    ) -> None:
+        """Delete a feed.
+
+        Args:
+            feed_id: Feed ID
+            api_version: (Optional) Preferred API version to use.
+
+        Returns:
+            None
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _delete_feed(self, feed_id, api_version)
+
+    # Log Processing Pipeline methods
+
+    def list_log_processing_pipelines(
+        self,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_expr: str | None = None,
+    ) -> dict[str, Any]:
+        """Lists log processing pipelines.
+
+        Args:
+            page_size: Maximum number of pipelines to return.
+            page_token: Page token for pagination.
+            filter_expr: Filter expression to restrict results.
+
+        Returns:
+            Dictionary containing pipelines and pagination info.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _list_log_processing_pipelines(
+            self, page_size, page_token, filter_expr
+        )
+
+    def get_log_processing_pipeline(self, pipeline_id: str) -> dict[str, Any]:
+        """Gets a log processing pipeline by ID.
+
+        Args:
+            pipeline_id: ID of the pipeline to retrieve.
+
+        Returns:
+            Dictionary containing pipeline information.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_log_processing_pipeline(self, pipeline_id)
+
+    def create_log_processing_pipeline(
+        self,
+        pipeline: dict[str, Any],
+        pipeline_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Creates a new log processing pipeline.
+
+        Args:
+            pipeline: Pipeline configuration dict containing:
+                - displayName: Display name for the pipeline
+                - description: Optional description
+                - processors: List of processor configurations
+                - customMetadata: Optional custom metadata list
+            pipeline_id: Optional ID for the pipeline.
+
+        Returns:
+            Dictionary containing the created pipeline.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _create_log_processing_pipeline(self, pipeline, pipeline_id)
+
+    def update_log_processing_pipeline(
+        self,
+        pipeline_id: str,
+        pipeline: dict[str, Any],
+        update_mask: str | None = None,
+    ) -> dict[str, Any]:
+        """Updates a log processing pipeline.
+
+        Args:
+            pipeline_id: ID of the pipeline to update.
+            pipeline: Pipeline configuration with fields to update containing:
+                - displayName: Display name for the pipeline
+                - description: Optional description
+                - processors: List of processor configurations
+                - customMetadata: Optional custom metadata list
+            update_mask: Optional comma-separated list of fields.
+
+        Returns:
+            Dictionary containing the updated pipeline.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _update_log_processing_pipeline(
+            self, pipeline_id, pipeline, update_mask
+        )
+
+    def delete_log_processing_pipeline(
+        self, pipeline_id: str, etag: str | None = None
+    ) -> dict[str, Any]:
+        """Deletes a log processing pipeline.
+
+        Args:
+            pipeline_id: ID of the pipeline to delete.
+            etag: Optional etag for optimistic concurrency control.
+
+        Returns:
+            Empty dictionary on success.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _delete_log_processing_pipeline(self, pipeline_id, etag)
+
+    def associate_streams(
+        self, pipeline_id: str, streams: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """Associates streams with a pipeline.
+
+        Args:
+            pipeline_id: ID of the pipeline.
+            streams: List of stream dicts.
+
+        Returns:
+            Empty dictionary on success.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _associate_streams(self, pipeline_id, streams)
+
+    def dissociate_streams(
+        self, pipeline_id: str, streams: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """Dissociates streams from a pipeline.
+
+        Args:
+            pipeline_id: ID of the pipeline.
+            streams: List of stream dicts.
+
+        Returns:
+            Empty dictionary on success.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _dissociate_streams(self, pipeline_id, streams)
+
+    def fetch_associated_pipeline(
+        self, stream: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Fetches the pipeline associated with a stream.
+
+        Args:
+            stream: Stream dict (logType or feedId).
+
+        Returns:
+            Dictionary containing the associated pipeline.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _fetch_associated_pipeline(self, stream)
+
+    def fetch_sample_logs_by_streams(
+        self,
+        streams: list[dict[str, Any]],
+        sample_logs_count: int | None = None,
+    ) -> dict[str, Any]:
+        """Fetches sample logs for specified streams.
+
+        Args:
+            streams: List of stream dicts.
+            sample_logs_count: Number of sample logs per stream.
+
+        Returns:
+            Dictionary containing sample logs.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _fetch_sample_logs_by_streams(self, streams, sample_logs_count)
+
+    def test_pipeline(
+        self,
+        pipeline: dict[str, Any],
+        input_logs: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Tests a pipeline with input logs.
+
+        Args:
+            pipeline: Pipeline configuration to test.
+            input_logs: List of log objects to process.
+
+        Returns:
+            Dictionary containing processed logs.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _test_pipeline(self, pipeline, input_logs)
 
     def list_rules(
         self,
-        view: Optional[str] = "FULL",
-        page_size: Optional[int] = None,
-        page_token: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        view: str | None = "FULL",
+        page_size: int | None = None,
+        page_token: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1,
+    ) -> dict[str, Any]:
         """Gets a list of rules.
 
         Args:
@@ -1352,6 +1904,7 @@ class ChronicleClient:
                 Defaults to "FULL".
             page_size: Maximum number of rules to return per page.
             page_token: Token for the next page of results, if available.
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Dictionary containing information about rules
@@ -1360,15 +1913,25 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _list_rules(
-            self, view=view, page_size=page_size, page_token=page_token
+            self,
+            view=view,
+            page_size=page_size,
+            page_token=page_token,
+            api_version=api_version,
         )
 
-    def update_rule(self, rule_id: str, rule_text: str) -> Dict[str, Any]:
+    def update_rule(
+        self,
+        rule_id: str,
+        rule_text: str,
+        api_version: APIVersion | None = APIVersion.V1,
+    ) -> dict[str, Any]:
         """Updates a rule.
 
         Args:
             rule_id: Unique ID of the detection rule to update ("ru_<UUID>")
             rule_text: Updated content of the detection rule
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Dictionary containing the updated rule information
@@ -1376,15 +1939,21 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _update_rule(self, rule_id, rule_text)
+        return _update_rule(self, rule_id, rule_text, api_version)
 
-    def delete_rule(self, rule_id: str, force: bool = False) -> Dict[str, Any]:
+    def delete_rule(
+        self,
+        rule_id: str,
+        force: bool = False,
+        api_version: APIVersion | None = APIVersion.V1,
+    ) -> dict[str, Any]:
         """Deletes a rule.
 
         Args:
             rule_id: Unique ID of the detection rule to delete ("ru_<UUID>")
             force: If True, deletes the rule even if it has
             associated retrohunts
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Empty dictionary or deletion confirmation
@@ -1392,9 +1961,9 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _delete_rule(self, rule_id, force)
+        return _delete_rule(self, rule_id, force, api_version)
 
-    def enable_rule(self, rule_id: str, enabled: bool = True) -> Dict[str, Any]:
+    def enable_rule(self, rule_id: str, enabled: bool = True) -> dict[str, Any]:
         """Enables or disables a rule.
 
         Args:
@@ -1410,11 +1979,14 @@ class ChronicleClient:
         """
         return _enable_rule(self, rule_id, enabled)
 
-    def search_rules(self, query: str) -> Dict[str, Any]:
+    def search_rules(
+        self, query: str, api_version: APIVersion | None = APIVersion.V1
+    ) -> dict[str, Any]:
         """Search for rules.
 
         Args:
             query: Search query string that supports regex
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Dictionary containing search results
@@ -1422,7 +1994,7 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _search_rules(self, query)
+        return _search_rules(self, query, api_version)
 
     def run_rule_test(
         self,
@@ -1431,7 +2003,7 @@ class ChronicleClient:
         end_time: datetime,
         max_results: int = 100,
         timeout: int = 300,
-    ) -> Iterator[Dict[str, Any]]:
+    ) -> Iterator[dict[str, Any]]:
         """Tests a rule against historical data and returns matches.
 
         This function connects to the legacy:legacyRunTestRule streaming
@@ -1463,7 +2035,7 @@ class ChronicleClient:
 
     def get_alert(
         self, alert_id: str, include_detections: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Gets an alert by ID.
 
         Args:
@@ -1482,18 +2054,18 @@ class ChronicleClient:
     def update_alert(
         self,
         alert_id: str,
-        confidence_score: Optional[int] = None,
-        reason: Optional[str] = None,
-        reputation: Optional[str] = None,
-        priority: Optional[str] = None,
-        status: Optional[str] = None,
-        verdict: Optional[str] = None,
-        risk_score: Optional[int] = None,
-        disregarded: Optional[bool] = None,
-        severity: Optional[int] = None,
-        comment: Optional[Union[str, Literal[""]]] = None,
-        root_cause: Optional[Union[str, Literal[""]]] = None,
-    ) -> Dict[str, Any]:
+        confidence_score: int | None = None,
+        reason: str | None = None,
+        reputation: str | None = None,
+        priority: str | None = None,
+        status: str | None = None,
+        verdict: str | None = None,
+        risk_score: int | None = None,
+        disregarded: bool | None = None,
+        severity: int | None = None,
+        comment: str | Literal[""] | None = None,
+        root_cause: str | Literal[""] | None = None,
+    ) -> dict[str, Any]:
         """Updates an alert's properties.
 
         Args:
@@ -1556,19 +2128,19 @@ class ChronicleClient:
 
     def bulk_update_alerts(
         self,
-        alert_ids: List[str],
-        confidence_score: Optional[int] = None,
-        reason: Optional[str] = None,
-        reputation: Optional[str] = None,
-        priority: Optional[str] = None,
-        status: Optional[str] = None,
-        verdict: Optional[str] = None,
-        risk_score: Optional[int] = None,
-        disregarded: Optional[bool] = None,
-        severity: Optional[int] = None,
-        comment: Optional[Union[str, Literal[""]]] = None,
-        root_cause: Optional[Union[str, Literal[""]]] = None,
-    ) -> List[Dict[str, Any]]:
+        alert_ids: list[str],
+        confidence_score: int | None = None,
+        reason: str | None = None,
+        reputation: str | None = None,
+        priority: str | None = None,
+        status: str | None = None,
+        verdict: str | None = None,
+        risk_score: int | None = None,
+        disregarded: bool | None = None,
+        severity: int | None = None,
+        comment: str | Literal[""] | None = None,
+        root_cause: str | Literal[""] | None = None,
+    ) -> list[dict[str, Any]]:
         """Updates multiple alerts with the same properties.
 
         This is a helper function that iterates through the list of alert IDs
@@ -1615,9 +2187,9 @@ class ChronicleClient:
         self,
         start_time: datetime,
         end_time: datetime,
-        rule_status: Optional[str] = None,
-        page_size: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        rule_status: str | None = None,
+        page_size: int | None = None,
+    ) -> dict[str, Any]:
         """Search for alerts generated by rules.
 
         Args:
@@ -1643,15 +2215,15 @@ class ChronicleClient:
     def list_detections(
         self,
         rule_id: str,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        list_basis: Optional[
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        list_basis: None | (
             Literal["LIST_BASIS_UNSPECIFIED", "CREATED_TIME", "DETECTION_TIME"]
-        ] = None,
-        alert_state: Optional[str] = None,
-        page_size: Optional[int] = None,
-        page_token: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        ) = None,
+        alert_state: str | None = None,
+        page_size: int | None = None,
+        page_token: str | None = None,
+    ) -> dict[str, Any]:
         """List detections for a rule.
 
         Args:
@@ -1691,7 +2263,7 @@ class ChronicleClient:
             page_token,
         )
 
-    def list_errors(self, rule_id: str) -> Dict[str, Any]:
+    def list_errors(self, rule_id: str) -> dict[str, Any]:
         """List execution errors for a rule.
 
         Args:
@@ -1711,8 +2283,12 @@ class ChronicleClient:
     # Rule Retrohunt methods
 
     def create_retrohunt(
-        self, rule_id: str, start_time: datetime, end_time: datetime
-    ) -> Dict[str, Any]:
+        self,
+        rule_id: str,
+        start_time: datetime,
+        end_time: datetime,
+        api_version: APIVersion | None = APIVersion.V1,
+    ) -> dict[str, Any]:
         """Creates a retrohunt for a rule.
 
         A retrohunt applies a rule to historical data within
@@ -1722,6 +2298,7 @@ class ChronicleClient:
             rule_id: Unique ID of the rule to run retrohunt for ("ru_<UUID>")
             start_time: Start time for retrohunt analysis
             end_time: End time for retrohunt analysis
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Dictionary containing operation information for the retrohunt
@@ -1729,15 +2306,23 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _create_retrohunt(self, rule_id, start_time, end_time)
+        return _create_retrohunt(
+            self, rule_id, start_time, end_time, api_version
+        )
 
-    def get_retrohunt(self, rule_id: str, operation_id: str) -> Dict[str, Any]:
+    def get_retrohunt(
+        self,
+        rule_id: str,
+        operation_id: str,
+        api_version: APIVersion | None = APIVersion.V1,
+    ) -> dict[str, Any]:
         """Get retrohunt status and results.
 
         Args:
             rule_id: Unique ID of the rule the retrohunt is for ("ru_<UUID>" or
               "ru_<UUID>@v_<seconds>_<nanoseconds>")
             operation_id: Operation ID of the retrohunt
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Dictionary containing retrohunt information
@@ -1745,13 +2330,13 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _get_retrohunt(self, rule_id, operation_id)
+        return _get_retrohunt(self, rule_id, operation_id, api_version)
 
     # Parser Management methods
 
     def activate_parser(
         self, log_type: str, id: str  # pylint: disable=redefined-builtin
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Activate a custom parser.
 
         Args:
@@ -1768,7 +2353,7 @@ class ChronicleClient:
 
     def activate_release_candidate_parser(
         self, log_type: str, id: str  # pylint: disable=redefined-builtin
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Activate the release candidate parser making it live for that customer.
 
@@ -1788,7 +2373,7 @@ class ChronicleClient:
 
     def copy_parser(
         self, log_type: str, id: str  # pylint: disable=redefined-builtin
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Makes a copy of a prebuilt parser.
 
         Args:
@@ -1805,7 +2390,7 @@ class ChronicleClient:
 
     def create_parser(
         self, log_type: str, parser_code: str, validated_on_empty_logs: bool
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Creates a new parser.
 
         Args:
@@ -1829,7 +2414,7 @@ class ChronicleClient:
 
     def deactivate_parser(
         self, log_type: str, id: str  # pylint: disable=redefined-builtin
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Deactivate a custom parser.
 
         Args:
@@ -1849,7 +2434,7 @@ class ChronicleClient:
         log_type: str,
         id: str,  # pylint: disable=redefined-builtin
         force: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Delete a parser.
 
         Args:
@@ -1869,7 +2454,7 @@ class ChronicleClient:
 
     def get_parser(
         self, log_type: str, id: str  # pylint: disable=redefined-builtin
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get a parser by ID.
 
         Args:
@@ -1887,20 +2472,26 @@ class ChronicleClient:
     def list_parsers(
         self,
         log_type: str = "-",
-        page_size: int = 100,
-        page_token: str = None,
+        page_size: int | None = None,
+        page_token: str | None = None,
         filter: str = None,  # pylint: disable=redefined-builtin
-    ) -> List[Any]:
+    ) -> list[Any] | dict[str, Any]:
         """List parsers.
 
         Args:
             log_type: Log type to filter by
-            page_size: The maximum number of parsers to return
-            page_token: A page token, received from a previous ListParsers call
+            page_size: The maximum number of parsers to return per page.
+                If provided, returns raw API response with pagination info.
+                If None (default), auto-paginates and returns all parsers.
+            page_token: A page token, received from a previous ListParsers
+                call.
             filter: Optional filter expression
 
         Returns:
-            List of parser dictionaries
+            If page_size is None: List of all parsers
+                (auto-paginated)
+            If page_size is provided: List of parsers with next page token if
+                available.
 
         Raises:
             APIError: If the API request fails
@@ -1949,8 +2540,8 @@ class ChronicleClient:
     # Rule Set methods
 
     def batch_update_curated_rule_set_deployments(
-        self, deployments: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, deployments: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Batch update curated rule set deployments.
 
         Args:
@@ -1973,9 +2564,9 @@ class ChronicleClient:
 
     def list_curated_rule_sets(
         self,
-        page_size: Optional[int] = None,
-        page_token: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        page_size: int | None = None,
+        page_token: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Get a list of all curated rule sets.
 
         Args:
@@ -1992,9 +2583,9 @@ class ChronicleClient:
 
     def list_curated_rule_set_categories(
         self,
-        page_size: Optional[int] = None,
-        page_token: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        page_size: int | None = None,
+        page_token: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Get a list of all curated rule set categories.
 
         Args:
@@ -2011,11 +2602,11 @@ class ChronicleClient:
 
     def list_curated_rule_set_deployments(
         self,
-        page_size: Optional[int] = None,
-        page_token: Optional[str] = None,
-        only_enabled: Optional[bool] = False,
-        only_alerting: Optional[bool] = False,
-    ) -> List[Dict[str, Any]]:
+        page_size: int | None = None,
+        page_token: str | None = None,
+        only_enabled: bool | None = False,
+        only_alerting: bool | None = False,
+    ) -> list[dict[str, Any]]:
         """Get a list of all curated rule set deployments.
 
         Args:
@@ -2038,7 +2629,7 @@ class ChronicleClient:
         self,
         rule_set_id: str,
         precision: str = "precise",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get a curated rule set deployment by ID
 
         Args:
@@ -2057,7 +2648,7 @@ class ChronicleClient:
         self,
         display_name: str,
         precision: str = "precise",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get a curated rule set deployment by human-readable display name
             NOTE: This is a linear scan of all curated rules,
             so it may be inefficient for large rule sets.
@@ -2079,9 +2670,9 @@ class ChronicleClient:
 
     def list_curated_rules(
         self,
-        page_size: Optional[int] = None,
-        page_token: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        page_size: int | None = None,
+        page_token: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Get a list of all curated rules.
 
         Args:
@@ -2096,7 +2687,7 @@ class ChronicleClient:
         """
         return _list_curated_rules(self, page_size, page_token)
 
-    def get_curated_rule(self, rule_id: str) -> Dict[str, Any]:
+    def get_curated_rule(self, rule_id: str) -> dict[str, Any]:
         """Get a curated rule by ID.
 
         Args:
@@ -2110,7 +2701,7 @@ class ChronicleClient:
         """
         return _get_curated_rule(self, rule_id)
 
-    def get_curated_rule_by_name(self, display_name: str) -> Dict[str, Any]:
+    def get_curated_rule_by_name(self, display_name: str) -> dict[str, Any]:
         """Get a curated rule by human-readable display name
             NOTE: This is a linear scan of all curated rules,
             so it may be inefficient for large rule sets.
@@ -2128,8 +2719,8 @@ class ChronicleClient:
         return _get_curated_rule_by_name(self, display_name)
 
     def update_curated_rule_set_deployment(
-        self, deployment: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, deployment: dict[str, Any]
+    ) -> dict[str, Any]:
         """Update a curated rule set deployment to enable or disable
             alerting or change precision.
 
@@ -2150,7 +2741,7 @@ class ChronicleClient:
         """
         return _update_curated_rule_set_deployment(self, deployment)
 
-    def get_curated_rule_set_category(self, category_id: str) -> Dict[str, Any]:
+    def get_curated_rule_set_category(self, category_id: str) -> dict[str, Any]:
         """Get a curated rule set category by ID.
 
         Args:
@@ -2164,7 +2755,7 @@ class ChronicleClient:
         """
         return _get_curated_rule_set_category(self, category_id)
 
-    def get_curated_rule_set(self, rule_set_id: str) -> Dict[str, Any]:
+    def get_curated_rule_set(self, rule_set_id: str) -> dict[str, Any]:
         """Get a curated rule set by ID.
 
         Args:
@@ -2177,6 +2768,60 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _get_curated_rule_set(self, rule_set_id)
+
+    def search_curated_detections(
+        self,
+        rule_id: str,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        list_basis: Union["ListBasis", str] = None,
+        alert_state: Union["AlertState", str] | None = None,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        max_resp_size_bytes: int | None = None,
+        include_nested_detections: bool | None = False,
+    ) -> dict[str, Any]:
+        """Search for detections generated by a specific curated rule.
+
+        Args:
+            rule_id: ID of the curated rule to search detections for
+            start_time: The time to start searching detections from (inclusive)
+            end_time: The time to end searching detections to (exclusive)
+            list_basis: Basis for applying time filters. Can be
+                ListBasis enum or string. Valid values:
+                ListBasis.LIST_BASIS_UNSPECIFIED,
+                ListBasis.DETECTION_TIME, ListBasis.CREATED_TIME
+            alert_state: Filter by alert state. Can be
+                AlertState enum or string. Valid values:
+                AlertState.UNSPECIFIED, AlertState.NOT_ALERTING,
+                AlertState.ALERTING
+            page_size: Maximum detections to return (max 1000)
+            page_token: Token for pagination
+            max_resp_size_bytes: Maximum response size in bytes
+            include_nested_detections: Include nested detections
+
+        Returns:
+            Dictionary containing detection results with keys:
+                - curatedDetections or nestedDetectionSamples
+                - nextPageToken
+                - respTooLargeDetectionsTruncated
+
+        Raises:
+            APIError: If the API request fails
+            ValueError: If invalid alert_state or list_basis provided
+        """
+        return _search_curated_detections(
+            self,
+            rule_id,
+            start_time,
+            end_time,
+            list_basis,
+            alert_state,
+            page_size,
+            page_token,
+            max_resp_size_bytes,
+            include_nested_detections,
+        )
 
     def validate_rule(self, rule_text: str):
         """Validates a YARA-L2 rule against the Chronicle API.
@@ -2215,9 +2860,9 @@ class ChronicleClient:
     def gemini(
         self,
         query: str,
-        conversation_id: Optional[str] = None,
+        conversation_id: str | None = None,
         context_uri: str = "/search",
-        context_body: Optional[Dict[str, Any]] = None,
+        context_body: dict[str, Any] | None = None,
     ) -> GeminiResponse:
         """Query Chronicle Gemini with a prompt.
 
@@ -2296,7 +2941,7 @@ class ChronicleClient:
         max_events: int = 10000,
         case_insensitive: bool = True,
         max_attempts: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Perform a search using natural language that is translated to UDM.
 
         Args:
@@ -2327,13 +2972,13 @@ class ChronicleClient:
         self,
         log_type: str,
         log_message: str,
-        log_entry_time: Optional[datetime] = None,
-        collection_time: Optional[datetime] = None,
-        forwarder_id: Optional[str] = None,
+        log_entry_time: datetime | None = None,
+        collection_time: datetime | None = None,
+        forwarder_id: str | None = None,
         force_log_type: bool = False,
-        namespace: Optional[str] = None,
-        labels: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        namespace: str | None = None,
+        labels: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """Ingest a log into Chronicle.
 
         Args:
@@ -2369,9 +3014,9 @@ class ChronicleClient:
 
     def import_entities(
         self,
-        entities: Union[Dict[str, Any], List[Dict[str, Any]]],
+        entities: dict[str, Any] | list[dict[str, Any]],
         log_type: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Import entities into Chronicle.
 
         Args:
@@ -2395,14 +3040,14 @@ class ChronicleClient:
     def create_forwarder(
         self,
         display_name: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
         upload_compression: bool = False,
         enable_server: bool = False,
-        regex_filters: Optional[List[Dict[str, Any]]] = None,
-        graceful_timeout: Optional[str] = None,
-        drain_timeout: Optional[str] = None,
-        http_settings: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        regex_filters: list[dict[str, Any]] | None = None,
+        graceful_timeout: str | None = None,
+        drain_timeout: str | None = None,
+        http_settings: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Create a new forwarder in Chronicle.
 
         Args:
@@ -2439,9 +3084,9 @@ class ChronicleClient:
 
     def list_forwarders(
         self,
-        page_size: Optional[int] = None,
-        page_token: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        page_size: int | None = None,
+        page_token: str | None = None,
+    ) -> dict[str, Any]:
         """List forwarders in Chronicle.
 
         Args:
@@ -2460,7 +3105,7 @@ class ChronicleClient:
             page_token=page_token,
         )
 
-    def get_forwarder(self, forwarder_id: str) -> Dict[str, Any]:
+    def get_forwarder(self, forwarder_id: str) -> dict[str, Any]:
         """Get a forwarder by ID.
 
         Args:
@@ -2477,16 +3122,16 @@ class ChronicleClient:
     def update_forwarder(
         self,
         forwarder_id: str,
-        display_name: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        upload_compression: Optional[bool] = None,
-        enable_server: Optional[bool] = None,
-        regex_filters: Optional[List[Dict[str, Any]]] = None,
-        graceful_timeout: Optional[str] = None,
-        drain_timeout: Optional[str] = None,
-        http_settings: Optional[Dict[str, Any]] = None,
-        update_mask: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        display_name: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        upload_compression: bool | None = None,
+        enable_server: bool | None = None,
+        regex_filters: list[dict[str, Any]] | None = None,
+        graceful_timeout: str | None = None,
+        drain_timeout: str | None = None,
+        http_settings: dict[str, Any] | None = None,
+        update_mask: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Update a forwarder in Chronicle.
 
         Args:
@@ -2523,7 +3168,7 @@ class ChronicleClient:
             update_mask=update_mask,
         )
 
-    def delete_forwarder(self, forwarder_id: str) -> Dict[str, Any]:
+    def delete_forwarder(self, forwarder_id: str) -> dict[str, Any]:
         """Delete a forwarder from Chronicle.
 
         Args:
@@ -2539,7 +3184,7 @@ class ChronicleClient:
 
     def get_or_create_forwarder(
         self, display_name: str = "Wrapper-SDK-Forwarder"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get an existing forwarder by name or create a new one if none exists.
 
         Args:
@@ -2555,9 +3200,9 @@ class ChronicleClient:
 
     def get_all_log_types(
         self,
-        page_size: Optional[int] = None,
-        page_token: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        page_size: int | None = None,
+        page_token: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Get all available Chronicle log types.
 
         Args:
@@ -2584,7 +3229,7 @@ class ChronicleClient:
         """
         return _is_valid_log_type(client=self, log_type_id=log_type_id)
 
-    def get_log_type_description(self, log_type_id: str) -> Optional[str]:
+    def get_log_type_description(self, log_type_id: str) -> str | None:
         """Get the display name for a log type ID.
 
         Args:
@@ -2600,7 +3245,7 @@ class ChronicleClient:
         search_term: str,
         case_sensitive: bool = False,
         search_in_description: bool = True,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search log types by ID or description.
 
         Args:
@@ -2621,9 +3266,9 @@ class ChronicleClient:
 
     def ingest_udm(
         self,
-        udm_events: Union[Dict[str, Any], List[Dict[str, Any]]],
+        udm_events: dict[str, Any] | list[dict[str, Any]],
         add_missing_ids: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Ingest UDM events directly into Chronicle.
 
         Args:
@@ -2644,7 +3289,7 @@ class ChronicleClient:
             self, udm_events=udm_events, add_missing_ids=add_missing_ids
         )
 
-    def get_data_export(self, data_export_id: str) -> Dict[str, Any]:
+    def get_data_export(self, data_export_id: str) -> dict[str, Any]:
         """Get information about a specific data export.
 
         Args:
@@ -2669,10 +3314,10 @@ class ChronicleClient:
         gcs_bucket: str,
         start_time: datetime,
         end_time: datetime,
-        log_type: Optional[str] = None,
-        log_types: Optional[List[str]] = None,
+        log_type: str | None = None,
+        log_types: list[str] | None = None,
         export_all_logs: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a new data export job.
 
         Args:
@@ -2735,7 +3380,7 @@ class ChronicleClient:
             export_all_logs=export_all_logs,
         )
 
-    def cancel_data_export(self, data_export_id: str) -> Dict[str, Any]:
+    def cancel_data_export(self, data_export_id: str) -> dict[str, Any]:
         """Cancel an in-progress data export.
 
         Args:
@@ -2759,9 +3404,9 @@ class ChronicleClient:
         self,
         start_time: datetime,
         end_time: datetime,
-        page_size: Optional[int] = None,
-        page_token: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        page_size: int | None = None,
+        page_token: str | None = None,
+    ) -> dict[str, Any]:
         """Fetch available log types for export within a time range.
 
         Args:
@@ -2810,11 +3455,11 @@ class ChronicleClient:
     def update_data_export(
         self,
         data_export_id: str,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        gcs_bucket: Optional[str] = None,
-        log_types: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        gcs_bucket: str | None = None,
+        log_types: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Update an existing data export job.
 
         Note: The job must be in the "IN_QUEUE" state to be updated.
@@ -2844,10 +3489,10 @@ class ChronicleClient:
 
     def list_data_export(
         self,
-        filters: Optional[str] = None,
-        page_size: Optional[int] = None,
-        page_token: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        filters: str | None = None,
+        page_size: int | None = None,
+        page_token: str | None = None,
+    ) -> dict[str, Any]:
         """List data export jobs.
 
         Args:
@@ -2879,11 +3524,11 @@ class ChronicleClient:
         self,
         name: str,
         description: str,
-        header: Dict[str, Union[DataTableColumnType, str]],
-        column_options: Optional[Dict[str, Dict[str, Any]]] = None,
-        rows: Optional[List[List[str]]] = None,
-        scopes: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        header: dict[str, DataTableColumnType | str],
+        column_options: dict[str, dict[str, Any]] | None = None,
+        rows: list[list[str]] | None = None,
+        scopes: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Create a new data table.
 
         Args:
@@ -2905,7 +3550,7 @@ class ChronicleClient:
             self, name, description, header, column_options, rows, scopes
         )
 
-    def get_data_table(self, name: str) -> Dict[str, Any]:
+    def get_data_table(self, name: str) -> dict[str, Any]:
         """Get data table details.
 
         Args:
@@ -2920,8 +3565,8 @@ class ChronicleClient:
         return _get_data_table(self, name)
 
     def list_data_tables(
-        self, order_by: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, order_by: str | None = None
+    ) -> list[dict[str, Any]]:
         """List data tables.
 
         Args:
@@ -2938,7 +3583,7 @@ class ChronicleClient:
 
     def delete_data_table(
         self, name: str, force: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Delete a data table.
 
         Args:
@@ -2956,8 +3601,8 @@ class ChronicleClient:
         return _delete_data_table(self, name, force)
 
     def create_data_table_rows(
-        self, name: str, rows: List[List[str]]
-    ) -> List[Dict[str, Any]]:
+        self, name: str, rows: list[list[str]]
+    ) -> list[dict[str, Any]]:
         """Create data table rows, chunking if necessary.
 
         Args:
@@ -2974,8 +3619,8 @@ class ChronicleClient:
         return _create_data_table_rows(self, name, rows)
 
     def list_data_table_rows(
-        self, name: str, order_by: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, name: str, order_by: str | None = None
+    ) -> list[dict[str, Any]]:
         """List data table rows.
 
         Args:
@@ -2992,8 +3637,8 @@ class ChronicleClient:
         return _list_data_table_rows(self, name, order_by)
 
     def delete_data_table_rows(
-        self, name: str, row_ids: List[str]
-    ) -> List[Dict[str, Any]]:
+        self, name: str, row_ids: list[str]
+    ) -> list[dict[str, Any]]:
         """Delete data table rows.
 
         Args:
@@ -3009,8 +3654,8 @@ class ChronicleClient:
         return _delete_data_table_rows(self, name, row_ids)
 
     def replace_data_table_rows(
-        self, name: str, rows: List[List[str]]
-    ) -> List[Dict[str, Any]]:
+        self, name: str, rows: list[list[str]]
+    ) -> list[dict[str, Any]]:
         """Replace all data table rows with new rows, chunking if necessary.
 
         This method replaces all existing rows in a data table with the provided
@@ -3032,10 +3677,10 @@ class ChronicleClient:
     def update_data_table(
         self,
         name: str,
-        description: Optional[str] = None,
-        row_time_to_live: Optional[str] = None,
-        update_mask: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        description: str | None = None,
+        row_time_to_live: str | None = None,
+        update_mask: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Update a data table using the PATCH method.
 
         Args:
@@ -3062,8 +3707,8 @@ class ChronicleClient:
     def update_data_table_rows(
         self,
         name: str,
-        row_updates: List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
+        row_updates: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
         """Update multiple data table rows in bulk.
 
         This method updates existing rows in a data table using their
@@ -3118,8 +3763,8 @@ class ChronicleClient:
     # Rule Exclusion methods
 
     def list_rule_exclusions(
-        self, page_size: int = 100, page_token: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, page_size: int = 100, page_token: str | None = None
+    ) -> dict[str, Any]:
         """List rule exclusions.
 
         Args:
@@ -3134,7 +3779,7 @@ class ChronicleClient:
         """
         return _list_rule_exclusions(self, page_size, page_token)
 
-    def get_rule_exclusion(self, exclusion_id: str) -> Dict[str, Any]:
+    def get_rule_exclusion(self, exclusion_id: str) -> dict[str, Any]:
         """Get a rule exclusion by name.
 
         Args:
@@ -3151,7 +3796,7 @@ class ChronicleClient:
 
     def create_rule_exclusion(
         self, display_name: str, refinement_type: str, query: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Creates a new rule exclusion.
 
         Args:
@@ -3178,11 +3823,11 @@ class ChronicleClient:
     def patch_rule_exclusion(
         self,
         exclusion_id: str,
-        display_name: Optional[str] = None,
-        refinement_type: Optional[str] = None,
-        query: Optional[str] = None,
-        update_mask: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        display_name: str | None = None,
+        refinement_type: str | None = None,
+        query: str | None = None,
+        update_mask: str | None = None,
+    ) -> dict[str, Any]:
         """Updates a rule exclusion.
 
         Args:
@@ -3214,10 +3859,10 @@ class ChronicleClient:
 
     def compute_rule_exclusion_activity(
         self,
-        exclusion_id: Optional[str] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> Dict[str, Any]:
+        exclusion_id: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+    ) -> dict[str, Any]:
         """Compute activity statistics for rule exclusions.
 
         Args:
@@ -3240,7 +3885,7 @@ class ChronicleClient:
 
     def get_rule_exclusion_deployment(
         self, exclusion_id: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get deployment information for a rule exclusion.
 
         Args:
@@ -3257,13 +3902,11 @@ class ChronicleClient:
     def update_rule_exclusion_deployment(
         self,
         exclusion_id: str,
-        enabled: Optional[bool] = None,
-        archived: Optional[bool] = None,
-        detection_exclusion_application: Optional[
-            Union[str, Dict[str, Any]]
-        ] = None,
-        update_mask: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        enabled: bool | None = None,
+        archived: bool | None = None,
+        detection_exclusion_application: None | (str | dict[str, Any]) = None,
+        update_mask: str | None = None,
+    ) -> dict[str, Any]:
         """Update deployment settings for a rule exclusion.
 
         Args:
@@ -3299,9 +3942,10 @@ class ChronicleClient:
         self,
         name: str,
         description: str = "",
-        entries: List[str] = None,
+        entries: list[str] = None,
         syntax_type: ReferenceListSyntaxType = ReferenceListSyntaxType.STRING,
-    ) -> Dict[str, Any]:
+        api_version: APIVersion | None = APIVersion.V1,
+    ) -> dict[str, Any]:
         """Create a new reference list.
 
         Args:
@@ -3309,6 +3953,7 @@ class ChronicleClient:
             description: A user-provided description of the reference list
             entries: A list of entries for the reference list
             syntax_type: The syntax type of the reference list
+            api_version: Preferred API version to use. Defaults to V1
 
         Returns:
             Dictionary containing the created reference list
@@ -3323,18 +3968,22 @@ class ChronicleClient:
             entries = []
 
         return _create_reference_list(
-            self, name, description, entries, syntax_type
+            self, name, description, entries, syntax_type, api_version
         )
 
     def get_reference_list(
-        self, name: str, view: ReferenceListView = ReferenceListView.FULL
-    ) -> Dict[str, Any]:
+        self,
+        name: str,
+        view: ReferenceListView = ReferenceListView.FULL,
+        api_version: APIVersion | None = APIVersion.V1,
+    ) -> dict[str, Any]:
         """Get a single reference list.
 
         Args:
             name: The name of the reference list
             view: How much of the ReferenceList to view.
                 Defaults to REFERENCE_LIST_VIEW_FULL.
+            api_version: Preferred API version to use. Defaults to V1
 
         Returns:
             Dictionary containing the reference list
@@ -3342,17 +3991,19 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _get_reference_list(self, name, view)
+        return _get_reference_list(self, name, view, api_version)
 
     def list_reference_lists(
         self,
         view: ReferenceListView = ReferenceListView.BASIC,
-    ) -> List[Dict[str, Any]]:
+        api_version: APIVersion | None = APIVersion.V1,
+    ) -> list[dict[str, Any]]:
         """List reference lists.
 
         Args:
             view: How much of each ReferenceList to view.
                 Defaults to REFERENCE_LIST_VIEW_BASIC.
+            api_version: Preferred API version to use. Defaults to V1
 
         Returns:
             List of reference lists, ordered in ascending
@@ -3361,20 +4012,22 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _list_reference_lists(self, view)
+        return _list_reference_lists(self, view, api_version)
 
     def update_reference_list(
         self,
         name: str,
-        description: Optional[str] = None,
-        entries: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        description: str | None = None,
+        entries: list[str] | None = None,
+        api_version: APIVersion | None = APIVersion.V1,
+    ) -> dict[str, Any]:
         """Update a reference list.
 
         Args:
             name: The name of the reference list
             description: A user-provided description of the reference list
             entries: A list of entries for the reference list
+            api_version: Preferred API version to use. Defaults to V1
 
         Returns:
             Dictionary containing the updated reference list
@@ -3383,15 +4036,17 @@ class ChronicleClient:
             APIError: If the API request fails
             SecOpsError: If no description or entries are provided to be updated
         """
-        return _update_reference_list(self, name, description, entries)
+        return _update_reference_list(
+            self, name, description, entries, api_version
+        )
 
     def generate_udm_key_value_mappings(
         self,
         log_format: str,
         log: str,
-        use_array_bracket_notation: Optional[bool] = None,
-        compress_array_fields: Optional[bool] = None,
-    ) -> Dict[str, Any]:
+        use_array_bracket_notation: bool | None = None,
+        compress_array_fields: bool | None = None,
+    ) -> dict[str, Any]:
         """Generate UDM key-value mappings for provided row log
 
         Args:
@@ -3420,10 +4075,10 @@ class ChronicleClient:
         self,
         display_name: str,
         access_type: str,
-        description: Optional[str] = None,
-        filters: Optional[Union[List[Dict[str, Any]], str]] = None,
-        charts: Optional[Union[List[Dict[str, Any]], str]] = None,
-    ) -> Dict[str, Any]:
+        description: str | None = None,
+        filters: list[dict[str, Any]] | str | None = None,
+        charts: list[dict[str, Any]] | str | None = None,
+    ) -> dict[str, Any]:
         """Create a new native dashboard.
 
         Args:
@@ -3455,7 +4110,7 @@ class ChronicleClient:
             charts=charts,
         )
 
-    def import_dashboard(self, dashboard: Dict[str, Any]) -> Dict[str, Any]:
+    def import_dashboard(self, dashboard: dict[str, Any]) -> dict[str, Any]:
         """Create a new native dashboard.
 
         Args:
@@ -3470,7 +4125,7 @@ class ChronicleClient:
 
         return _import_dashboard(self, dashboard=dashboard)
 
-    def export_dashboard(self, dashboard_names: List[str]) -> Dict[str, Any]:
+    def export_dashboard(self, dashboard_names: list[str]) -> dict[str, Any]:
         """Export native dashboards.
 
         Args:
@@ -3487,9 +4142,9 @@ class ChronicleClient:
 
     def list_dashboards(
         self,
-        page_size: Optional[int] = None,
-        page_token: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        page_size: int | None = None,
+        page_token: str | None = None,
+    ) -> dict[str, Any]:
         """List all available dashboards.
 
         Args:
@@ -3508,8 +4163,8 @@ class ChronicleClient:
     def get_dashboard(
         self,
         dashboard_id: str,
-        view: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        view: str | None = None,
+    ) -> dict[str, Any]:
         """Get information about a specific dashboard.
 
         Args:
@@ -3535,11 +4190,11 @@ class ChronicleClient:
     def update_dashboard(
         self,
         dashboard_id: str,
-        display_name: Optional[str] = None,
-        description: Optional[str] = None,
-        filters: Optional[Union[List[Dict[str, Any]], str]] = None,
-        charts: Optional[Union[List[Dict[str, Any]], str]] = None,
-    ) -> Dict[str, Any]:
+        display_name: str | None = None,
+        description: str | None = None,
+        filters: list[dict[str, Any]] | str | None = None,
+        charts: list[dict[str, Any]] | str | None = None,
+    ) -> dict[str, Any]:
         """Update an existing dashboard.
 
         Args:
@@ -3561,7 +4216,7 @@ class ChronicleClient:
             charts=charts,
         )
 
-    def delete_dashboard(self, dashboard_id: str) -> Dict[str, Any]:
+    def delete_dashboard(self, dashboard_id: str) -> dict[str, Any]:
         """Delete an existing dashboard.
 
         Args:
@@ -3573,16 +4228,16 @@ class ChronicleClient:
         self,
         dashboard_id: str,
         display_name: str,
-        chart_layout: Union[Dict[str, Any], str],
-        tile_type: Optional[str] = None,
-        chart_datasource: Optional[Union[Dict[str, Any], str]] = None,
-        visualization: Optional[Union[Dict[str, Any], str]] = None,
-        drill_down_config: Optional[Union[Dict[str, Any], str]] = None,
-        description: Optional[str] = None,
-        query: Optional[str] = None,
-        interval: Optional[Union[InputInterval, Dict[str, Any], str]] = None,
+        chart_layout: dict[str, Any] | str,
+        tile_type: str | None = None,
+        chart_datasource: dict[str, Any] | str | None = None,
+        visualization: dict[str, Any] | str | None = None,
+        drill_down_config: dict[str, Any] | str | None = None,
+        description: str | None = None,
+        query: str | None = None,
+        interval: InputInterval | dict[str, Any] | str | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Add a chart to an existing dashboard.
 
         Args:
@@ -3631,8 +4286,8 @@ class ChronicleClient:
         dashboard_id: str,
         display_name: str,
         access_type: str,
-        description: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        description: str | None = None,
+    ) -> dict[str, Any]:
         """Duplicate an existing dashboard.
 
         Args:
@@ -3661,7 +4316,7 @@ class ChronicleClient:
         self,
         dashboard_id: str,
         chart_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Remove a chart from a dashboard.
 
         Args:
@@ -3680,7 +4335,7 @@ class ChronicleClient:
             chart_id=chart_id,
         )
 
-    def get_chart(self, chart_id: str) -> Dict[str, Any]:
+    def get_chart(self, chart_id: str) -> dict[str, Any]:
         """Get information about a specific chart.
 
         Args:
@@ -3694,13 +4349,9 @@ class ChronicleClient:
     def edit_chart(
         self,
         dashboard_id: str,
-        dashboard_chart: Optional[
-            Union[Dict[str, Any], DashboardChart, str]
-        ] = None,
-        dashboard_query: Optional[
-            Union[Dict[str, Any], DashboardQuery, str]
-        ] = None,
-    ) -> Dict[str, Any]:
+        dashboard_chart: None | (dict[str, Any] | DashboardChart | str) = None,
+        dashboard_query: None | (dict[str, Any] | DashboardQuery | str) = None,
+    ) -> dict[str, Any]:
         """Edit an existing chart in a dashboard.
 
         Args:
@@ -3736,10 +4387,10 @@ class ChronicleClient:
     def execute_dashboard_query(
         self,
         query: str,
-        interval: Union[InputInterval, Dict[str, Any], str],
-        filters: Optional[Union[List[Dict[str, Any]], str]] = None,
-        clear_cache: Optional[bool] = None,
-    ) -> Dict[str, Any]:
+        interval: InputInterval | dict[str, Any] | str,
+        filters: list[dict[str, Any]] | str | None = None,
+        clear_cache: bool | None = None,
+    ) -> dict[str, Any]:
         """Execute a query for a dashboard.
 
         Args:
@@ -3760,7 +4411,7 @@ class ChronicleClient:
             clear_cache=clear_cache,
         )
 
-    def get_dashboard_query(self, query_id: str) -> Dict[str, Any]:
+    def get_dashboard_query(self, query_id: str) -> dict[str, Any]:
         """Get the dashboard query details.
 
         Args:
@@ -3771,11 +4422,14 @@ class ChronicleClient:
         """
         return _get_execute_query(self, query_id=query_id)
 
-    def get_rule_deployment(self, rule_id: str) -> Dict[str, Any]:
+    def get_rule_deployment(
+        self, rule_id: str, api_version: APIVersion | None = APIVersion.V1
+    ) -> dict[str, Any]:
         """Get the current deployment for a rule.
 
         Args:
             rule_id: Unique ID of the detection rule (e.g., "ru_<UUID>")
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Dictionary containing the rule deployment information
@@ -3783,20 +4437,22 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _get_rule_deployment(self, rule_id)
+        return _get_rule_deployment(self, rule_id, api_version)
 
     def list_rule_deployments(
         self,
-        page_size: Optional[int] = None,
-        page_token: Optional[str] = None,
-        filter_query: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_query: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1,
+    ) -> dict[str, Any]:
         """List rule deployments for the instance.
 
         Args:
             page_size: Maximum number of deployments to return per page
             page_token: Token for the next page of results, if available
             filter_query: Optional filter query to restrict results
+            api_version: (Optional) Preferred API version to use.
 
         Returns:
             Dictionary containing rule deployments and pagination info
@@ -3809,11 +4465,12 @@ class ChronicleClient:
             page_size=page_size,
             page_token=page_token,
             filter_query=filter_query,
+            api_version=api_version,
         )
 
     def set_rule_alerting(
         self, rule_id: str, enabled: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Enable or disable alerting for a rule deployment.
 
         Args:
@@ -3832,11 +4489,11 @@ class ChronicleClient:
         self,
         rule_id: str,
         *,
-        enabled: Optional[bool] = None,
-        alerting: Optional[bool] = None,
-        archived: Optional[bool] = None,
-        run_frequency: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        enabled: bool | None = None,
+        alerting: bool | None = None,
+        archived: bool | None = None,
+        run_frequency: str | None = None,
+    ) -> dict[str, Any]:
         """Generic updateDeployment wrapper.
 
         See RuleDeployment fields: enabled, alerting, archived, runFrequency.

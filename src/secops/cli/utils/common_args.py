@@ -69,6 +69,16 @@ def add_chronicle_args(parser: argparse.ArgumentParser) -> None:
         default=config.get("region", "us"),
         help="Chronicle API region",
     )
+    parser.add_argument(
+        "--api-version",
+        "--api_version",
+        dest="api_version",
+        choices=["v1", "v1beta", "v1alpha"],
+        default=config.get("api_version", "v1alpha"),
+        help=(
+            "Default API version for Chronicle requests " "(default: v1alpha)"
+        ),
+    )
 
 
 def add_time_range_args(parser: argparse.ArgumentParser) -> None:

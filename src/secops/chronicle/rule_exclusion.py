@@ -18,7 +18,7 @@ import json
 import sys
 from dataclasses import asdict, dataclass
 from datetime import datetime
-from typing import Annotated, Any, Dict, Optional, Union
+from typing import Annotated, Any
 
 from secops.exceptions import APIError, SecOpsError
 
@@ -48,10 +48,10 @@ class RuleExclusionType(StrEnum):
 class UpdateRuleDeployment:
     """Model for updating rule deployment."""
 
-    enabled: Annotated[Optional[bool], "Optional enabled flag of rule"] = None
-    archived: Annotated[Optional[bool], "Optional archived flag of rule"] = None
+    enabled: Annotated[bool | None, "Optional enabled flag of rule"] = None
+    archived: Annotated[bool | None, "Optional archived flag of rule"] = None
     detection_exclusion_application: Annotated[
-        Optional[Union[str, Dict[str, Any]]],
+        str | dict[str, Any] | None,
         "Optional detection exclusion application of rule",
     ] = None
 
@@ -72,14 +72,14 @@ class UpdateRuleDeployment:
                     f"{e}"
                 ) from e
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return asdict(self)
 
 
 def list_rule_exclusions(
-    client, page_size: int = 100, page_token: Optional[str] = None
-) -> Dict[str, Any]:
+    client, page_size: int = 100, page_token: str | None = None
+) -> dict[str, Any]:
     """List rule exclusions.
 
     Args:
@@ -107,7 +107,7 @@ def list_rule_exclusions(
     return response.json()
 
 
-def get_rule_exclusion(client, exclusion_id: str) -> Dict[str, Any]:
+def get_rule_exclusion(client, exclusion_id: str) -> dict[str, Any]:
     """Get a rule exclusion by name.
 
     Args:
@@ -137,7 +137,7 @@ def get_rule_exclusion(client, exclusion_id: str) -> Dict[str, Any]:
 
 def create_rule_exclusion(
     client, display_name: str, refinement_type: RuleExclusionType, query: str
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Creates a new rule exclusion.
 
     Args:
@@ -174,11 +174,11 @@ def create_rule_exclusion(
 def patch_rule_exclusion(
     client,
     exclusion_id: str,
-    display_name: Optional[str] = None,
-    refinement_type: Optional[RuleExclusionType] = None,
-    query: Optional[str] = None,
-    update_mask: Optional[str] = None,
-) -> Dict[str, Any]:
+    display_name: str | None = None,
+    refinement_type: RuleExclusionType | None = None,
+    query: str | None = None,
+    update_mask: str | None = None,
+) -> dict[str, Any]:
     """Updates a rule exclusion using provided id.
 
     Args:
@@ -228,10 +228,10 @@ def patch_rule_exclusion(
 
 def compute_rule_exclusion_activity(
     client,
-    exclusion_id: Optional[str] = None,
-    start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None,
-) -> Dict[str, Any]:
+    exclusion_id: str | None = None,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
+) -> dict[str, Any]:
     """Compute activity statistics for rule exclusions.
 
     Args:
@@ -285,7 +285,7 @@ def compute_rule_exclusion_activity(
     return response.json()
 
 
-def get_rule_exclusion_deployment(client, exclusion_id: str) -> Dict[str, Any]:
+def get_rule_exclusion_deployment(client, exclusion_id: str) -> dict[str, Any]:
     """Get deployment information for a rule exclusion.
 
     Args:
@@ -319,8 +319,8 @@ def update_rule_exclusion_deployment(
     client,
     exclusion_id: str,
     deployment_details: UpdateRuleDeployment,
-    update_mask: Optional[str] = None,
-) -> Dict[str, Any]:
+    update_mask: str | None = None,
+) -> dict[str, Any]:
     """Update deployment settings for a rule exclusion.
 
     Args:

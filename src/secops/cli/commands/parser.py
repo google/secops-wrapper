@@ -6,8 +6,8 @@ import argparse
 import base64
 import sys
 
-from secops.cli.utils.formatters import output_formatter
 from secops.cli.utils.common_args import add_pagination_args
+from secops.cli.utils.formatters import output_formatter
 from secops.exceptions import APIError, SecOpsError
 
 
@@ -18,6 +18,7 @@ def setup_parser_command(subparsers):
     parser_subparsers = parser_parser.add_subparsers(
         dest="parser_command", help="Parser command"
     )
+    parser_parser.set_defaults(func=lambda args, _: parser_parser.print_help())
 
     # --- Activate Parser Command ---
     activate_parser_sub = parser_subparsers.add_parser(
@@ -265,9 +266,9 @@ def handle_parser_create_command(args, chronicle):
         parser_code = ""
         if args.parser_code_file:
             try:
-                with open(args.parser_code_file, "r", encoding="utf-8") as f:
+                with open(args.parser_code_file, encoding="utf-8") as f:
                     parser_code = f.read()
-            except IOError as e:
+            except OSError as e:
                 print(f"Error reading parser code file: {e}", file=sys.stderr)
                 sys.exit(1)
         elif args.parser_code:
@@ -335,9 +336,9 @@ def handle_parser_run_command(args, chronicle):
         parser_code = ""
         if args.parser_code_file:
             try:
-                with open(args.parser_code_file, "r", encoding="utf-8") as f:
+                with open(args.parser_code_file, encoding="utf-8") as f:
                     parser_code = f.read()
-            except IOError as e:
+            except OSError as e:
                 print(f"Error reading parser code file: {e}", file=sys.stderr)
                 sys.exit(1)
         elif args.parser_code:
@@ -345,12 +346,12 @@ def handle_parser_run_command(args, chronicle):
         else:
             # If no parser code provided,
             # try to find an active parser for the log type
-            parsers = chronicle.list_parsers(
+            parser_list_response = chronicle.list_parsers(
                 args.log_type,
                 page_size=1,
-                page_token=None,
                 filter="STATE=ACTIVE",
             )
+            parsers = parser_list_response.get("parsers", [])
             if len(parsers) < 1:
                 raise SecOpsError(
                     "No parser file provided and an active parser could not "
@@ -364,10 +365,10 @@ def handle_parser_run_command(args, chronicle):
         if args.parser_extension_code_file:
             try:
                 with open(
-                    args.parser_extension_code_file, "r", encoding="utf-8"
+                    args.parser_extension_code_file, encoding="utf-8"
                 ) as f:
                     parser_extension_code = f.read()
-            except IOError as e:
+            except OSError as e:
                 print(
                     f"Error reading parser extension code file: {e}",
                     file=sys.stderr,
@@ -380,9 +381,9 @@ def handle_parser_run_command(args, chronicle):
         logs = []
         if args.logs_file:
             try:
-                with open(args.logs_file, "r", encoding="utf-8") as f:
+                with open(args.logs_file, encoding="utf-8") as f:
                     logs = [line.strip() for line in f if line.strip()]
-            except IOError as e:
+            except OSError as e:
                 print(f"Error reading logs file: {e}", file=sys.stderr)
                 sys.exit(1)
         elif args.log:

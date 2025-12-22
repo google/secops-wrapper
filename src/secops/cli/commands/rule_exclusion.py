@@ -16,12 +16,12 @@
 
 import sys
 
-from secops.cli.utils.time_utils import get_time_range
-from secops.cli.utils.formatters import output_formatter
 from secops.cli.utils.common_args import (
-    add_time_range_args,
     add_pagination_args,
+    add_time_range_args,
 )
+from secops.cli.utils.formatters import output_formatter
+from secops.cli.utils.time_utils import get_time_range
 
 
 def setup_rule_exclusion_command(subparsers):
@@ -32,6 +32,7 @@ def setup_rule_exclusion_command(subparsers):
     re_subparsers = re_parser.add_subparsers(
         dest="re_command", help="Rule exclusion command"
     )
+    re_parser.set_defaults(func=lambda args, _: re_parser.print_help())
 
     # Create rule exclusion command
     create_parser = re_subparsers.add_parser(

@@ -17,7 +17,8 @@
 import base64
 import json
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, Union
+from typing import Any
+
 from secops.exceptions import APIError
 
 
@@ -25,12 +26,12 @@ from secops.exceptions import APIError
 class ParserExtensionConfig:
     """Parser extension configuration."""
 
-    log: Optional[str] = None
-    parser_config: Optional[str] = None
-    field_extractors: Optional[Union[Dict, str]] = None
-    dynamic_parsing: Optional[Union[Dict, str]] = None
-    encoded_log: Optional[str] = field(init=False, default=None)
-    encoded_cbn_snippet: Optional[str] = field(init=False, default=None)
+    log: str | None = None
+    parser_config: str | None = None
+    field_extractors: dict | str | None = None
+    dynamic_parsing: dict | str | None = None
+    encoded_log: str | None = field(init=False, default=None)
+    encoded_cbn_snippet: str | None = field(init=False, default=None)
 
     @staticmethod
     def encode_base64(text: str) -> str:
@@ -100,7 +101,7 @@ class ParserExtensionConfig:
                 "dynamic_parsing must be specified"
             )
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary format for API request.
 
         Returns:
@@ -127,8 +128,8 @@ class ParserExtensionConfig:
 def create_parser_extension(
     client,
     log_type: str,
-    extension_config: Union[ParserExtensionConfig, Dict[str, Any]],
-) -> Dict[str, Any]:
+    extension_config: ParserExtensionConfig | dict[str, Any],
+) -> dict[str, Any]:
     """Create a parser extension.
 
     Args:
@@ -163,7 +164,7 @@ def create_parser_extension(
 
 def get_parser_extension(
     client, log_type: str, extension_id: str
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get a parser extension.
 
     Args:
@@ -190,9 +191,9 @@ def get_parser_extension(
 def list_parser_extensions(
     client,
     log_type: str,
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
-) -> Dict[str, Any]:
+    page_size: int | None = None,
+    page_token: str | None = None,
+) -> dict[str, Any]:
     """List parser extensions.
 
     Args:
