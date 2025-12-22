@@ -1704,6 +1704,60 @@ extension_id = "1234567890"
 chronicle.delete_parser_extension(log_type, extension_id)
 ```
 
+## Watchlist Management
+
+### Creating a Watchlist
+
+Create a new watchlist:
+
+```python
+watchlist = chronicle.create_watchlist(
+    name="my_watchlist",
+    display_name="my_watchlist",
+    multiplying_factor=1.5,
+    description="My new watchlist"
+)
+```
+
+### Updating a Watchlist
+
+Update a watchlist by ID:
+
+```python
+updated_watchlist = chronicle.update_watchlist(
+    watchlist_id="abc-123-def",
+    display_name="Updated Watchlist Name",
+    description="Updated description",
+    multiplying_factor=2.0,
+    entity_population_mechanism={"manual": {}},
+    watchlist_user_preferences={"pinned": True}
+)
+```
+
+### Deleting a Watchlist
+
+Delete a watchlist by ID:
+
+```python
+chronicle.delete_watchlist("acb-123-def", force=True)
+```
+
+### Getting a Watchlist
+
+Get a watchlist by ID:
+
+```python
+watchlist = chronicle.get_watchlist("acb-123-def")
+```
+
+### List all Watchlists
+
+List all watchlists:
+
+```python
+watchlists = chronicle.list_watchlists()
+```
+
 ## Rule Management
 
 The SDK provides comprehensive support for managing Chronicle detection rules:
