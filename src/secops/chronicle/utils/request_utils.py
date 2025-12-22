@@ -87,7 +87,12 @@ def chronicle_paginated_request(
     # Return a list if the API returns a list, otherwise return a dict
     if isinstance(data, list):
         return results
-    return {items_key: results}
+    response = {items_key: results}
+
+    if data.get("nextPageToken"):
+        response["nextPageToken"] = data.get("nextPageToken")
+
+    return response
 
 
 def chronicle_request(
