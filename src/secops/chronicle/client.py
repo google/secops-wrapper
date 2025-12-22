@@ -1025,7 +1025,7 @@ class ChronicleClient:
         """
         return get_cases_from_list(self, case_ids)
 
-    def get_case(self, case_name: str, expand: Optional[str] = None) -> "Case":
+    def get_case(self, case_name: str, expand: str | None = None) -> "Case":
         """Get a single case details.
 
         Args:
@@ -1042,13 +1042,13 @@ class ChronicleClient:
 
     def list_cases(
         self,
-        page_size: Optional[int] = None,
-        page_token: Optional[str] = None,
-        filter_query: Optional[str] = None,
-        order_by: Optional[str] = None,
-        expand: Optional[str] = None,
-        distinct_by: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_query: str | None = None,
+        order_by: str | None = None,
+        expand: str | None = None,
+        distinct_by: str | None = None,
+    ) -> dict[str, Any]:
         """List cases with optional filtering and pagination.
 
         Args:
@@ -1081,8 +1081,8 @@ class ChronicleClient:
     def patch_case(
         self,
         case_name: str,
-        case_data: Dict[str, Any],
-        update_mask: Optional[str] = None,
+        case_data: dict[str, Any],
+        update_mask: str | None = None,
     ) -> "Case":
         """Update a case using partial update (PATCH).
 
@@ -1100,8 +1100,8 @@ class ChronicleClient:
         return _patch_case(self, case_name, case_data, update_mask)
 
     def merge_cases(
-        self, case_ids: List[int], case_to_merge_with: int
-    ) -> Dict[str, Any]:
+        self, case_ids: list[int], case_to_merge_with: int
+    ) -> dict[str, Any]:
         """Merge multiple cases into a single case.
 
         Args:
@@ -1117,8 +1117,8 @@ class ChronicleClient:
         return _merge_cases(self, case_ids, case_to_merge_with)
 
     def execute_bulk_add_tag(
-        self, case_ids: List[int], tags: List[str]
-    ) -> Dict[str, Any]:
+        self, case_ids: list[int], tags: list[str]
+    ) -> dict[str, Any]:
         """Add tags to multiple cases in bulk.
 
         Args:
@@ -1134,8 +1134,8 @@ class ChronicleClient:
         return _execute_bulk_add_tag(self, case_ids, tags)
 
     def execute_bulk_assign(
-        self, case_ids: List[int], username: str
-    ) -> Dict[str, Any]:
+        self, case_ids: list[int], username: str
+    ) -> dict[str, Any]:
         """Assign multiple cases to a user in bulk.
 
         Args:
@@ -1151,8 +1151,8 @@ class ChronicleClient:
         return _execute_bulk_assign(self, case_ids, username)
 
     def execute_bulk_change_priority(
-        self, case_ids: List[int], priority: Union[str, CasePriority]
-    ) -> Dict[str, Any]:
+        self, case_ids: list[int], priority: str | CasePriority
+    ) -> dict[str, Any]:
         """Change priority of multiple cases in bulk.
 
         Args:
@@ -1171,8 +1171,8 @@ class ChronicleClient:
         return _execute_bulk_change_priority(self, case_ids, priority)
 
     def execute_bulk_change_stage(
-        self, case_ids: List[int], stage: str
-    ) -> Dict[str, Any]:
+        self, case_ids: list[int], stage: str
+    ) -> dict[str, Any]:
         """Change stage of multiple cases in bulk.
 
         Args:
@@ -1189,12 +1189,12 @@ class ChronicleClient:
 
     def execute_bulk_close(
         self,
-        case_ids: List[int],
+        case_ids: list[int],
         close_reason: str,
-        root_cause: Optional[str] = None,
-        close_comment: Optional[str] = None,
-        dynamic_parameters: Optional[List[Dict[str, Any]]] = None,
-    ) -> Dict[str, Any]:
+        root_cause: str | None = None,
+        close_comment: str | None = None,
+        dynamic_parameters: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         """Close multiple cases in bulk.
 
         Args:
@@ -1220,8 +1220,8 @@ class ChronicleClient:
         )
 
     def execute_bulk_reopen(
-        self, case_ids: List[int], reopen_comment: str
-    ) -> Dict[str, Any]:
+        self, case_ids: list[int], reopen_comment: str
+    ) -> dict[str, Any]:
         """Reopen multiple cases in bulk.
 
         Args:
@@ -3723,7 +3723,7 @@ class ChronicleClient:
                   (format: projects/{project}/locations/{location}/
                   instances/{instance}/dataTables/{table}/
                   dataTableRows/{row_id})
-                - 'values': List[str] - The new values for the row
+                - 'values': list[str] - The new values for the row
                 - 'update_mask': str (optional) - Comma-separated list
                   of fields to update (e.g., 'values'). If not specified,
                   all fields are updated.

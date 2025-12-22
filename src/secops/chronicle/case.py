@@ -15,34 +15,11 @@
 """Case functionality for Chronicle."""
 
 import sys
-from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
 from typing import Any
 
 from secops.chronicle.models import Case, CaseList
 from secops.exceptions import APIError
-
-if sys.version_info >= (3, 11):
-    from enum import StrEnum
-else:
-    from enum import Enum
-
-    class StrEnum(str, Enum):
-        """String enum implementation for Python < 3.11."""
-
-        def __str__(self) -> str:
-            return self.value
-
-
-class CasePriority(StrEnum):
-    """Priority levels for cases."""
-
-    UNSPECIFIED = "PRIORITY_UNSPECIFIED"
-    INFO = "PRIORITY_INFO"
-    LOW = "PRIORITY_LOW"
-    MEDIUM = "PRIORITY_MEDIUM"
-    HIGH = "PRIORITY_HIGH"
-    CRITICAL = "PRIORITY_CRITICAL"
 
 
 if sys.version_info >= (3, 11):
@@ -182,8 +159,8 @@ def get_cases_from_list(client, case_ids: list[str]) -> CaseList:
 
 
 def execute_bulk_add_tag(
-    client, case_ids: List[int], tags: List[str]
-) -> Dict[str, Any]:
+    client, case_ids: list[int], tags: list[str]
+) -> dict[str, Any]:
     """Add tags to multiple cases in bulk.
 
     Args:
@@ -215,8 +192,8 @@ def execute_bulk_add_tag(
 
 
 def execute_bulk_assign(
-    client, case_ids: List[int], username: str
-) -> Dict[str, Any]:
+    client, case_ids: list[int], username: str
+) -> dict[str, Any]:
     """Assign multiple cases to a user in bulk.
 
     Args:
@@ -246,8 +223,8 @@ def execute_bulk_assign(
 
 
 def execute_bulk_change_priority(
-    client, case_ids: List[int], priority: Union[str, CasePriority]
-) -> Dict[str, Any]:
+    client, case_ids: list[int], priority: str | CasePriority
+) -> dict[str, Any]:
     """Change priority of multiple cases in bulk.
 
     Args:
@@ -287,8 +264,8 @@ def execute_bulk_change_priority(
 
 
 def execute_bulk_change_stage(
-    client, case_ids: List[int], stage: str
-) -> Dict[str, Any]:
+    client, case_ids: list[int], stage: str
+) -> dict[str, Any]:
     """Change stage of multiple cases in bulk.
 
     Args:
@@ -324,12 +301,12 @@ def execute_bulk_change_stage(
 
 def execute_bulk_close(
     client,
-    case_ids: List[int],
+    case_ids: list[int],
     close_reason: str,
-    root_cause: Optional[str] = None,
-    close_comment: Optional[str] = None,
-    dynamic_parameters: Optional[List[Dict[str, Any]]] = None,
-) -> Dict[str, Any]:
+    root_cause: str | None = None,
+    close_comment: str | None = None,
+    dynamic_parameters: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     """Close multiple cases in bulk.
 
     Args:
@@ -369,8 +346,8 @@ def execute_bulk_close(
 
 
 def execute_bulk_reopen(
-    client, case_ids: List[int], reopen_comment: str
-) -> Dict[str, Any]:
+    client, case_ids: list[int], reopen_comment: str
+) -> dict[str, Any]:
     """Reopen multiple cases in bulk.
 
     Args:
@@ -399,7 +376,7 @@ def execute_bulk_reopen(
         raise APIError(f"Failed to parse bulk reopen response: {str(e)}") from e
 
 
-def get_case(client, case_name: str, expand: Optional[str] = None) -> Case:
+def get_case(client, case_name: str, expand: str | None = None) -> Case:
     """Get a single case details.
 
     Args:
@@ -442,13 +419,13 @@ def get_case(client, case_name: str, expand: Optional[str] = None) -> Case:
 
 def list_cases(
     client,
-    page_size: Optional[int] = None,
-    page_token: Optional[str] = None,
-    filter_query: Optional[str] = None,
-    order_by: Optional[str] = None,
-    expand: Optional[str] = None,
-    distinct_by: Optional[str] = None,
-) -> Dict[str, Any]:
+    page_size: int | None = None,
+    page_token: str | None = None,
+    filter_query: str | None = None,
+    order_by: str | None = None,
+    expand: str | None = None,
+    distinct_by: str | None = None,
+) -> dict[str, Any]:
     """List cases with optional filtering and pagination.
 
     Args:
@@ -522,8 +499,8 @@ def list_cases(
 
 
 def merge_cases(
-    client, case_ids: List[int], case_to_merge_with: int
-) -> Dict[str, Any]:
+    client, case_ids: list[int], case_to_merge_with: int
+) -> dict[str, Any]:
     """Merge multiple cases into a single case.
 
     Args:
@@ -558,8 +535,8 @@ def merge_cases(
 def patch_case(
     client,
     case_name: str,
-    case_data: Dict[str, Any],
-    update_mask: Optional[str] = None,
+    case_data: dict[str, Any],
+    update_mask: str | None = None,
 ) -> Case:
     """Update a case using partial update (PATCH).
 
