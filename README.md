@@ -2286,6 +2286,40 @@ activity = chronicle.compute_rule_exclusion_activity(
 )
 ```
 
+### Featured Content Rules
+
+Featured content rules are pre-built detection rules available in the Chronicle Content Hub. These curated rules help you quickly deploy detections without writing custom rules.
+
+```python
+# List all featured content rules
+rules = chronicle.list_featured_content_rules()
+for rule in rules.get("featuredContentRules", []):
+    rule_id = rule.get("name", "").split("/")[-1]
+    content_metadata = rule.get("contentMetadata", {})
+    display_name = content_metadata.get("displayName", "Unknown")
+    severity = rule.get("severity", "UNSPECIFIED")
+    print(f"Rule: {display_name} [{rule_id}] - Severity: {severity}")
+
+# List with pagination
+result = chronicle.list_featured_content_rules(page_size=10)
+rules = result.get("featuredContentRules", [])
+next_page_token = result.get("nextPageToken")
+
+if next_page_token:
+    next_page = chronicle.list_featured_content_rules(
+        page_size=10,
+        page_token=next_page_token
+    )
+
+# Filter list
+filtered_rules = chronicle.list_featured_content_rules(
+    filter_expression=(
+        'category_name:"Threat Detection" AND '
+        'rule_precision:"Precise"'
+    )
+)
+```
+
 ## Data Tables and Reference Lists
 
 Chronicle provides two ways to manage and reference structured data in detection rules: Data Tables and Reference Lists. These can be used to maintain lists of trusted/suspicious entities, mappings of contextual information, or any other structured data useful for detection.

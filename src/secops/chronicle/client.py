@@ -290,6 +290,9 @@ from secops.chronicle.rule_set import (
 from secops.chronicle.rule_set import (
     update_curated_rule_set_deployment as _update_curated_rule_set_deployment,
 )
+from secops.chronicle.featured_content_rules import (
+    list_featured_content_rules as _list_featured_content_rules,
+)
 from secops.chronicle.rule_validation import validate_rule as _validate_rule
 from secops.chronicle.search import search_udm as _search_udm
 from secops.chronicle.stats import get_stats as _get_stats
@@ -2542,6 +2545,40 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _get_curated_rule_set(self, rule_set_id)
+
+    def list_featured_content_rules(
+        self,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_expression: str | None = None,
+    ) -> list[dict[str, Any]] | dict[str, Any]:
+        """List featured content rules from Chronicle Content Hub.
+
+        Args:
+            page_size: Maximum number of featured content rules to return.
+                If unspecified, at most 100 rules will be returned.
+                Maximum value is 1000. If provided, returns dict with
+                nextPageToken.
+            page_token: Token for retrieving the next page of results.
+            filter_expression: Optional filter expression. Supported:
+                - category_name:"<category_name>" (OR for multiple)
+                - policy_name:"<policy_name>" (OR for multiple)
+                - rule_id:"ur_<id>" (OR for multiple)
+                - rule_precision:"<rule_precision>" (Precise or Broad)
+                - search_rule_name_or_description=~"<text>"
+                Multiple filters can be combined with AND operator.
+
+        Returns:
+            If page_size is None: List of all featured content rules.
+            If page_size is provided: Dict with featuredContentRules
+                list and nextPageToken.
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _list_featured_content_rules(
+            self, page_size, page_token, filter_expression
+        )
 
     def search_curated_detections(
         self,
