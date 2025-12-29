@@ -43,7 +43,7 @@ def list_watchlists(
     """
     return chronicle_paginated_request(
         client,
-        base_url=client.base_url(APIVersion.V1),
+        api_version=client.base_url(APIVersion.V1),
         path="watchlists",
         items_key="watchlists",
         page_size=page_size,
