@@ -2569,9 +2569,11 @@ class ChronicleClient:
                 Multiple filters can be combined with AND operator.
 
         Returns:
-            If page_size is None: List of all featured content rules.
-            If page_size is provided: Dict with featuredContentRules
-                list and nextPageToken.
+            If page_size is not provided: A dictionary containing a list of all
+                featured content rules.
+            If page_size is provided: A dictionary containing a list of
+                featuredContentRules and a nextPageToken if more results are
+                available.
 
         Raises:
             APIError: If the API request fails
