@@ -2380,7 +2380,7 @@ class ChronicleClient:
         page_token: str | None = None,
         only_enabled: bool | None = False,
         only_alerting: bool | None = False,
-    ) -> list[dict[str, Any]]:
+    ) -> dict[str, Any]:
         """Get a list of all curated rule set deployments.
 
         Args:
@@ -2446,7 +2446,7 @@ class ChronicleClient:
         self,
         page_size: int | None = None,
         page_token: str | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> dict[str, Any]:
         """Get a list of all curated rules.
 
         Args:
