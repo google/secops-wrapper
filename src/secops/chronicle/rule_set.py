@@ -17,75 +17,19 @@
 from datetime import datetime
 from typing import Any
 
-from secops.chronicle.models import AlertState, ListBasis
-from secops.exceptions import APIError, SecOpsError
-
-
-def _paginated_request(
-    client,
-    path: str,
-    items_key: str,
-    *,
-    page_size: int | None = None,
-    page_token: str | None = None,
-    extra_params: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """
-    Helper to get items from endpoints that use pagination.
-
-    Args:
-        client: ChronicleClient instance
-        path: URL path after {base_url}/{instance_id}/
-        items_key: JSON key holding the array of items (e.g., 'curatedRules')
-        page_size: Maximum number of rules to return per page.
-        page_token: Token for the next page of results, if available.
-        extra_params: extra query params to include on every request
-
-    Returns:
-        Full response dict with items in items_key.
-        - If page_size is None: All items accumulated, no nextPageToken
-        - If page_size provided: Single page with nextPageToken
-
-    Raises:
-        APIError: If the HTTP request fails.
-    """
-    url = f"{client.base_url}/{client.instance_id}/{path}"
-    results = []
-    next_token = page_token
-    last_response = {}
-
-    while True:
-        params = {"pageSize": 1000 if not page_size else page_size}
-        if next_token:
-            params["pageToken"] = next_token
-        if extra_params:
-            params.update(dict(extra_params))
-
-        response = client.session.get(url, params=params)
-        if response.status_code != 200:
-            raise APIError(f"Failed to list {items_key}: {response.text}")
-
-        data = response.json()
-        results.extend(data.get(items_key, []))
-        last_response = data
-
-        if page_size is not None:
-            return data
-
-        next_token = data.get("nextPageToken")
-        if not next_token:
-            break
-
-    last_response[items_key] = results
-    last_response.pop("nextPageToken", None)
-    return last_response
+from secops.chronicle.models import AlertState, ListBasis, APIVersion
+from secops.exceptions import SecOpsError
+from secops.chronicle.utils.request_utils import (
+    chronicle_request,
+    chronicle_paginated_request,
+)
 
 
 def list_curated_rule_sets(
     client,
     page_size: str | None = None,
     page_token: str | None = None,
-) -> list[dict[str, Any]] | dict[str, Any]:
+) -> dict[str, Any]:
     """Get a list of all curated rule sets
 
     Args:
@@ -101,17 +45,14 @@ def list_curated_rule_sets(
     Raises:
         APIError: If the API request fails
     """
-    result = _paginated_request(
+    return chronicle_paginated_request(
         client,
+        api_version=APIVersion.V1ALPHA,
         path="curatedRuleSetCategories/-/curatedRuleSets",
         items_key="curatedRuleSets",
         page_size=page_size,
         page_token=page_token,
     )
-    # Return full dict if page_size provided, else just the list
-    if page_size is not None:
-        return result
-    return result.get("curatedRuleSets", [])
 
 
 def get_curated_rule_set(client, rule_set_id: str) -> dict[str, Any]:
@@ -127,23 +68,22 @@ def get_curated_rule_set(client, rule_set_id: str) -> dict[str, Any]:
     Raises:
         APIError: If the API request fails
     """
-    base_url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"curatedRuleSetCategories/-/curatedRuleSets/{rule_set_id}"
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=(
+            f"curatedRuleSetCategories/-/" f"curatedRuleSets/{rule_set_id}"
+        ),
+        api_version=APIVersion.V1ALPHA,
+        error_message=f"Failed to get rule set: {rule_set_id}",
     )
-
-    response = client.session.get(base_url)
-    if response.status_code != 200:
-        raise APIError(f"Failed to get rule set: {response.text}")
-
-    return response.json()
 
 
 def list_curated_rule_set_categories(
     client,
     page_size: str | None = None,
     page_token: str | None = None,
-) -> list[dict[str, Any]] | dict[str, Any]:
+) -> dict[str, Any]:
     """Get a list of all curated rule set categories
 
     Args:
@@ -159,17 +99,14 @@ def list_curated_rule_set_categories(
     Raises:
         APIError: If the API request fails
     """
-    result = _paginated_request(
+    return chronicle_paginated_request(
         client,
+        api_version=APIVersion.V1ALPHA,
         path="curatedRuleSetCategories",
         items_key="curatedRuleSetCategories",
         page_size=page_size,
         page_token=page_token,
     )
-    # Return full dict if page_size provided, else just the list
-    if page_size is not None:
-        return result
-    return result.get("curatedRuleSetCategories", [])
 
 
 def get_curated_rule_set_category(client, category_id: str) -> dict[str, Any]:
@@ -185,25 +122,20 @@ def get_curated_rule_set_category(client, category_id: str) -> dict[str, Any]:
     Raises:
         APIError: If the API request fails
     """
-    base_url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"curatedRuleSetCategories/{category_id}"
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"curatedRuleSetCategories/{category_id}",
+        api_version=APIVersion.V1ALPHA,
+        error_message=f"Failed to get rule set category: {category_id}",
     )
-
-    response = client.session.get(base_url)
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to get curated rule set category: {response.text}"
-        )
-
-    return response.json()
 
 
 def list_curated_rules(
     client,
     page_size: str | None = None,
     page_token: str | None = None,
-) -> list[dict[str, Any]] | dict[str, Any]:
+) -> dict[str, Any]:
     """Get a list of all curated rules
 
     Args:
@@ -219,17 +151,14 @@ def list_curated_rules(
     Raises:
         APIError: If the API request fails
     """
-    result = _paginated_request(
+    return chronicle_paginated_request(
         client,
+        api_version=APIVersion.V1ALPHA,
         path="curatedRules",
         items_key="curatedRules",
         page_size=page_size,
         page_token=page_token,
     )
-    # Return full dict if page_size provided, else just the list
-    if page_size is not None:
-        return result
-    return result.get("curatedRules", [])
 
 
 def get_curated_rule(client, rule_id: str) -> dict[str, Any]:
@@ -249,16 +178,18 @@ def get_curated_rule(client, rule_id: str) -> dict[str, Any]:
     Raises:
         APIError: If the API request fails
     """
-    base_url = f"{client.base_url}/{client.instance_id}/curatedRules/{rule_id}"
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"curatedRules/{rule_id}",
+        api_version=APIVersion.V1ALPHA,
+        error_message=f"Failed to get curated rule: {rule_id}",
+    )
 
-    response = client.session.get(base_url)
-    if response.status_code != 200:
-        raise APIError(f"Failed to get curated rule: {response.text}")
 
-    return response.json()
-
-
-def get_curated_rule_by_name(client, display_name: str) -> dict[str, Any]:
+def get_curated_rule_by_name(
+    client, display_name: str
+) -> dict[str, Any] | None:
     """Get a curated rule by display name
         NOTE: This is a linear scan of all curated rules,
         so it may be inefficient for large rule sets.
@@ -274,7 +205,7 @@ def get_curated_rule_by_name(client, display_name: str) -> dict[str, Any]:
         APIError: If the API request fails
     """
     rule = None
-    for r in list_curated_rules(client):
+    for r in list_curated_rules(client).get("curatedRules", []):
         if r.get("displayName", "").lower() == display_name.lower():
             rule = r
             break
@@ -290,7 +221,7 @@ def list_curated_rule_set_deployments(
     page_token: str | None = None,
     only_enabled: bool | None = False,
     only_alerting: bool | None = False,
-) -> list[dict[str, Any]] | dict[str, Any]:
+) -> dict[str, Any]:
     """Get a list of all curated rule set deployment statuses
 
     Args:
@@ -308,8 +239,9 @@ def list_curated_rule_set_deployments(
     Raises:
         APIError: If the API request fails
     """
-    result = _paginated_request(
+    result = chronicle_paginated_request(
         client,
+        api_version=APIVersion.V1ALPHA,
         path="curatedRuleSetCategories/-/curatedRuleSets/"
         "-/curatedRuleSetDeployments",
         items_key="curatedRuleSetDeployments",
@@ -329,7 +261,7 @@ def list_curated_rule_set_deployments(
             .split("curatedRuleSetDeployment")[0]
             .rstrip("/")
         )
-        for rule_set in all_rule_sets:
+        for rule_set in all_rule_sets.get("curatedRuleSets", []):
             if rule_set.get("name", "") == rule_set_id:
                 deployment["displayName"] = rule_set.get("displayName", "")
     # Apply filters for only enabled and/or alerting rule sets
@@ -349,10 +281,7 @@ def list_curated_rule_set_deployments(
     # Update result with filtered deployments
     result["curatedRuleSetDeployments"] = rule_set_deployments
 
-    # Return full dict if page_size provided, else just the list
-    if page_size is not None:
-        return result
-    return rule_set_deployments
+    return result
 
 
 def get_curated_rule_set_deployment(
@@ -379,23 +308,26 @@ def get_curated_rule_set_deployment(
 
     # Get the rule set by ID
     rule_set = get_curated_rule_set(client, rule_set_id)
+    print(rule_set)
 
-    url = (
-        f'{client.base_url}/{rule_set.get("name", "")}/'
-        f"curatedRuleSetDeployments/{precision}"
+    rule_set_id = rule_set.get("name", "").split("curatedRuleSetCategories")[-1]
+    response = chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=(
+            f"curatedRuleSetCategories{rule_set_id}"
+            f"/curatedRuleSetDeployments/{precision}"
+        ),
+        api_version=APIVersion.V1ALPHA,
+        error_message=(
+            f"Failed to get curated rule set deployment: {rule_set_id}"
+        ),
     )
 
-    response = client.session.get(url)
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to get curated rule set deployment: {response.text}"
-        )
-
     # Enrich the deployment data with the rule set displayName
-    deployment = response.json()
-    deployment["displayName"] = rule_set.get("displayName", "")
+    response["displayName"] = rule_set.get("displayName", "")
 
-    return deployment
+    return response
 
 
 def get_curated_rule_set_deployment_by_name(
@@ -423,7 +355,7 @@ def get_curated_rule_set_deployment_by_name(
         raise SecOpsError("Precision must be 'precise' or 'broad'")
 
     rule_set = None
-    for rs in list_curated_rule_sets(client):
+    for rs in list_curated_rule_sets(client).get("curatedRuleSets", []):
         # Names normalised as lowercase
         if rs.get("displayName", "").lower() == display_name.lower():
             rule_set = rs
@@ -438,6 +370,24 @@ def get_curated_rule_set_deployment_by_name(
 
     # Get the deployment status using existing function
     return get_curated_rule_set_deployment(client, rule_set_id, precision)
+
+
+def _make_deployment_name(
+    category_id: str, rule_set_id: str, precision: str, instance_id: str = None
+):
+    """Helper function to create a deployment name"""
+    if instance_id:
+        return (
+            f"{instance_id}/curatedRuleSetCategories/{category_id}"
+            f"/curatedRuleSets/{rule_set_id}"
+            f"/curatedRuleSetDeployments/{precision}"
+        )
+    else:
+        return (
+            f"curatedRuleSetCategories/{category_id}"
+            f"/curatedRuleSets/{rule_set_id}"
+            f"/curatedRuleSetDeployments/{precision}"
+        )
 
 
 def update_curated_rule_set_deployment(
@@ -480,28 +430,26 @@ def update_curated_rule_set_deployment(
     enabled = deployment["enabled"]
     alerting = deployment.get("alerting", False)
 
-    deployment_name = (
-        f"{client.instance_id}/curatedRuleSetCategories/{category_id}"
-        f"/curatedRuleSets/{rule_set_id}"
-        f"/curatedRuleSetDeployments/{precision}"
-    )
+    deployment_name = _make_deployment_name(category_id, rule_set_id, precision)
 
     deployment = {
-        "name": deployment_name,
+        "name": f"{client.instance_id}/{deployment_name}",
         "precision": precision,
         "enabled": enabled,
         "alerting": alerting,
     }
 
-    url = f"{client.base_url}/{deployment_name}"
-
-    response = client.session.patch(url, json=deployment)
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to patch curated rule set deployment: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="PATCH",
+        endpoint_path=deployment_name,
+        api_version=APIVersion.V1ALPHA,
+        json=deployment,
+        expected_status=200,
+        error_message=(
+            f"Failed to patch curated rule set deployment: {deployment_name}"
+        ),
+    )
 
 
 def batch_update_curated_rule_set_deployments(
@@ -525,19 +473,6 @@ def batch_update_curated_rule_set_deployments(
         APIError: If the API request fails
         ValueError: If required fields are missing from the deployments
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/curatedRuleSetCategories/-"
-        "/curatedRuleSets/-/curatedRuleSetDeployments:batchUpdate"
-    )
-
-    # Helper function to create a deployment name
-    def make_deployment_name(category_id, rule_set_id, precision):
-        return (
-            f"{client.instance_id}/curatedRuleSetCategories/{category_id}"
-            f"/curatedRuleSets/{rule_set_id}"
-            f"/curatedRuleSetDeployments/{precision}"
-        )
-
     # Build the request data
     request_items = []
 
@@ -563,8 +498,8 @@ def batch_update_curated_rule_set_deployments(
         # Create the request item
         request_item = {
             "curated_rule_set_deployment": {
-                "name": make_deployment_name(
-                    category_id, rule_set_id, precision
+                "name": _make_deployment_name(
+                    category_id, rule_set_id, precision, client.instance_id
                 ),
                 "enabled": enabled,
                 "alerting": alerting,
@@ -585,14 +520,18 @@ def batch_update_curated_rule_set_deployments(
         "requests": request_items,
     }
 
-    response = client.session.post(url, json=json_data)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to batch update rule set deployments: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=(
+            "curatedRuleSetCategories/-/curatedRuleSets"
+            "/-/curatedRuleSetDeployments:batchUpdate"
+        ),
+        api_version=APIVersion.V1ALPHA,
+        json=json_data,
+        expected_status=200,
+        error_message="Failed to batch update curated rule set deployments",
+    )
 
 
 def search_curated_detections(
@@ -689,15 +628,12 @@ def search_curated_detections(
         else "curatedDetections"
     )
 
-    try:
-        return _paginated_request(
-            client,
-            path="legacy:legacySearchCuratedDetections",
-            items_key=items_key,
-            page_size=page_size,
-            page_token=page_token,
-            extra_params=extra_params,
-        )
-    except Exception as e:
-        print(f"Error searching curated detections for rule " f"{rule_id}: {e}")
-        raise
+    return chronicle_paginated_request(
+        client,
+        api_version=APIVersion.V1ALPHA,
+        path="legacy:legacySearchCuratedDetections",
+        items_key=items_key,
+        page_size=page_size,
+        page_token=page_token,
+        extra_params=extra_params,
+    )
