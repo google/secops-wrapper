@@ -25,7 +25,7 @@ DEFAULT_PAGE_SIZE = 1000
 
 def chronicle_paginated_request(
     client: "ChronicleClient",
-    base_url: str,
+    api_version: str,
     path: str,
     items_key: str,
     *,
@@ -37,9 +37,10 @@ def chronicle_paginated_request(
 
     Args:
         client: ChronicleClient instance
-        base_url: The base URL to use, example:
-            - v1alpha (ChronicleClient.base_url)
-            - v1 (ChronicleClient.base_v1_url)
+        api_version: The API version to use, as a string. options:
+            - v1 (secops.chronicle.models.APIVersion.V1)
+            - v1alpha (secops.chronicle.models.APIVersion.V1ALPHA)
+            - v1beta (secops.chronicle.models.APIVersion.V1BETA)
         path: URL path after {base_url}/{instance_id}/
         items_key: JSON key holding the array of items (e.g., 'curatedRules')
         page_size: Maximum number of rules to return per page.
@@ -54,7 +55,7 @@ def chronicle_paginated_request(
     Raises:
         APIError: If the HTTP request fails.
     """
-    url = f"{base_url}/{client.instance_id}/{path}"
+    url = f"{client.base_url(api_version)}/{client.instance_id}/{path}"
     results = []
     next_token = page_token
 
@@ -112,7 +113,10 @@ def chronicle_request(
         client: requests.Session (or compatible) instance
         method: HTTP method, e.g. 'GET', 'POST', 'PATCH'
         endpoint_path: URL path after {base_url}/{instance_id}/
-        api_version: API version to use
+        api_version: The API version to use, as a string. options:
+            - v1 (secops.chronicle.models.APIVersion.V1)
+            - v1alpha (secops.chronicle.models.APIVersion.V1ALPHA)
+            - v1beta (secops.chronicle.models.APIVersion.V1BETA)
         params: Optional query parameters
         json: Optional JSON body
         expected_status: Expected HTTP status code (default: 200)
