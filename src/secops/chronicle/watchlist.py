@@ -27,6 +27,7 @@ def list_watchlists(
     client: "ChronicleClient",
     page_size: int | None = None,
     page_token: str | None = None,
+    as_list: bool = False,
 ) -> dict[str, Any]:
     """Get a list of watchlists.
 
@@ -34,6 +35,8 @@ def list_watchlists(
         client: ChronicleClient instance
         page_size: Number of results to return per page
         page_token: Token for the page to retrieve
+        as_list: If True, return a list of watchlists instead of a dict
+            with watchlists list and nextPageToken.
 
     Returns:
         List of watchlists
@@ -48,6 +51,7 @@ def list_watchlists(
         items_key="watchlists",
         page_size=page_size,
         page_token=page_token,
+        as_list=as_list,
     )
 
 
