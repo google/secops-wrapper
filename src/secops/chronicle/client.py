@@ -616,12 +616,15 @@ class ChronicleClient:
         self,
         page_size: int | None = None,
         page_token: str | None = None,
+        as_list: bool = False,
     ) -> dict[str, Any]:
         """Get a list of all watchlists.
 
         Args:
             page_size: Maximum number of watchlists to return per page
             page_token: Token for the next page of results, if available
+            as_list: If True, return a list of watchlists instead of a dict
+                with watchlists list and nextPageToken.
 
         Returns:
             Dictionary with list of watchlists
@@ -629,7 +632,7 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _list_watchlists(self, page_size, page_token)
+        return _list_watchlists(self, page_size, page_token, as_list)
 
     def get_watchlist(
         self,
