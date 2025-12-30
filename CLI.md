@@ -249,9 +249,14 @@ secops log types --search "windows"
 # Fetch specific page using token
 secops log types --page-size 50 --page-token "next_page_token"
 
-# Search for log types
-secops log types --search "firewall"
+# Classify logs to predict log type:
+secops log classify --log '{"eventType": "user.session.start", "actor": {"alternateId": "user@example.com"}}'
+
+# Classify a log from a file
+secops log classify --log /path/to/log_file.json
 ```
+
+> **Note:** The classify command returns predictions sorted by confidence score. Confidence scores are provided by the API as guidance only and may not always accurately reflect classification certainty. Use scores for relative ranking rather than absolute confidence.
 
 > **Note:** Chronicle uses parsers to process and normalize raw log data into UDM format. If you're ingesting logs for a custom format, you may need to create or configure parsers. See the [Parser Management](#parser-management) section for details on managing parsers.
 
