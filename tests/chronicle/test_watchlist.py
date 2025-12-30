@@ -90,7 +90,7 @@ def test_list_watchlists_success(chronicle_client):
 
         mock_paginated.assert_called_once_with(
             chronicle_client,
-            base_url=chronicle_client.base_url(APIVersion.V1),
+            api_version=APIVersion.V1,
             path="watchlists",
             items_key="watchlists",
             page_size=10,
@@ -112,7 +112,7 @@ def test_list_watchlists_default_args(chronicle_client):
 
         mock_paginated.assert_called_once_with(
             chronicle_client,
-            base_url=chronicle_client.base_url(APIVersion.V1),
+            api_version=APIVersion.V1,
             path="watchlists",
             items_key="watchlists",
             page_size=None,
