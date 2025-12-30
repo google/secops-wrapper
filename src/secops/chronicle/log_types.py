@@ -256,12 +256,15 @@ def classify_logs(
     Returns:
         List of possible log types sorted by confidence score.
         Example:
-            {
-                "predictions": [
-                    {"logType": "OKTA", "score": 0.95},
-                    {"logType": "ONELOGIN", "score": 0.03}
-                ]
-            }
+            [
+                {"logType": "OKTA", "score": 0.95},
+                {"logType": "ONELOGIN", "score": 0.03}
+            ]
+
+    Note:
+        Confidence scores are provided by the API as guidance only and
+        may not always accurately reflect classification certainty.
+        Use scores for relative ranking rather than absolute confidence.
 
     Raises:
         SecOpsError: If client is None or log_data is empty.
@@ -278,8 +281,6 @@ def classify_logs(
 
     encoded_log = base64.b64encode(log_data.encode("utf-8")).decode("utf-8")
     payload = {"logData": [encoded_log]}
-
-    print("Classifying log...")
 
     response = client.session.post(url, json=payload)
 

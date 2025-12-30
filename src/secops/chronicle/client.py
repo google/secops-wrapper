@@ -3090,6 +3090,11 @@ class ChronicleClient:
         Returns:
             List of possible log types sorted by confidence score.
 
+        Note:
+            Confidence scores are provided by the API as guidance only and
+            may not always accurately reflect classification certainty.
+            Use scores for relative ranking rather than absolute confidence.
+
         Raises:
             SecOpsError: If log_data is empty
             APIError: If the API request fails

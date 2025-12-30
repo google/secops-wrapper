@@ -146,14 +146,7 @@ def log_classification(chronicle_client):
                 print(f"  {idx}. {log_type}: {score:.2%}")
 
             top_pred = log_type_predictions[0]
-            confidence = top_pred.get("score", 0)
             print(f"\nTop prediction: {top_pred.get('logType')}")
-            if confidence > 0.8:
-                print("Confidence: High")
-            elif confidence > 0.5:
-                print("Confidence: Medium")
-            else:
-                print("Confidence: Low")
         else:
             print("No predictions available")
 
