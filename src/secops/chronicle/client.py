@@ -108,6 +108,7 @@ from secops.chronicle.log_ingest import ingest_log as _ingest_log
 from secops.chronicle.log_ingest import ingest_udm as _ingest_udm
 from secops.chronicle.log_ingest import list_forwarders as _list_forwarders
 from secops.chronicle.log_ingest import update_forwarder as _update_forwarder
+from secops.chronicle.log_types import classify_logs as _classify_logs
 from secops.chronicle.log_types import get_all_log_types as _get_all_log_types
 from secops.chronicle.log_types import (
     get_log_type_description as _get_log_type_description,
@@ -3076,6 +3077,24 @@ class ChronicleClient:
             search_in_description,
             client=self,
         )
+
+    def classify_logs(
+        self,
+        log_data: str,
+    ) -> list[dict[str, Any]]:
+        """Classify a raw log to predict its log type.
+
+        Args:
+            log_data: Raw log string
+
+        Returns:
+            List of possible log types sorted by confidence score.
+
+        Raises:
+            SecOpsError: If log_data is empty
+            APIError: If the API request fails
+        """
+        return _classify_logs(client=self, log_data=log_data)
 
     def ingest_udm(
         self,
