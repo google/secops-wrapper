@@ -22,6 +22,7 @@ from secops.chronicle.models import APIVersion
 
 DEFAULT_PAGE_SIZE = 1000
 
+
 def chronicle_paginated_request(
     client: "ChronicleClient",
     api_version: str,
