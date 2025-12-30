@@ -95,6 +95,7 @@ def test_list_watchlists_success(chronicle_client):
             items_key="watchlists",
             page_size=10,
             page_token="next-token",
+            as_list=False,
         )
 
 
@@ -117,6 +118,7 @@ def test_list_watchlists_default_args(chronicle_client):
             items_key="watchlists",
             page_size=None,
             page_token=None,
+            as_list=False,
         )
 
 
