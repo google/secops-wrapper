@@ -2340,12 +2340,14 @@ class ChronicleClient:
         self,
         page_size: int | None = None,
         page_token: str | None = None,
-    ) -> dict[str, Any]:
+        as_list: bool = False,
+    ) -> list[dict[str, Any]] | dict[str, Any]:
         """Get a list of all curated rule sets.
 
         Args:
             page_size: Number of results to return per page
             page_token: Token for the page to retrieve
+            as_list: Whether to return the list of curated rule sets as a list instead of a dict
 
         Returns:
             Dictionary containing the list of curated rule sets
@@ -2353,18 +2355,20 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _list_curated_rule_sets(self, page_size, page_token)
+        return _list_curated_rule_sets(self, page_size, page_token, as_list)
 
     def list_curated_rule_set_categories(
         self,
         page_size: int | None = None,
         page_token: str | None = None,
-    ) -> list[dict[str, Any]]:
+        as_list: bool = False,
+    ) -> list[dict[str, Any]] | dict[str, Any]:
         """Get a list of all curated rule set categories.
 
         Args:
             page_size: Number of results to return per page
             page_token: Token for the page to retrieve
+            as_list: Whether to return the list of curated rule set categories as a list instead of a dict
 
         Returns:
             Dictionary containing the list of curated rule set categories
@@ -2372,7 +2376,9 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _list_curated_rule_set_categories(self, page_size, page_token)
+        return _list_curated_rule_set_categories(
+            self, page_size, page_token, as_list
+        )
 
     def list_curated_rule_set_deployments(
         self,
@@ -2380,6 +2386,7 @@ class ChronicleClient:
         page_token: str | None = None,
         only_enabled: bool | None = False,
         only_alerting: bool | None = False,
+        as_list: bool = False,
     ) -> dict[str, Any]:
         """Get a list of all curated rule set deployments.
 
@@ -2388,6 +2395,7 @@ class ChronicleClient:
             page_token: Token for the page to retrieve
             only_enabled: Only return enabled rule set deployments
             only_alerting: Only return alerting rule set deployments
+            as_list: Whether to return the list of curated rule set deployments as a list instead of a dict
 
         Returns:
             Dictionary containing the list of curated rule set deployments
@@ -2396,7 +2404,7 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _list_curated_rule_set_deployments(
-            self, page_size, page_token, only_enabled, only_alerting
+            self, page_size, page_token, only_enabled, only_alerting, as_list
         )
 
     def get_curated_rule_set_deployment(
@@ -2446,12 +2454,14 @@ class ChronicleClient:
         self,
         page_size: int | None = None,
         page_token: str | None = None,
+        as_list: bool = False,
     ) -> dict[str, Any]:
         """Get a list of all curated rules.
 
         Args:
             page_size: Number of results to return per page
             page_token: Token for the page to retrieve
+            as_list: Whether to return the list of curated rules as a list instead of a dict
 
         Returns:
             Dictionary containing the list of curated rules
@@ -2459,7 +2469,7 @@ class ChronicleClient:
         Raises:
             APIError: If the API request fails
         """
-        return _list_curated_rules(self, page_size, page_token)
+        return _list_curated_rules(self, page_size, page_token, as_list)
 
     def get_curated_rule(self, rule_id: str) -> dict[str, Any]:
         """Get a curated rule by ID.

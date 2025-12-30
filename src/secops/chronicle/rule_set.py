@@ -29,13 +29,16 @@ def list_curated_rule_sets(
     client,
     page_size: str | None = None,
     page_token: str | None = None,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[dict[str, Any]]:
     """Get a list of all curated rule sets
 
     Args:
         client: ChronicleClient instance
         page_size: Number of results to return per page.
         page_token: Token for the page to retrieve
+        as_list: If True, return a list of curated rule sets
+            instead of a dict with curatedRuleSets list and nextPageToken.
 
     Returns:
         If page_size is None: List of all curated rule sets.
@@ -52,6 +55,7 @@ def list_curated_rule_sets(
         items_key="curatedRuleSets",
         page_size=page_size,
         page_token=page_token,
+        as_list=as_list,
     )
 
 
@@ -83,13 +87,16 @@ def list_curated_rule_set_categories(
     client,
     page_size: str | None = None,
     page_token: str | None = None,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[dict[str, Any]]:
     """Get a list of all curated rule set categories
 
     Args:
         client: ChronicleClient instance
         page_size: Number of results to return per page.
         page_token: Token for the page to retrieve
+        as_list: If True, return a list of curated rule set categories
+            instead of a dict with curatedRuleSetCategories list and nextPageToken.
 
     Returns:
         If page_size is None: List of all categories.
@@ -106,6 +113,7 @@ def list_curated_rule_set_categories(
         items_key="curatedRuleSetCategories",
         page_size=page_size,
         page_token=page_token,
+        as_list=as_list,
     )
 
 
@@ -135,13 +143,16 @@ def list_curated_rules(
     client,
     page_size: str | None = None,
     page_token: str | None = None,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[dict[str, Any]]:
     """Get a list of all curated rules
 
     Args:
         client: ChronicleClient instance
         page_size: Number of results to return per page.
         page_token: Token for the page to retrieve
+        as_list: If True, return a list of curated rules
+            instead of a dict with curatedRules list and nextPageToken.
 
     Returns:
         If page_size is None: List of all curated rules.
@@ -158,6 +169,7 @@ def list_curated_rules(
         items_key="curatedRules",
         page_size=page_size,
         page_token=page_token,
+        as_list=as_list,
     )
 
 
@@ -221,7 +233,8 @@ def list_curated_rule_set_deployments(
     page_token: str | None = None,
     only_enabled: bool | None = False,
     only_alerting: bool | None = False,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[dict[str, Any]]:
     """Get a list of all curated rule set deployment statuses
 
     Args:
@@ -230,6 +243,8 @@ def list_curated_rule_set_deployments(
         page_token: Token for the page to retrieve
         only_enabled: Only return enabled rule set deployments
         only_alerting: Only return alerting rule set deployments
+        as_list: If True, return a list of curated rule set deployments
+            instead of a dict with curatedRuleSetDeployments list and nextPageToken.
 
     Returns:
         If page_size is None: List of all deployments.
@@ -247,6 +262,7 @@ def list_curated_rule_set_deployments(
         items_key="curatedRuleSetDeployments",
         page_size=page_size,
         page_token=page_token,
+        as_list=as_list,
     )
 
     # Extract deployments from response
@@ -308,7 +324,6 @@ def get_curated_rule_set_deployment(
 
     # Get the rule set by ID
     rule_set = get_curated_rule_set(client, rule_set_id)
-    print(rule_set)
 
     rule_set_id = rule_set.get("name", "").split("curatedRuleSetCategories")[-1]
     response = chronicle_request(

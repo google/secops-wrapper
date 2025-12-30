@@ -343,3 +343,137 @@ def test_paginated_request_extra_params_not_mutated(client: Mock) -> None:
     # Ensure merged into params as expected
     _, kwargs = client.session.request.call_args
     assert kwargs["params"] == {"pageSize": DEFAULT_PAGE_SIZE, "filter": "x"}
+
+
+def test_paginated_request_single_page_mode_list_only_dict_extracts_items(client: Mock) -> None:
+    # Single page mode when page_size is provided; list_only should return just the list under items_key.
+    resp = _mock_response(
+        status_code=200,
+        json_value={"curatedRules": [{"id": 1}], "nextPageToken": "t2", "meta": {"x": 1}},
+    )
+    client.session.request.return_value = resp
+
+    out = chronicle_paginated_request(
+        client=client,
+        api_version=APIVersion.V1ALPHA,
+        path="curatedRules",
+        items_key="curatedRules",
+        page_size=10,
+        as_list=True,
+    )
+
+    assert out == [{"id": 1}]
+
+    _, kwargs = client.session.request.call_args
+    assert kwargs["params"] == {"pageSize": 10}
+
+
+def test_paginated_request_single_page_mode_list_only_dict_missing_key_returns_empty_list(client: Mock) -> None:
+    # If dict response does not include items_key, list_only should return [] (consistent with .get default)
+    resp = _mock_response(status_code=200, json_value={"meta": {"x": 1}, "nextPageToken": "t2"})
+    client.session.request.return_value = resp
+
+    out = chronicle_paginated_request(
+        client=client,
+        api_version=APIVersion.V1ALPHA,
+        path="curatedRules",
+        items_key="curatedRules",
+        page_size=10,
+        as_list=True,
+    )
+
+    assert out == []
+
+
+def test_paginated_request_single_page_mode_list_only_list_passthrough(client: Mock) -> None:
+    # If upstream returns a top-level list and list_only=True, it should be returned as-is.
+    resp = _mock_response(status_code=200, json_value=[{"id": 1}, {"id": 2}])
+    client.session.request.return_value = resp
+
+    out = chronicle_paginated_request(
+        client=client,
+        api_version=APIVersion.V1ALPHA,
+        path="feeds",
+        items_key="feeds",
+        page_size=10,
+        as_list=True,
+    )
+
+    assert out == [{"id": 1}, {"id": 2}]
+
+
+def test_paginated_request_single_page_mode_list_only_items_key_not_list_raises(client: Mock) -> None:
+    # list_only=True should still validate that items_key is a list when present
+    resp = _mock_response(status_code=200, json_value={"curatedRules": {"id": 1}})
+    client.session.request.return_value = resp
+
+    with pytest.raises(APIError, match=r"Expected 'curatedRules' to be a list"):
+        chronicle_paginated_request(
+            client=client,
+            api_version=APIVersion.V1ALPHA,
+            path="curatedRules",
+            items_key="curatedRules",
+            page_size=10,
+            as_list=True,
+        )
+
+
+def test_paginated_request_auto_mode_list_only_aggregates_items(client: Mock) -> None:
+    # Auto mode (no page_size/page_token): list_only=True should return aggregated flat list.
+    resp1 = _mock_response(
+        status_code=200,
+        json_value={"curatedRules": [{"id": 1}], "nextPageToken": "t2", "meta": {"x": 1}},
+    )
+    resp2 = _mock_response(
+        status_code=200,
+        json_value={"curatedRules": [{"id": 2}], "meta": {"x": 1}},
+    )
+    client.session.request.side_effect = [resp1, resp2]
+
+    out = chronicle_paginated_request(
+        client=client,
+        api_version=APIVersion.V1ALPHA,
+        path="curatedRules",
+        items_key="curatedRules",
+        as_list=True,
+    )
+
+    assert out == [{"id": 1}, {"id": 2}]
+    assert client.session.request.call_count == 2
+
+    call1 = client.session.request.call_args_list[0].kwargs
+    call2 = client.session.request.call_args_list[1].kwargs
+    assert call1["params"] == {"pageSize": DEFAULT_PAGE_SIZE}
+    assert call2["params"] == {"pageSize": DEFAULT_PAGE_SIZE, "pageToken": "t2"}
+
+
+def test_paginated_request_auto_mode_list_only_empty_returns_empty_list(client: Mock) -> None:
+    resp = _mock_response(status_code=200, json_value={"curatedRules": []})
+    client.session.request.return_value = resp
+
+    out = chronicle_paginated_request(
+        client=client,
+        api_version=APIVersion.V1ALPHA,
+        path="curatedRules",
+        items_key="curatedRules",
+        as_list=True,
+    )
+
+    assert out == []
+
+
+def test_paginated_request_auto_mode_list_only_list_response_returns_list(client: Mock) -> None:
+    # Auto mode + top-level list response: return list and stop.
+    resp = _mock_response(status_code=200, json_value=[{"id": 1}, {"id": 2}])
+    client.session.request.return_value = resp
+
+    out = chronicle_paginated_request(
+        client=client,
+        api_version=APIVersion.V1ALPHA,
+        path="feeds",
+        items_key="feeds",
+        as_list=True,
+    )
+
+    assert out == [{"id": 1}, {"id": 2}]
+    assert client.session.request.call_count == 1
