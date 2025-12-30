@@ -62,6 +62,7 @@ def _mock_response(
 # chronicle_request() tests
 # ---------------------------------------------------------------------------
 
+
 def test_chronicle_request_success_json(client: Mock) -> None:
     # Test successful JSON response
     response = _mock_response(status_code=200, json_value={"ok": True})
@@ -88,7 +89,9 @@ def test_chronicle_request_success_json(client: Mock) -> None:
 
 def test_chronicle_request_non_json_body_raises(client: Mock) -> None:
     # Test that a non-JSON body response raises an error
-    response = _mock_response(status_code=200, json_raises=True, text="not json")
+    response = _mock_response(
+        status_code=200, json_raises=True, text="not json"
+    )
     client.session.request.return_value = response
 
     with pytest.raises(APIError, match="Expected JSON response"):
@@ -100,12 +103,17 @@ def test_chronicle_request_non_json_body_raises(client: Mock) -> None:
         )
 
 
-def test_chronicle_request_status_mismatch_with_json_includes_json(client: Mock) -> None:
+def test_chronicle_request_status_mismatch_with_json_includes_json(
+    client: Mock,
+) -> None:
     # Test that a non-expected status with a JSON body raises an error
     response = _mock_response(status_code=400, json_value={"error": "bad"})
     client.session.request.return_value = response
 
-    with pytest.raises(APIError, match=r"API request failed: status=400, response=\{'error': 'bad'\}"):
+    with pytest.raises(
+        APIError,
+        match=r"API request failed: status=400, response=\{'error': 'bad'\}",
+    ):
         chronicle_request(
             client=client,
             method="GET",
@@ -114,12 +122,16 @@ def test_chronicle_request_status_mismatch_with_json_includes_json(client: Mock)
         )
 
 
-def test_chronicle_request_status_mismatch_non_json_includes_text(client: Mock) -> None:
+def test_chronicle_request_status_mismatch_non_json_includes_text(
+    client: Mock,
+) -> None:
     # Test that a non-expected status without a JSON body raises an error
     response = _mock_response(status_code=500, json_raises=True, text="boom")
     client.session.request.return_value = response
 
-    with pytest.raises(APIError, match=r"API request failed: status=500, response_text=boom"):
+    with pytest.raises(
+        APIError, match=r"API request failed: status=500, response_text=boom"
+    ):
         chronicle_request(
             client=client,
             method="GET",
@@ -130,10 +142,14 @@ def test_chronicle_request_status_mismatch_non_json_includes_text(client: Mock) 
 
 def test_chronicle_request_custom_error_message_used(client: Mock) -> None:
     # Test that a custom error message is returned when provided
-    response = _mock_response(status_code=404, json_value={"message": "not found"})
+    response = _mock_response(
+        status_code=404, json_value={"message": "not found"}
+    )
     client.session.request.return_value = response
 
-    with pytest.raises(APIError, match=r"Failed to get curated rule: status=404"):
+    with pytest.raises(
+        APIError, match=r"Failed to get curated rule: status=404"
+    ):
         chronicle_request(
             client=client,
             method="GET",
@@ -147,9 +163,14 @@ def test_chronicle_request_custom_error_message_used(client: Mock) -> None:
 # chronicle_paginated_request() tests
 # ---------------------------------------------------------------------------
 
-def test_paginated_request_single_page_mode_page_size_returns_upstream_json(client: Mock) -> None:
+
+def test_paginated_request_single_page_mode_page_size_returns_upstream_json(
+    client: Mock,
+) -> None:
     # Test single_page_mode triggers when page_size is provided
-    response = _mock_response(status_code=200, json_value={"items": [1], "nextPageToken": "t2"})
+    response = _mock_response(
+        status_code=200, json_value={"items": [1], "nextPageToken": "t2"}
+    )
     client.session.request.return_value = response
 
     output = chronicle_paginated_request(
@@ -167,9 +188,13 @@ def test_paginated_request_single_page_mode_page_size_returns_upstream_json(clie
     assert kwargs["params"] == {"pageSize": 10}
 
 
-def test_paginated_request_single_page_mode_page_token_returns_upstream_json(client: Mock) -> None:
+def test_paginated_request_single_page_mode_page_token_returns_upstream_json(
+    client: Mock,
+) -> None:
     # Test single_page_mode triggers when page_token is provided
-    response = _mock_response(status_code=200, json_value={"items": [1], "nextPageToken": "t2"})
+    response = _mock_response(
+        status_code=200, json_value={"items": [1], "nextPageToken": "t2"}
+    )
     client.session.request.return_value = response
 
     output = chronicle_paginated_request(
@@ -183,14 +208,23 @@ def test_paginated_request_single_page_mode_page_token_returns_upstream_json(cli
     assert output == {"items": [1], "nextPageToken": "t2"}
 
     _, kwargs = client.session.request.call_args
-    assert kwargs["params"] == {"pageSize": DEFAULT_PAGE_SIZE, "pageToken": "t1"}
+    assert kwargs["params"] == {
+        "pageSize": DEFAULT_PAGE_SIZE,
+        "pageToken": "t1",
+    }
 
 
-def test_paginated_request_auto_paginates_aggregates_items_and_removes_token(client: Mock) -> None:
+def test_paginated_request_auto_paginates_aggregates_items_and_removes_token(
+    client: Mock,
+) -> None:
     # Test auto-pagination when both page_size and page_token are None
     resp1 = _mock_response(
         status_code=200,
-        json_value={"curatedRules": [{"id": 1}], "nextPageToken": "t2", "meta": {"x": 1}},
+        json_value={
+            "curatedRules": [{"id": 1}],
+            "nextPageToken": "t2",
+            "meta": {"x": 1},
+        },
     )
     resp2 = _mock_response(
         status_code=200,
@@ -217,9 +251,13 @@ def test_paginated_request_auto_paginates_aggregates_items_and_removes_token(cli
     assert call2["params"] == {"pageSize": DEFAULT_PAGE_SIZE, "pageToken": "t2"}
 
 
-def test_paginated_request_auto_mode_list_response_returns_list(client: Mock) -> None:
+def test_paginated_request_auto_mode_list_response_returns_list(
+    client: Mock,
+) -> None:
     # Test that if upstream returns a top-level list, the helper returns it immediately (no pagination possible)
-    response = _mock_response(status_code=200, json_value=[{"id": 1}, {"id": 2}])
+    response = _mock_response(
+        status_code=200, json_value=[{"id": 1}, {"id": 2}]
+    )
     client.session.request.return_value = response
 
     output = chronicle_paginated_request(
@@ -233,12 +271,16 @@ def test_paginated_request_auto_mode_list_response_returns_list(client: Mock) ->
     assert client.session.request.call_count == 1
 
 
-def test_paginated_request_unexpected_response_type_raises(client: Mock) -> None:
+def test_paginated_request_unexpected_response_type_raises(
+    client: Mock,
+) -> None:
     # Test that an unexpected response type returns an error
     response = _mock_response(status_code=200, json_value="not a dict or list")
     client.session.request.return_value = response
 
-    with pytest.raises(APIError, match=r"Unexpected response type for curatedRules: str"):
+    with pytest.raises(
+        APIError, match=r"Unexpected response type for curatedRules: str"
+    ):
         chronicle_paginated_request(
             client=client,
             api_version=APIVersion.V1ALPHA,
@@ -249,7 +291,9 @@ def test_paginated_request_unexpected_response_type_raises(client: Mock) -> None
 
 def test_paginated_request_items_key_not_list_raises(client: Mock) -> None:
     # Test that an incorrect items_key raises an error
-    response = _mock_response(status_code=200, json_value={"curatedRules": {"id": 1}})
+    response = _mock_response(
+        status_code=200, json_value={"curatedRules": {"id": 1}}
+    )
     client.session.request.return_value = response
 
     with pytest.raises(APIError, match=r"Expected 'curatedRules' to be a list"):
@@ -261,7 +305,9 @@ def test_paginated_request_items_key_not_list_raises(client: Mock) -> None:
         )
 
 
-def test_paginated_request_no_results_returns_dict_with_empty_list(client: Mock) -> None:
+def test_paginated_request_no_results_returns_dict_with_empty_list(
+    client: Mock,
+) -> None:
     # Test that no results gets returned as a dict with an empty list
     response = _mock_response(status_code=200, json_value={"curatedRules": []})
     client.session.request.return_value = response
