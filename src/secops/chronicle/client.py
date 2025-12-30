@@ -2340,7 +2340,7 @@ class ChronicleClient:
         self,
         page_size: int | None = None,
         page_token: str | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> dict[str, Any]:
         """Get a list of all curated rule sets.
 
         Args:
