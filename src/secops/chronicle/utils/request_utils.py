@@ -32,8 +32,15 @@ def chronicle_paginated_request(
     page_size: int | None = None,
     page_token: str | None = None,
     extra_params: dict[str, Any] | None = None,
-) -> dict[str, list[Any]] | list[Any]:
+) -> dict[str, Any] | list[Any]:
     """Helper to get items from endpoints that use pagination.
+
+    Function behaviour:
+      - If `page_size` OR `page_token` is provided: a single page is returned with the
+        upstream JSON as-is, including all potential metadata.
+      - Else: auto-paginate responses until all pages are consumed, then return a single
+        object with the aggregated items and no token. The object will have the same shape
+        as the API response.
 
     Args:
         client: ChronicleClient instance
@@ -42,7 +49,7 @@ def chronicle_paginated_request(
             - v1alpha (secops.chronicle.models.APIVersion.V1ALPHA)
             - v1beta (secops.chronicle.models.APIVersion.V1BETA)
         path: URL path after {base_url}/{instance_id}/
-        items_key: JSON key holding the array of items (e.g., 'curatedRules')
+        items_key: JSON key holding the array of items (e.g. 'curatedRules')
         page_size: Maximum number of rules to return per page.
         page_token: Token for the next page of results, if available.
         extra_params: extra query params to include on every request
@@ -55,45 +62,70 @@ def chronicle_paginated_request(
     Raises:
         APIError: If the HTTP request fails.
     """
-    url = f"{client.base_url(api_version)}/{client.instance_id}/{path}"
-    results = []
+    # Determine if we should return a single page or aggregate results from all pages
+    single_page_mode = (page_size is not None) or (page_token is not None)
+
+    effective_page_size = DEFAULT_PAGE_SIZE if page_size is None else page_size
+
+    aggregated_results = []
+    first_response_dict = None
     next_token = page_token
 
     while True:
         # Build params each loop to prevent stale keys being
         # included in the next request
-        params = {"pageSize": DEFAULT_PAGE_SIZE if not page_size else page_size}
+        params = {"pageSize": effective_page_size}
         if next_token:
             params["pageToken"] = next_token
         if extra_params:
             # copy to avoid passed dict being mutated
             params.update(dict(extra_params))
 
-        response = client.session.get(url, params=params)
-        if response.status_code != 200:
-            raise APIError(f"Failed to list {items_key}: {response.text}")
+        data = chronicle_request(
+            client=client,
+            method="GET",
+            api_version=api_version,
+            endpoint_path=path,
+            params=params,
+        )
 
-        data = response.json()
-        results.extend(data.get(items_key, []))
+        if single_page_mode:
+            return data
 
-        # If caller provided page_size, return only this page
-        if page_size is not None:
-            break
+        # Return a list if the API returns a list
+        if isinstance(data, list):
+            return data
 
-        # Otherwise, auto-paginate
+        if not isinstance(data, dict):
+            raise APIError(
+                f"Unexpected response type for {path}: {type(data).__name__}"
+            )
+
+        if first_response_dict is None:
+            first_response_dict = data
+
+        page_results = data.get(items_key, [])
+        if page_results:
+            if not isinstance(page_results, list):
+                raise APIError(
+                    f"Expected '{items_key}' to be a list for {path}, got {type(page_results).__name__}"
+                )
+            aggregated_results.extend(page_results)
+
         next_token = data.get("nextPageToken")
         if not next_token:
             break
 
-    # Return a list if the API returns a list, otherwise return a dict
-    if isinstance(data, list):
-        return results
-    response = {items_key: results}
+    # Return a dict with the item key and an empty list if no results were returned
+    if first_response_dict is None:
+        return {items_key: aggregated_results}
 
-    if data.get("nextPageToken"):
-        response["nextPageToken"] = data.get("nextPageToken")
-
-    return response
+    output = dict(first_response_dict)
+    # Build a dict object with the aggregated results using the key
+    output[items_key] = aggregated_results
+    # Remove nextPageToken from the response
+    output.pop("nextPageToken", None)
+    return output
 
 
 def chronicle_request(
