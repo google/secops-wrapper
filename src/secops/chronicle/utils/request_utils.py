@@ -172,7 +172,7 @@ def chronicle_request(
     api_version: str = APIVersion.V1,
     params: dict[str, Any] | None = None,
     json: dict[str, Any] | None = None,
-    expected_status: int = 200,
+    expected_status: int | set[int] | tuple[int, ...] = 200,
     error_message: str | None = None,
 ) -> dict[str, Any] | list[Any]:
     """Perform an HTTP request and return JSON, raising APIError on failure.
@@ -187,7 +187,9 @@ def chronicle_request(
             - v1beta (secops.chronicle.models.APIVersion.V1BETA)
         params: Optional query parameters
         json: Optional JSON body
-        expected_status: Expected HTTP status code (default: 200)
+        expected_status: Expected HTTP status code(s). May be a single int
+            (e.g. 200) or an iterable of acceptable status codes (e.g. {200, 204}).
+            If the response status is not acceptable, an APIError is raised.
         error_message: Optional base error message to include on failure
 
     Returns:
@@ -195,7 +197,7 @@ def chronicle_request(
 
     Raises:
         APIError: If the request fails, returns a non-JSON body, or status
-                  code does not match expected_status.
+                  code is not in expected_status.
     """
     # Build URL based on endpoint type:
     # - RPC-style methods e.g: ":validateQuery" -> .../{instance_id}:validateQuery
@@ -228,7 +230,13 @@ def chronicle_request(
     except ValueError:
         data = None
 
-    if response.status_code != expected_status:
+    # Determine whether the status code is acceptable
+    if isinstance(expected_status, (set, tuple, list)):
+        status_ok = response.status_code in expected_status
+    else:
+        status_ok = response.status_code == expected_status
+
+    if not status_ok:
         base_msg = error_message or "API request failed"
         if data is not None:
             raise APIError(

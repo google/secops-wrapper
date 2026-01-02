@@ -112,7 +112,9 @@ def test_chronicle_request_status_mismatch_with_json_includes_json(
 
     with pytest.raises(
         APIError,
-        match=r"API request failed: status=400, response=\{'error': 'bad'\}",
+        match=r"API request failed: method=GET, "
+              r"url=https://example.test/chronicle/instances/instance-1/curatedRules"
+              r", status=400, response={'error': 'bad'}",
     ):
         chronicle_request(
             client=client,
@@ -130,7 +132,9 @@ def test_chronicle_request_status_mismatch_non_json_includes_text(
     client.session.request.return_value = response
 
     with pytest.raises(
-        APIError, match=r"API request failed: status=500, response_text=boom"
+        APIError, match=r"API request failed: method=GET, "
+                        r"url=https://example.test/chronicle/instances/instance-1/curatedRules,"
+                        r" status=500, response_text=boom"
     ):
         chronicle_request(
             client=client,
@@ -148,7 +152,9 @@ def test_chronicle_request_custom_error_message_used(client: Mock) -> None:
     client.session.request.return_value = response
 
     with pytest.raises(
-        APIError, match=r"Failed to get curated rule: status=404"
+        APIError, match=r"Failed to get curated rule: method=GET, "
+                        r"url=https://example.test/chronicle/instances/instance-1/curatedRules/ur_1, "
+                        r"status=404, response={'message': 'not found'"
     ):
         chronicle_request(
             client=client,
@@ -507,3 +513,64 @@ def test_chronicle_request_builds_url_for_legacy_segment(client: Mock) -> None:
 
     _, kwargs = client.session.request.call_args
     assert kwargs["url"] == "https://example.test/chronicle/instances/instance-1/legacy:legacySearchCuratedDetections"
+
+
+def test_chronicle_request_accepts_multiple_expected_statuses_set(client: Mock) -> None:
+    resp = _mock_response(status_code=204, json_value={"ok": True})
+    client.session.request.return_value = resp
+
+    out = chronicle_request(
+        client=client,
+        method="DELETE",
+        endpoint_path="curatedRules/ur_1",
+        api_version=APIVersion.V1ALPHA,
+        expected_status={200, 204},
+    )
+
+    assert out == {"ok": True}
+
+
+def test_chronicle_request_accepts_multiple_expected_statuses_tuple(client: Mock) -> None:
+    resp = _mock_response(status_code=201, json_value={"created": True})
+    client.session.request.return_value = resp
+
+    out = chronicle_request(
+        client=client,
+        method="POST",
+        endpoint_path="curatedRules",
+        api_version=APIVersion.V1ALPHA,
+        expected_status=(200, 201),
+        json={"x": 1},
+    )
+
+    assert out == {"created": True}
+
+
+def test_chronicle_request_rejects_status_not_in_expected_set(client: Mock) -> None:
+    resp = _mock_response(status_code=202, json_value={"message": "accepted"})
+    client.session.request.return_value = resp
+
+    with pytest.raises(APIError, match=r"API request failed: method=POST, url=.*status=202"):
+        chronicle_request(
+            client=client,
+            method="POST",
+            endpoint_path="curatedRuleSetDeployments:batchUpdate",
+            api_version=APIVersion.V1ALPHA,
+            expected_status={200, 201},
+            json={"requests": []},
+        )
+
+
+def test_chronicle_request_single_expected_status_int_still_enforced(client: Mock) -> None:
+    resp = _mock_response(status_code=201, json_value={"created": True})
+    client.session.request.return_value = resp
+
+    with pytest.raises(APIError, match=r"API request failed: method=POST, url=.*status=201"):
+        chronicle_request(
+            client=client,
+            method="POST",
+            endpoint_path="curatedRules",
+            api_version=APIVersion.V1ALPHA,
+            expected_status=200,
+            json={"x": 1},
+        )
