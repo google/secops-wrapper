@@ -24,6 +24,16 @@ from secops.chronicle.models import APIVersion
 
 
 DEFAULT_PAGE_SIZE = 1000
+MAX_BODY_CHARS = 2000
+
+
+def _safe_body_preview(text: str | None, limit: int = MAX_BODY_CHARS) -> str:
+    """Generate a safe, truncated preview of body contents for error messages"""
+    if not text:
+        return ""
+    if len(text) <= limit:
+        return text
+    return f"{text[:limit]}… (truncated, {len(text)} chars)"
 
 
 def chronicle_paginated_request(
@@ -47,7 +57,7 @@ def chronicle_paginated_request(
       - Else: auto-paginate responses until all pages are consumed:
         - If `as_list` is True, return a list of items directly, without the
                  pagination metadata.
-        - If `as_list` is False, return a dict shaped like the first response with aggregated items and no tokens or metadata.
+        - If `as_list` is False, return a dict shaped like the first response with aggregated items and no tokens.
 
     Notes:
       - as_list=True intentionally discards pagination metadata (e.g. nextPageToken).
@@ -244,15 +254,20 @@ def chronicle_request(
                 f"status={response.status_code}, response={data}"
             ) from None
 
+        preview = _safe_body_preview(getattr(response, "text", ""), limit=MAX_BODY_CHARS)
+
         raise APIError(
-            f"{base_msg}: method={method}, url={url}, "
-            f"status={response.status_code}, response_text={response.text}"
+            f"{base_msg}: method={method}, url={url}, status={response.status_code}, "
+            f"response_text={preview}"
         ) from None
 
     if data is None:
+        content_type = response.headers.get("Content-Type", "unknown")
+        preview = _safe_body_preview(getattr(response, "text", ""), limit=MAX_BODY_CHARS)
+
         raise APIError(
-            f"Expected JSON response from {url}"
-            f" but got non-JSON body: {response.text}"
+            f"Expected JSON response: method={method}, url={url}, status={response.status_code}, "
+            f"content_type={content_type}, body_preview={preview}"
         )
 
     return data
