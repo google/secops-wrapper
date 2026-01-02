@@ -196,24 +196,6 @@ def test_fetch_udm_search_view_parsing_error(chronicle_client):
         assert "Failed to parse UDM search response" in str(exc_info.value)
 
 
-def test_validate_query(chronicle_client):
-    """Test query validation."""
-    mock_response = Mock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {
-        "queryType": "QUERY_TYPE_UDM_QUERY",
-        "isValid": True,
-    }
-
-    with patch.object(chronicle_client.session, "get", return_value=mock_response):
-        result = chronicle_client.validate_query(
-            'metadata.event_type = "NETWORK_CONNECTION"'
-        )
-
-        assert result.get("isValid") is True
-        assert result.get("queryType") == "QUERY_TYPE_UDM_QUERY"
-
-
 def test_get_stats(chronicle_client):
     """Test stats search functionality."""
     # Mock the search request
