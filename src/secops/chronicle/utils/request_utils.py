@@ -197,11 +197,16 @@ def chronicle_request(
         APIError: If the request fails, returns a non-JSON body, or status
                   code does not match expected_status.
     """
-    # If the endpoint path starts with a colon, the leading slash isn't needed
+    # Build URL based on endpoint type:
+    # - RPC-style methods e.g: ":validateQuery" -> .../{instance_id}:validateQuery
+    # - Legacy paths e.g: "legacy:..." -> .../{instance_id}/legacy:...
+    # - normal paths e.g: "curatedRules/..." -> .../{instance_id}/curatedRules/...
+    base = f"{client.base_url(api_version)}/{client.instance_id}"
+
     if endpoint_path.startswith(":"):
-        url = f"{client.base_url(api_version)}/{client.instance_id}{endpoint_path}"
+        url = f"{base}{endpoint_path}"
     else:
-        url = f"{client.base_url(api_version)}/{client.instance_id}/{endpoint_path}"
+        url = f"{base}/{endpoint_path.lstrip('/')}"
 
     try:
         response = client.session.request(
