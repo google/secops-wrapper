@@ -36,6 +36,7 @@ def _safe_body_preview(text: str | None, limit: int = MAX_BODY_CHARS) -> str:
     return f"{text[:limit]}… (truncated, {len(text)} chars)"
 
 
+# pylint: disable=line-too-long
 def chronicle_paginated_request(
     client: "ChronicleClient",
     api_version: str,
@@ -61,7 +62,7 @@ def chronicle_paginated_request(
 
     Notes:
       - as_list=True intentionally discards pagination metadata (e.g. nextPageToken).
-        If callers need page tokens, they should use list_only=False in single-page mode.
+        If callers need page tokens, they should use as_list=False in single-page mode.
 
     Args:
         client: ChronicleClient instance
@@ -174,6 +175,7 @@ def chronicle_paginated_request(
     return output
 
 
+# pylint: disable=line-too-long
 def chronicle_request(
     client: "ChronicleClient",
     method: str,
@@ -182,7 +184,7 @@ def chronicle_request(
     api_version: str = APIVersion.V1,
     params: dict[str, Any] | None = None,
     json: dict[str, Any] | None = None,
-    expected_status: int | set[int] | tuple[int, ...] = 200,
+    expected_status: int | set[int] | tuple[int, ...] | list[int] = 200,
     error_message: str | None = None,
 ) -> dict[str, Any] | list[Any]:
     """Perform an HTTP request and return JSON, raising APIError on failure.
@@ -254,7 +256,9 @@ def chronicle_request(
                 f"status={response.status_code}, response={data}"
             ) from None
 
-        preview = _safe_body_preview(getattr(response, "text", ""), limit=MAX_BODY_CHARS)
+        preview = _safe_body_preview(
+            getattr(response, "text", ""), limit=MAX_BODY_CHARS
+        )
 
         raise APIError(
             f"{base_msg}: method={method}, url={url}, status={response.status_code}, "
@@ -263,7 +267,9 @@ def chronicle_request(
 
     if data is None:
         content_type = response.headers.get("Content-Type", "unknown")
-        preview = _safe_body_preview(getattr(response, "text", ""), limit=MAX_BODY_CHARS)
+        preview = _safe_body_preview(
+            getattr(response, "text", ""), limit=MAX_BODY_CHARS
+        )
 
         raise APIError(
             f"Expected JSON response: method={method}, url={url}, status={response.status_code}, "
