@@ -19,6 +19,8 @@ from typing import Any
 from unittest.mock import Mock
 
 import pytest
+import requests
+from google.auth.exceptions import GoogleAuthError
 
 from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.request_utils import (
@@ -574,3 +576,80 @@ def test_chronicle_request_single_expected_status_int_still_enforced(client: Moc
             expected_status=200,
             json={"x": 1},
         )
+
+
+def test_chronicle_request_wraps_requests_exception(client: Mock) -> None:
+    # Simulate network-level failure (timeout/connection error etc.)
+    client.session.request.side_effect = requests.RequestException("no route to host")
+
+    with pytest.raises(APIError) as exc_info:
+        chronicle_request(
+            client=client,
+            method="GET",
+            endpoint_path="curatedRules",
+            api_version=APIVersion.V1ALPHA,
+        )
+
+    msg = str(exc_info.value)
+    assert "API request failed" in msg
+    assert "method=GET" in msg
+    assert "url=https://example.test/chronicle/instances/instance-1/curatedRules" in msg
+    assert "request_error=RequestException" in msg
+
+
+def test_chronicle_request_wraps_google_auth_error(client: Mock) -> None:
+    # Simulate auth failure raised during request
+    client.session.request.side_effect = GoogleAuthError("invalid_grant")
+
+    with pytest.raises(APIError) as exc_info:
+        chronicle_request(
+            client=client,
+            method="GET",
+            endpoint_path="curatedRules",
+            api_version=APIVersion.V1ALPHA,
+        )
+
+    msg = str(exc_info.value)
+    assert "Google authentication failed" in msg
+    assert "authentication_error=" in msg
+
+
+def test_chronicle_request_non_json_success_includes_content_type(client: Mock) -> None:
+    # Successful status but non-JSON body should include content_type and body_preview
+    response = _mock_response(status_code=200, json_raises=True, text="not json")
+    response.headers = {"Content-Type": "text/html"}
+    client.session.request.return_value = response
+
+    with pytest.raises(APIError) as exc_info:
+        chronicle_request(
+            client=client,
+            method="GET",
+            endpoint_path="curatedRules",
+            api_version=APIVersion.V1ALPHA,
+        )
+
+    msg = str(exc_info.value)
+    assert "Expected JSON response" in msg
+    assert "content_type=text/html" in msg
+    assert "body_preview=not json" in msg
+
+
+def test_chronicle_request_non_json_error_body_is_truncated(client: Mock) -> None:
+    # Non-expected status + non-JSON body uses _safe_body_preview truncation
+    long_text = "x" * 5000
+    response = _mock_response(status_code=500, json_raises=True, text=long_text)
+    response.headers = {"Content-Type": "text/plain"}
+    client.session.request.return_value = response
+
+    with pytest.raises(APIError) as exc_info:
+        chronicle_request(
+            client=client,
+            method="GET",
+            endpoint_path="curatedRules",
+            api_version=APIVersion.V1ALPHA,
+        )
+
+    msg = str(exc_info.value)
+    assert "status=500" in msg
+    # Should not include the full 5000 chars, should include truncation marker
+    assert "truncated" in msg
