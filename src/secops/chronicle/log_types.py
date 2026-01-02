@@ -267,7 +267,7 @@ def classify_logs(
         Use scores for relative ranking rather than absolute confidence.
 
     Raises:
-        SecOpsError: If client is None or log_data is empty.
+        SecOpsError: If log_data is empty or not a string.
         APIError: If the API request fails.
     """
 

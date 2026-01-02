@@ -3096,8 +3096,8 @@ class ChronicleClient:
             Use scores for relative ranking rather than absolute confidence.
 
         Raises:
-            SecOpsError: If log_data is empty
-            APIError: If the API request fails
+            SecOpsError: If log_data is empty or not a string.
+            APIError: If the API request fails.
         """
         return _classify_logs(client=self, log_data=log_data)
 
