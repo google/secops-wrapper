@@ -16,7 +16,8 @@
 
 from typing import Any
 
-from secops.exceptions import APIError
+from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import chronicle_request
 
 
 def validate_query(client, query: str) -> dict[str, Any]:
@@ -36,10 +37,8 @@ def validate_query(client, query: str) -> dict[str, Any]:
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}:validateQuery"
-
     # Replace special characters with Unicode escapes
-    encoded_query = query.replace("!", "\u0021")
+    encoded_query = query.replace("!", "\\u0021")
 
     params = {
         "rawQuery": encoded_query,
@@ -47,31 +46,10 @@ def validate_query(client, query: str) -> dict[str, Any]:
         "allowUnreplacedPlaceholders": "false",
     }
 
-    response = client.session.get(url, params=params)
-
-    # Handle successful validation
-    if response.status_code == 200:
-        try:
-            return response.json()
-        except ValueError:
-            return {"isValid": True, "queryType": "QUERY_TYPE_UNKNOWN"}
-
-    # If validation failed, return structured error
-    # For any status code other than 200, return an error structure
-    if response.status_code == 400:
-        try:
-            # Try to parse the error message
-            error_data = response.json()
-            validation_message = error_data.get("error", {}).get(
-                "message", "Invalid query syntax"
-            )
-            return {
-                "isValid": False,
-                "queryType": "QUERY_TYPE_UNKNOWN",
-                "validationMessage": validation_message,
-            }
-        except ValueError:
-            pass
-
-    # For any other status codes, raise an APIError
-    raise APIError(f"Query validation failed: {response.text}")
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=":validateQuery",
+        api_version=APIVersion.V1ALPHA,
+        params=params,
+    )
