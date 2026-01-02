@@ -8,3 +8,4 @@ protobuf
 pylint
 twine
 python-dotenv
+requests

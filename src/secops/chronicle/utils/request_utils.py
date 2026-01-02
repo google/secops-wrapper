@@ -16,6 +16,9 @@
 
 from typing import Any
 
+import requests
+from google.auth.exceptions import GoogleAuthError
+
 from secops.exceptions import APIError
 from secops.chronicle.models import APIVersion
 
@@ -171,7 +174,7 @@ def chronicle_request(
     json: dict[str, Any] | None = None,
     expected_status: int = 200,
     error_message: str | None = None,
-) -> dict[str, Any]:
+) -> dict[str, Any] | list[Any]:
     """Perform an HTTP request and return JSON, raising APIError on failure.
 
     Args:
@@ -194,10 +197,25 @@ def chronicle_request(
         APIError: If the request fails, returns a non-JSON body, or status
                   code does not match expected_status.
     """
-    url = f"{client.base_url(api_version)}/{client.instance_id}/{endpoint_path}"
-    response = client.session.request(
-        method=method, url=url, params=params, json=json
-    )
+    # If the endpoint path starts with a colon, the leading slash isn't needed
+    if endpoint_path.startswith(":"):
+        url = f"{client.base_url(api_version)}/{client.instance_id}{endpoint_path}"
+    else:
+        url = f"{client.base_url(api_version)}/{client.instance_id}/{endpoint_path}"
+
+    try:
+        response = client.session.request(
+            method=method, url=url, params=params, json=json
+        )
+    except GoogleAuthError as exc:
+        base_msg = error_message or "Google authentication failed"
+        raise APIError(f"{base_msg}: authentication_error={exc}") from exc
+    except requests.RequestException as exc:
+        base_msg = error_message or "API request failed"
+        raise APIError(
+            f"{base_msg}: method={method}, url={url}, "
+            f"request_error={exc.__class__.__name__}, detail={exc}"
+        ) from exc
 
     # Try to parse JSON even on error, so we can get more details
     try:
