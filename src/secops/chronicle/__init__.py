@@ -61,6 +61,12 @@ from secops.chronicle.gemini import (
     SuggestedAction,
 )
 from secops.chronicle.ioc import list_iocs
+from secops.chronicle.investigations import (
+    fetch_associated_investigations,
+    get_investigation,
+    list_investigations,
+    trigger_investigation,
+)
 from secops.chronicle.log_ingest import (
     create_forwarder,
     delete_forwarder,
@@ -98,6 +104,7 @@ from secops.chronicle.models import (
     DataExport,
     DataExportStage,
     DataExportStatus,
+    DetectionType,
     Entity,
     EntityMetadata,
     EntityMetrics,
@@ -205,6 +212,11 @@ __all__ = [
     "summarize_entity",
     # IoC
     "list_iocs",
+    # Investigations
+    "fetch_associated_investigations",
+    "get_investigation",
+    "list_investigations",
+    "trigger_investigation",
     # Case
     "get_cases",
     # Alert
@@ -320,6 +332,7 @@ __all__ = [
     "DashboardView",
     "InputInterval",
     "ListBasis",
+    "DetectionType",
     "TileType",
     # Data Table and Reference List
     "DataTableColumnType",

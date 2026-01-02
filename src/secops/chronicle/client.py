@@ -97,6 +97,18 @@ from secops.chronicle.gemini import GeminiResponse
 from secops.chronicle.gemini import opt_in_to_gemini as _opt_in_to_gemini
 from secops.chronicle.gemini import query_gemini as _query_gemini
 from secops.chronicle.ioc import list_iocs as _list_iocs
+from secops.chronicle.investigations import (
+    fetch_associated_investigations as _fetch_associated_investigations,
+)
+from secops.chronicle.investigations import (
+    get_investigation as _get_investigation,
+)
+from secops.chronicle.investigations import (
+    list_investigations as _list_investigations,
+)
+from secops.chronicle.investigations import (
+    trigger_investigation as _trigger_investigation,
+)
 from secops.chronicle.log_ingest import create_forwarder as _create_forwarder
 from secops.chronicle.log_ingest import delete_forwarder as _delete_forwarder
 from secops.chronicle.log_ingest import get_forwarder as _get_forwarder
@@ -1661,6 +1673,105 @@ class ChronicleClient:
             APIError: If the API request fails.
         """
         return _test_pipeline(self, pipeline, input_logs)
+
+    # Investigation methods
+
+    def fetch_associated_investigations(
+        self,
+        detection_type: str,
+        alert_ids: list[str] | None = None,
+        case_ids: list[str] | None = None,
+        association_limit_per_detection: int | None = None,
+        order_by: str | None = None,
+    ) -> dict[str, Any]:
+        """Fetches investigations associated with alerts or cases.
+
+        Args:
+            detection_type: Type of identifiers. Can be a DetectionType
+                enum value or string. Valid values:
+                - DetectionType.ALERT
+                - DetectionType.CASE
+                - DetectionType.UNSPECIFIED
+            alert_ids: Alert IDs to fetch investigations for (max 100).
+            case_ids: Case IDs to fetch investigations for (max 100).
+            association_limit_per_detection: Max associations per
+                detection (default 1, max 5).
+            order_by: Ordering of associations. Supported fields:
+                "createTime", "createTime desc", "updateTime",
+                "updateTime desc".
+
+        Returns:
+            Dictionary containing associations list and experimental flags.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _fetch_associated_investigations(
+            self,
+            detection_type,
+            alert_ids,
+            case_ids,
+            association_limit_per_detection,
+            order_by,
+        )
+
+    def get_investigation(self, investigation_id: str) -> dict[str, Any]:
+        """Gets an investigation by ID.
+
+        Args:
+            investigation_id: ID of the investigation to retrieve.
+
+        Returns:
+            Dictionary containing investigation information.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_investigation(self, investigation_id)
+
+    def list_investigations(
+        self,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_expr: str | None = None,
+        order_by: str | None = None,
+    ) -> dict[str, Any]:
+        """Lists investigations.
+
+        Args:
+            page_size: Maximum number of investigations to return
+                (default 100, max 1000).
+            page_token: Page token for pagination.
+            filter_expr: Filter expression. Supported fields:
+                "alertId", "caseId". Example: 'alertId="alert123"'
+            order_by: Ordering of investigations. Default is create time
+                descending. Supported fields: "startTime", "endTime",
+                "displayName".
+
+        Returns:
+            Dictionary containing investigations, next page token, and
+            total size.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _list_investigations(
+            self, page_size, page_token, filter_expr, order_by
+        )
+
+    def trigger_investigation(self, alert_id: str) -> dict[str, Any]:
+        """Triggers an investigation for a specific alert.
+
+        Args:
+            alert_id: The alert ID for which to trigger investigation.
+
+        Returns:
+            Dictionary containing the created investigation.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _trigger_investigation(self, alert_id)
 
     def list_rules(
         self,
