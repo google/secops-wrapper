@@ -20,7 +20,10 @@ log types, validate log types, and suggest appropriate log types based on
 product or vendor.
 """
 
+import base64
 from typing import TYPE_CHECKING, Any
+
+from secops.exceptions import APIError, SecOpsError
 
 if TYPE_CHECKING:
     from secops.chronicle.client import ChronicleClient
@@ -238,3 +241,51 @@ def search_log_types(
                 results.append(log_type_data)
 
     return results
+
+
+def classify_logs(
+    client: "ChronicleClient",
+    log_data: str,
+) -> list[dict[str, Any]]:
+    """Classify a raw log to predict its log type.
+
+    Args:
+        client: ChronicleClient instance.
+        log_data: Raw log string.
+
+    Returns:
+        List of possible log types sorted by confidence score.
+        Example:
+            [
+                {"logType": "OKTA", "score": 0.95},
+                {"logType": "ONELOGIN", "score": 0.03}
+            ]
+
+    Note:
+        Confidence scores are provided by the API as guidance only and
+        may not always accurately reflect classification certainty.
+        Use scores for relative ranking rather than absolute confidence.
+
+    Raises:
+        SecOpsError: If log_data is empty or not a string.
+        APIError: If the API request fails.
+    """
+
+    if not log_data:
+        raise SecOpsError("log data cannot be empty")
+
+    if not isinstance(log_data, str):
+        raise SecOpsError("log data must be a string")
+
+    url = f"{client.base_url}/{client.instance_id}/logs:classify"
+
+    encoded_log = base64.b64encode(log_data.encode("utf-8")).decode("utf-8")
+    payload = {"logData": [encoded_log]}
+
+    response = client.session.post(url, json=payload)
+
+    if response.status_code != 200:
+        raise APIError(f"Failed to classify log: {response.text}")
+
+    data = response.json()
+    return data.get("predictions", [])
