@@ -232,12 +232,13 @@ def chronicle_request(
         base_msg = error_message or "API request failed"
         if data is not None:
             raise APIError(
-                f"{base_msg}: status={response.status_code}, response={data}"
+                f"{base_msg}: method={method}, url={url}, "
+                f"status={response.status_code}, response={data}"
             ) from None
 
         raise APIError(
-            f"{base_msg}: status={response.status_code},"
-            f" response_text={response.text}"
+            f"{base_msg}: method={method}, url={url}, "
+            f"status={response.status_code}, response_text={response.text}"
         ) from None
 
     if data is None:

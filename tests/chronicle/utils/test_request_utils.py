@@ -477,3 +477,33 @@ def test_paginated_request_auto_mode_list_only_list_response_returns_list(client
 
     assert out == [{"id": 1}, {"id": 2}]
     assert client.session.request.call_count == 1
+
+
+def test_chronicle_request_builds_url_for_rpc_colon_prefix(client: Mock) -> None:
+    resp = _mock_response(status_code=200, json_value={"ok": True})
+    client.session.request.return_value = resp
+
+    chronicle_request(
+        client=client,
+        method="POST",
+        endpoint_path=":validateQuery",
+        api_version=APIVersion.V1ALPHA,
+    )
+
+    _, kwargs = client.session.request.call_args
+    assert kwargs["url"] == "https://example.test/chronicle/instances/instance-1:validateQuery"
+
+
+def test_chronicle_request_builds_url_for_legacy_segment(client: Mock) -> None:
+    resp = _mock_response(status_code=200, json_value={"ok": True})
+    client.session.request.return_value = resp
+
+    chronicle_request(
+        client=client,
+        method="GET",
+        endpoint_path="legacy:legacySearchCuratedDetections",
+        api_version=APIVersion.V1ALPHA,
+    )
+
+    _, kwargs = client.session.request.call_args
+    assert kwargs["url"] == "https://example.test/chronicle/instances/instance-1/legacy:legacySearchCuratedDetections"
