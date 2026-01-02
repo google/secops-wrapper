@@ -2350,7 +2350,8 @@ class ChronicleClient:
         Args:
             page_size: Number of results to return per page
             page_token: Token for the page to retrieve
-            as_list: Whether to return the list of curated rule sets as a list instead of a dict
+            as_list: Whether to return the list of curated rule sets
+                as a list instead of a dict
 
         Returns:
             Dictionary containing the list of curated rule sets
@@ -2371,7 +2372,8 @@ class ChronicleClient:
         Args:
             page_size: Number of results to return per page
             page_token: Token for the page to retrieve
-            as_list: Whether to return the list of curated rule set categories as a list instead of a dict
+            as_list: Whether to return the list of curated rule
+                set categories as a list instead of a dict
 
         Returns:
             Dictionary containing the list of curated rule set categories
@@ -2398,7 +2400,8 @@ class ChronicleClient:
             page_token: Token for the page to retrieve
             only_enabled: Only return enabled rule set deployments
             only_alerting: Only return alerting rule set deployments
-            as_list: Whether to return the list of curated rule set deployments as a list instead of a dict
+            as_list: Whether to return the list of curated rule
+                set deployments as a list instead of a dict
 
         Returns:
             Dictionary containing the list of curated rule set deployments
@@ -2464,7 +2467,8 @@ class ChronicleClient:
         Args:
             page_size: Number of results to return per page
             page_token: Token for the page to retrieve
-            as_list: Whether to return the list of curated rules as a list instead of a dict
+            as_list: Whether to return the list of curated rules as
+                a list instead of a dict
 
         Returns:
             Dictionary containing the list of curated rules
