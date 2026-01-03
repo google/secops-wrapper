@@ -17,7 +17,11 @@
 from datetime import datetime
 from typing import Any
 
-from secops.exceptions import APIError, SecOpsError
+from secops.exceptions import APIError
+from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import (
+    chronicle_request
+)
 
 
 def fetch_udm_search_csv(
@@ -27,7 +31,7 @@ def fetch_udm_search_csv(
     end_time: datetime,
     fields: list[str],
     case_insensitive: bool = True,
-) -> str:
+) -> dict[str, Any]:
     """Fetch UDM search results in CSV format.
 
     Args:
@@ -44,10 +48,6 @@ def fetch_udm_search_csv(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/legacy:legacyFetchUdmSearchCsv"
-    )
-
     search_query = {
         "baselineQuery": query,
         "baselineTimeRange": {
@@ -58,26 +58,14 @@ def fetch_udm_search_csv(
         "caseInsensitive": case_insensitive,
     }
 
-    response = client.session.post(
-        url, json=search_query, headers={"Accept": "*/*"}
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="legacy:legacyFetchUdmSearchCsv",
+        api_version=APIVersion.V1ALPHA,
+        json=search_query,
+        headers={"Accept": "*/*"},
     )
-
-    if response.status_code != 200:
-        raise APIError(f"Chronicle API request failed: {response.text}")
-
-    # For testing purposes, try to parse the response as JSON to verify error
-    # handling
-    try:
-        # This is to trigger the ValueError in the test
-        response.json()
-    except ValueError as e:
-        # Only throw an error if the content appears to be JSON but is invalid
-        if response.text.strip().startswith(
-            "{"
-        ) or response.text.strip().startswith("["):
-            raise APIError(f"Failed to parse CSV response: {str(e)}") from e
-
-    return response.text
 
 
 def find_udm_field_values(
@@ -96,24 +84,17 @@ def find_udm_field_values(
     Raises:
         APIError: If the API request fails
     """
-    # Construct the URL for the findUdmFieldValues endpoint
-    url = f"{client.base_url}/{client.instance_id}:findUdmFieldValues"
-
-    # Prepare query parameters
     params = {"query": query}
     if page_size is not None:
         params["pageSize"] = page_size
 
-    # Send the request
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        raise APIError(f"Chronicle API request failed: {response.text}")
-
-    try:
-        return response.json()
-    except ValueError as e:
-        raise SecOpsError(f"Failed to parse response as JSON: {str(e)}") from e
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=":findUdmFieldValues",
+        api_version=APIVersion.V1ALPHA,
+        params=params,
+    )
 
 
 def fetch_udm_search_view(
@@ -188,21 +169,24 @@ def fetch_udm_search_view(
     if response.status_code != 200:
         raise APIError(f"Chronicle API request failed: {response.text}")
 
-    try:
-        json_resp = response.json()
-    except ValueError as e:
-        raise APIError(f"Failed to parse UDM search response: {str(e)}") from e
+    json_resp = chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="legacy:legacyFetchUdmSearchView",
+        api_version=APIVersion.V1ALPHA,
+        json=search_query,
+        headers={"Accept": "*/*"},
+    )
 
     final_resp: list[dict[str, Any]] = []
-    complete: bool = False
+    complete = False
+
     for resp in json_resp:
-        if not resp.get("complete", "") and not resp.get("error", ""):
+        if not resp.get("complete") and not resp.get("error"):
             continue
 
-        if resp.get("error", ""):
-            raise APIError(
-                f'Chronicle API request failed: {resp.get("error", "")}'
-            )
+        if resp.get("error"):
+            raise APIError(f'Chronicle API request failed: {resp.get("error", "")}')
 
         final_resp.append(resp)
         complete = True
