@@ -1244,6 +1244,33 @@ secops reference-list update \
   --entries-file "/path/to/updated_domains.txt"
 ```
 
+### Featured Content Rules
+
+Featured content rules are pre-built detection rules available in the Chronicle Content Hub. These curated rules can be listed and filtered to help you discover and deploy detections.
+
+#### List all featured content rules:
+
+```bash
+secops featured-content-rules list
+```
+
+#### List with pagination:
+
+```bash
+# Get first page with 10 rules
+secops featured-content-rules list --page-size 10
+
+# Get next page using token from previous response
+secops featured-content-rules list --page-size 10 --page-token "token123"
+```
+
+#### Get filtered list:
+
+```bash
+secops featured-content-rules list \
+  --filter 'category_name:"Threat Detection" AND rule_precision:"Precise"'
+```
+
 ## Examples
 
 ### Search for Recent Network Connections

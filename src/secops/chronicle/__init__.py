@@ -162,6 +162,9 @@ from secops.chronicle.rule_set import (
     search_curated_detections,
     update_curated_rule_set_deployment,
 )
+from secops.chronicle.featured_content_rules import (
+    list_featured_content_rules,
+)
 from secops.chronicle.rule_validation import ValidationResult
 from secops.chronicle.search import search_udm
 from secops.chronicle.stats import get_stats
@@ -274,6 +277,8 @@ __all__ = [
     "get_curated_rule_by_name",
     "update_curated_rule_set_deployment",
     "search_curated_detections",
+    # Featured content rules operations
+    "list_featured_content_rules",
     # Native Dashboard
     "add_chart",
     "create_dashboard",
