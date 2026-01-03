@@ -183,6 +183,7 @@ def chronicle_request(
     *,
     api_version: str = APIVersion.V1,
     params: dict[str, Any] | None = None,
+    headers: dict[str, Any] | None = None,
     json: dict[str, Any] | None = None,
     expected_status: int | set[int] | tuple[int, ...] | list[int] = 200,
     error_message: str | None = None,
@@ -198,6 +199,7 @@ def chronicle_request(
             - v1alpha (secops.chronicle.models.APIVersion.V1ALPHA)
             - v1beta (secops.chronicle.models.APIVersion.V1BETA)
         params: Optional query parameters
+        headers: Optional headers
         json: Optional JSON body
         expected_status: Expected HTTP status code(s). May be a single int
             (e.g. 200) or an iterable of acceptable status codes (e.g. {200, 204}).
@@ -224,7 +226,11 @@ def chronicle_request(
 
     try:
         response = client.session.request(
-            method=method, url=url, params=params, json=json
+            method=method,
+            url=url,
+            params=params,
+            json=json,
+            headers=headers
         )
     except GoogleAuthError as exc:
         base_msg = error_message or "Google authentication failed"
