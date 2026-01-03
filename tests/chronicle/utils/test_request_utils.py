@@ -86,6 +86,7 @@ def test_chronicle_request_success_json(client: Mock) -> None:
         url="https://example.test/chronicle/instances/instance-1/curatedRules",
         params={"pageSize": 10},
         json=None,
+        headers=None,
     )
 
 
