@@ -19,9 +19,7 @@ from typing import Any
 
 from secops.exceptions import APIError
 from secops.chronicle.models import APIVersion
-from secops.chronicle.utils.request_utils import (
-    chronicle_request
-)
+from secops.chronicle.utils.request_utils import chronicle_request
 
 
 def fetch_udm_search_csv(
@@ -133,11 +131,6 @@ def fetch_udm_search_view(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}"
-        "/legacy:legacyFetchUdmSearchView"
-    )
-
     search_query = {
         "baselineQuery": query,
         "baselineTimeRange": {
@@ -162,13 +155,6 @@ def fetch_udm_search_view(
             "maxReturnedEvents": max_events,
         }
 
-    response = client.session.post(
-        url, json=search_query, headers={"Accept": "*/*"}
-    )
-
-    if response.status_code != 200:
-        raise APIError(f"Chronicle API request failed: {response.text}")
-
     json_resp = chronicle_request(
         client,
         method="POST",
@@ -186,7 +172,9 @@ def fetch_udm_search_view(
             continue
 
         if resp.get("error"):
-            raise APIError(f'Chronicle API request failed: {resp.get("error", "")}')
+            raise APIError(
+                f'Chronicle API request failed: {resp.get("error", "")}'
+            )
 
         final_resp.append(resp)
         complete = True

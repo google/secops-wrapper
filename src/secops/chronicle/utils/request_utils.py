@@ -226,11 +226,7 @@ def chronicle_request(
 
     try:
         response = client.session.request(
-            method=method,
-            url=url,
-            params=params,
-            json=json,
-            headers=headers
+            method=method, url=url, params=params, json=json, headers=headers
         )
     except GoogleAuthError as exc:
         base_msg = error_message or "Google authentication failed"
