@@ -96,7 +96,8 @@ def list_curated_rule_set_categories(
         page_size: Number of results to return per page.
         page_token: Token for the page to retrieve
         as_list: If True, return a list of curated rule set categories
-            instead of a dict with curatedRuleSetCategories list and nextPageToken.
+            instead of a dict with curatedRuleSetCategories list
+            and nextPageToken.
 
     Returns:
         If page_size is None: List of all categories.
@@ -244,7 +245,8 @@ def list_curated_rule_set_deployments(
         only_enabled: Only return enabled rule set deployments
         only_alerting: Only return alerting rule set deployments
         as_list: If True, return a list of curated rule set deployments
-            instead of a dict with curatedRuleSetDeployments list and nextPageToken.
+            instead of a dict with curatedRuleSetDeployments list
+            and nextPageToken.
 
     Returns:
         If page_size is None: List of all deployments.
