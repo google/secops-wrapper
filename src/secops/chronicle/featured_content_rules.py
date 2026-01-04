@@ -16,6 +16,7 @@
 
 from typing import Any
 
+from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.request_utils import (
     chronicle_paginated_request,
 )
@@ -26,6 +27,7 @@ def list_featured_content_rules(
     page_size: int | None = None,
     page_token: str | None = None,
     filter_expression: str | None = None,
+    as_list: bool = False,
 ) -> list[dict[str, Any]] | dict[str, Any]:
     """List featured content rules from Chronicle Content Hub.
 
@@ -43,6 +45,9 @@ def list_featured_content_rules(
             - rule_precision:"<rule_precision>" (Precise or Broad)
             - search_rule_name_or_description=~"<text>"
             Multiple filters can be combined with AND operator.
+        as_list: If True, return a list of curated rule set deployments
+            instead of a dict with curatedRuleSetDeployments list
+            and nextPageToken.
 
     Returns:
         If page_size is not provided: A dictionary containing a list of all
@@ -60,10 +65,11 @@ def list_featured_content_rules(
 
     return chronicle_paginated_request(
         client,
-        base_url=client.base_url,
+        api_version=APIVersion.V1ALPHA,
         path="contentHub/featuredContentRules",
         items_key="featuredContentRules",
         page_size=page_size,
         page_token=page_token,
         extra_params=extra_params if extra_params else None,
+        as_list=as_list,
     )

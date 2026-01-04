@@ -2568,6 +2568,7 @@ class ChronicleClient:
         page_size: int | None = None,
         page_token: str | None = None,
         filter_expression: str | None = None,
+        as_list: bool = False,
     ) -> list[dict[str, Any]] | dict[str, Any]:
         """List featured content rules from Chronicle Content Hub.
 
@@ -2584,6 +2585,8 @@ class ChronicleClient:
                 - rule_precision:"<rule_precision>" (Precise or Broad)
                 - search_rule_name_or_description=~"<text>"
                 Multiple filters can be combined with AND operator.
+            as_list: If True, return a list of watchlists instead of a dict
+                with watchlists list and nextPageToken.
 
         Returns:
             If page_size is not provided: A dictionary containing a list of all
@@ -2596,7 +2599,7 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _list_featured_content_rules(
-            self, page_size, page_token, filter_expression
+            self, page_size, page_token, filter_expression, as_list
         )
 
     def search_curated_detections(
