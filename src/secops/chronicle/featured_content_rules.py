@@ -45,7 +45,7 @@ def list_featured_content_rules(
             - rule_precision:"<rule_precision>" (Precise or Broad)
             - search_rule_name_or_description=~"<text>"
             Multiple filters can be combined with AND operator.
-        as_list: If True, return a list of curated rule set deployments
+        as_list: If True, return a list of featured content rules
             instead of a dict with curatedRuleSetDeployments list
             and nextPageToken.
 

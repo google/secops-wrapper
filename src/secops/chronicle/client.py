@@ -2585,8 +2585,9 @@ class ChronicleClient:
                 - rule_precision:"<rule_precision>" (Precise or Broad)
                 - search_rule_name_or_description=~"<text>"
                 Multiple filters can be combined with AND operator.
-            as_list: If True, return a list of watchlists instead of a dict
-                with watchlists list and nextPageToken.
+            as_list: If True, return a list of featured content rules
+                instead of a dict with curatedRuleSetDeployments list
+                and nextPageToken.
 
         Returns:
             If page_size is not provided: A dictionary containing a list of all
