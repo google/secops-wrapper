@@ -18,7 +18,8 @@ import base64
 import sys
 from typing import Any
 
-from secops.exceptions import APIError
+from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import chronicle_request
 
 # Use built-in StrEnum if Python 3.11+, otherwise create a compatible version
 if sys.version_info >= (3, 11):
@@ -67,9 +68,6 @@ def generate_udm_key_value_mappings(
     Raises:
         APIError: If the API request fails
     """
-    # Endpoint for UDM key-value mappings
-    url = f"{client.base_url}/{client.instance_id}:generateUdmKeyValueMappings"
-
     encoded_log = None
     try:
         decoded = base64.b64decode(log)
@@ -86,10 +84,10 @@ def generate_udm_key_value_mappings(
     if compress_array_fields is not None:
         payload["compress_array_fields"] = compress_array_fields
 
-    response = client.session.post(url, json=payload)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to generate key/value mapping: {response.text}")
-
-    # Return field mappings from parsed response
-    return response.json().get("fieldMappings")
+    return chronicle_request(
+        client,
+        "POST",
+        endpoint_path=":generateUdmKeyValueMappings",
+        api_version=APIVersion.V1ALPHA,
+        json=payload,
+    )
