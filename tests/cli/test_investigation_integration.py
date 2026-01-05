@@ -25,12 +25,7 @@ from tests.config import CHRONICLE_CONFIG
 
 @pytest.mark.integration
 def test_cli_investigation_list_and_get(cli_env, common_args):
-    """Test investigation list and get commands in a workflow.
-
-    This workflow:
-    1. Lists investigations
-    2. Gets a specific investigation from the list
-    """
+    """Test investigation list and get commands in a workflow."""
     # Step 1: List investigations
     list_cmd = ["secops"] + common_args + ["investigation", "list"]
 
@@ -63,7 +58,7 @@ def test_cli_investigation_list_and_get(cli_env, common_args):
             + [
                 "investigation",
                 "get",
-                "--investigation-id",
+                "--id",
                 investigation_id,
             ]
         )
@@ -84,7 +79,7 @@ def test_cli_investigation_list_and_get(cli_env, common_args):
 
 
 @pytest.mark.integration
-def test_cli_investigation_list_with_page_size(cli_env, common_args):
+def test_cli_investigation_list_with_pagination(cli_env, common_args):
     """Test the investigation list command with page size."""
     cmd = (
         [
@@ -113,13 +108,7 @@ def test_cli_investigation_list_with_page_size(cli_env, common_args):
 
 @pytest.mark.integration
 def test_cli_investigation_trigger_and_fetch_workflow(cli_env, common_args):
-    """Test triggering and fetching associated investigations workflow.
-
-    This workflow test:
-    1. Gets alerts to obtain an alert ID
-    2. Triggers an investigation for that alert
-    3. Fetches associated investigations for that alert
-    """
+    """Test triggering and fetching associated investigations workflow."""
     # Step 1: Get an alert ID
     end_time = datetime.now()
     start_time = end_time - timedelta(days=7)
@@ -150,11 +139,11 @@ def test_cli_investigation_trigger_and_fetch_workflow(cli_env, common_args):
         if not alerts_data or "alerts" not in alerts_data:
             pytest.skip("No alerts available to test trigger operation")
 
-        alerts = alerts_data.get("alerts", [])
-        if not alerts:
+        nested_alerts = alerts_data["alerts"].get("alerts", [])
+        if not nested_alerts:
             pytest.skip("No alerts available to test trigger operation")
 
-        alert_id = alerts[0]["name"].split("/")[-1]
+        alert_id = nested_alerts[0]["id"]
         print(f"Using alert ID: {alert_id}")
 
     except (json.JSONDecodeError, KeyError):
@@ -264,11 +253,11 @@ def test_cli_investigation_fetch_associated_with_multiple_alerts(
         if not alerts_data or "alerts" not in alerts_data:
             pytest.skip("No alerts available for this test")
 
-        alerts = alerts_data.get("alerts", [])
-        if not alerts or len(alerts) < 2:
+        nested_alerts = alerts_data["alerts"].get("alerts", [])
+        if not nested_alerts or len(nested_alerts) < 2:
             pytest.skip("Need at least 2 alerts for this test")
 
-        alert_ids = [alert["name"].split("/")[-1] for alert in alerts[:3]]
+        alert_ids = [alert["id"] for alert in nested_alerts[:3]]
         alert_ids_str = ",".join(alert_ids)
         print(f"Using alert IDs: {alert_ids_str}")
 
