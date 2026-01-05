@@ -18,6 +18,7 @@ import json
 import sys
 
 from secops.cli.utils.formatters import output_formatter
+from secops.cli.utils.input_utils import load_string_or_file
 
 
 def setup_log_command(subparsers):
@@ -107,6 +108,16 @@ def setup_log_command(subparsers):
     generate_udm_mapping_parser.set_defaults(
         func=handle_generate_udm_mapping_command
     )
+
+    classify_parser = log_subparsers.add_parser(
+        "classify", help="Classify raw log to predict log type"
+    )
+    classify_parser.add_argument(
+        "--log",
+        required=True,
+        help="Raw log content as a string or file path",
+    )
+    classify_parser.set_defaults(func=handle_log_classify_command)
 
 
 def handle_log_ingest_command(args, chronicle):
@@ -216,6 +227,24 @@ def handle_generate_udm_mapping_command(args, chronicle):
             use_array_bracket_notation=args.use_array_bracket_notation,
             compress_array_fields=args.compress_array_fields,
         )
+        output_formatter(result, args.output)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_log_classify_command(args, chronicle):
+    """Handle log classification command."""
+    try:
+        log_data = load_string_or_file(args.log)
+
+        print(
+            "Note: Confidence scores are for relative ranking, "
+            "not absolute certainty.\n",
+            file=sys.stderr,
+        )
+
+        result = chronicle.classify_logs(log_data=log_data)
         output_formatter(result, args.output)
     except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error: {e}", file=sys.stderr)
