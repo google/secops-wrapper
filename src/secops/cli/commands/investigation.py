@@ -172,7 +172,7 @@ def _handle_list(args, chronicle):
             order_by=args.order_by,
         )
         output_formatter(result, args.output)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
@@ -189,7 +189,7 @@ def _handle_get(args, chronicle):
             investigation_id=args.investigation_id
         )
         output_formatter(result, args.output)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
@@ -227,7 +227,7 @@ def _handle_fetch_associated(args, chronicle):
             order_by=args.order_by,
         )
         output_formatter(result, args.output)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
@@ -242,6 +242,6 @@ def _handle_trigger(args, chronicle):
     try:
         result = chronicle.trigger_investigation(alert_id=args.alert_id)
         output_formatter(result, args.output)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

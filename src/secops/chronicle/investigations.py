@@ -61,12 +61,12 @@ def fetch_associated_investigations(
         except ValueError:
             try:
                 detection_type = DetectionType[detection_type.upper()]
-            except KeyError:
+            except KeyError as ke:
                 valid = [f"{m.name} or {m.value}" for m in DetectionType]
                 raise ValueError(
-                    f"Invalid detection_type: '{detection_type}'. "
-                    f"Valid values: {', '.join(valid)}"
-                )
+                    f'Invalid detection_type: "{detection_type}". '
+                    f'Valid values: {", ".join(valid)}'
+                ) from ke
 
     params: dict[str, Any] = {"detectionType": detection_type}
 
