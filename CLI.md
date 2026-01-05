@@ -983,6 +983,58 @@ secops case --ids "case-123,case-456"
 
 > **Note**: The case management uses a batch API that can retrieve multiple cases in a single request. You can provide up to 1000 case IDs separated by commas.
 
+### Investigation Management
+
+Chronicle investigations provide automated analysis and recommendations for alerts and cases. Use these commands to list, retrieve, trigger, and fetch associated investigations.
+
+#### List investigations
+
+```bash
+# List all investigations
+secops investigation list
+
+# List with pagination
+secops investigation list --page-size 50
+
+# List with pagination token
+secops investigation list --page-size 50 --page-token "token"
+```
+
+#### Get investigation details
+
+```bash
+# Get a specific investigation by ID
+secops investigation get --id "inv_123"
+```
+
+#### Trigger investigation for an alert
+
+```bash
+# Trigger an investigation for a specific alert
+secops investigation trigger --alert-id "alert_123"
+```
+
+#### Fetch associated investigations
+
+```bash
+# Fetch investigations associated with specific alerts
+secops investigation fetch-associated \
+  --detection-type "ALERT" \
+  --alert-ids "alert_123,alert_456" \
+  --association-limit 5
+
+# Fetch investigations associated with a case
+secops investigation fetch-associated \
+  --detection-type "CASE" \
+  --case-ids "case_123"
+
+# Fetch with ordering
+secops investigation fetch-associated \
+  --detection-type "ALERT" \
+  --alert-ids "alert_123" \
+  --order-by "createTime desc"
+```
+
 ### Data Export
 
 List available log types for export:
