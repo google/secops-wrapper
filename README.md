@@ -389,7 +389,20 @@ else:
     print("Invalid log type")
 ```
 
-4. Use custom forwarders:
+4. Classify logs to predict log type:
+```python
+# Classify a raw log to determine its type
+okta_log = '{"eventType": "user.session.start", "actor": {"alternateId": "user@example.com"}}'
+predictions = chronicle.classify_logs(log_data=okta_log)
+
+# Display predictions sorted by confidence score
+for prediction in predictions:
+    print(f"Log Type: {prediction['logType']}, Score: {prediction['score']}")
+```
+
+> **Note:** Confidence scores are provided by the API as guidance only and may not always accurately reflect classification certainty. Use scores for relative ranking rather than absolute confidence.
+
+5. Use custom forwarders:
 ```python
 # Create or get a custom forwarder
 forwarder = chronicle.get_or_create_forwarder(display_name="MyCustomForwarder")

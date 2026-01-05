@@ -91,6 +91,7 @@ from secops.chronicle.log_processing_pipelines import (
     update_log_processing_pipeline,
 )
 from secops.chronicle.log_types import (
+    classify_logs,
     get_all_log_types,
     get_log_type_description,
     is_valid_log_type,
@@ -231,6 +232,7 @@ __all__ = [
     "extract_forwarder_id",
     "update_forwarder",
     # Log Types
+    "classify_logs",
     "get_all_log_types",
     "is_valid_log_type",
     "get_log_type_description",
