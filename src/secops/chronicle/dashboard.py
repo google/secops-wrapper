@@ -164,6 +164,7 @@ def import_dashboard(client, dashboard: dict[str, Any]) -> dict[str, Any]:
 
 def export_dashboard(client, dashboard_names: list[str]) -> dict[str, Any]:
     """Export native dashboards.
+    It supports single dashboard export operation only.
 
     Args:
         client: ChronicleClient instance
