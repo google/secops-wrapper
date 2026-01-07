@@ -3964,6 +3964,7 @@ class ChronicleClient:
 
     def export_dashboard(self, dashboard_names: list[str]) -> dict[str, Any]:
         """Export native dashboards.
+        It supports single dashboard export operation only.
 
         Args:
             dashboard_names: List of dashboard resource names to export.
