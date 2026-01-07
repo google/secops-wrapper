@@ -2892,20 +2892,11 @@ except Exception as e:
 
 #### Export Dashboards
 
-Export one or more dashboards to a dictionary.
+Export dashboard to a dictionary.
 
 ```python
-import os
-from secops.chronicle import client
-
-# Assumes the CHRONICLE_SA_KEY environment variable is set with service account JSON
-chronicle_client = client.Client()
-
-# Export a single dashboard
+# Export a dashboard
 dashboards = chronicle.export_dashboard(dashboard_names=["<dashboard_id>"])
-
-# Export multiple dashboards
-dashboards = chronicle.export_dashboard(dashboard_names=["<dashboard_id_1>", "<dashboard_id_2>"])
 ```
 
 
