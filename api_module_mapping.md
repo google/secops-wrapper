@@ -221,6 +221,10 @@ Following shows mapping between SecOps [REST Resource](https://cloud.google.com/
 |ingestionLogLabels.list                                                       |v1alpha|                                                            |                                       |
 |ingestionLogNamespaces.get                                                    |v1alpha|                                                            |                                       |
 |ingestionLogNamespaces.list                                                   |v1alpha|                                                            |                                       |
+|investigations.fetchAssociated                                                |v1alpha|chronicle.investigations.fetch_associated_investigations    |secops investigation fetch-associated  |
+|investigations.get                                                            |v1alpha|chronicle.investigations.get_investigation                  |secops investigation get               |
+|investigations.list                                                           |v1alpha|chronicle.investigations.list_investigations                |secops investigation list              |
+|investigations.trigger                                                        |v1alpha|chronicle.investigations.trigger_investigation              |secops investigation trigger           |
 |iocs.batchGet                                                                 |v1alpha|                                                            |                                       |
 |iocs.findFirstAndLastSeen                                                     |v1alpha|                                                            |                                       |
 |iocs.get                                                                      |v1alpha|                                                            |                                       |

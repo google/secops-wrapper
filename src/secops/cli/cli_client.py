@@ -23,6 +23,7 @@ from secops.cli.commands.feed import setup_feed_command
 from secops.cli.commands.forwarder import setup_forwarder_command
 from secops.cli.commands.gemini import setup_gemini_command
 from secops.cli.commands.help import setup_help_command
+from secops.cli.commands.investigation import setup_investigation_command
 from secops.cli.commands.iocs import setup_iocs_command
 from secops.cli.commands.log import setup_log_command
 from secops.cli.commands.log_processing import (
@@ -163,6 +164,7 @@ def build_parser() -> argparse.ArgumentParser:
     setup_udm_search_view_command(subparsers)
     setup_stats_command(subparsers)
     setup_entity_command(subparsers)
+    setup_investigation_command(subparsers)
     setup_iocs_command(subparsers)
     setup_log_command(subparsers)
     setup_log_processing_command(subparsers)

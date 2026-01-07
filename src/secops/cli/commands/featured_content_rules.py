@@ -55,6 +55,6 @@ def handle_featured_content_rules_list_command(args, chronicle):
             filter_expression=getattr(args, "filter_expression", None),
         )
         output_formatter(out, getattr(args, "output", "json"))
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error listing featured content rules: {e}", file=sys.stderr)
         sys.exit(1)
