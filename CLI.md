@@ -249,9 +249,14 @@ secops log types --search "windows"
 # Fetch specific page using token
 secops log types --page-size 50 --page-token "next_page_token"
 
-# Search for log types
-secops log types --search "firewall"
+# Classify logs to predict log type:
+secops log classify --log '{"eventType": "user.session.start", "actor": {"alternateId": "user@example.com"}}'
+
+# Classify a log from a file
+secops log classify --log /path/to/log_file.json
 ```
+
+> **Note:** The classify command returns predictions sorted by confidence score. Confidence scores are provided by the API as guidance only and may not always accurately reflect classification certainty. Use scores for relative ranking rather than absolute confidence.
 
 > **Note:** Chronicle uses parsers to process and normalize raw log data into UDM format. If you're ingesting logs for a custom format, you may need to create or configure parsers. See the [Parser Management](#parser-management) section for details on managing parsers.
 
@@ -977,6 +982,58 @@ secops case --ids "case-123,case-456"
 ```
 
 > **Note**: The case management uses a batch API that can retrieve multiple cases in a single request. You can provide up to 1000 case IDs separated by commas.
+
+### Investigation Management
+
+Chronicle investigations provide automated analysis and recommendations for alerts and cases. Use these commands to list, retrieve, trigger, and fetch associated investigations.
+
+#### List investigations
+
+```bash
+# List all investigations
+secops investigation list
+
+# List with pagination
+secops investigation list --page-size 50
+
+# List with pagination token
+secops investigation list --page-size 50 --page-token "token"
+```
+
+#### Get investigation details
+
+```bash
+# Get a specific investigation by ID
+secops investigation get --id "inv_123"
+```
+
+#### Trigger investigation for an alert
+
+```bash
+# Trigger an investigation for a specific alert
+secops investigation trigger --alert-id "alert_123"
+```
+
+#### Fetch associated investigations
+
+```bash
+# Fetch investigations associated with specific alerts
+secops investigation fetch-associated \
+  --detection-type "ALERT" \
+  --alert-ids "alert_123,alert_456" \
+  --association-limit 5
+
+# Fetch investigations associated with a case
+secops investigation fetch-associated \
+  --detection-type "CASE" \
+  --case-ids "case_123"
+
+# Fetch with ordering
+secops investigation fetch-associated \
+  --detection-type "ALERT" \
+  --alert-ids "alert_123" \
+  --order-by "createTime desc"
+```
 
 ### Data Export
 

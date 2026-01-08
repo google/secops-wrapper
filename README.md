@@ -389,7 +389,20 @@ else:
     print("Invalid log type")
 ```
 
-4. Use custom forwarders:
+4. Classify logs to predict log type:
+```python
+# Classify a raw log to determine its type
+okta_log = '{"eventType": "user.session.start", "actor": {"alternateId": "user@example.com"}}'
+predictions = chronicle.classify_logs(log_data=okta_log)
+
+# Display predictions sorted by confidence score
+for prediction in predictions:
+    print(f"Log Type: {prediction['logType']}, Score: {prediction['score']}")
+```
+
+> **Note:** Confidence scores are provided by the API as guidance only and may not always accurately reflect classification certainty. Use scores for relative ranking rather than absolute confidence.
+
+5. Use custom forwarders:
 ```python
 # Create or get a custom forwarder
 forwarder = chronicle.get_or_create_forwarder(display_name="MyCustomForwarder")
@@ -1389,6 +1402,92 @@ case = cases.get_case("case-id-1")
 ```
 
 > **Note**: The case management API uses the `legacy:legacyBatchGetCases` endpoint to retrieve multiple cases in a single request. You can retrieve up to 1000 cases in a single batch.
+
+### Investigation Management
+
+Chronicle investigations provide automated analysis and recommendations for alerts and cases. The SDK provides methods to list, retrieve, trigger, and fetch associated investigations.
+
+#### List investigations
+
+Retrieve all investigations in your Chronicle instance:
+
+```python
+# List all investigations
+result = chronicle.list_investigations()
+investigations = result.get("investigations", [])
+
+for inv in investigations:
+    print(f"Investigation: {inv['displayName']}")
+    print(f"  Status: {inv.get('status', 'N/A')}")
+    print(f"  Verdict: {inv.get('verdict', 'N/A')}")
+
+# List with pagination
+result = chronicle.list_investigations(page_size=50, page_token="token")
+```
+
+#### Get investigation details
+
+Retrieve a specific investigation by its ID:
+
+```python
+# Get investigation by ID
+investigation = chronicle.get_investigation(investigation_id="inv_123")
+
+print(f"Name: {investigation['displayName']}")
+print(f"Status: {investigation.get('status')}")
+print(f"Verdict: {investigation.get('verdict')}")
+print(f"Confidence: {investigation.get('confidence')}")
+```
+
+#### Trigger investigation for an alert
+
+Create a new investigation for a specific alert:
+
+```python
+# Trigger investigation for an alert
+investigation = chronicle.trigger_investigation(alert_id="alert_123")
+
+print(f"Investigation created: {investigation['name']}")
+print(f"Status: {investigation.get('status')}")
+print(f"Trigger type: {investigation.get('triggerType')}")
+```
+
+#### Fetch associated investigations
+
+Retrieve investigations associated with alerts or cases:
+
+```python
+from secops.chronicle import DetectionType
+
+# Fetch investigations for specific alerts
+result = chronicle.fetch_associated_investigations(
+    detection_type=DetectionType.ALERT,
+    alert_ids=["alert_123", "alert_456"],
+    association_limit_per_detection=5
+)
+
+# Process associations
+associations_list = result.get("associationsList", {})
+for alert_id, data in associations_list.items():
+    investigations = data.get("investigations", [])
+    print(f"Alert {alert_id}: {len(investigations)} investigation(s)")
+    
+    for inv in investigations:
+        print(f"  - {inv['displayName']}: {inv.get('verdict', 'N/A')}")
+
+# Fetch investigations for cases
+case_result = chronicle.fetch_associated_investigations(
+    detection_type=DetectionType.CASE,
+    case_ids=["case_123"],
+    association_limit_per_detection=3
+)
+
+# You can also use string values for detection_type
+result = chronicle.fetch_associated_investigations(
+    detection_type="ALERT",  # or "DETECTION_TYPE_ALERT"
+    alert_ids=["alert_123"]
+)
+```
 
 ### Generating UDM Key/Value Mapping
 Chronicle provides a feature to generate UDM key-value mapping for a given row log.
@@ -2879,20 +2978,11 @@ except Exception as e:
 
 #### Export Dashboards
 
-Export one or more dashboards to a dictionary.
+Export dashboard to a dictionary.
 
 ```python
-import os
-from secops.chronicle import client
-
-# Assumes the CHRONICLE_SA_KEY environment variable is set with service account JSON
-chronicle_client = client.Client()
-
-# Export a single dashboard
+# Export a dashboard
 dashboards = chronicle.export_dashboard(dashboard_names=["<dashboard_id>"])
-
-# Export multiple dashboards
-dashboards = chronicle.export_dashboard(dashboard_names=["<dashboard_id_1>", "<dashboard_id_2>"])
 ```
 
 

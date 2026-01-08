@@ -221,6 +221,10 @@ Following shows mapping between SecOps [REST Resource](https://cloud.google.com/
 |ingestionLogLabels.list                                                       |v1alpha|                                                            |                                       |
 |ingestionLogNamespaces.get                                                    |v1alpha|                                                            |                                       |
 |ingestionLogNamespaces.list                                                   |v1alpha|                                                            |                                       |
+|investigations.fetchAssociated                                                |v1alpha|chronicle.investigations.fetch_associated_investigations    |secops investigation fetch-associated  |
+|investigations.get                                                            |v1alpha|chronicle.investigations.get_investigation                  |secops investigation get               |
+|investigations.list                                                           |v1alpha|chronicle.investigations.list_investigations                |secops investigation list              |
+|investigations.trigger                                                        |v1alpha|chronicle.investigations.trigger_investigation              |secops investigation trigger           |
 |iocs.batchGet                                                                 |v1alpha|                                                            |                                       |
 |iocs.findFirstAndLastSeen                                                     |v1alpha|                                                            |                                       |
 |iocs.get                                                                      |v1alpha|                                                            |                                       |
@@ -311,7 +315,7 @@ Following shows mapping between SecOps [REST Resource](https://cloud.google.com/
 |logProcessingPipelines.list                                                   |v1alpha|chronicle.log_processing_pipelines.list_log_processing_pipelines|secops log-processing list             |
 |logProcessingPipelines.patch                                                  |v1alpha|chronicle.log_processing_pipelines.update_log_processing_pipeline|secops log-processing update           |
 |logProcessingPipelines.testPipeline                                           |v1alpha|chronicle.log_processing_pipelines.test_pipeline            |secops log-processing test             |
-|logs.classify                                                                 |v1alpha|                                                            |                                       |
+|logs.classify                                                                 |v1alpha|chronicle.log_types.classify_logs                           |secops log classify                    |
 | nativeDashboards.addChart                                                      | v1alpha |chronicle.dashboard.add_chart                                                              |secops dashboard add-chart                                         |
 | nativeDashboards.create                                                        | v1alpha |chronicle.dashboard.create_dashboard                                                              |secops dashboard create                                         |
 | nativeDashboards.delete                                                        | v1alpha |chronicle.dashboard.delete_dashboard                                                              |secops dashboard delete                                         |

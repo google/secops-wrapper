@@ -20,12 +20,14 @@ import pytest
 
 from secops.chronicle import log_types
 from secops.chronicle.log_types import (
+    classify_logs,
     get_all_log_types,
     get_log_type_description,
     is_valid_log_type,
     load_log_types,
     search_log_types,
 )
+from secops.exceptions import APIError, SecOpsError
 
 
 @pytest.fixture
@@ -415,3 +417,150 @@ def test_api_response_missing_fields(mock_chronicle_client):
         for log_type in result
         if log_type.get("name")
     )
+
+
+def test_classify_logs_success(mock_chronicle_client):
+    """Test successful log classification."""
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "predictions": [
+            {"logType": "OKTA", "score": 0.95},
+            {"logType": "ONELOGIN", "score": 0.03},
+        ]
+    }
+    mock_chronicle_client.session.post.return_value = mock_response
+
+    log_data = '{"eventType": "user.session.start"}'
+    result = classify_logs(client=mock_chronicle_client, log_data=log_data)
+
+    assert isinstance(result, list)
+    assert len(result) == 2
+    assert result[0]["logType"] == "OKTA"
+    assert result[0]["score"] == 0.95
+    assert result[1]["logType"] == "ONELOGIN"
+    assert result[1]["score"] == 0.03
+
+    mock_chronicle_client.session.post.assert_called_once()
+    call_args = mock_chronicle_client.session.post.call_args
+    assert "logs:classify" in call_args[0][0]
+    assert "logData" in call_args[1]["json"]
+
+
+def test_classify_logs_empty_predictions(mock_chronicle_client):
+    """Test classification with empty predictions."""
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"predictions": []}
+    mock_chronicle_client.session.post.return_value = mock_response
+
+    log_data = "unknown log format"
+    result = classify_logs(client=mock_chronicle_client, log_data=log_data)
+
+    assert isinstance(result, list)
+    assert len(result) == 0
+
+
+def test_classify_logs_missing_predictions_key(mock_chronicle_client):
+    """Test classification when API response missing predictions key."""
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {}
+    mock_chronicle_client.session.post.return_value = mock_response
+
+    log_data = "test log"
+    result = classify_logs(client=mock_chronicle_client, log_data=log_data)
+
+    assert isinstance(result, list)
+    assert len(result) == 0
+
+
+def test_classify_logs_empty_log_data(mock_chronicle_client):
+    """Test classification with empty log data."""
+    with pytest.raises(SecOpsError, match="log data cannot be empty"):
+        classify_logs(client=mock_chronicle_client, log_data="")
+
+    mock_chronicle_client.session.post.assert_not_called()
+
+
+def test_classify_logs_none_log_data(mock_chronicle_client):
+    """Test classification with None log data."""
+    with pytest.raises(SecOpsError, match="log data cannot be empty"):
+        classify_logs(client=mock_chronicle_client, log_data=None)
+
+    mock_chronicle_client.session.post.assert_not_called()
+
+
+def test_classify_logs_non_string_log_data(mock_chronicle_client):
+    """Test classification with non-string log data."""
+    with pytest.raises(SecOpsError, match="log data must be a string"):
+        classify_logs(client=mock_chronicle_client, log_data=123)
+
+    mock_chronicle_client.session.post.assert_not_called()
+
+    with pytest.raises(SecOpsError, match="log data must be a string"):
+        classify_logs(client=mock_chronicle_client, log_data=["log"])
+
+    with pytest.raises(SecOpsError, match="log data must be a string"):
+        classify_logs(client=mock_chronicle_client, log_data={"log": "data"})
+
+
+def test_classify_logs_api_error(mock_chronicle_client):
+    """Test classification with API error response."""
+    mock_response = Mock()
+    mock_response.status_code = 400
+    mock_response.text = "Invalid request"
+    mock_chronicle_client.session.post.return_value = mock_response
+
+    log_data = "test log"
+    with pytest.raises(APIError, match="Failed to classify log"):
+        classify_logs(client=mock_chronicle_client, log_data=log_data)
+
+
+def test_classify_logs_special_characters(mock_chronicle_client):
+    """Test classification with special characters in log data."""
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "predictions": [{"logType": "WINDOWS", "score": 0.88}]
+    }
+    mock_chronicle_client.session.post.return_value = mock_response
+
+    log_data = "<Event>\n  <System>\n    <EventID>4624</EventID>\n  </System>\n</Event>"
+    result = classify_logs(client=mock_chronicle_client, log_data=log_data)
+
+    assert len(result) == 1
+    assert result[0]["logType"] == "WINDOWS"
+
+
+def test_classify_logs_unicode_characters(mock_chronicle_client):
+    """Test classification with unicode characters."""
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "predictions": [{"logType": "CUSTOM", "score": 0.75}]
+    }
+    mock_chronicle_client.session.post.return_value = mock_response
+
+    log_data = '{"user": "测试用户", "message": "Événement système"}'
+    result = classify_logs(client=mock_chronicle_client, log_data=log_data)
+
+    assert len(result) == 1
+    assert result[0]["logType"] == "CUSTOM"
+    mock_chronicle_client.session.post.assert_called_once()
+
+
+def test_classify_logs_large_log(mock_chronicle_client):
+    """Test classification with large log data."""
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "predictions": [{"logType": "AWS_CLOUDTRAIL", "score": 0.92}]
+    }
+    mock_chronicle_client.session.post.return_value = mock_response
+
+    log_data = '{"eventName": "GetObject"}' * 1000
+    result = classify_logs(client=mock_chronicle_client, log_data=log_data)
+
+    assert len(result) == 1
+    assert result[0]["logType"] == "AWS_CLOUDTRAIL"
