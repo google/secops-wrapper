@@ -633,7 +633,7 @@ class ChronicleClient:
         page_size: int | None = None,
         page_token: str | None = None,
         as_list: bool = False,
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         """Get a list of all watchlists.
 
         Args:
@@ -643,7 +643,9 @@ class ChronicleClient:
                 with watchlists list and nextPageToken.
 
         Returns:
-            Dictionary with list of watchlists
+            If as_list is True: List of watchlists.
+            If as_list is False: Dict with watchlists list and
+                nextPageToken.
 
         Raises:
             APIError: If the API request fails
@@ -2469,7 +2471,9 @@ class ChronicleClient:
                 as a list instead of a dict
 
         Returns:
-            Dictionary containing the list of curated rule sets
+            If as_list is True: List of curated rule sets.
+            If as_list is False: Dict with curatedRuleSets list and
+                nextPageToken.
 
         Raises:
             APIError: If the API request fails
@@ -2491,7 +2495,9 @@ class ChronicleClient:
                 set categories as a list instead of a dict
 
         Returns:
-            Dictionary containing the list of curated rule set categories
+            If as_list is True: List of curated rule set categories.
+            If as_list is False: Dict with curatedRuleSetCategories list
+                and nextPageToken.
 
         Raises:
             APIError: If the API request fails
@@ -2507,7 +2513,7 @@ class ChronicleClient:
         only_enabled: bool | None = False,
         only_alerting: bool | None = False,
         as_list: bool = False,
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         """Get a list of all curated rule set deployments.
 
         Args:
@@ -2519,7 +2525,9 @@ class ChronicleClient:
                 set deployments as a list instead of a dict
 
         Returns:
-            Dictionary containing the list of curated rule set deployments
+            If as_list is True: List of curated rule set deployments.
+            If as_list is False: Dict with curatedRuleSetDeployments list
+                and nextPageToken.
 
         Raises:
             APIError: If the API request fails
@@ -2576,7 +2584,7 @@ class ChronicleClient:
         page_size: int | None = None,
         page_token: str | None = None,
         as_list: bool = False,
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         """Get a list of all curated rules.
 
         Args:
@@ -2586,7 +2594,9 @@ class ChronicleClient:
                 a list instead of a dict
 
         Returns:
-            Dictionary containing the list of curated rules
+            If as_list is True: List of curated rules.
+            If as_list is False: Dict with curatedRules list and
+                nextPageToken.
 
         Raises:
             APIError: If the API request fails
@@ -2698,15 +2708,13 @@ class ChronicleClient:
                 - search_rule_name_or_description=~"<text>"
                 Multiple filters can be combined with AND operator.
             as_list: If True, return a list of featured content rules
-                instead of a dict with curatedRuleSetDeployments list
+                instead of a dict with featuredContentRules list
                 and nextPageToken.
 
         Returns:
-            If page_size is not provided: A dictionary containing a list of all
-                featured content rules.
-            If page_size is provided: A dictionary containing a list of
-                featuredContentRules and a nextPageToken if more results are
-                available.
+            If as_list is True: List of featured content rules.
+            If as_list is False: Dict with featuredContentRules list and
+                nextPageToken if more results are available.
 
         Raises:
             APIError: If the API request fails

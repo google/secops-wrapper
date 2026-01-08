@@ -14,7 +14,7 @@
 #
 """Helper functions for Chronicle."""
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import requests
 from google.auth.exceptions import GoogleAuthError
@@ -22,13 +22,24 @@ from google.auth.exceptions import GoogleAuthError
 from secops.exceptions import APIError
 from secops.chronicle.models import APIVersion
 
+if TYPE_CHECKING:
+    from secops.chronicle.client import ChronicleClient
+
 
 DEFAULT_PAGE_SIZE = 1000
 MAX_BODY_CHARS = 2000
 
 
 def _safe_body_preview(text: str | None, limit: int = MAX_BODY_CHARS) -> str:
-    """Generate a safe, truncated preview of body contents for error messages"""
+    """Generate a safe, truncated preview of body contents for error messages.
+
+    Args:
+        text: The text to preview
+        limit: The maximum number of characters to include in the preview
+
+    Returns:
+        str: The preview of the text
+    """
     if not text:
         return ""
     if len(text) <= limit:
@@ -222,7 +233,7 @@ def chronicle_request(
     if endpoint_path.startswith(":"):
         url = f"{base}{endpoint_path}"
     else:
-        url = f"{base}/{endpoint_path.lstrip('/')}"
+        url = f'{base}/{endpoint_path.lstrip("/")}'
 
     try:
         response = client.session.request(

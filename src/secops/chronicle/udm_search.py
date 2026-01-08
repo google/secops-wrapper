@@ -15,15 +15,18 @@
 """UDM search functionality for Chronicle."""
 
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from secops.exceptions import APIError
 from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.request_utils import chronicle_request
 
+if TYPE_CHECKING:
+    from secops.chronicle.client import ChronicleClient
+
 
 def fetch_udm_search_csv(
-    client,
+    client: "ChronicleClient",
     query: str,
     start_time: datetime,
     end_time: datetime,
@@ -41,7 +44,7 @@ def fetch_udm_search_csv(
         case_insensitive: Whether to perform case-insensitive search
 
     Returns:
-        CSV formatted string of results
+        Dictionary containing the CSV formatted results
 
     Raises:
         APIError: If the API request fails
@@ -67,7 +70,9 @@ def fetch_udm_search_csv(
 
 
 def find_udm_field_values(
-    client, query: str, page_size: int | None = None
+    client: "ChronicleClient",
+    query: str,
+    page_size: int | None = None,
 ) -> dict[str, Any]:
     """Fetch UDM field values that match a query.
 
@@ -96,7 +101,7 @@ def find_udm_field_values(
 
 
 def fetch_udm_search_view(
-    client,
+    client: "ChronicleClient",
     query: str,
     start_time: datetime,
     end_time: datetime,

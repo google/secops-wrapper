@@ -28,7 +28,7 @@ def list_watchlists(
     page_size: int | None = None,
     page_token: str | None = None,
     as_list: bool = False,
-) -> dict[str, Any]:
+) -> dict[str, Any] | list[dict[str, Any]]:
     """Get a list of watchlists.
 
     Args:
@@ -39,7 +39,8 @@ def list_watchlists(
             with watchlists list and nextPageToken.
 
     Returns:
-        List of watchlists
+        If as_list is True: List of watchlists.
+        If as_list is False: Dict with watchlists list and nextPageToken.
 
     Raises:
         APIError: If the API request fails

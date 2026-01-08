@@ -16,10 +16,13 @@
 
 import base64
 import sys
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.request_utils import chronicle_request
+
+if TYPE_CHECKING:
+    from secops.chronicle.client import ChronicleClient
 
 # Use built-in StrEnum if Python 3.11+, otherwise create a compatible version
 if sys.version_info >= (3, 11):
@@ -44,7 +47,7 @@ class RowLogFormat(StrEnum):
 
 
 def generate_udm_key_value_mappings(
-    client,
+    client: "ChronicleClient",
     log_format: RowLogFormat,
     log: str,
     use_array_bracket_notation: bool | None = None,

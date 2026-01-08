@@ -14,13 +14,16 @@
 #
 """Query validation functionality for Chronicle."""
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.request_utils import chronicle_request
 
+if TYPE_CHECKING:
+    from secops.chronicle.client import ChronicleClient
 
-def validate_query(client, query: str) -> dict[str, Any]:
+
+def validate_query(client: "ChronicleClient", query: str) -> dict[str, Any]:
     """Validate a UDM query against the Chronicle API.
 
     Args:
