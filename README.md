@@ -1854,7 +1854,15 @@ watchlist = chronicle.get_watchlist("acb-123-def")
 List all watchlists:
 
 ```python
+# List watchlists (returns dict with pagination metadata)
 watchlists = chronicle.list_watchlists()
+for watchlist in watchlists.get("watchlists", []):
+    print(f"Watchlist: {watchlist.get('displayName')}")
+
+# List watchlists as a direct list (automatically fetches all pages)
+watchlists = chronicle.list_watchlists(as_list=True)
+for watchlist in watchlists:
+    print(f"Watchlist: {watchlist.get('displayName')}")
 ```
 
 ## Rule Management
@@ -2164,13 +2172,20 @@ If `tooManyAlerts` is True in the response, consider narrowing your search crite
 Query curated rules:
 
 ```python
-# List all curated rules
-rules = chronicle.list_curated_rules()
-for rule in rules:
+# List all curated rules (returns dict with pagination metadata)
+result = chronicle.list_curated_rules()
+for rule in result.get("curatedRules", []):
     rule_id = rule.get("name", "").split("/")[-1]
     display_name = rule.get("description")
     description = rule.get("description")
     print(f"Rule: {display_name}, Description: {description}")
+
+# List all curated rules as a direct list
+rules = chronicle.list_curated_rules(as_list=True)
+for rule in rules:
+    rule_id = rule.get("name", "").split("/")[-1]
+    display_name = rule.get("description")
+    print(f"Rule: {display_name}")
 
 # Get a curated rule
 rule = chronicle.get_curated_rule("ur_ttp_lol_Atbroker")
@@ -2218,8 +2233,15 @@ if "nextPageToken" in result:
 Query curated rule sets:
 
 ```python
-# List all curated rule sets
-rule_sets = chronicle.list_curated_rule_sets()
+# List all curated rule sets (returns dict with pagination metadata)
+result = chronicle.list_curated_rule_sets()
+for rule_set in result.get("curatedRuleSets", []):
+    rule_set_id = rule_set.get("name", "").split("/")[-1]
+    display_name = rule_set.get("displayName")
+    print(f"Rule Set: {display_name}, ID: {rule_set_id}")
+
+# List all curated rule sets as a direct list
+rule_sets = chronicle.list_curated_rule_sets(as_list=True)
 for rule_set in rule_sets:
     rule_set_id = rule_set.get("name", "").split("/")[-1]
     display_name = rule_set.get("displayName")
@@ -2232,8 +2254,15 @@ rule_set = chronicle.get_curated_rule_set("00ad672e-ebb3-0dd1-2a4d-99bd7c5e5f93"
 Query curated rule set categories:
 
 ```python
-# List all curated rule set categories
-rule_set_categories = chronicle.list_curated_rule_set_categories()
+# List all curated rule set categories (returns dict with pagination metadata)
+result = chronicle.list_curated_rule_set_categories()
+for rule_set_category in result.get("curatedRuleSetCategories", []):
+    rule_set_category_id = rule_set_category.get("name", "").split("/")[-1]
+    display_name = rule_set_category.get("displayName")
+    print(f"Rule Set Category: {display_name}, ID: {rule_set_category_id}")
+
+# List all curated rule set categories as a direct list
+rule_set_categories = chronicle.list_curated_rule_set_categories(as_list=True)
 for rule_set_category in rule_set_categories:
     rule_set_category_id = rule_set_category.get("name", "").split("/")[-1]
     display_name = rule_set_category.get("displayName")
@@ -2246,9 +2275,9 @@ rule_set_category = chronicle.get_curated_rule_set_category("110fa43d-7165-2355-
 Manage curated rule set deployments (turn alerting on or off (either precise or broad) for curated rule sets):
 
 ```python
-# List all curated rule set deployments
-rule_set_deployments = chronicle.list_curated_rule_set_deployments()
-for rs_deployment in rule_set_deployments:
+# List all curated rule set deployments (returns dict with pagination metadata)
+result = chronicle.list_curated_rule_set_deployments()
+for rs_deployment in result.get("curatedRuleSetDeployments", []):
     rule_set_id = rs_deployment.get("name", "").split("/")[-3]
     category_id = rs_deployment.get("name", "").split("/")[-5]
     deployment_status = rs_deployment.get("name", "").split("/")[-1]
@@ -2261,6 +2290,13 @@ for rs_deployment in rule_set_deployments:
         f"Precision: {deployment_status}",
         f"Alerting: {alerting}",
     )
+
+# List all curated rule set deployments as a direct list
+rule_set_deployments = chronicle.list_curated_rule_set_deployments(as_list=True)
+for rs_deployment in rule_set_deployments:
+    rule_set_id = rs_deployment.get("name", "").split("/")[-3]
+    display_name = rs_deployment.get("displayName")
+    print(f"Rule Set: {display_name}, ID: {rule_set_id}")
 
 # Get curated rule set deployment by ID
 rule_set_deployment = chronicle.get_curated_rule_set_deployment("00ad672e-ebb3-0dd1-2a4d-99bd7c5e5f93")

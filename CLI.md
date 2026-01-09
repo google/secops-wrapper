@@ -676,8 +676,11 @@ secops parser-extension delete --log-type OKTA --id "1234567890"
 List watchlists:
 
 ```bash
-# List all watchlists
+# List all watchlists (returns dict with pagination metadata)
 secops watchlist list
+
+# List watchlists as a direct list (fetches all pages automatically)
+secops watchlist list --as-list
 
 # List watchlist with pagination 
 secops watchlist list --page-size 50
@@ -829,10 +832,17 @@ The `rule test` command outputs UDM events as pure JSON objects that can be pipe
 ### Curated Rule Set Management
 
 List all curated rules:
+
 ```bash
+# List all curated rules (returns dict with pagination metadata)
 secops curated-rule rule list
+
+# List curated rules as a direct list
+secops curated-rule rule list --as-list
 ```
+
 Get curated rules:
+
 ```bash
 # Get rule by UUID
 secops curated-rule rule get --id "ur_ttp_GCP_ServiceAPIDisable"
@@ -842,6 +852,7 @@ secops curated-rule rule get --name "GCP Service API Disable"
 ```
 
 Search for curated rule detections:
+
 ```bash
 secops curated-rule search-detections \
   --rule-id "ur_ttp_GCP_MassSecretDeletion" \
@@ -861,33 +872,54 @@ secops curated-rule search-detections \
 ```
 
 List all curated rule sets:
+
 ```bash
+# List all curated rule sets (returns dict with pagination metadata)
 secops curated-rule rule-set list
+
+# List curated rule sets as a direct list
+secops curated-rule rule-set list --as-list
 ```
 
 Get specific curated rule set details:
+
 ```bash
 # Get curated rule set by UUID
 secops curated-rule rule-set get --id "f5533b66-9327-9880-93e6-75a738ac2345"
+
+# Get curated rule set by name
+secops curated-rule rule-set get --name "Active Breach Priority Host Indicators"
 ```
 
 List all curated rule set categories:
+
 ```bash
+# List all curated rule set categories (returns dict with pagination metadata)
 secops curated-rule rule-set-category list
+
+# List curated rule set categories as a direct list
+secops curated-rule rule-set-category list --as-list
 ```
 
 Get specific curated rule set category details:
+
 ```bash
 # Get curated rule set category by UUID
 secops curated-rule rule-set-category get --id "db1114d4-569b-5f5d-0fb4-f65aaa766c92"
 ```
 
 List all curated rule set deployments:
+
 ```bash
+# List all curated rule set deployments (returns dict with pagination metadata)
 secops curated-rule rule-set-deployment list
+
+# List curated rule set deployments as a direct list
+secops curated-rule rule-set-deployment list --as-list
 ```
 
 Get specific curated rule set deployment details:
+
 ```bash
 # Get curated rule set deployment by UUID
 secops curated-rule rule-set-deployment get --id "f5533b66-9327-9880-93e6-75a738ac2345"
@@ -1308,7 +1340,11 @@ Featured content rules are pre-built detection rules available in the Chronicle 
 #### List all featured content rules:
 
 ```bash
+# List all featured content rules (returns dict with pagination metadata)
 secops featured-content-rules list
+
+# List featured content rules as a direct list
+secops featured-content-rules list --as-list
 ```
 
 #### List with pagination:
