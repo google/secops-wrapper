@@ -45,9 +45,10 @@ def test_chronicle_search():
         end_time=end_time,
         fields=["timestamp", "user", "hostname", "process name"],
     )
-
-    assert isinstance(result, str)
-    assert "timestamp" in result  # Basic validation of CSV header
+    rows = result.get("csv",{}).get("row")
+    assert rows
+    assert isinstance(rows, list)
+    assert any("timestamp" in row for row in rows)  # Basic validation of CSV header
 
 
 @pytest.mark.integration
@@ -1887,12 +1888,14 @@ def test_chronicle_generate_udm_key_value_mapping():
     try:
         print("\n>>> Testing Generating UDM key/value mapping")
 
-        json_mappings = chronicle.generate_udm_key_value_mappings(
+        response = chronicle.generate_udm_key_value_mappings(
             log_format="JSON",
             log=json_log,
             use_array_bracket_notation=True,
             compress_array_fields=False,
         )
+
+        json_mappings = response.get("fieldMappings", [])
         print(f"JSON mappings retrieved: {len(json_mappings)} fields")
 
         # Verify we got expected mapping fields

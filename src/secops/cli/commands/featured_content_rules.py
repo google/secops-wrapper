@@ -16,7 +16,10 @@
 
 import sys
 
-from secops.cli.utils.common_args import add_pagination_args
+from secops.cli.utils.common_args import (
+    add_pagination_args,
+    add_as_list_arg,
+)
 from secops.cli.utils.formatters import output_formatter
 
 
@@ -33,6 +36,7 @@ def setup_featured_content_rules_command(subparsers):
         "list", help="List featured content rules"
     )
     add_pagination_args(list_parser)
+    add_as_list_arg(list_parser)
     list_parser.add_argument(
         "--filter",
         "--filter-expression",
@@ -53,6 +57,7 @@ def handle_featured_content_rules_list_command(args, chronicle):
             page_size=getattr(args, "page_size", None),
             page_token=getattr(args, "page_token", None),
             filter_expression=getattr(args, "filter_expression", None),
+            as_list=getattr(args, "as_list", False),
         )
         output_formatter(out, getattr(args, "output", "json"))
     except Exception as e:  # pylint: disable=broad-exception-caught

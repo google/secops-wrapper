@@ -268,8 +268,10 @@ def list_curated_rule_set_deployments(
     )
 
     # Extract deployments from response
-    rule_set_deployments = result.get("curatedRuleSetDeployments", [])
-
+    if isinstance(result, list):
+        rule_set_deployments = result
+    else:
+        rule_set_deployments = result.get("curatedRuleSetDeployments", [])
     # Enrich the deployment data with the rule set displayName
     all_rule_sets = list_curated_rule_sets(client)
 
@@ -296,9 +298,11 @@ def list_curated_rule_set_deployments(
             if deployment.get("alerting", False)
         ]
 
+    if as_list:
+        return rule_set_deployments
+
     # Update result with filtered deployments
     result["curatedRuleSetDeployments"] = rule_set_deployments
-
     return result
 
 

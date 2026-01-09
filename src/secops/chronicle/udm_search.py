@@ -59,7 +59,7 @@ def fetch_udm_search_csv(
         "caseInsensitive": case_insensitive,
     }
 
-    return chronicle_request(
+    result = chronicle_request(
         client,
         method="POST",
         endpoint_path="legacy:legacyFetchUdmSearchCsv",
@@ -67,6 +67,11 @@ def fetch_udm_search_csv(
         json=search_query,
         headers={"Accept": "*/*"},
     )
+
+    if isinstance(result, list):
+        return result[0]
+
+    return result
 
 
 def find_udm_field_values(

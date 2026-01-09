@@ -2917,6 +2917,14 @@ def test_cli_generate_udm_key_value_mapping(cli_env, common_args):
 
         mapping_data = json.loads(gum_result.stdout)
 
+        # Response should have fieldMappings key
+        assert (
+            "fieldMappings" in mapping_data
+        ), "Response should contain fieldMappings"
+
+        field_mappings = mapping_data["fieldMappings"]
+
+        # Check for expected fields in fieldMappings
         expected_fields = [
             "events.0.id",
             "events.0.user",
@@ -2924,8 +2932,9 @@ def test_cli_generate_udm_key_value_mapping(cli_env, common_args):
             "events.1.user",
         ]
 
-        # Check for expected fields
-        assert all(field in mapping_data for field in expected_fields)
+        assert all(
+            field in field_mappings for field in expected_fields
+        ), f"Missing expected fields. Got: {list(field_mappings.keys())}"
 
     except Exception as e:
         print(f"Error during generate-udm-mapping CLI test: {str(e)}")

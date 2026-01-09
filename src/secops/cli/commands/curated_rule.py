@@ -19,6 +19,7 @@ import sys
 from secops.cli.utils.common_args import (
     add_pagination_args,
     add_time_range_args,
+    add_as_list_arg,
 )
 from secops.cli.utils.formatters import output_formatter
 from secops.cli.utils.time_utils import get_time_range
@@ -39,6 +40,7 @@ def setup_curated_rules_command(subparsers):
 
     rules_list = rules_sp.add_parser("list", help="List curated rules")
     add_pagination_args(rules_list)
+    add_as_list_arg(rules_list)
     rules_list.set_defaults(func=handle_curated_rules_rules_list_command)
 
     rules_get = rules_sp.add_parser("get", help="Get a curated rule")
@@ -105,6 +107,7 @@ def setup_curated_rules_command(subparsers):
         "list", help="List curated rule sets"
     )
     add_pagination_args(rule_set_list)
+    add_as_list_arg(rule_set_list)
     rule_set_list.set_defaults(func=handle_curated_rules_rule_set_list_command)
 
     rule_set_get = rule_set_subparser.add_parser(
@@ -126,6 +129,7 @@ def setup_curated_rules_command(subparsers):
         "list", help="List curated rule set categories"
     )
     add_pagination_args(rule_set_cat_list)
+    add_as_list_arg(rule_set_cat_list)
     rule_set_cat_list.set_defaults(
         func=handle_curated_rules_rule_set_category_list_command
     )
@@ -159,6 +163,7 @@ def setup_curated_rules_command(subparsers):
         "--only-alerting", dest="only_alerting", action="store_true"
     )
     add_pagination_args(rule_set_deployment_list)
+    add_as_list_arg(rule_set_deployment_list)
     rule_set_deployment_list.set_defaults(
         func=handle_curated_rules_rule_set_deployment_list_command
     )
@@ -209,6 +214,7 @@ def handle_curated_rules_rules_list_command(args, chronicle):
         out = chronicle.list_curated_rules(
             page_size=getattr(args, "page_size", None),
             page_token=getattr(args, "page_token", None),
+            as_list=getattr(args, "as_list", False),
         )
         output_formatter(out, getattr(args, "output", "json"))
     except Exception as e:  # pylint: disable=broad-exception-caught
@@ -260,6 +266,7 @@ def handle_curated_rules_rule_set_list_command(args, chronicle):
         out = chronicle.list_curated_rule_sets(
             page_size=getattr(args, "page_size", None),
             page_token=getattr(args, "page_token", None),
+            as_list=getattr(args, "as_list", False),
         )
         output_formatter(out, getattr(args, "output", "json"))
     except Exception as e:  # pylint: disable=broad-exception-caught
@@ -283,6 +290,7 @@ def handle_curated_rules_rule_set_category_list_command(args, chronicle):
         out = chronicle.list_curated_rule_set_categories(
             page_size=getattr(args, "page_size", None),
             page_token=getattr(args, "page_token", None),
+            as_list=getattr(args, "as_list", False),
         )
         output_formatter(out, getattr(args, "output", "json"))
     except Exception as e:  # pylint: disable=broad-exception-caught
@@ -309,6 +317,7 @@ def handle_curated_rules_rule_set_deployment_list_command(args, chronicle):
             only_alerting=bool(args.only_alerting),
             page_size=getattr(args, "page_size", None),
             page_token=getattr(args, "page_token", None),
+            as_list=getattr(args, "as_list", False),
         )
         output_formatter(out, getattr(args, "output", "json"))
     except Exception as e:  # pylint: disable=broad-exception-caught
