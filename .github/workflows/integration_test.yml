@@ -55,22 +55,40 @@ jobs:
                 // Get PR number from the issue
                 const prNumber = context.payload.issue.number;
                 
-                // Get list of commits in the PR
-                const { data: commits } = await github.rest.pulls.listCommits({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: prNumber
-                });
+                // Normalize SHA to lowercase for comparison
+                const normalizedSha = sha.toLowerCase();
+                
+                // Get all commits from the PR with pagination
+                const commits = [];
+                let page = 1;
+                let hasMore = true;
+                
+                while (hasMore) {
+                  const { data: pageCommits } = await github.rest.pulls.listCommits({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: prNumber,
+                    per_page: 100,
+                    page: page
+                  });
+                  
+                  commits.push(...pageCommits);
+                  hasMore = pageCommits.length === 100;
+                  page++;
+                }
+                
+                console.log(`Total commits in PR #${prNumber}: ${commits.length}`);
                 
                 // Check if the provided SHA exists in this PR's commits
-                const commitExists = commits.some(commit => commit.sha === sha);
+                const commitExists = commits.some(commit => commit.sha.toLowerCase() === normalizedSha);
                 
                 if (commitExists) {
                   console.log(`Verified SHA ${sha} belongs to PR #${prNumber}`);
                   core.setOutput('has_sha', 'true');
-                  return sha; // Return the SHA directly as the result
+                  return normalizedSha;
                 } else {
                   console.log(`Error: SHA ${sha} does not belong to PR #${prNumber}`);
+                  console.log(`Total commits checked: ${commits.length}`);
                   console.log('The SHA must be from a commit in the current PR.');
                   core.setOutput('has_sha', 'false');
                   return ''; // Return empty string if SHA not in PR
