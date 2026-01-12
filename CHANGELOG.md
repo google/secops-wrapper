@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+
+## [0.34.0] - 2026-01-12
+### Added
+- `as_list` parameter for paginated list methods to streamline API requests and automatically fetch all pages
+  - Supported methods: `list_watchlists`, `list_curated_rules`, `list_curated_rule_sets`, `list_curated_rule_set_categories`, `list_curated_rule_set_deployments`, `list_featured_content_rules`
+- CLI `--as-list` flag for corresponding list commands
+
+### Updated
+- Refactored modules to use centralized `chronicle_request` helper function for improved code consistency and maintainability
+  - Watchlist (`watchlist.py`)
+  - Curated rule set (`rule_set.py`)
+  - Investigation (`investigations.py`)
+  - UDM mapping (`udm_mapping.py`)
+  - UDM search (`udm_search.py`)
+  - Validation (`validate.py`)
+
 ## [0.33.0] - 2026-01-07
 ### Added
 - Support for following investigation methods:
