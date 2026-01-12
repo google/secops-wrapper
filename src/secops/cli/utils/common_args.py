@@ -133,3 +133,21 @@ def add_pagination_args(parser: argparse.ArgumentParser) -> None:
         dest="page_token",
         help="A page token, received from a previous `list` call.",
     )
+
+
+def add_as_list_arg(parser: argparse.ArgumentParser) -> None:
+    """Add as_list argument to a parser.
+
+    Args:
+        parser: Parser to add arguments to
+    """
+    parser.add_argument(
+        "--as-list",
+        "--as_list",
+        dest="as_list",
+        action="store_true",
+        help=(
+            "Return results as a list instead of a dict with pagination "
+            "metadata."
+        ),
+    )

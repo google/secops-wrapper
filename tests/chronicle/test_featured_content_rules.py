@@ -13,13 +13,14 @@
 # limitations under the License.
 #
 """Tests for Chronicle featured content rules functions."""
-
+from sys import api_version
 from typing import Any, Dict
 from unittest.mock import Mock, patch
 
 import pytest
 
 from secops.chronicle.client import ChronicleClient
+from secops.chronicle.models import APIVersion
 from secops.chronicle.featured_content_rules import (
     list_featured_content_rules,
 )
@@ -96,12 +97,13 @@ def test_list_featured_content_rules_success_without_params(
 
         mock_paginated.assert_called_once_with(
             chronicle_client,
-            base_url=chronicle_client.base_url,
+            api_version=APIVersion.V1ALPHA,
             path="contentHub/featuredContentRules",
             items_key="featuredContentRules",
             page_size=None,
             page_token=None,
             extra_params=None,
+            as_list=False
         )
 
 
@@ -130,12 +132,13 @@ def test_list_featured_content_rules_with_page_size(chronicle_client):
 
         mock_paginated.assert_called_once_with(
             chronicle_client,
-            base_url=chronicle_client.base_url,
+            api_version=APIVersion.V1ALPHA,
             path="contentHub/featuredContentRules",
             items_key="featuredContentRules",
             page_size=10,
             page_token=None,
             extra_params=None,
+            as_list=False
         )
 
 
@@ -164,12 +167,13 @@ def test_list_featured_content_rules_with_page_token(chronicle_client):
 
         mock_paginated.assert_called_once_with(
             chronicle_client,
-            base_url=chronicle_client.base_url,
+            api_version=APIVersion.V1ALPHA,
             path="contentHub/featuredContentRules",
             items_key="featuredContentRules",
             page_size=None,
             page_token="token-xyz-789",
             extra_params=None,
+            as_list=False
         )
 
 
@@ -203,12 +207,13 @@ def test_list_featured_content_rules_with_filter_expression(
 
         mock_paginated.assert_called_once_with(
             chronicle_client,
-            base_url=chronicle_client.base_url,
+            api_version=APIVersion.V1ALPHA,
             path="contentHub/featuredContentRules",
             items_key="featuredContentRules",
             page_size=None,
             page_token=None,
             extra_params={"filter": filter_expr},
+            as_list=False
         )
 
 
@@ -241,18 +246,20 @@ def test_list_featured_content_rules_with_all_parameters(
             page_size=5,
             page_token="current-token",
             filter_expression=filter_expr,
+            as_list=False
         )
 
         assert result == expected
 
         mock_paginated.assert_called_once_with(
             chronicle_client,
-            base_url=chronicle_client.base_url,
+            api_version=APIVersion.V1ALPHA,
             path="contentHub/featuredContentRules",
             items_key="featuredContentRules",
             page_size=5,
             page_token="current-token",
             extra_params={"filter": filter_expr},
+            as_list=False
         )
 
 
@@ -329,10 +336,11 @@ def test_list_featured_content_rules_max_page_size(chronicle_client):
 
         mock_paginated.assert_called_once_with(
             chronicle_client,
-            base_url=chronicle_client.base_url,
+            api_version=APIVersion.V1ALPHA,
             path="contentHub/featuredContentRules",
             items_key="featuredContentRules",
             page_size=1000,
             page_token=None,
             extra_params=None,
+            as_list=False
         )

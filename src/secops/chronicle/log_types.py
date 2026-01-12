@@ -49,7 +49,7 @@ def _fetch_log_types_from_api(
         List of log types.
 
     Raises:
-        Exception: If request fails.
+        APIError: If the API request fails.
     """
     url = f"{client.base_url}/{client.instance_id}/logTypes"
     all_log_types: list[dict[str, Any]] = []

@@ -42,7 +42,7 @@ def test_cli_featured_content_rules_list_with_filter(cli_env, common_args):
 
     try:
         output = json.loads(result.stdout)
-        assert isinstance(output, dict)
+        assert isinstance(output, dict), "Expected dict response"
         assert "featuredContentRules" in output
         assert isinstance(output["featuredContentRules"], list)
 
@@ -77,7 +77,7 @@ def test_cli_featured_content_rules_list_with_page_size(cli_env, common_args):
 
     try:
         output = json.loads(result.stdout)
-        assert isinstance(output, dict)
+        assert isinstance(output, dict), "Expected dict response"
         assert "featuredContentRules" in output
         assert len(output["featuredContentRules"]) <= 5
 
