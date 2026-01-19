@@ -20,6 +20,7 @@ from secops.cli.utils.formatters import output_formatter
 from secops.cli.utils.common_args import (
     add_time_range_args,
     add_pagination_args,
+    add_as_list_arg,
 )
 from secops.cli.utils.input_utils import load_json_or_file
 
@@ -38,6 +39,7 @@ def setup_watchlist_command(subparsers):
     list_parser = lvl1.add_parser("list", help="List watchlists")
     add_time_range_args(list_parser)
     add_pagination_args(list_parser)
+    add_as_list_arg(list_parser)
     list_parser.set_defaults(func=handle_watchlist_list_command)
 
     # get command
@@ -156,6 +158,7 @@ def handle_watchlist_list_command(args, chronicle):
         out = chronicle.list_watchlists(
             page_size=getattr(args, "page_size", None),
             page_token=getattr(args, "page_token", None),
+            as_list=getattr(args, "as_list", False),
         )
         output_formatter(out, getattr(args, "output", "json"))
     except Exception as e:  # pylint: disable=broad-exception-caught

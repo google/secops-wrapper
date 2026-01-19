@@ -249,9 +249,14 @@ secops log types --search "windows"
 # Fetch specific page using token
 secops log types --page-size 50 --page-token "next_page_token"
 
-# Search for log types
-secops log types --search "firewall"
+# Classify logs to predict log type:
+secops log classify --log '{"eventType": "user.session.start", "actor": {"alternateId": "user@example.com"}}'
+
+# Classify a log from a file
+secops log classify --log /path/to/log_file.json
 ```
+
+> **Note:** The classify command returns predictions sorted by confidence score. Confidence scores are provided by the API as guidance only and may not always accurately reflect classification certainty. Use scores for relative ranking rather than absolute confidence.
 
 > **Note:** Chronicle uses parsers to process and normalize raw log data into UDM format. If you're ingesting logs for a custom format, you may need to create or configure parsers. See the [Parser Management](#parser-management) section for details on managing parsers.
 
@@ -671,8 +676,11 @@ secops parser-extension delete --log-type OKTA --id "1234567890"
 List watchlists:
 
 ```bash
-# List all watchlists
+# List all watchlists (returns dict with pagination metadata)
 secops watchlist list
+
+# List watchlists as a direct list (fetches all pages automatically)
+secops watchlist list --as-list
 
 # List watchlist with pagination 
 secops watchlist list --page-size 50
@@ -824,10 +832,17 @@ The `rule test` command outputs UDM events as pure JSON objects that can be pipe
 ### Curated Rule Set Management
 
 List all curated rules:
+
 ```bash
+# List all curated rules (returns dict with pagination metadata)
 secops curated-rule rule list
+
+# List curated rules as a direct list
+secops curated-rule rule list --as-list
 ```
+
 Get curated rules:
+
 ```bash
 # Get rule by UUID
 secops curated-rule rule get --id "ur_ttp_GCP_ServiceAPIDisable"
@@ -837,6 +852,7 @@ secops curated-rule rule get --name "GCP Service API Disable"
 ```
 
 Search for curated rule detections:
+
 ```bash
 secops curated-rule search-detections \
   --rule-id "ur_ttp_GCP_MassSecretDeletion" \
@@ -856,33 +872,54 @@ secops curated-rule search-detections \
 ```
 
 List all curated rule sets:
+
 ```bash
+# List all curated rule sets (returns dict with pagination metadata)
 secops curated-rule rule-set list
+
+# List curated rule sets as a direct list
+secops curated-rule rule-set list --as-list
 ```
 
 Get specific curated rule set details:
+
 ```bash
 # Get curated rule set by UUID
 secops curated-rule rule-set get --id "f5533b66-9327-9880-93e6-75a738ac2345"
+
+# Get curated rule set by name
+secops curated-rule rule-set get --name "Active Breach Priority Host Indicators"
 ```
 
 List all curated rule set categories:
+
 ```bash
+# List all curated rule set categories (returns dict with pagination metadata)
 secops curated-rule rule-set-category list
+
+# List curated rule set categories as a direct list
+secops curated-rule rule-set-category list --as-list
 ```
 
 Get specific curated rule set category details:
+
 ```bash
 # Get curated rule set category by UUID
 secops curated-rule rule-set-category get --id "db1114d4-569b-5f5d-0fb4-f65aaa766c92"
 ```
 
 List all curated rule set deployments:
+
 ```bash
+# List all curated rule set deployments (returns dict with pagination metadata)
 secops curated-rule rule-set-deployment list
+
+# List curated rule set deployments as a direct list
+secops curated-rule rule-set-deployment list --as-list
 ```
 
 Get specific curated rule set deployment details:
+
 ```bash
 # Get curated rule set deployment by UUID
 secops curated-rule rule-set-deployment get --id "f5533b66-9327-9880-93e6-75a738ac2345"
@@ -977,6 +1014,58 @@ secops case --ids "case-123,case-456"
 ```
 
 > **Note**: The case management uses a batch API that can retrieve multiple cases in a single request. You can provide up to 1000 case IDs separated by commas.
+
+### Investigation Management
+
+Chronicle investigations provide automated analysis and recommendations for alerts and cases. Use these commands to list, retrieve, trigger, and fetch associated investigations.
+
+#### List investigations
+
+```bash
+# List all investigations
+secops investigation list
+
+# List with pagination
+secops investigation list --page-size 50
+
+# List with pagination token
+secops investigation list --page-size 50 --page-token "token"
+```
+
+#### Get investigation details
+
+```bash
+# Get a specific investigation by ID
+secops investigation get --id "inv_123"
+```
+
+#### Trigger investigation for an alert
+
+```bash
+# Trigger an investigation for a specific alert
+secops investigation trigger --alert-id "alert_123"
+```
+
+#### Fetch associated investigations
+
+```bash
+# Fetch investigations associated with specific alerts
+secops investigation fetch-associated \
+  --detection-type "ALERT" \
+  --alert-ids "alert_123,alert_456" \
+  --association-limit 5
+
+# Fetch investigations associated with a case
+secops investigation fetch-associated \
+  --detection-type "CASE" \
+  --case-ids "case_123"
+
+# Fetch with ordering
+secops investigation fetch-associated \
+  --detection-type "ALERT" \
+  --alert-ids "alert_123" \
+  --order-by "createTime desc"
+```
 
 ### Data Export
 
@@ -1242,6 +1331,37 @@ secops reference-list update \
 secops reference-list update \
   --name "malicious_domains" \
   --entries-file "/path/to/updated_domains.txt"
+```
+
+### Featured Content Rules
+
+Featured content rules are pre-built detection rules available in the Chronicle Content Hub. These curated rules can be listed and filtered to help you discover and deploy detections.
+
+#### List all featured content rules:
+
+```bash
+# List all featured content rules (returns dict with pagination metadata)
+secops featured-content-rules list
+
+# List featured content rules as a direct list
+secops featured-content-rules list --as-list
+```
+
+#### List with pagination:
+
+```bash
+# Get first page with 10 rules
+secops featured-content-rules list --page-size 10
+
+# Get next page using token from previous response
+secops featured-content-rules list --page-size 10 --page-token "token123"
+```
+
+#### Get filtered list:
+
+```bash
+secops featured-content-rules list \
+  --filter 'category_name:"Threat Detection" AND rule_precision:"Precise"'
 ```
 
 ## Examples

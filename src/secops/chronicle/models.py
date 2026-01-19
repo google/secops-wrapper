@@ -62,6 +62,17 @@ class ListBasis(str, Enum):
         return self.value
 
 
+class DetectionType(StrEnum):
+    """Detection type for investigation associations.
+
+    The type of identifiers provided for fetching associated investigations.
+    """
+
+    UNSPECIFIED = "DETECTION_TYPE_UNSPECIFIED"
+    ALERT = "DETECTION_TYPE_ALERT"
+    CASE = "DETECTION_TYPE_CASE"
+
+
 @dataclass
 class TimeInterval:
     """Time interval with start and end times."""

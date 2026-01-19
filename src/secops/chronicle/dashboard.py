@@ -19,7 +19,7 @@ This module provides functions to manage dashboard and charts.
 
 import json
 import sys
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from secops.chronicle.models import (
     DashboardChart,
@@ -28,6 +28,9 @@ from secops.chronicle.models import (
     TileType,
 )
 from secops.exceptions import APIError, SecOpsError
+
+if TYPE_CHECKING:
+    from secops.chronicle.client import ChronicleClient
 
 # Use built-in StrEnum if Python 3.11+, otherwise create a compatible version
 if sys.version_info >= (3, 11):
@@ -57,7 +60,7 @@ class DashboardView(StrEnum):
 
 
 def create_dashboard(
-    client,
+    client: "ChronicleClient",
     display_name: str,
     access_type: DashboardAccessType,
     description: str | None = None,
@@ -125,7 +128,9 @@ def create_dashboard(
     return response.json()
 
 
-def import_dashboard(client, dashboard: dict[str, Any]) -> dict[str, Any]:
+def import_dashboard(
+    client: "ChronicleClient", dashboard: dict[str, Any]
+) -> dict[str, Any]:
     """Import a native dashboard.
 
     Args:
@@ -162,8 +167,11 @@ def import_dashboard(client, dashboard: dict[str, Any]) -> dict[str, Any]:
     return response.json()
 
 
-def export_dashboard(client, dashboard_names: list[str]) -> dict[str, Any]:
+def export_dashboard(
+    client: "ChronicleClient", dashboard_names: list[str]
+) -> dict[str, Any]:
     """Export native dashboards.
+    It supports single dashboard export operation only.
 
     Args:
         client: ChronicleClient instance
@@ -198,7 +206,7 @@ def export_dashboard(client, dashboard_names: list[str]) -> dict[str, Any]:
 
 
 def list_dashboards(
-    client,
+    client: "ChronicleClient",
     page_size: int | None = None,
     page_token: str | None = None,
 ) -> dict[str, Any]:
@@ -231,7 +239,7 @@ def list_dashboards(
 
 
 def get_dashboard(
-    client,
+    client: "ChronicleClient",
     dashboard_id: str,
     view: DashboardView | None = None,
 ) -> dict[str, Any]:
@@ -270,7 +278,7 @@ def get_dashboard(
 
 # Updated update_dashboard function
 def update_dashboard(
-    client,
+    client: "ChronicleClient",
     dashboard_id: str,
     display_name: str | None = None,
     description: str | None = None,
@@ -346,7 +354,9 @@ def update_dashboard(
     return response.json()
 
 
-def delete_dashboard(client, dashboard_id: str) -> dict[str, Any]:
+def delete_dashboard(
+    client: "ChronicleClient", dashboard_id: str
+) -> dict[str, Any]:
     """Delete a dashboard.
 
     Args:
@@ -377,7 +387,7 @@ def delete_dashboard(client, dashboard_id: str) -> dict[str, Any]:
 
 
 def duplicate_dashboard(
-    client,
+    client: "ChronicleClient",
     dashboard_id: str,
     display_name: str,
     access_type: DashboardAccessType,
@@ -427,7 +437,7 @@ def duplicate_dashboard(
 
 
 def add_chart(
-    client,
+    client: "ChronicleClient",
     dashboard_id: str,
     display_name: str,
     chart_layout: dict[str, Any] | str,
@@ -533,7 +543,7 @@ def add_chart(
     return response.json()
 
 
-def get_chart(client, chart_id: str) -> dict[str, Any]:
+def get_chart(client: "ChronicleClient", chart_id: str) -> dict[str, Any]:
     """Get detail for dashboard chart.
 
     Args:
@@ -558,7 +568,7 @@ def get_chart(client, chart_id: str) -> dict[str, Any]:
 
 
 def remove_chart(
-    client,
+    client: "ChronicleClient",
     dashboard_id: str,
     chart_id: str,
 ) -> dict[str, Any]:
@@ -600,7 +610,7 @@ def remove_chart(
 
 
 def edit_chart(
-    client,
+    client: "ChronicleClient",
     dashboard_id: str,
     dashboard_query: None | (dict[str, Any] | DashboardQuery | str) = None,
     dashboard_chart: None | (dict[str, Any] | DashboardChart | str) = None,

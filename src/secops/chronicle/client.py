@@ -112,6 +112,18 @@ from secops.chronicle.gemini import GeminiResponse
 from secops.chronicle.gemini import opt_in_to_gemini as _opt_in_to_gemini
 from secops.chronicle.gemini import query_gemini as _query_gemini
 from secops.chronicle.ioc import list_iocs as _list_iocs
+from secops.chronicle.investigations import (
+    fetch_associated_investigations as _fetch_associated_investigations,
+)
+from secops.chronicle.investigations import (
+    get_investigation as _get_investigation,
+)
+from secops.chronicle.investigations import (
+    list_investigations as _list_investigations,
+)
+from secops.chronicle.investigations import (
+    trigger_investigation as _trigger_investigation,
+)
 from secops.chronicle.log_ingest import create_forwarder as _create_forwarder
 from secops.chronicle.log_ingest import delete_forwarder as _delete_forwarder
 from secops.chronicle.log_ingest import get_forwarder as _get_forwarder
@@ -123,6 +135,7 @@ from secops.chronicle.log_ingest import ingest_log as _ingest_log
 from secops.chronicle.log_ingest import ingest_udm as _ingest_udm
 from secops.chronicle.log_ingest import list_forwarders as _list_forwarders
 from secops.chronicle.log_ingest import update_forwarder as _update_forwarder
+from secops.chronicle.log_types import classify_logs as _classify_logs
 from secops.chronicle.log_types import get_all_log_types as _get_all_log_types
 from secops.chronicle.log_types import (
     get_log_type_description as _get_log_type_description,
@@ -304,6 +317,9 @@ from secops.chronicle.rule_set import (
 )
 from secops.chronicle.rule_set import (
     update_curated_rule_set_deployment as _update_curated_rule_set_deployment,
+)
+from secops.chronicle.featured_content_rules import (
+    list_featured_content_rules as _list_featured_content_rules,
 )
 from secops.chronicle.rule_validation import validate_rule as _validate_rule
 from secops.chronicle.search import search_udm as _search_udm
@@ -631,20 +647,25 @@ class ChronicleClient:
         self,
         page_size: int | None = None,
         page_token: str | None = None,
-    ) -> dict[str, Any]:
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         """Get a list of all watchlists.
 
         Args:
             page_size: Maximum number of watchlists to return per page
             page_token: Token for the next page of results, if available
+            as_list: If True, return a list of watchlists instead of a dict
+                with watchlists list and nextPageToken.
 
         Returns:
-            Dictionary with list of watchlists
+            If as_list is True: List of watchlists.
+            If as_list is False: Dict with watchlists list and
+                nextPageToken.
 
         Raises:
             APIError: If the API request fails
         """
-        return _list_watchlists(self, page_size, page_token)
+        return _list_watchlists(self, page_size, page_token, as_list)
 
     def get_watchlist(
         self,
@@ -1885,6 +1906,105 @@ class ChronicleClient:
         """
         return _test_pipeline(self, pipeline, input_logs)
 
+    # Investigation methods
+
+    def fetch_associated_investigations(
+        self,
+        detection_type: str,
+        alert_ids: list[str] | None = None,
+        case_ids: list[str] | None = None,
+        association_limit_per_detection: int | None = None,
+        order_by: str | None = None,
+    ) -> dict[str, Any]:
+        """Fetches investigations associated with alerts or cases.
+
+        Args:
+            detection_type: Type of identifiers. Can be a DetectionType
+                enum value or string. Valid values:
+                - DetectionType.ALERT
+                - DetectionType.CASE
+                - DetectionType.UNSPECIFIED
+            alert_ids: Alert IDs to fetch investigations for (max 100).
+            case_ids: Case IDs to fetch investigations for (max 100).
+            association_limit_per_detection: Max associations per
+                detection (default 1, max 5).
+            order_by: Ordering of associations. Supported fields:
+                "createTime", "createTime desc", "updateTime",
+                "updateTime desc".
+
+        Returns:
+            Dictionary containing associations list and experimental flags.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _fetch_associated_investigations(
+            self,
+            detection_type,
+            alert_ids,
+            case_ids,
+            association_limit_per_detection,
+            order_by,
+        )
+
+    def get_investigation(self, investigation_id: str) -> dict[str, Any]:
+        """Gets an investigation by ID.
+
+        Args:
+            investigation_id: ID of the investigation to retrieve.
+
+        Returns:
+            Dictionary containing investigation information.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_investigation(self, investigation_id)
+
+    def list_investigations(
+        self,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_expr: str | None = None,
+        order_by: str | None = None,
+    ) -> dict[str, Any]:
+        """Lists investigations.
+
+        Args:
+            page_size: Maximum number of investigations to return
+                (default 100, max 1000).
+            page_token: Page token for pagination.
+            filter_expr: Filter expression. Supported fields:
+                "alertId", "caseId". Example: 'alertId="alert123"'
+            order_by: Ordering of investigations. Default is create time
+                descending. Supported fields: "startTime", "endTime",
+                "displayName".
+
+        Returns:
+            Dictionary containing investigations, next page token, and
+            total size.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _list_investigations(
+            self, page_size, page_token, filter_expr, order_by
+        )
+
+    def trigger_investigation(self, alert_id: str) -> dict[str, Any]:
+        """Triggers an investigation for a specific alert.
+
+        Args:
+            alert_id: The alert ID for which to trigger investigation.
+
+        Returns:
+            Dictionary containing the created investigation.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _trigger_investigation(self, alert_id)
+
     def list_rules(
         self,
         view: str | None = "FULL",
@@ -2566,39 +2686,51 @@ class ChronicleClient:
         self,
         page_size: int | None = None,
         page_token: str | None = None,
-    ) -> list[dict[str, Any]]:
+        as_list: bool = False,
+    ) -> list[dict[str, Any]] | dict[str, Any]:
         """Get a list of all curated rule sets.
 
         Args:
             page_size: Number of results to return per page
             page_token: Token for the page to retrieve
+            as_list: Whether to return the list of curated rule sets
+                as a list instead of a dict
 
         Returns:
-            Dictionary containing the list of curated rule sets
+            If as_list is True: List of curated rule sets.
+            If as_list is False: Dict with curatedRuleSets list and
+                nextPageToken.
 
         Raises:
             APIError: If the API request fails
         """
-        return _list_curated_rule_sets(self, page_size, page_token)
+        return _list_curated_rule_sets(self, page_size, page_token, as_list)
 
     def list_curated_rule_set_categories(
         self,
         page_size: int | None = None,
         page_token: str | None = None,
-    ) -> list[dict[str, Any]]:
+        as_list: bool = False,
+    ) -> list[dict[str, Any]] | dict[str, Any]:
         """Get a list of all curated rule set categories.
 
         Args:
             page_size: Number of results to return per page
             page_token: Token for the page to retrieve
+            as_list: Whether to return the list of curated rule
+                set categories as a list instead of a dict
 
         Returns:
-            Dictionary containing the list of curated rule set categories
+            If as_list is True: List of curated rule set categories.
+            If as_list is False: Dict with curatedRuleSetCategories list
+                and nextPageToken.
 
         Raises:
             APIError: If the API request fails
         """
-        return _list_curated_rule_set_categories(self, page_size, page_token)
+        return _list_curated_rule_set_categories(
+            self, page_size, page_token, as_list
+        )
 
     def list_curated_rule_set_deployments(
         self,
@@ -2606,7 +2738,8 @@ class ChronicleClient:
         page_token: str | None = None,
         only_enabled: bool | None = False,
         only_alerting: bool | None = False,
-    ) -> list[dict[str, Any]]:
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         """Get a list of all curated rule set deployments.
 
         Args:
@@ -2614,15 +2747,19 @@ class ChronicleClient:
             page_token: Token for the page to retrieve
             only_enabled: Only return enabled rule set deployments
             only_alerting: Only return alerting rule set deployments
+            as_list: Whether to return the list of curated rule
+                set deployments as a list instead of a dict
 
         Returns:
-            Dictionary containing the list of curated rule set deployments
+            If as_list is True: List of curated rule set deployments.
+            If as_list is False: Dict with curatedRuleSetDeployments list
+                and nextPageToken.
 
         Raises:
             APIError: If the API request fails
         """
         return _list_curated_rule_set_deployments(
-            self, page_size, page_token, only_enabled, only_alerting
+            self, page_size, page_token, only_enabled, only_alerting, as_list
         )
 
     def get_curated_rule_set_deployment(
@@ -2672,20 +2809,25 @@ class ChronicleClient:
         self,
         page_size: int | None = None,
         page_token: str | None = None,
-    ) -> list[dict[str, Any]]:
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         """Get a list of all curated rules.
 
         Args:
             page_size: Number of results to return per page
             page_token: Token for the page to retrieve
+            as_list: Whether to return the list of curated rules as
+                a list instead of a dict
 
         Returns:
-            Dictionary containing the list of curated rules
+            If as_list is True: List of curated rules.
+            If as_list is False: Dict with curatedRules list and
+                nextPageToken.
 
         Raises:
             APIError: If the API request fails
         """
-        return _list_curated_rules(self, page_size, page_token)
+        return _list_curated_rules(self, page_size, page_token, as_list)
 
     def get_curated_rule(self, rule_id: str) -> dict[str, Any]:
         """Get a curated rule by ID.
@@ -2768,6 +2910,44 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _get_curated_rule_set(self, rule_set_id)
+
+    def list_featured_content_rules(
+        self,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_expression: str | None = None,
+        as_list: bool = False,
+    ) -> list[dict[str, Any]] | dict[str, Any]:
+        """List featured content rules from Chronicle Content Hub.
+
+        Args:
+            page_size: Maximum number of featured content rules to return.
+                If unspecified, at most 100 rules will be returned.
+                Maximum value is 1000. If provided, returns dict with
+                nextPageToken.
+            page_token: Token for retrieving the next page of results.
+            filter_expression: Optional filter expression. Supported:
+                - category_name:"<category_name>" (OR for multiple)
+                - policy_name:"<policy_name>" (OR for multiple)
+                - rule_id:"ur_<id>" (OR for multiple)
+                - rule_precision:"<rule_precision>" (Precise or Broad)
+                - search_rule_name_or_description=~"<text>"
+                Multiple filters can be combined with AND operator.
+            as_list: If True, return a list of featured content rules
+                instead of a dict with featuredContentRules list
+                and nextPageToken.
+
+        Returns:
+            If as_list is True: List of featured content rules.
+            If as_list is False: Dict with featuredContentRules list and
+                nextPageToken if more results are available.
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _list_featured_content_rules(
+            self, page_size, page_token, filter_expression, as_list
+        )
 
     def search_curated_detections(
         self,
@@ -3263,6 +3443,29 @@ class ChronicleClient:
             search_in_description,
             client=self,
         )
+
+    def classify_logs(
+        self,
+        log_data: str,
+    ) -> list[dict[str, Any]]:
+        """Classify a raw log to predict its log type.
+
+        Args:
+            log_data: Raw log string
+
+        Returns:
+            List of possible log types sorted by confidence score.
+
+        Note:
+            Confidence scores are provided by the API as guidance only and
+            may not always accurately reflect classification certainty.
+            Use scores for relative ranking rather than absolute confidence.
+
+        Raises:
+            SecOpsError: If log_data is empty or not a string.
+            APIError: If the API request fails.
+        """
+        return _classify_logs(client=self, log_data=log_data)
 
     def ingest_udm(
         self,
@@ -4127,6 +4330,7 @@ class ChronicleClient:
 
     def export_dashboard(self, dashboard_names: list[str]) -> dict[str, Any]:
         """Export native dashboards.
+        It supports single dashboard export operation only.
 
         Args:
             dashboard_names: List of dashboard resource names to export.

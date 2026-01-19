@@ -389,7 +389,20 @@ else:
     print("Invalid log type")
 ```
 
-4. Use custom forwarders:
+4. Classify logs to predict log type:
+```python
+# Classify a raw log to determine its type
+okta_log = '{"eventType": "user.session.start", "actor": {"alternateId": "user@example.com"}}'
+predictions = chronicle.classify_logs(log_data=okta_log)
+
+# Display predictions sorted by confidence score
+for prediction in predictions:
+    print(f"Log Type: {prediction['logType']}, Score: {prediction['score']}")
+```
+
+> **Note:** Confidence scores are provided by the API as guidance only and may not always accurately reflect classification certainty. Use scores for relative ranking rather than absolute confidence.
+
+5. Use custom forwarders:
 ```python
 # Create or get a custom forwarder
 forwarder = chronicle.get_or_create_forwarder(display_name="MyCustomForwarder")
@@ -1390,6 +1403,92 @@ case = cases.get_case("case-id-1")
 
 > **Note**: The case management API uses the `legacy:legacyBatchGetCases` endpoint to retrieve multiple cases in a single request. You can retrieve up to 1000 cases in a single batch.
 
+### Investigation Management
+
+Chronicle investigations provide automated analysis and recommendations for alerts and cases. The SDK provides methods to list, retrieve, trigger, and fetch associated investigations.
+
+#### List investigations
+
+Retrieve all investigations in your Chronicle instance:
+
+```python
+# List all investigations
+result = chronicle.list_investigations()
+investigations = result.get("investigations", [])
+
+for inv in investigations:
+    print(f"Investigation: {inv['displayName']}")
+    print(f"  Status: {inv.get('status', 'N/A')}")
+    print(f"  Verdict: {inv.get('verdict', 'N/A')}")
+
+# List with pagination
+result = chronicle.list_investigations(page_size=50, page_token="token")
+```
+
+#### Get investigation details
+
+Retrieve a specific investigation by its ID:
+
+```python
+# Get investigation by ID
+investigation = chronicle.get_investigation(investigation_id="inv_123")
+
+print(f"Name: {investigation['displayName']}")
+print(f"Status: {investigation.get('status')}")
+print(f"Verdict: {investigation.get('verdict')}")
+print(f"Confidence: {investigation.get('confidence')}")
+```
+
+#### Trigger investigation for an alert
+
+Create a new investigation for a specific alert:
+
+```python
+# Trigger investigation for an alert
+investigation = chronicle.trigger_investigation(alert_id="alert_123")
+
+print(f"Investigation created: {investigation['name']}")
+print(f"Status: {investigation.get('status')}")
+print(f"Trigger type: {investigation.get('triggerType')}")
+```
+
+#### Fetch associated investigations
+
+Retrieve investigations associated with alerts or cases:
+
+```python
+from secops.chronicle import DetectionType
+
+# Fetch investigations for specific alerts
+result = chronicle.fetch_associated_investigations(
+    detection_type=DetectionType.ALERT,
+    alert_ids=["alert_123", "alert_456"],
+    association_limit_per_detection=5
+)
+
+# Process associations
+associations_list = result.get("associationsList", {})
+for alert_id, data in associations_list.items():
+    investigations = data.get("investigations", [])
+    print(f"Alert {alert_id}: {len(investigations)} investigation(s)")
+    
+    for inv in investigations:
+        print(f"  - {inv['displayName']}: {inv.get('verdict', 'N/A')}")
+
+# Fetch investigations for cases
+case_result = chronicle.fetch_associated_investigations(
+    detection_type=DetectionType.CASE,
+    case_ids=["case_123"],
+    association_limit_per_detection=3
+)
+
+# You can also use string values for detection_type
+result = chronicle.fetch_associated_investigations(
+    detection_type="ALERT",  # or "DETECTION_TYPE_ALERT"
+    alert_ids=["alert_123"]
+)
+```
+
 ### Generating UDM Key/Value Mapping
 Chronicle provides a feature to generate UDM key-value mapping for a given row log.
 
@@ -1755,7 +1854,15 @@ watchlist = chronicle.get_watchlist("acb-123-def")
 List all watchlists:
 
 ```python
+# List watchlists (returns dict with pagination metadata)
 watchlists = chronicle.list_watchlists()
+for watchlist in watchlists.get("watchlists", []):
+    print(f"Watchlist: {watchlist.get('displayName')}")
+
+# List watchlists as a direct list (automatically fetches all pages)
+watchlists = chronicle.list_watchlists(as_list=True)
+for watchlist in watchlists:
+    print(f"Watchlist: {watchlist.get('displayName')}")
 ```
 
 ## Rule Management
@@ -2065,13 +2172,20 @@ If `tooManyAlerts` is True in the response, consider narrowing your search crite
 Query curated rules:
 
 ```python
-# List all curated rules
-rules = chronicle.list_curated_rules()
-for rule in rules:
+# List all curated rules (returns dict with pagination metadata)
+result = chronicle.list_curated_rules()
+for rule in result.get("curatedRules", []):
     rule_id = rule.get("name", "").split("/")[-1]
     display_name = rule.get("description")
     description = rule.get("description")
     print(f"Rule: {display_name}, Description: {description}")
+
+# List all curated rules as a direct list
+rules = chronicle.list_curated_rules(as_list=True)
+for rule in rules:
+    rule_id = rule.get("name", "").split("/")[-1]
+    display_name = rule.get("description")
+    print(f"Rule: {display_name}")
 
 # Get a curated rule
 rule = chronicle.get_curated_rule("ur_ttp_lol_Atbroker")
@@ -2119,8 +2233,15 @@ if "nextPageToken" in result:
 Query curated rule sets:
 
 ```python
-# List all curated rule sets
-rule_sets = chronicle.list_curated_rule_sets()
+# List all curated rule sets (returns dict with pagination metadata)
+result = chronicle.list_curated_rule_sets()
+for rule_set in result.get("curatedRuleSets", []):
+    rule_set_id = rule_set.get("name", "").split("/")[-1]
+    display_name = rule_set.get("displayName")
+    print(f"Rule Set: {display_name}, ID: {rule_set_id}")
+
+# List all curated rule sets as a direct list
+rule_sets = chronicle.list_curated_rule_sets(as_list=True)
 for rule_set in rule_sets:
     rule_set_id = rule_set.get("name", "").split("/")[-1]
     display_name = rule_set.get("displayName")
@@ -2133,8 +2254,15 @@ rule_set = chronicle.get_curated_rule_set("00ad672e-ebb3-0dd1-2a4d-99bd7c5e5f93"
 Query curated rule set categories:
 
 ```python
-# List all curated rule set categories
-rule_set_categories = chronicle.list_curated_rule_set_categories()
+# List all curated rule set categories (returns dict with pagination metadata)
+result = chronicle.list_curated_rule_set_categories()
+for rule_set_category in result.get("curatedRuleSetCategories", []):
+    rule_set_category_id = rule_set_category.get("name", "").split("/")[-1]
+    display_name = rule_set_category.get("displayName")
+    print(f"Rule Set Category: {display_name}, ID: {rule_set_category_id}")
+
+# List all curated rule set categories as a direct list
+rule_set_categories = chronicle.list_curated_rule_set_categories(as_list=True)
 for rule_set_category in rule_set_categories:
     rule_set_category_id = rule_set_category.get("name", "").split("/")[-1]
     display_name = rule_set_category.get("displayName")
@@ -2147,9 +2275,9 @@ rule_set_category = chronicle.get_curated_rule_set_category("110fa43d-7165-2355-
 Manage curated rule set deployments (turn alerting on or off (either precise or broad) for curated rule sets):
 
 ```python
-# List all curated rule set deployments
-rule_set_deployments = chronicle.list_curated_rule_set_deployments()
-for rs_deployment in rule_set_deployments:
+# List all curated rule set deployments (returns dict with pagination metadata)
+result = chronicle.list_curated_rule_set_deployments()
+for rs_deployment in result.get("curatedRuleSetDeployments", []):
     rule_set_id = rs_deployment.get("name", "").split("/")[-3]
     category_id = rs_deployment.get("name", "").split("/")[-5]
     deployment_status = rs_deployment.get("name", "").split("/")[-1]
@@ -2162,6 +2290,13 @@ for rs_deployment in rule_set_deployments:
         f"Precision: {deployment_status}",
         f"Alerting: {alerting}",
     )
+
+# List all curated rule set deployments as a direct list
+rule_set_deployments = chronicle.list_curated_rule_set_deployments(as_list=True)
+for rs_deployment in rule_set_deployments:
+    rule_set_id = rs_deployment.get("name", "").split("/")[-3]
+    display_name = rs_deployment.get("displayName")
+    print(f"Rule Set: {display_name}, ID: {rule_set_id}")
 
 # Get curated rule set deployment by ID
 rule_set_deployment = chronicle.get_curated_rule_set_deployment("00ad672e-ebb3-0dd1-2a4d-99bd7c5e5f93")
@@ -2283,6 +2418,40 @@ activity = chronicle.compute_rule_exclusion_activity(
     exclusion_id,
     start_time=start_time,
     end_time=end_time
+)
+```
+
+### Featured Content Rules
+
+Featured content rules are pre-built detection rules available in the Chronicle Content Hub. These curated rules help you quickly deploy detections without writing custom rules.
+
+```python
+# List all featured content rules
+rules = chronicle.list_featured_content_rules()
+for rule in rules.get("featuredContentRules", []):
+    rule_id = rule.get("name", "").split("/")[-1]
+    content_metadata = rule.get("contentMetadata", {})
+    display_name = content_metadata.get("displayName", "Unknown")
+    severity = rule.get("severity", "UNSPECIFIED")
+    print(f"Rule: {display_name} [{rule_id}] - Severity: {severity}")
+
+# List with pagination
+result = chronicle.list_featured_content_rules(page_size=10)
+rules = result.get("featuredContentRules", [])
+next_page_token = result.get("nextPageToken")
+
+if next_page_token:
+    next_page = chronicle.list_featured_content_rules(
+        page_size=10,
+        page_token=next_page_token
+    )
+
+# Filter list
+filtered_rules = chronicle.list_featured_content_rules(
+    filter_expression=(
+        'category_name:"Threat Detection" AND '
+        'rule_precision:"Precise"'
+    )
 )
 ```
 
@@ -2845,20 +3014,11 @@ except Exception as e:
 
 #### Export Dashboards
 
-Export one or more dashboards to a dictionary.
+Export dashboard to a dictionary.
 
 ```python
-import os
-from secops.chronicle import client
-
-# Assumes the CHRONICLE_SA_KEY environment variable is set with service account JSON
-chronicle_client = client.Client()
-
-# Export a single dashboard
+# Export a dashboard
 dashboards = chronicle.export_dashboard(dashboard_names=["<dashboard_id>"])
-
-# Export multiple dashboards
-dashboards = chronicle.export_dashboard(dashboard_names=["<dashboard_id_1>", "<dashboard_id_2>"])
 ```
 
 

@@ -12,6 +12,9 @@ from secops.cli.commands.case import setup_case_command
 from secops.cli.commands.config import setup_config_command
 from secops.cli.commands.curated_rule import setup_curated_rules_command
 from secops.cli.commands.dashboard import setup_dashboard_command
+from secops.cli.commands.featured_content_rules import (
+    setup_featured_content_rules_command,
+)
 from secops.cli.commands.dashboard_query import setup_dashboard_query_command
 from secops.cli.commands.data_table import setup_data_table_command
 from secops.cli.commands.entity import setup_entity_command
@@ -20,6 +23,7 @@ from secops.cli.commands.feed import setup_feed_command
 from secops.cli.commands.forwarder import setup_forwarder_command
 from secops.cli.commands.gemini import setup_gemini_command
 from secops.cli.commands.help import setup_help_command
+from secops.cli.commands.investigation import setup_investigation_command
 from secops.cli.commands.iocs import setup_iocs_command
 from secops.cli.commands.log import setup_log_command
 from secops.cli.commands.log_processing import (
@@ -160,6 +164,7 @@ def build_parser() -> argparse.ArgumentParser:
     setup_udm_search_view_command(subparsers)
     setup_stats_command(subparsers)
     setup_entity_command(subparsers)
+    setup_investigation_command(subparsers)
     setup_iocs_command(subparsers)
     setup_log_command(subparsers)
     setup_log_processing_command(subparsers)
@@ -176,6 +181,7 @@ def build_parser() -> argparse.ArgumentParser:
     setup_rule_exclusion_command(subparsers)
     setup_forwarder_command(subparsers)
     setup_curated_rules_command(subparsers)
+    setup_featured_content_rules_command(subparsers)
     setup_config_command(subparsers)
     setup_help_command(subparsers)
     setup_dashboard_command(subparsers)

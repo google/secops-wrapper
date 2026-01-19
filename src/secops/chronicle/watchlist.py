@@ -27,27 +27,32 @@ def list_watchlists(
     client: "ChronicleClient",
     page_size: int | None = None,
     page_token: str | None = None,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[dict[str, Any]]:
     """Get a list of watchlists.
 
     Args:
         client: ChronicleClient instance
         page_size: Number of results to return per page
         page_token: Token for the page to retrieve
+        as_list: If True, return a list of watchlists instead of a dict
+            with watchlists list and nextPageToken.
 
     Returns:
-        List of watchlists
+        If as_list is True: List of watchlists.
+        If as_list is False: Dict with watchlists list and nextPageToken.
 
     Raises:
         APIError: If the API request fails
     """
     return chronicle_paginated_request(
         client,
-        base_url=client.base_url(APIVersion.V1),
+        api_version=APIVersion.V1,
         path="watchlists",
         items_key="watchlists",
         page_size=page_size,
         page_token=page_token,
+        as_list=as_list,
     )
 
 

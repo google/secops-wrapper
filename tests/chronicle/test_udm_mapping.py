@@ -14,121 +14,94 @@
 #
 """Tests for the UDM Key/Value Mapping module."""
 
+from __future__ import annotations
+
 import base64
 from unittest.mock import Mock, patch
 
 import pytest
 
-from secops.chronicle.client import ChronicleClient
-from secops.chronicle.udm_mapping import (
-    RowLogFormat,
-    generate_udm_key_value_mappings,
-)
+from secops.chronicle.models import APIVersion
+from secops.chronicle.udm_mapping import RowLogFormat, generate_udm_key_value_mappings
 from secops.exceptions import APIError
 
 
 @pytest.fixture
-def chronicle_client():
-    """Create a mock Chronicle client for testing."""
-    with patch("secops.auth.SecOpsAuth") as mock_auth:
-        mock_session = Mock()
-        mock_session.headers = {}
-        mock_auth.return_value.session = mock_session
-        return ChronicleClient(
-            customer_id="test-customer", project_id="test-project"
-        )
-
-
-@pytest.fixture
-def response_mock():
-    """Create a mock API response object."""
-    mock = Mock()
-    mock.status_code = 200
-    mock.json.return_value = {"testKey": "testValue"}
-    return mock
+def client() -> Mock:
+    # This module only passes client through to chronicle_request
+    return Mock()
 
 
 def test_row_log_format_enum() -> None:
-    """Test RowLogFormat enum values and string representation."""
     assert str(RowLogFormat.JSON) == "JSON"
     assert str(RowLogFormat.CSV) == "CSV"
     assert str(RowLogFormat.XML) == "XML"
     assert str(RowLogFormat.LOG_FORMAT_UNSPECIFIED) == "LOG_FORMAT_UNSPECIFIED"
 
 
-def test_generate_udm_key_value_mappings_success(
-    chronicle_client, response_mock
-):
-    """Test generate_udm_key_value_mappings with success response."""
-
-    response_mock.json.return_value = {
+def test_generate_udm_key_value_mappings_success(client: Mock) -> None:
+    expected = {
         "fieldMappings": {
             "event.id": "123",
             "event.user": "test_user",
             "event.action": "allowed",
         }
     }
-    chronicle_client.session.post.return_value = response_mock
 
-    # Test input
     test_log = '{"event":{"id":"123","user":"test_user","action":"allowed"}}'
 
-    result = generate_udm_key_value_mappings(
-        chronicle_client,
-        RowLogFormat.JSON,
-        test_log,
-        use_array_bracket_notation=True,
-        compress_array_fields=False,
-    )
+    with patch("secops.chronicle.udm_mapping.chronicle_request", return_value=expected) as req:
+        result = generate_udm_key_value_mappings(
+            client,
+            RowLogFormat.JSON,
+            test_log,
+            use_array_bracket_notation=True,
+            compress_array_fields=False,
+        )
 
-    # Verify API call
-    expected_url = (
-        f"{chronicle_client.base_url}/{chronicle_client.instance_id}"
-        ":generateUdmKeyValueMappings"
-    )
-    chronicle_client.session.post.assert_called_once()
-    args, kwargs = chronicle_client.session.post.call_args
+    # Your function returns the full chronicle_request output (dict)
+    assert result == expected
 
-    # Check URL and payload structure
-    assert args[0] == expected_url
-    # Verify result
-    assert result == {
-        "event.id": "123",
-        "event.user": "test_user",
-        "event.action": "allowed",
-    }
+    # Verify helper invocation (module behaviour)
+    req.assert_called_once()
+    args, kwargs = req.call_args
+
+    assert args[0] is client
+    assert args[1] == "POST"
+    assert kwargs["endpoint_path"] == ":generateUdmKeyValueMappings"
+    assert kwargs["api_version"] == APIVersion.V1ALPHA
+
+    payload = kwargs["json"]
+    assert payload["log_format"] == RowLogFormat.JSON
+    assert payload["use_array_bracket_notation"] is True
+    assert payload["compress_array_fields"] is False
+
+    # Ensure the log was base64 encoded
+    decoded = base64.b64decode(payload["log"]).decode("utf-8")
+    assert decoded == test_log
 
 
-def test_generate_udm_key_value_mappings_already_encoded(
-    chronicle_client, response_mock
-):
-    """Test UDM mapping with already base64 encoded log."""
-    response_mock.json.return_value = {
-        "fieldMappings": {"test.field": "test_value"}
-    }
-    chronicle_client.session.post.return_value = response_mock
+def test_generate_udm_key_value_mappings_already_encoded(client: Mock) -> None:
+    expected = {"fieldMappings": {"test.field": "test_value"}}
 
-    # Create a base64 encoded log
     raw_log = '{"test":{"field":"test_value"}}'
     encoded_log = base64.b64encode(raw_log.encode("utf-8")).decode("utf-8")
 
-    result = generate_udm_key_value_mappings(
-        chronicle_client, RowLogFormat.JSON, encoded_log
-    )
+    with patch("secops.chronicle.udm_mapping.chronicle_request", return_value=expected) as req:
+        result = generate_udm_key_value_mappings(client, RowLogFormat.JSON, encoded_log)
 
-    # Assert log wasn't double-encoded
-    _, kwargs = chronicle_client.session.post.call_args
-    assert kwargs["json"]["log"] == encoded_log
-    assert result == {"test.field": "test_value"}
+    assert result == expected
+
+    payload = req.call_args.kwargs["json"]
+    # Should not double-encode
+    assert payload["log"] == encoded_log
+    assert payload["log_format"] == RowLogFormat.JSON
 
 
-def test_generate_udm_key_value_mappings_error(chronicle_client, response_mock):
-    """Test generate_udm_key_value_mappings function with error response."""
-    response_mock.status_code = 400
-    response_mock.text = "Bad Request"
-    chronicle_client.session.post.return_value = response_mock
-
-    with pytest.raises(APIError, match="Failed to generate key/value mapping"):
-        generate_udm_key_value_mappings(
-            chronicle_client, RowLogFormat.JSON, "test"
-        )
+def test_generate_udm_key_value_mappings_propagates_api_error(client: Mock) -> None:
+    with patch(
+        "secops.chronicle.udm_mapping.chronicle_request",
+        side_effect=APIError("boom"),
+    ):
+        with pytest.raises(APIError, match="boom"):
+            generate_udm_key_value_mappings(client, RowLogFormat.JSON, "test")

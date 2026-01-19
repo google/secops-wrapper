@@ -33,14 +33,14 @@ def test_cli_curated_rule_sets(cli_env, common_args):
     """
     print("\nTesting rule-set list and get commands")
 
-    # Test list command
+    # Test list command with --as-list flag
     print("1. Listing curated rule sets")
     list_cmd = (
         [
             "secops",
         ]
         + common_args
-        + ["curated-rule", "rule-set", "list"]
+        + ["curated-rule", "rule-set", "list", "--as-list"]
     )
 
     list_result = subprocess.run(
@@ -111,14 +111,14 @@ def test_cli_curated_rule_set_categories(cli_env, common_args):
     """
     print("\nTesting rule-set categories commands")
 
-    # Test list categories command
+    # Test list categories command with --as-list flag
     print("1. Listing curated rule set categories")
     list_cmd = (
         [
             "secops",
         ]
         + common_args
-        + ["curated-rule", "rule-set-category", "list"]
+        + ["curated-rule", "rule-set-category", "list", "--as-list"]
     )
 
     list_result = subprocess.run(
@@ -189,14 +189,14 @@ def test_cli_curated_rules(cli_env, common_args):
     """
     print("\nTesting curated rules commands")
 
-    # List curated rules
+    # List curated rules with --as-list flag
     print("1. Listing curated rules")
     list_cmd = (
         [
             "secops",
         ]
         + common_args
-        + ["curated-rule", "rule", "list"]
+        + ["curated-rule", "rule", "list", "--as-list"]
     )
 
     list_result = subprocess.run(
@@ -297,14 +297,14 @@ def test_cli_curated_rule_set_deployments(cli_env, common_args):
     """
     print("\nTesting rule-set deployment commands")
 
-    # Part 1: List deployments
+    # Part 1: List deployments with --as-list flag
     print("1. Listing curated rule set deployments")
     list_cmd = (
         [
             "secops",
         ]
         + common_args
-        + ["curated-rule", "rule-set-deployment", "list"]
+        + ["curated-rule", "rule-set-deployment", "list", "--as-list"]
     )
 
     list_result = subprocess.run(
@@ -318,14 +318,14 @@ def test_cli_curated_rule_set_deployments(cli_env, common_args):
     deployments = json.loads(list_result.stdout)
     assert isinstance(deployments, list), "Expected a list of deployments"
 
-    # Part 2: Get rule set for testing
+    # Part 2: Get rule set for testing with --as-list flag
     print("\n2. First list rule sets to get a valid ID")
     list_rs_cmd = (
         [
             "secops",
         ]
         + common_args
-        + ["curated-rule", "rule-set", "list"]
+        + ["curated-rule", "rule-set", "list", "--as-list"]
     )
 
     list_rs_result = subprocess.run(
@@ -541,14 +541,15 @@ def test_cli_curated_rule_set_deployments(cli_env, common_args):
 
 @pytest.mark.integration
 def test_cli_search_curated_detections(cli_env, common_args):
-    """Test CLI command for searching curated detections.
-    """
+    """Test CLI command for searching curated detections."""
 
     print("\nTesting curated-rule rule search-detections command")
 
     # Step 1: Get a valid rule ID first
     print("1. Getting a valid rule ID for testing")
-    list_rules_cmd = ["secops"] + common_args + ["curated-rule", "rule", "list"]
+    list_rules_cmd = (
+        ["secops"] + common_args + ["curated-rule", "rule", "list", "--as-list"]
+    )
 
     list_result = subprocess.run(
         list_rules_cmd, env=cli_env, capture_output=True, text=True

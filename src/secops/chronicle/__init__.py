@@ -74,6 +74,12 @@ from secops.chronicle.gemini import (
     SuggestedAction,
 )
 from secops.chronicle.ioc import list_iocs
+from secops.chronicle.investigations import (
+    fetch_associated_investigations,
+    get_investigation,
+    list_investigations,
+    trigger_investigation,
+)
 from secops.chronicle.log_ingest import (
     create_forwarder,
     delete_forwarder,
@@ -98,6 +104,7 @@ from secops.chronicle.log_processing_pipelines import (
     update_log_processing_pipeline,
 )
 from secops.chronicle.log_types import (
+    classify_logs,
     get_all_log_types,
     get_log_type_description,
     is_valid_log_type,
@@ -111,6 +118,7 @@ from secops.chronicle.models import (
     DataExport,
     DataExportStage,
     DataExportStatus,
+    DetectionType,
     Entity,
     EntityMetadata,
     EntityMetrics,
@@ -175,6 +183,9 @@ from secops.chronicle.rule_set import (
     search_curated_detections,
     update_curated_rule_set_deployment,
 )
+from secops.chronicle.featured_content_rules import (
+    list_featured_content_rules,
+)
 from secops.chronicle.rule_validation import ValidationResult
 from secops.chronicle.search import search_udm
 from secops.chronicle.stats import get_stats
@@ -215,6 +226,11 @@ __all__ = [
     "summarize_entity",
     # IoC
     "list_iocs",
+    # Investigations
+    "fetch_associated_investigations",
+    "get_investigation",
+    "list_investigations",
+    "trigger_investigation",
     # Case
     "get_cases",
     "get_case",
@@ -240,6 +256,7 @@ __all__ = [
     "extract_forwarder_id",
     "update_forwarder",
     # Log Types
+    "classify_logs",
     "get_all_log_types",
     "is_valid_log_type",
     "get_log_type_description",
@@ -298,6 +315,8 @@ __all__ = [
     "get_curated_rule_by_name",
     "update_curated_rule_set_deployment",
     "search_curated_detections",
+    # Featured content rules operations
+    "list_featured_content_rules",
     # Native Dashboard
     "add_chart",
     "create_dashboard",
@@ -339,6 +358,7 @@ __all__ = [
     "DashboardView",
     "InputInterval",
     "ListBasis",
+    "DetectionType",
     "TileType",
     # Data Table and Reference List
     "DataTableColumnType",

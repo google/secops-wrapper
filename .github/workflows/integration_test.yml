@@ -33,11 +33,11 @@ jobs:
       has_sha: ${{ steps.extract-sha.outputs.result != '' }}
       
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       
       - name: Extract commit SHA from comment
         id: extract-sha
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           result-encoding: string
           script: |
@@ -55,22 +55,40 @@ jobs:
                 // Get PR number from the issue
                 const prNumber = context.payload.issue.number;
                 
-                // Get list of commits in the PR
-                const { data: commits } = await github.rest.pulls.listCommits({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: prNumber
-                });
+                // Normalize SHA to lowercase for comparison
+                const normalizedSha = sha.toLowerCase();
+                
+                // Get all commits from the PR with pagination
+                const commits = [];
+                let page = 1;
+                let hasMore = true;
+                
+                while (hasMore) {
+                  const { data: pageCommits } = await github.rest.pulls.listCommits({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: prNumber,
+                    per_page: 100,
+                    page: page
+                  });
+                  
+                  commits.push(...pageCommits);
+                  hasMore = pageCommits.length === 100;
+                  page++;
+                }
+                
+                console.log(`Total commits in PR #${prNumber}: ${commits.length}`);
                 
                 // Check if the provided SHA exists in this PR's commits
-                const commitExists = commits.some(commit => commit.sha === sha);
+                const commitExists = commits.some(commit => commit.sha.toLowerCase() === normalizedSha);
                 
                 if (commitExists) {
                   console.log(`Verified SHA ${sha} belongs to PR #${prNumber}`);
                   core.setOutput('has_sha', 'true');
-                  return sha; // Return the SHA directly as the result
+                  return normalizedSha;
                 } else {
                   console.log(`Error: SHA ${sha} does not belong to PR #${prNumber}`);
+                  console.log(`Total commits checked: ${commits.length}`);
                   console.log('The SHA must be from a commit in the current PR.');
                   core.setOutput('has_sha', 'false');
                   return ''; // Return empty string if SHA not in PR
@@ -88,7 +106,7 @@ jobs:
       
       - name: Check CODEOWNERS authorization
         id: auth-check
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const commenter = context.payload.comment.user.login;
@@ -177,12 +195,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.check-authorization.outputs.commit_sha }}
       
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -194,13 +212,13 @@ jobs:
           pip install pytest pytest-cov python-dotenv
 
       - name: Authenticate with Google Cloud
-        uses: google-github-actions/auth@v1
+        uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.SERVICE_ACCOUNT_JSON }}
 
       - name: Create in-progress check
         id: create-check
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           result-encoding: string
@@ -234,7 +252,7 @@ jobs:
           python -m pytest tests/ -m "integration" -v --junitxml=junit/integration-test-results.xml
       
       - name: Upload integration test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: integration-test-results
@@ -251,7 +269,7 @@ jobs:
           
       - name: Update check with test results
         if: always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           CHECK_ID: ${{ steps.create-check.outputs.result }}
           TEST_OUTCOME: ${{ steps.run-tests.outcome }}
