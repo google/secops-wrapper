@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 """Statistics functionality for Chronicle searches."""
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Any
 
 from secops.exceptions import APIError
@@ -127,6 +127,8 @@ def process_stats_results(stats: dict[str, Any]) -> dict[str, Any]:
                     values.append(float(val["doubleVal"]))
                 elif "stringVal" in val:
                     values.append(val["stringVal"])
+                elif "timestampVal" in val:
+                    values.append(datetime.fromisoformat(val["timestampVal"].replace('Z', '+00:00')).replace(tzinfo=UTC))
                 else:
                     values.append(None)
             # Handle list value cells (like those from array_distinct)
