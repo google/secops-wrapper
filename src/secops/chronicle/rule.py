@@ -439,11 +439,7 @@ def run_rule_test(
     end_time_str = end_time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     # Fix: Use the full path for the legacy API endpoint
-    url = (
-        f"{client.base_url}/projects/{client.project_id}/locations"
-        f"/{client.region}/instances/{client.customer_id}"
-        "/legacy:legacyRunTestRule"
-    )
+    url = f"{client.base_url}/{client.instance_id}/legacy:legacyRunTestRule"
 
     body = {
         "ruleText": rule_text,

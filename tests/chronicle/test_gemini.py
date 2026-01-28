@@ -36,6 +36,9 @@ def mock_chronicle_client():
     client.customer_id = "test-customer"
     client.region = "us"
     client.base_url = "https://us-chronicle.googleapis.com/v1alpha"
+    client.instance_id = (
+        "projects/test-project/locations/us/instances/test-customer"
+    )
     client.session = Mock()
     return client
 
@@ -281,10 +284,11 @@ def test_create_conversation_success(mock_chronicle_client):
     call_args = mock_chronicle_client.session.post.call_args
 
     # Check URL
-    assert (
-        call_args[0][0]
-        == "https://us-chronicle.googleapis.com/v1alpha/projects/test-project/locations/us/instances/test-customer/users/me/conversations"
+    expected_url = (
+        f"{mock_chronicle_client.base_url}/"
+        f"{mock_chronicle_client.instance_id}/users/me/conversations"
     )
+    assert call_args[0][0] == expected_url
 
     # Check payload
     assert call_args[1]["json"] == {"displayName": "New chat"}
@@ -491,7 +495,7 @@ def test_query_gemini_auto_opt_in(mock_chronicle_client, sample_gemini_response)
             '{"error":{"message":"users must opt-in before using Gemini"}}'
         )
         first_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
-            "400 Client Error", response=first_response
+                "400 Client Error", response=first_response
         )
 
         # Second request succeeds
@@ -539,7 +543,7 @@ def test_query_gemini_opt_in_flag(mock_chronicle_client, sample_gemini_response)
             '{"error":{"message":"users must opt-in before using Gemini"}}'
         )
         opt_in_error.raise_for_status.side_effect = requests.exceptions.HTTPError(
-            "400 Client Error", response=opt_in_error
+                "400 Client Error", response=opt_in_error
         )
 
         success_response = Mock()

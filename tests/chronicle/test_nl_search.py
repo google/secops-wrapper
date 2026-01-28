@@ -29,6 +29,12 @@ def mock_client():
     client.region = "us"
     client.project_id = "test-project"
     client.customer_id = "test-customer-id"
+    client.base_url = MagicMock(
+        return_value="https://us-chronicle.googleapis.com/v1alpha"
+    )
+    client.instance_id = (
+        "projects/test-project/locations/us/instances/test-customer-id"
+    )
 
     # Mock session with response
     mock_response = MagicMock()
@@ -49,11 +55,11 @@ def test_translate_nl_to_udm_success(mock_client):
 
     # Check URL format
     url = call_args[0][0]
-    assert "us-chronicle.googleapis.com" in url
-    assert "/v1alpha/" in url
-    assert "test-project" in url
-    assert "test-customer-id" in url
-    assert ":translateUdmQuery" in url
+    expected_url = (
+        f"{mock_client.base_url.return_value}/"
+        f"{mock_client.instance_id}:translateUdmQuery"
+    )
+    assert url == expected_url
 
     # Check payload
     payload = call_args[1]["json"]
@@ -72,7 +78,9 @@ def test_translate_nl_to_udm_error_response(mock_client):
     mock_client.session.post.return_value = mock_response
 
     # Test error handling
-    with pytest.raises(APIError, match="Chronicle API request failed: Invalid request"):
+    with pytest.raises(
+        APIError, match="Chronicle API request failed: Invalid request"
+    ):
         translate_nl_to_udm(mock_client, "invalid query")
 
 
@@ -87,7 +95,9 @@ def test_translate_nl_to_udm_no_valid_query(mock_client):
     mock_client.session.post.return_value = mock_response
 
     # Test error handling for no valid query
-    with pytest.raises(APIError, match="Sorry, no valid query could be generated"):
+    with pytest.raises(
+        APIError, match="Sorry, no valid query could be generated"
+    ):
         translate_nl_to_udm(mock_client, "nonsensical query")
 
 
@@ -103,7 +113,9 @@ def test_nl_search(mock_translate, mock_client):
     end_time = datetime.now(timezone.utc)
 
     # Call the function
-    result = nl_search(mock_client, "show me ip addresses", start_time, end_time)
+    result = nl_search(
+        mock_client, "show me ip addresses", start_time, end_time
+    )
 
     # Verify translate_nl_to_udm was called
     mock_translate.assert_called_once_with(mock_client, "show me ip addresses")
@@ -123,14 +135,18 @@ def test_nl_search(mock_translate, mock_client):
 def test_nl_search_translation_error(mock_translate, mock_client):
     """Test error handling when translation fails."""
     # Set up translation to raise an error
-    mock_translate.side_effect = APIError("Sorry, no valid query could be generated")
+    mock_translate.side_effect = APIError(
+        "Sorry, no valid query could be generated"
+    )
 
     # Define test parameters
     start_time = datetime.now(timezone.utc) - timedelta(hours=24)
     end_time = datetime.now(timezone.utc)
 
     # Test error handling
-    with pytest.raises(APIError, match="Sorry, no valid query could be generated"):
+    with pytest.raises(
+        APIError, match="Sorry, no valid query could be generated"
+    ):
         nl_search(mock_client, "invalid query", start_time, end_time)
 
     # Verify search_udm was not called
@@ -153,7 +169,9 @@ def test_chronicle_client_integration():
     assert (
         client_method is not None
     ), "translate_nl_to_udm method not found on ChronicleClient"
-    assert search_method is not None, "nl_search method not found on ChronicleClient"
+    assert (
+        search_method is not None
+    ), "nl_search method not found on ChronicleClient"
 
     # Additional check from the module import
     assert hasattr(ChronicleClient, "translate_nl_to_udm")
@@ -208,7 +226,9 @@ def test_nl_search_retry_429(mock_sleep, mock_translate, mock_client):
     end_time = datetime.now(timezone.utc)
 
     # Call the function
-    result = nl_search(mock_client, "show me ip addresses", start_time, end_time)
+    result = nl_search(
+        mock_client, "show me ip addresses", start_time, end_time
+    )
 
     # Verify translate_nl_to_udm was called at least once with correct arguments
     # We expect it to be called on each retry attempt
@@ -229,7 +249,9 @@ def test_nl_search_retry_429(mock_sleep, mock_translate, mock_client):
 
 @patch("secops.chronicle.nl_search.translate_nl_to_udm")
 @patch("time.sleep")  # Patch sleep to avoid waiting in tests
-def test_nl_search_max_retries_exceeded(mock_sleep, mock_translate, mock_client):
+def test_nl_search_max_retries_exceeded(
+    mock_sleep, mock_translate, mock_client
+):
     """Test that max retries are respected for 429 errors."""
     # Set up mock for translation
     mock_translate.return_value = 'ip != ""'
