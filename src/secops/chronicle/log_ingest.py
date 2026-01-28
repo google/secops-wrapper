@@ -24,6 +24,7 @@ from datetime import datetime
 from typing import Any
 
 from secops.chronicle.log_types import is_valid_log_type
+from secops.chronicle.models import APIVersion
 from secops.exceptions import APIError
 
 # Forward declaration for type hinting to avoid circular import
@@ -1009,9 +1010,6 @@ def ingest_udm(
         # Add ID if needed
         if add_missing_ids and "id" not in event["metadata"]:
             event["metadata"]["id"] = str(uuid.uuid4())
-
-    # Prepare the request
-    from secops.chronicle.models import APIVersion
 
     url = (
         f"{client.base_url(APIVersion.V1ALPHA)}/{client.instance_id}"
