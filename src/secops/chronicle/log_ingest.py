@@ -1011,13 +1011,11 @@ def ingest_udm(
             event["metadata"]["id"] = str(uuid.uuid4())
 
     # Prepare the request
-    parent = (
-        f"projects/{client.project_id}/locations/{client.region}"
-        f"/instances/{client.customer_id}"
-    )
+    from secops.chronicle.models import APIVersion
+
     url = (
-        f"https://{client.region}-chronicle.googleapis.com/v1alpha/"
-        f"{parent}/events:import"
+        f"{client.base_url(APIVersion.V1ALPHA)}/{client.instance_id}"
+        f"/events:import"
     )
 
     # Format the request body

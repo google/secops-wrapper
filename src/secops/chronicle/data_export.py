@@ -67,10 +67,7 @@ def _get_formatted_log_type(client, log_type: str) -> str:
         The formatted log type
     """
     if "/" not in log_type:
-        return (
-            f"projects/{client.project_id}/locations/{client.region}/"
-            f"instances/{client.customer_id}/logTypes/{log_type}"
-        )
+        return f"{client.instance_id}/logTypes/{log_type}"
 
     return log_type
 
