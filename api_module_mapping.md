@@ -4,6 +4,13 @@ Following shows mapping between SecOps [REST Resource](https://cloud.google.com/
 
 **Note:** All the REST resources mentioned have suffix `projects.locations.instances`.
 
+## Implementation Statistics
+
+- **v1:** 17 endpoints implemented
+- **v1alpha:** 113 endpoints implemented
+
+## Endpoint Mapping
+
 | REST Resource                                                                  | Version | secops-wrapper module                                                                                             | CLI Command                                    |
 |--------------------------------------------------------------------------------|---------|-------------------------------------------------------------------------------------------------------------------|------------------------------------------------|
 | dataAccessLabels.create                                                        | v1      |                                                                                                                   |                                                |
