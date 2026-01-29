@@ -18,6 +18,7 @@ import time
 from datetime import datetime
 from typing import Any
 
+from secops.chronicle.models import APIVersion
 from secops.exceptions import APIError
 
 
@@ -40,9 +41,8 @@ def translate_nl_to_udm(client, text: str) -> str:
     wait_time = 5  # seconds, will double with each retry
 
     url = (
-        f"https://{client.region}-chronicle.googleapis.com/v1alpha/projects"
-        f"/{client.project_id}/locations/{client.region}/instances"
-        f"/{client.customer_id}:translateUdmQuery"
+        f"{client.base_url(APIVersion.V1ALPHA)}/{client.instance_id}"
+        f":translateUdmQuery"
     )
 
     payload = {"text": text}
