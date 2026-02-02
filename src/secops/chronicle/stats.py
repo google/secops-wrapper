@@ -131,7 +131,7 @@ def process_stats_results(stats: dict[str, Any]) -> dict[str, Any]:
                     values.append(
                         datetime.fromisoformat(
                             val["timestampVal"].replace("Z", "+00:00")
-                        ).replace(tzinfo=timezone.utc)
+                        )
                     )
                 else:
                     values.append(None)
@@ -145,6 +145,12 @@ def process_stats_results(stats: dict[str, Any]) -> dict[str, Any]:
                         list_values.append(float(list_val["doubleVal"]))
                     elif "stringVal" in list_val:
                         list_values.append(list_val["stringVal"])
+                    elif "timestampVal" in list_val:
+                        list_values.append(
+                            datetime.fromisoformat(
+                                list_val["timestampVal"].replace("Z", "+00:00")
+                            )
+                        )
                 values.append(list_values)
             else:
                 values.append(None)
