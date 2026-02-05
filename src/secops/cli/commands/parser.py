@@ -4,7 +4,9 @@ Command line handlers and helpers for SecOps CLI
 
 import argparse
 import base64
+import json
 import sys
+
 
 from secops.cli.utils.common_args import add_pagination_args
 from secops.cli.utils.formatters import output_formatter
@@ -328,7 +330,6 @@ def handle_parser_list_command(args, chronicle):
         print(f"Error listing parsers: {e}", file=sys.stderr)
         sys.exit(1)
 
-
 def handle_parser_run_command(args, chronicle):
     """Handle parser run (evaluation) command."""
     try:
@@ -405,6 +406,34 @@ def handle_parser_run_command(args, chronicle):
             logs,
             args.statedump_allowed,
         )
+
+        # --- Start of Modification ---
+        if args.statedump_allowed and "runParserResults" in result:
+            for res in result["runParserResults"]:
+                if "statedumpResults" not in res:
+                    continue
+                print("\n=== Statedump Results ===")
+                for item in res["statedumpResults"]:
+                    raw = item.get("statedumpResult", "")
+                    try:
+                        # Find start of JSON to separate it from the header
+                        json_start = raw.find("{")
+                        if json_start != -1:
+                            header = raw[:json_start].strip()
+                            if header:
+                                print(f"\n{header}")
+                            data = json.loads(raw[json_start:])
+                            print(json.dumps(data, indent=2))
+                        else:
+                            print(raw)
+                    except (ValueError, IndexError):
+                        print(raw)
+                    
+                    # REMOVE the raw string from the final output to avoid duplication
+                    item.pop("statedumpResult", None)
+                    
+                print("=========================\n")
+        # --- End of Modification ---
 
         output_formatter(result, args.output)
 
