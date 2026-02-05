@@ -407,33 +407,28 @@ def handle_parser_run_command(args, chronicle):
             args.statedump_allowed,
         )
 
-        # --- Start of Modification ---
+        # --- Transform the Statedump String into a JSON Object ---
         if args.statedump_allowed and "runParserResults" in result:
-            for res in result["runParserResults"]:
-                if "statedumpResults" not in res:
-                    continue
-                print("\n=== Statedump Results ===")
-                for item in res["statedumpResults"]:
+            for res in result.get("runParserResults", []):
+                for item in res.get("statedumpResults", []):
                     raw = item.get("statedumpResult", "")
                     try:
-                        # Find start of JSON to separate it from the header
+                        # Find the JSON part
                         json_start = raw.find("{")
                         if json_start != -1:
                             header = raw[:json_start].strip()
-                            if header:
-                                print(f"\n{header}")
                             data = json.loads(raw[json_start:])
-                            print(json.dumps(data, indent=2))
-                        else:
-                            print(raw)
+                            
+                            # REPLACE the raw string with a structured dictionary
+                            # This modifies 'result' in-place
+                            item["statedumpResult"] = {
+                                "info": header,
+                                "state": data
+                            }
                     except (ValueError, IndexError):
-                        print(raw)
-                    
-                    # REMOVE the raw string from the final output to avoid duplication
-                    item.pop("statedumpResult", None)
-                    
-                print("=========================\n")
-        # --- End of Modification ---
+                        # If parsing fails, leave the original string alone
+                        pass
+        # ---------------------------------------------------------
 
         output_formatter(result, args.output)
 
