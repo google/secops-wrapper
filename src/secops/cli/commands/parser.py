@@ -4,6 +4,7 @@ Command line handlers and helpers for SecOps CLI
 
 import argparse
 import base64
+import json
 import sys
 
 from secops.cli.utils.common_args import add_pagination_args
@@ -405,6 +406,29 @@ def handle_parser_run_command(args, chronicle):
             logs,
             args.statedump_allowed,
         )
+        
+        # --- Transform the Statedump String into a JSON Object ---
+        if args.statedump_allowed and "runParserResults" in result:
+            for res in result.get("runParserResults", []):
+                for item in res.get("statedumpResults", []):
+                    raw = item.get("statedumpResult", "")
+                    try:
+                        # Find the JSON part
+                        json_start = raw.find("{")
+                        if json_start != -1:
+                            header = raw[:json_start].strip()
+                            data = json.loads(raw[json_start:])
+                            
+                            # REPLACE the raw string with a structured dictionary
+                            # This modifies 'result' in-place
+                            item["statedumpResult"] = {
+                                "info": header,
+                                "state": data
+                            }
+                    except (ValueError, IndexError):
+                        # If parsing fails, leave the original string alone
+                        pass
+        # ---------------------------------------------------------
 
         output_formatter(result, args.output)
 
