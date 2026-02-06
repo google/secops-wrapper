@@ -20,6 +20,7 @@ from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.request_utils import (
     chronicle_request,
 )
+from secops.exceptions import APIError
 
 if TYPE_CHECKING:
     from secops.chronicle.client import ChronicleClient
@@ -60,7 +61,7 @@ def get_stats(
         APIError: If the API request fails
     """
     # Unused parameters, kept for backward compatibility
-    _ = (max_events, case_insensitive, max_attempts, timeout)
+    _ = (max_events, case_insensitive, max_attempts)
 
     # Query parameters for the API call
     params = {
@@ -76,7 +77,11 @@ def get_stats(
         endpoint_path=":udmSearch",
         api_version=APIVersion.V1ALPHA,
         params=params,
+        timeout=timeout,
     )
+
+    if "stats" not in results:
+        raise APIError("No stats found in response")
 
     # Process the stats results
     return process_stats_results(results["stats"])
