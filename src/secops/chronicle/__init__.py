@@ -154,7 +154,11 @@ from secops.chronicle.rule_exclusion import (
     patch_rule_exclusion,
     update_rule_exclusion_deployment,
 )
-from secops.chronicle.rule_retrohunt import create_retrohunt, get_retrohunt
+from secops.chronicle.rule_retrohunt import (
+    create_retrohunt,
+    get_retrohunt,
+    list_retrohunts,
+)
 from secops.chronicle.rule_set import (
     batch_update_curated_rule_set_deployments,
     get_curated_rule,
@@ -277,6 +281,7 @@ __all__ = [
     # Rule retrohunt operations
     "create_retrohunt",
     "get_retrohunt",
+    "list_retrohunts",
     # Rule set operations
     "batch_update_curated_rule_set_deployments",
     "list_curated_rule_sets",
