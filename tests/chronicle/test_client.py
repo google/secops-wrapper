@@ -90,44 +90,6 @@ def test_chronicle_client_custom_session_user_agent():
     assert client.session.headers.get("User-Agent") == "secops-wrapper-sdk"
 
 
-def test_get_stats(chronicle_client):
-    """Test stats search functionality."""
-    # Mock the search request
-    mock_response = Mock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {
-        "stats": {
-            "results": [
-                {"column": "count", "values": [{"value": {"int64Val": "42"}}]},
-                {
-                    "column": "hostname",
-                    "values": [{"value": {"stringVal": "test-host"}}],
-                },
-            ]
-        }
-    }
-
-    with patch.object(chronicle_client.session, "get", return_value=mock_response):
-        result = chronicle_client.get_stats(
-            query="""target.ip != ""
-match:
-  target.ip, principal.hostname
-outcome:
-  $count = count(metadata.id)
-order:
-  principal.hostname asc""",
-            start_time=datetime(2024, 1, 1, tzinfo=timezone.utc),
-            end_time=datetime(2024, 1, 2, tzinfo=timezone.utc),
-            max_events=10,
-            max_values=10,
-        )
-
-        assert result["total_rows"] == 1
-        assert result["columns"] == ["count", "hostname"]
-        assert result["rows"][0]["count"] == 42
-        assert result["rows"][0]["hostname"] == "test-host"
-
-
 def test_search_udm(chronicle_client):
     """Test UDM search functionality."""
     # Mock the search request

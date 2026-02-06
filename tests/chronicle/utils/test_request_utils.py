@@ -87,6 +87,7 @@ def test_chronicle_request_success_json(client: Mock) -> None:
         params={"pageSize": 10},
         json=None,
         headers=None,
+        timeout=None,
     )
 
 
