@@ -19,3 +19,4 @@ tests/config_purple.py
 .tox
 .gemini/
 gha-creds-*.json
+.uv
