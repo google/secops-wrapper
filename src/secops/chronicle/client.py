@@ -267,7 +267,7 @@ from secops.chronicle.rule_exclusion import (
 from secops.chronicle.rule_retrohunt import (
     create_retrohunt as _create_retrohunt,
     get_retrohunt as _get_retrohunt,
-    list_retrohunts as _list_retrohunts
+    list_retrohunts as _list_retrohunts,
 )
 from secops.chronicle.rule_set import (
     batch_update_curated_rule_set_deployments as _batch_update_curated_rule_set_deployments,  # pylint: disable=line-too-long
@@ -2259,7 +2259,6 @@ class ChronicleClient:
             api_version,
             as_list,
         )
-
 
     # Parser Management methods
 
