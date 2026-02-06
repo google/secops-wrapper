@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 from secops.chronicle.stats import get_stats, process_stats_results
 from secops.chronicle.models import APIVersion
+from secops.exceptions import APIError
 
 
 class TestChronicleStats(unittest.TestCase):
@@ -156,6 +157,41 @@ class TestChronicleStats(unittest.TestCase):
         self.assertEqual(len(result["rows"][0]["timestamp_array"]), 2)
         self.assertIsInstance(result["rows"][0]["timestamp_array"][0], datetime)
         self.assertIsInstance(result["rows"][0]["timestamp_array"][1], datetime)
+
+    @mock.patch("secops.chronicle.stats.chronicle_request")
+    def test_get_stats_malformed_response_missing_stats_key(
+        self, mock_chronicle_request: mock.MagicMock
+    ) -> None:
+        """Test that get_stats raises APIError when response missing stats."""
+        mock_chronicle_request.return_value = {
+            "someOtherKey": "value",
+            "events": [],
+        }
+
+        with self.assertRaises(APIError) as context:
+            get_stats(
+                self.mock_client, "test query", self.start_time, self.end_time
+            )
+
+        self.assertIn("No stats found in response", str(context.exception))
+
+    @mock.patch("secops.chronicle.stats.chronicle_request")
+    def test_get_stats_api_error_propagation(
+        self, mock_chronicle_request: mock.MagicMock
+    ) -> None:
+        """Test that APIError from chronicle_request propagates correctly."""
+        mock_chronicle_request.side_effect = APIError(
+            "API request failed: method=GET, url=test-url, "
+            "status=500, response={'error': 'Internal server error'}"
+        )
+
+        with self.assertRaises(APIError) as context:
+            get_stats(
+                self.mock_client, "test query", self.start_time, self.end_time
+            )
+
+        self.assertIn("API request failed", str(context.exception))
+        self.assertIn("status=500", str(context.exception))
 
     def test_process_stats_results_empty(self) -> None:
         result = process_stats_results({})
