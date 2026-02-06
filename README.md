@@ -2076,7 +2076,7 @@ operation_id = retrohunt.get("name", "").split("/")[-1]
 
 # Check retrohunt status
 retrohunt_status = chronicle.get_retrohunt(rule_id, operation_id)
-is_complete = retrohunt_status.get("metadata", {}).get("done", False)
+state = retrohunt_status.get("state", "")
 ```
 
 ### Detections and Errors
