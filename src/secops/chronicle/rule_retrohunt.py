@@ -15,14 +15,20 @@
 """Retrohunt functionality for Chronicle rules."""
 
 from datetime import datetime
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from secops.chronicle.models import APIVersion
-from secops.exceptions import APIError
+from secops.chronicle.utils.request_utils import (
+    chronicle_request,
+    chronicle_paginated_request
+)
+
+if TYPE_CHECKING:
+    from secops.chronicle.client import ChronicleClient
 
 
 def create_retrohunt(
-    client,
+    client: "ChronicleClient",
     rule_id: str,
     start_time: datetime,
     end_time: datetime,
@@ -46,11 +52,6 @@ def create_retrohunt(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url(api_version, list(APIVersion))}/"
-        f"{client.instance_id}/rules/{rule_id}/retrohunts"
-    )
-
     body = {
         "process_interval": {
             "start_time": start_time.isoformat(),
@@ -58,12 +59,13 @@ def create_retrohunt(
         },
     }
 
-    response = client.session.post(url, json=body)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to create retrohunt: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=f"rules/{rule_id}/retrohunts",
+        json=body,
+        api_version=api_version,
+    )
 
 
 def get_retrohunt(
@@ -87,14 +89,10 @@ def get_retrohunt(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url(api_version, list(APIVersion))}/"
-        f"{client.instance_id}/rules/{rule_id}/retrohunts/{operation_id}"
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"rules/{rule_id}/retrohunts/{operation_id}",
+        api_version=api_version,
     )
 
-    response = client.session.get(url)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to get retrohunt: {response.text}")
-
-    return response.json()
