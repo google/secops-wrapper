@@ -81,11 +81,16 @@ def add_chronicle_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def add_time_range_args(parser: argparse.ArgumentParser) -> None:
+def add_time_range_args(
+        parser: argparse.ArgumentParser,
+        required: bool = False
+) -> None:
     """Add time range arguments to a parser.
 
     Args:
         parser: Parser to add arguments to
+        required: Whether the start and end time
+         range arguments are required
     """
     config = load_config()
 
@@ -95,6 +100,7 @@ def add_time_range_args(parser: argparse.ArgumentParser) -> None:
         dest="start_time",
         default=config.get("start_time"),
         help="Start time in ISO format (YYYY-MM-DDTHH:MM:SSZ)",
+        required=required,
     )
     parser.add_argument(
         "--end-time",
@@ -102,6 +108,7 @@ def add_time_range_args(parser: argparse.ArgumentParser) -> None:
         dest="end_time",
         default=config.get("end_time"),
         help="End time in ISO format (YYYY-MM-DDTHH:MM:SSZ)",
+        required=required,
     )
     parser.add_argument(
         "--time-window",
