@@ -24,6 +24,7 @@ from datetime import datetime
 from typing import Any
 
 from secops.chronicle.log_types import is_valid_log_type
+from secops.chronicle.models import APIVersion
 from secops.exceptions import APIError
 
 # Forward declaration for type hinting to avoid circular import
@@ -821,7 +822,7 @@ def ingest_log(
         APIError: If the API request fails
     """
     # Validate log type
-    if not is_valid_log_type(client, log_type) and not force_log_type:
+    if not force_log_type and not is_valid_log_type(client, log_type):
         raise ValueError(
             f"Invalid log type: {log_type}. "
             "Use force_log_type=True to override."
@@ -1010,14 +1011,9 @@ def ingest_udm(
         if add_missing_ids and "id" not in event["metadata"]:
             event["metadata"]["id"] = str(uuid.uuid4())
 
-    # Prepare the request
-    parent = (
-        f"projects/{client.project_id}/locations/{client.region}"
-        f"/instances/{client.customer_id}"
-    )
     url = (
-        f"https://{client.region}-chronicle.googleapis.com/v1alpha/"
-        f"{parent}/events:import"
+        f"{client.base_url(APIVersion.V1ALPHA)}/{client.instance_id}"
+        f"/events:import"
     )
 
     # Format the request body

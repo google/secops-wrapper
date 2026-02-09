@@ -5,7 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.34.3] - 2026-02-09
+### Updated
+- `get_stats()` to use `chronicle_request` helper for improved error handling and consistency
+- `chronicle_request` helper function to support `timeout` parameter
 
+## [0.34.2] - 2026-02-03
+### Fixed
+- `ingest_log()` method to correctly skip log type validation when `force_log_type=True`, preventing unnecessary API calls
+- `timestampVal` type handling in stats queries for timebucket results
+
+
+## [0.34.1] - 2026-01-29
+### Updated
+- Following methods for streamlined URL formation/construction
+  - `ingest_udm`
+  - `translate_nl_to_udm`
+  - `create_conversation`
+  - `opt_in_to_gemini`
+  - `query_gemini`
+  - `translate_nl_to_udm`
+  - `run_rule_test`
 
 ## [0.34.0] - 2026-01-12
 ### Added

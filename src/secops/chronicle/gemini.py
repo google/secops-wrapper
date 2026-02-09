@@ -327,10 +327,7 @@ def create_conversation(client, display_name: str = "New chat") -> str:
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url}/projects/{client.project_id}/locations/"
-        f"{client.region}/instances/{client.customer_id}/users/me/conversations"
-    )
+    url = f"{client.base_url}/{client.instance_id}/users/me/conversations"
 
     # Include the required request body with displayName
     payload = {"displayName": display_name}
@@ -369,10 +366,7 @@ def opt_in_to_gemini(client) -> bool:
         APIError: If the API request fails (except for permission errors)
     """
     # Construct the URL for updating the user's preference set
-    url = (
-        f"{client.base_url}/projects/{client.project_id}/locations/"
-        f"{client.region}/instances/{client.customer_id}/users/me/preferenceSet"
-    )
+    url = f"{client.base_url}/{client.instance_id}/users/me/preferenceSet"
 
     # Set up the request body to enable Duet AI chat
     payload = {"ui_preferences": {"enable_duet_ai_chat": True}}
@@ -447,8 +441,7 @@ def query_gemini(
             conversation_id = create_conversation(client)
 
         url = (
-            f"{client.base_url}/projects/{client.project_id}/locations/"
-            f"{client.region}/instances/{client.customer_id}/users/me/"
+            f"{client.base_url}/{client.instance_id}/users/me/"
             f"conversations/{conversation_id}/messages"
         )
 
