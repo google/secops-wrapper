@@ -198,6 +198,7 @@ def chronicle_request(
     json: dict[str, Any] | None = None,
     expected_status: int | set[int] | tuple[int, ...] | list[int] = 200,
     error_message: str | None = None,
+    timeout: int | None = None,
 ) -> dict[str, Any] | list[Any]:
     """Perform an HTTP request and return JSON, raising APIError on failure.
 
@@ -216,6 +217,7 @@ def chronicle_request(
             (e.g. 200) or an iterable of acceptable status codes (e.g. {200, 204}).
             If the response status is not acceptable, an APIError is raised.
         error_message: Optional base error message to include on failure
+        timeout: Optional timeout in seconds for the request
 
     Returns:
         Parsed JSON response.
@@ -237,7 +239,12 @@ def chronicle_request(
 
     try:
         response = client.session.request(
-            method=method, url=url, params=params, json=json, headers=headers
+            method=method,
+            url=url,
+            params=params,
+            json=json,
+            headers=headers,
+            timeout=timeout,
         )
     except GoogleAuthError as exc:
         base_msg = error_message or "Google authentication failed"
