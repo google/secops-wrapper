@@ -872,6 +872,7 @@ class ChronicleClient:
         max_attempts: int = 30,
         timeout: int = 30,
         debug: bool = False,
+        as_list: bool = False,
     ) -> dict[str, Any]:
         """Search UDM events in Chronicle.
 
@@ -905,6 +906,7 @@ class ChronicleClient:
             max_attempts,
             timeout,
             debug,
+            as_list,
         )
 
     def find_udm_field_values(

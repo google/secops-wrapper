@@ -36,7 +36,8 @@ def search_udm(
     max_attempts: int = 30,
     timeout: int = 30,
     debug: bool = False,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[dict[str, Any]]:
     """Perform a UDM search query using the Chronicle V1alpha API.
 
     Args:
@@ -50,6 +51,7 @@ def search_udm(
                         for backwards compatibility)
         timeout: Timeout in seconds for each API request (default: 30)
         debug: Print debug information during execution
+        as_list: Whether to return results as a list or dictionary
 
     Returns:
         Dict containing the search results with events
@@ -82,8 +84,11 @@ def search_udm(
         endpoint_path=":udmSearch",
         api_version=APIVersion.V1ALPHA,
         params=params,
+        timeout=timeout,
     )
 
+    if as_list:
+        return result.get("events", [])
     return {
         "events": result.get("events", []),
         "total_events": len(result.get("events", [])),
