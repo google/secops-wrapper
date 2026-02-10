@@ -16,7 +16,6 @@
 
 from secops.chronicle.alert import get_alerts
 from secops.chronicle.case import (
-    CasePriority,
     execute_bulk_add_tag,
     execute_bulk_assign,
     execute_bulk_change_priority,
@@ -29,6 +28,7 @@ from secops.chronicle.case import (
     merge_cases,
     patch_case,
 )
+from secops.chronicle.models import CaseCloseReason, CasePriority
 from secops.chronicle.client import (
     ChronicleClient,
     ValueType,
@@ -244,6 +244,7 @@ __all__ = [
     "execute_bulk_close",
     "execute_bulk_reopen",
     "CasePriority",
+    "CaseCloseReason",
     # Alert
     "get_alerts",
     # Log Ingestion

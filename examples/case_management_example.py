@@ -34,9 +34,7 @@ def list_cases_example(chronicle):
     try:
         # List cases with basic pagination
         result = chronicle.list_cases(
-            page_size=10,
-            filter_query='priority="HIGH"',
-            order_by="createdTime desc",
+            page_size=10, filter_query='priority="PRIORITY_HIGH"'
         )
 
         print(f"Total cases: {result['totalSize']}")
@@ -45,11 +43,11 @@ def list_cases_example(chronicle):
         # Display first few cases
         for i, case in enumerate(result["cases"][:3], 1):
             print(f"\nCase {i}:")
-            print(f"  ID: {case["name"]}")
-            print(f"  Display Name: {case["displayName"]}")
-            print(f"  Priority: {case["priority"]}")
-            print(f"  Stage: {case["stage"]}")
-            print(f"  Status: {case["status"]}")
+            print(f"  ID: {case['name']}")
+            print(f"  Display Name: {case['displayName']}")
+            print(f"  Priority: {case['priority']}")
+            print(f"  Stage: {case['stage']}")
+            print(f"  Status: {case['status']}")
 
         # Check if there are more pages
         if result["nextPageToken"]:
@@ -100,6 +98,8 @@ def patch_case_example(chronicle, case_id):
 
     try:
         # Update specific fields using just the case ID
+        # Note: Priority values are automatically normalized to PRIORITY_ format
+        # You can use either "MEDIUM" or "PRIORITY_MEDIUM"
         case_data = {
             "priority": "MEDIUM",
             "displayName": "Updated Case Name",
@@ -230,9 +230,11 @@ def bulk_close_example(chronicle, case_ids):
     print("\n=== Example 8: Bulk Close Cases ===")
 
     try:
+        # Valid close_reason values: MALICIOUS, NOT_MALICIOUS, MAINTENANCE,
+        # INCONCLUSIVE, UNKNOWN, or CLOSE_REASON_UNSPECIFIED
         result = chronicle.execute_bulk_close(
             case_ids=case_ids,
-            close_reason="FALSE_POSITIVE",
+            close_reason="NOT_MALICIOUS",
             root_cause="No threat detected",
             close_comment="Closed after thorough investigation",
         )
@@ -289,6 +291,16 @@ def merge_cases_example(chronicle, case_ids, target_case_id):
         print(f"Error merging cases: {e}")
 
 
+def parse_case_ids(value):
+    """Parse comma-separated case IDs into list of integers."""
+    try:
+        return [int(id.strip()) for id in value.split(",")]
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(
+            f"Invalid case ID format: {value}"
+        ) from e
+
+
 def main():
     """Run the example."""
     parser = argparse.ArgumentParser(
@@ -305,9 +317,9 @@ def main():
     )
     parser.add_argument(
         "--case_ids",
-        nargs="+",
-        type=int,
-        help="List of case IDs for bulk operations",
+        type=parse_case_ids,
+        help="Comma-separated list of case IDs for bulk operations "
+        "(e.g., 123,456,789)",
     )
     parser.add_argument(
         "--username",
@@ -340,50 +352,40 @@ def main():
 
     # Example 3: Update a case (if case_id provided)
     if args.case_id:
-        print("\nNote: Uncomment to test PATCH - " "this will modify the case")
-        # patch_case_example(chronicle, args.case_id)
+        patch_case_example(chronicle, args.case_id)
 
     # Bulk operations (if case_ids provided)
     if args.case_ids:
         print(f"\nRunning bulk operations on {len(args.case_ids)} " f"cases")
 
         # Example 4: Add tags
-        print(
-            "\nNote: Uncomment to test bulk operations - "
-            "these will modify cases"
-        )
-        # bulk_add_tags_example(chronicle, args.case_ids)
+        bulk_add_tags_example(chronicle, args.case_ids)
 
         # Example 5: Assign cases (if username provided)
-        # if args.username:
-        #     bulk_assign_example(chronicle, args.case_ids, args.username)
+        if args.username:
+            bulk_assign_example(chronicle, args.case_ids, args.username)
 
         # Example 6: Change priority
-        # bulk_change_priority_example(chronicle, args.case_ids)
+        bulk_change_priority_example(chronicle, args.case_ids)
 
         # Example 7: Change stage
-        # bulk_change_stage_example(chronicle, args.case_ids)
+        bulk_change_stage_example(chronicle, args.case_ids)
 
         # Example 8: Close cases
-        # bulk_close_example(chronicle, args.case_ids)
+        bulk_close_example(chronicle, args.case_ids)
 
         # Example 9: Reopen cases
-        # bulk_reopen_example(chronicle, args.case_ids)
+        bulk_reopen_example(chronicle, args.case_ids)
 
         # Example 10: Merge cases (use first as target)
-        # if len(args.case_ids) > 1:
-        #     target = args.case_ids[0]
-        #     to_merge = args.case_ids[1:]
-        #     merge_cases_example(chronicle, to_merge, target)
+        if len(args.case_ids) > 1:
+            target = args.case_ids[0]
+            to_merge = args.case_ids[1:]
+            merge_cases_example(chronicle, to_merge, target)
 
     print("\n" + "=" * 60)
     print("Examples completed!")
     print("=" * 60)
-    print(
-        "\nNote: Most write operations are commented out to prevent "
-        "accidental modifications."
-    )
-    print("Uncomment them to test the functionality.")
 
 
 if __name__ == "__main__":

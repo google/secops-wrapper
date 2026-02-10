@@ -14,35 +14,20 @@
 #
 """Case functionality for Chronicle."""
 
-import sys
 from datetime import datetime
 from typing import Any
 
-from secops.chronicle.models import Case, CaseList
-from secops.exceptions import APIError
-
-
-if sys.version_info >= (3, 11):
-    from enum import StrEnum
-else:
-    from enum import Enum
-
-    class StrEnum(str, Enum):
-        """String enum implementation for Python < 3.11."""
-
-        def __str__(self) -> str:
-            return self.value
-
-
-class CasePriority(StrEnum):
-    """Priority levels for cases."""
-
-    UNSPECIFIED = "PRIORITY_UNSPECIFIED"
-    INFO = "PRIORITY_INFO"
-    LOW = "PRIORITY_LOW"
-    MEDIUM = "PRIORITY_MEDIUM"
-    HIGH = "PRIORITY_HIGH"
-    CRITICAL = "PRIORITY_CRITICAL"
+from secops.chronicle.models import (
+    APIVersion,
+    Case,
+    CaseCloseReason,
+    CaseList,
+    CasePriority,
+)
+from secops.chronicle.utils.request_utils import (
+    chronicle_paginated_request,
+    chronicle_request,
+)
 
 
 def get_cases(
@@ -73,11 +58,8 @@ def get_cases(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/legacy:legacyListCases"
+    params: dict[str, Any] = {"pageSize": str(page_size)}
 
-    params = {"pageSize": str(page_size)}
-
-    # Add optional parameters
     if page_token:
         params["pageToken"] = page_token
 
@@ -102,20 +84,14 @@ def get_cases(
     if tenant_id:
         params["tenantId"] = tenant_id
 
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to retrieve cases: {response.text}")
-
-    try:
-        data = response.json()
-
-        return {
-            "cases": data.get("cases", []),
-            "next_page_token": data.get("nextPageToken", ""),
-        }
-    except ValueError as e:
-        raise APIError(f"Failed to parse cases response: {str(e)}") from e
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path="legacy:legacyListCases",
+        api_version=APIVersion.V1ALPHA,
+        params=params,
+        error_message="Failed to retrieve cases",
+    )
 
 
 def get_cases_from_list(client, case_ids: list[str]) -> CaseList:
@@ -132,28 +108,22 @@ def get_cases_from_list(client, case_ids: list[str]) -> CaseList:
         APIError: If the API request fails
         ValueError: If too many case IDs are provided
     """
-    # Check that we don't exceed the maximum number of cases
     if len(case_ids) > 1000:
         raise ValueError("Maximum of 1000 cases can be retrieved in a batch")
 
-    url = f"{client.base_url}/{client.instance_id}/legacy:legacyBatchGetCases"
+    data = chronicle_request(
+        client,
+        method="GET",
+        endpoint_path="legacy:legacyBatchGetCases",
+        api_version=APIVersion.V1ALPHA,
+        params={"names": case_ids},
+        error_message="Failed to get cases",
+    )
 
-    params = {"names": case_ids}
-
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to get cases: {response.text}")
-
-    # Parse the response
     cases = []
-    response_data = response.json()
-
-    if "cases" in response_data:
-        for case_data in response_data["cases"]:
-            # Create Case object
-            case = Case.from_dict(case_data)
-            cases.append(case)
+    if "cases" in data:
+        for case_data in data["cases"]:
+            cases.append(Case.from_dict(case_data))
 
     return CaseList(cases)
 
@@ -174,21 +144,16 @@ def execute_bulk_add_tag(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/cases:executeBulkAddTag"
-
     body = {"casesIds": case_ids, "tags": tags}
 
-    response = client.session.post(url, json=body)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to add tags to cases: {response.text}")
-
-    try:
-        return response.json()
-    except ValueError as e:
-        raise APIError(
-            f"Failed to parse bulk add tag response: {str(e)}"
-        ) from e
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="cases:executeBulkAddTag",
+        api_version=APIVersion.V1ALPHA,
+        json=body,
+        error_message="Failed to add tags to cases",
+    )
 
 
 def execute_bulk_assign(
@@ -207,19 +172,16 @@ def execute_bulk_assign(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/cases:executeBulkAssign"
-
     body = {"casesIds": case_ids, "username": username}
 
-    response = client.session.post(url, json=body)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to assign cases: {response.text}")
-
-    try:
-        return response.json()
-    except ValueError as e:
-        raise APIError(f"Failed to parse bulk assign response: {str(e)}") from e
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="cases:executeBulkAssign",
+        api_version=APIVersion.V1ALPHA,
+        json=body,
+        error_message="Failed to assign cases",
+    )
 
 
 def execute_bulk_change_priority(
@@ -238,29 +200,29 @@ def execute_bulk_change_priority(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"cases:executeBulkChangePriority"
+    if isinstance(priority, str):
+        try:
+            priority = CasePriority[priority]
+        except KeyError as e:
+            try:
+                priority = CasePriority(priority)
+            except ValueError as ve:
+                valid_values = ", ".join([p.name for p in CasePriority])
+                raise ValueError(
+                    f"Invalid priority '{priority}'. "
+                    f"Valid values: {valid_values}"
+                ) from ve
+
+    body = {"casesIds": case_ids, "priority": priority}
+
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="cases:executeBulkChangePriority",
+        api_version=APIVersion.V1ALPHA,
+        json=body,
+        error_message="Failed to change case priority",
     )
-
-    # Convert enum to string if needed
-    priority_str = (
-        f"{priority}" if isinstance(priority, CasePriority) else priority
-    )
-
-    body = {"casesIds": case_ids, "priority": priority_str}
-
-    response = client.session.post(url, json=body)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to change case priority: {response.text}")
-
-    try:
-        return response.json()
-    except ValueError as e:
-        raise APIError(
-            f"Failed to parse bulk change priority response: {str(e)}"
-        ) from e
 
 
 def execute_bulk_change_stage(
@@ -279,30 +241,22 @@ def execute_bulk_change_stage(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"cases:executeBulkChangeStage"
-    )
-
     body = {"casesIds": case_ids, "stage": stage}
 
-    response = client.session.post(url, json=body)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to change case stage: {response.text}")
-
-    try:
-        return response.json()
-    except ValueError as e:
-        raise APIError(
-            f"Failed to parse bulk change stage response: {str(e)}"
-        ) from e
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="cases:executeBulkChangeStage",
+        api_version=APIVersion.V1ALPHA,
+        json=body,
+        error_message="Failed to change case stage",
+    )
 
 
 def execute_bulk_close(
     client,
     case_ids: list[int],
-    close_reason: str,
+    close_reason: str | CaseCloseReason,
     root_cause: str | None = None,
     close_comment: str | None = None,
     dynamic_parameters: list[dict[str, Any]] | None = None,
@@ -312,7 +266,10 @@ def execute_bulk_close(
     Args:
         client: ChronicleClient instance
         case_ids: List of case IDs to close
-        close_reason: Reason for closing the cases
+        close_reason: Reason for closing the cases.
+            Can be CaseCloseReason enum or string.
+            Valid values: MALICIOUS, NOT_MALICIOUS, MAINTENANCE,
+            INCONCLUSIVE, UNKNOWN, CLOSE_REASON_UNSPECIFIED
         root_cause: Optional root cause for closing cases
         close_comment: Optional comment to add when closing
         dynamic_parameters: Optional dynamic parameters for close action
@@ -322,10 +279,25 @@ def execute_bulk_close(
 
     Raises:
         APIError: If the API request fails
+        ValueError: If an invalid close_reason value is provided
     """
-    url = f"{client.base_url}/{client.instance_id}/cases:executeBulkClose"
+    if isinstance(close_reason, str):
+        try:
+            close_reason = CaseCloseReason[close_reason]
+        except KeyError as e:
+            try:
+                close_reason = CaseCloseReason(close_reason)
+            except ValueError as ve:
+                valid_values = ", ".join([r.name for r in CaseCloseReason])
+                raise ValueError(
+                    f"Invalid close_reason '{close_reason}'. "
+                    f"Valid values: {valid_values}"
+                ) from ve
 
-    body = {"casesIds": case_ids, "closeReason": close_reason}
+    body: dict[str, Any] = {
+        "casesIds": case_ids,
+        "closeReason": close_reason,
+    }
 
     if root_cause is not None:
         body["rootCause"] = root_cause
@@ -334,15 +306,14 @@ def execute_bulk_close(
     if dynamic_parameters is not None:
         body["dynamicParameters"] = dynamic_parameters
 
-    response = client.session.post(url, json=body)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to close cases: {response.text}")
-
-    try:
-        return response.json() if response.text else {}
-    except ValueError as e:
-        raise APIError(f"Failed to parse bulk close response: {str(e)}") from e
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="cases:executeBulkClose",
+        api_version=APIVersion.V1ALPHA,
+        json=body,
+        error_message="Failed to close cases",
+    )
 
 
 def execute_bulk_reopen(
@@ -361,19 +332,16 @@ def execute_bulk_reopen(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/cases:executeBulkReopen"
-
     body = {"casesIds": case_ids, "reopenComment": reopen_comment}
 
-    response = client.session.post(url, json=body)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to reopen cases: {response.text}")
-
-    try:
-        return response.json() if response.text else {}
-    except ValueError as e:
-        raise APIError(f"Failed to parse bulk reopen response: {str(e)}") from e
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="cases:executeBulkReopen",
+        api_version=APIVersion.V1ALPHA,
+        json=body,
+        error_message="Failed to reopen cases",
+    )
 
 
 def get_case(client, case_name: str, expand: str | None = None) -> Case:
@@ -393,28 +361,25 @@ def get_case(client, case_name: str, expand: str | None = None) -> Case:
     Raises:
         APIError: If the API request fails
     """
-    # Check if case_name is just an ID or full resource name
-    if "/cases/" not in case_name:
-        full_case_name = f"{client.instance_id}/cases/{case_name}"
+    if not case_name.startswith("projects/"):
+        endpoint_path = f"cases/{case_name}"
     else:
-        full_case_name = case_name
+        endpoint_path = case_name
 
-    url = f"{client.base_url}/{full_case_name}"
-
-    params = {}
+    params: dict[str, Any] = {}
     if expand:
         params["expand"] = expand
 
-    response = client.session.get(url, params=params)
+    data = chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=endpoint_path,
+        api_version=APIVersion.V1ALPHA,
+        params=params if params else None,
+        error_message="Failed to get case",
+    )
 
-    if response.status_code != 200:
-        raise APIError(f"Failed to get case: {response.text}")
-
-    try:
-        data = response.json()
-        return Case.from_dict(data)
-    except ValueError as e:
-        raise APIError(f"Failed to parse case response: {str(e)}") from e
+    return Case.from_dict(data)
 
 
 def list_cases(
@@ -441,61 +406,32 @@ def list_cases(
     Returns:
         Dictionary containing:
             - cases: List of Case objects
-            - nextPageToken: Token for next page
+            - nextPageToken: Token for next page (empty if auto-paginated)
             - totalSize: Total number of matching cases
 
     Raises:
         APIError: If the API request fails
-        ValueError: If page_size is invalid
     """
-    url = f"{client.base_url}/{client.instance_id}/cases"
-    all_cases = []
-    total_size = 0
-    next_token = page_token
+    extra_params: dict[str, Any] = {}
+    if filter_query:
+        extra_params["filter"] = filter_query
+    if order_by:
+        extra_params["orderBy"] = order_by
+    if expand:
+        extra_params["expand"] = expand
+    if distinct_by:
+        extra_params["distinctBy"] = distinct_by
 
-    while True:
-        params = {"pageSize": str(page_size if page_size else 1000)}
-
-        if next_token:
-            params["pageToken"] = next_token
-        if filter_query:
-            params["filter"] = filter_query
-        if order_by:
-            params["orderBy"] = order_by
-        if expand:
-            params["expand"] = expand
-        if distinct_by:
-            params["distinctBy"] = distinct_by
-
-        response = client.session.get(url, params=params)
-
-        if response.status_code != 200:
-            raise APIError(f"Failed to list cases: {response.text}")
-
-        try:
-            data = response.json()
-            all_cases.extend(data.get("cases", []))
-            total_size = data.get("totalSize", 0)
-            next_token = data.get("nextPageToken", "")
-
-            # If caller provided page_size, return only this page
-            if page_size is not None:
-                break
-
-            # Otherwise, auto-paginate through all results
-            if not next_token:
-                break
-
-        except ValueError as e:
-            raise APIError(
-                f"Failed to parse list cases response: {str(e)}"
-            ) from e
-
-    return {
-        "cases": all_cases,
-        "nextPageToken": next_token,
-        "totalSize": total_size,
-    }
+    return chronicle_paginated_request(
+        client,
+        api_version=APIVersion.V1ALPHA,
+        path="cases",
+        items_key="cases",
+        page_size=page_size,
+        page_token=page_token,
+        extra_params=extra_params if extra_params else None,
+        as_list=False,
+    )
 
 
 def merge_cases(
@@ -505,8 +441,8 @@ def merge_cases(
 
     Args:
         client: ChronicleClient instance
-        case_ids: List of case IDs to merge
-        case_to_merge_with: ID of the case to merge with
+        case_ids: List of case IDs to merge (source cases)
+        case_to_merge_with: ID of the target case to merge into
 
     Returns:
         Dictionary containing:
@@ -516,20 +452,22 @@ def merge_cases(
 
     Raises:
         APIError: If the API request fails
+
+    Note:
+        The API requires all cases (including target) in casesIds.
+        The target case is specified separately in caseToMergeWith.
     """
-    url = f"{client.base_url}/{client.instance_id}/cases:merge"
+    all_case_ids = list(set(case_ids + [case_to_merge_with]))
+    body = {"casesIds": all_case_ids, "caseToMergeWith": case_to_merge_with}
 
-    body = {"casesIds": case_ids, "caseToMergeWith": case_to_merge_with}
-
-    response = client.session.post(url, json=body)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to merge cases: {response.text}")
-
-    try:
-        return response.json()
-    except ValueError as e:
-        raise APIError(f"Failed to parse merge cases response: {str(e)}") from e
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="cases:merge",
+        api_version=APIVersion.V1ALPHA,
+        json=body,
+        error_message="Failed to merge cases",
+    )
 
 
 def patch_case(
@@ -546,7 +484,7 @@ def patch_case(
             Full format: projects/{project}/locations/{location}/
             instances/{instance}/cases/{case}
             Short format: {case_id} (e.g., "12345")
-        case_data: Dictionary containing case fields to update
+        case_data: Dictionary containing case fields to update.
         update_mask: Optional comma-separated list of fields to update
 
     Returns:
@@ -554,26 +492,38 @@ def patch_case(
 
     Raises:
         APIError: If the API request fails
+        ValueError: If an invalid priority value is provided
     """
-    # Check if case_name is just an ID or full resource name
-    if "/cases/" not in case_name:
-        full_case_name = f"{client.instance_id}/cases/{case_name}"
+    if not case_name.startswith("projects/"):
+        endpoint_path = f"cases/{case_name}"
     else:
-        full_case_name = case_name
+        endpoint_path = case_name
 
-    url = f"{client.base_url}/{full_case_name}"
+    if "priority" in case_data and isinstance(case_data["priority"], str):
+        try:
+            case_data["priority"] = CasePriority[case_data["priority"]]
+        except KeyError as e:
+            try:
+                case_data["priority"] = CasePriority(case_data["priority"])
+            except ValueError as ve:
+                valid_values = ", ".join([p.name for p in CasePriority])
+                raise ValueError(
+                    f"Invalid priority '{case_data['priority']}'. "
+                    f"Valid values: {valid_values}"
+                ) from ve
 
-    params = {}
+    params: dict[str, Any] = {}
     if update_mask:
         params["updateMask"] = update_mask
 
-    response = client.session.patch(url, json=case_data, params=params)
+    data = chronicle_request(
+        client,
+        method="PATCH",
+        endpoint_path=endpoint_path,
+        api_version=APIVersion.V1ALPHA,
+        json=case_data,
+        params=params if params else None,
+        error_message="Failed to patch case",
+    )
 
-    if response.status_code != 200:
-        raise APIError(f"Failed to patch case: {response.text}")
-
-    try:
-        data = response.json()
-        return Case.from_dict(data)
-    except ValueError as e:
-        raise APIError(f"Failed to parse patch case response: {str(e)}") from e
+    return Case.from_dict(data)

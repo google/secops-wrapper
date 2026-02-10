@@ -25,7 +25,6 @@ from google.auth.transport import requests as google_auth_requests
 from secops import auth as secops_auth
 from secops.auth import RetryConfig
 from secops.chronicle.alert import get_alerts as _get_alerts
-from secops.chronicle.case import CasePriority
 from secops.chronicle.case import execute_bulk_add_tag as _execute_bulk_add_tag
 from secops.chronicle.case import execute_bulk_assign as _execute_bulk_assign
 from secops.chronicle.case import (
@@ -174,7 +173,9 @@ from secops.chronicle.log_processing_pipelines import (
 )
 from secops.chronicle.models import (
     APIVersion,
+    CaseCloseReason,
     CaseList,
+    CasePriority,
     DashboardChart,
     DashboardQuery,
     EntitySummary,
@@ -1211,7 +1212,7 @@ class ChronicleClient:
     def execute_bulk_close(
         self,
         case_ids: list[int],
-        close_reason: str,
+        close_reason: str | CaseCloseReason,
         root_cause: str | None = None,
         close_comment: str | None = None,
         dynamic_parameters: list[dict[str, Any]] | None = None,
@@ -1220,7 +1221,10 @@ class ChronicleClient:
 
         Args:
             case_ids: List of case IDs to close
-            close_reason: Reason for closing the cases
+            close_reason: Reason for closing the cases.
+                Can be CaseCloseReason enum or string.
+                Valid values: MALICIOUS, NOT_MALICIOUS, MAINTENANCE,
+                INCONCLUSIVE, UNKNOWN, CLOSE_REASON_UNSPECIFIED
             root_cause: Optional root cause for closing cases
             close_comment: Optional comment to add when closing
             dynamic_parameters: Optional dynamic parameters for close
@@ -1230,6 +1234,7 @@ class ChronicleClient:
 
         Raises:
             APIError: If the API request fails
+            ValueError: If an invalid close_reason value is provided
         """
         return _execute_bulk_close(
             self,
