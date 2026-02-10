@@ -294,7 +294,7 @@ def merge_cases_example(chronicle, case_ids, target_case_id):
 def parse_case_ids(value):
     """Parse comma-separated case IDs into list of integers."""
     try:
-        return [int(id.strip()) for id in value.split(",")]
+        return [int(case_id.strip()) for case_id in value.split(",")]
     except ValueError as e:
         raise argparse.ArgumentTypeError(
             f"Invalid case ID format: {value}"

@@ -1070,7 +1070,8 @@ class ChronicleClient:
         order_by: str | None = None,
         expand: str | None = None,
         distinct_by: str | None = None,
-    ) -> dict[str, Any]:
+        as_list: bool = False,
+    ) -> list[dict[str, Any]] | dict[str, Any]:
         """List cases with optional filtering and pagination.
 
         Args:
@@ -1082,9 +1083,13 @@ class ChronicleClient:
             order_by: Comma-separated list of fields to order by
             expand: Expand fields (e.g., "tags, products")
             distinct_by: Field to distinct cases by
+            as_list: If True, return a list of cases instead of a dict
+                with cases list, nextPageToken, and totalSize.
 
         Returns:
-            Dictionary with cases, nextPageToken, and totalSize
+            If as_list is True: A list of case dictionaries.
+            If as_list is False: A dictionary with cases, nextPageToken,
+                and totalSize.
 
         Raises:
             APIError: If the API request fails
@@ -1098,6 +1103,7 @@ class ChronicleClient:
             order_by,
             expand,
             distinct_by,
+            as_list,
         )
 
     def patch_case(

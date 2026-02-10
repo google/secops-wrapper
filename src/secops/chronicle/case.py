@@ -201,11 +201,12 @@ def execute_bulk_change_priority(
         APIError: If the API request fails
     """
     if isinstance(priority, str):
+        original_priority_value = priority
         try:
-            priority = CasePriority[priority]
+            priority = CasePriority[original_priority_value]
         except KeyError:
             try:
-                priority = CasePriority(priority)
+                priority = CasePriority(original_priority_value)
             except ValueError as ve:
                 valid_values = ", ".join([p.name for p in CasePriority])
                 raise ValueError(
@@ -282,11 +283,12 @@ def execute_bulk_close(
         ValueError: If an invalid close_reason value is provided
     """
     if isinstance(close_reason, str):
+        original_close_reason = close_reason
         try:
-            close_reason = CaseCloseReason[close_reason]
+            close_reason = CaseCloseReason[original_close_reason]
         except KeyError:
             try:
-                close_reason = CaseCloseReason(close_reason)
+                close_reason = CaseCloseReason(original_close_reason)
             except ValueError as ve:
                 valid_values = ", ".join([r.name for r in CaseCloseReason])
                 raise ValueError(
@@ -375,7 +377,7 @@ def get_case(client, case_name: str, expand: str | None = None) -> Case:
         method="GET",
         endpoint_path=endpoint_path,
         api_version=APIVersion.V1ALPHA,
-        params=params if params else None,
+        params=params,
         error_message="Failed to get case",
     )
 
@@ -390,7 +392,8 @@ def list_cases(
     order_by: str | None = None,
     expand: str | None = None,
     distinct_by: str | None = None,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> list[dict[str, Any]] | dict[str, Any]:
     """List cases with optional filtering and pagination.
 
     Args:
@@ -402,10 +405,13 @@ def list_cases(
         order_by: Comma-separated list of fields to order by
         expand: Expand fields (e.g., "tags, products")
         distinct_by: Field to distinct cases by
+        as_list: If True, return a list of cases instead of a dict
+            with cases list, nextPageToken, and totalSize.
 
     Returns:
-        Dictionary containing:
-            - cases: List of Case objects
+        If as_list is True: A list of case dictionaries.
+        If as_list is False: A dictionary containing:
+            - cases: List of case dictionaries
             - nextPageToken: Token for next page (empty if auto-paginated)
             - totalSize: Total number of matching cases
 
@@ -430,7 +436,7 @@ def list_cases(
         page_size=page_size,
         page_token=page_token,
         extra_params=extra_params if extra_params else None,
-        as_list=False,
+        as_list=as_list,
     )
 
 
@@ -500,11 +506,12 @@ def patch_case(
         endpoint_path = case_name
 
     if "priority" in case_data and isinstance(case_data["priority"], str):
+        case_priority = case_data["priority"]
         try:
-            case_data["priority"] = CasePriority[case_data["priority"]]
+            case_data["priority"] = CasePriority[case_priority]
         except KeyError:
             try:
-                case_data["priority"] = CasePriority(case_data["priority"])
+                case_data["priority"] = CasePriority(case_priority)
             except ValueError as ve:
                 valid_values = ", ".join([p.name for p in CasePriority])
                 raise ValueError(
