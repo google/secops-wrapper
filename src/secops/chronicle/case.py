@@ -203,7 +203,7 @@ def execute_bulk_change_priority(
     if isinstance(priority, str):
         try:
             priority = CasePriority[priority]
-        except KeyError as e:
+        except KeyError:
             try:
                 priority = CasePriority(priority)
             except ValueError as ve:
@@ -284,7 +284,7 @@ def execute_bulk_close(
     if isinstance(close_reason, str):
         try:
             close_reason = CaseCloseReason[close_reason]
-        except KeyError as e:
+        except KeyError:
             try:
                 close_reason = CaseCloseReason(close_reason)
             except ValueError as ve:
@@ -502,7 +502,7 @@ def patch_case(
     if "priority" in case_data and isinstance(case_data["priority"], str):
         try:
             case_data["priority"] = CasePriority[case_data["priority"]]
-        except KeyError as e:
+        except KeyError:
             try:
                 case_data["priority"] = CasePriority(case_data["priority"])
             except ValueError as ve:
