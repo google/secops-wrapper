@@ -14,13 +14,20 @@
 #
 """Statistics functionality for Chronicle searches."""
 from datetime import datetime
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
+from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import (
+    chronicle_request,
+)
 from secops.exceptions import APIError
+
+if TYPE_CHECKING:
+    from secops.chronicle.client import ChronicleClient
 
 
 def get_stats(
-    client,
+    client: "ChronicleClient",
     query: str,
     start_time: datetime,
     end_time: datetime,
@@ -56,35 +63,23 @@ def get_stats(
     # Unused parameters, kept for backward compatibility
     _ = (max_events, case_insensitive, max_attempts)
 
-    # Format the instance ID for the API call
-    instance = client.instance_id
-
-    # Endpoint for UDM search
-    url = f"{client.base_url}/{instance}:udmSearch"
-
-    # Format times for the API
-    start_time_str = start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-    end_time_str = end_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-
     # Query parameters for the API call
     params = {
         "query": query,
-        "timeRange.start_time": start_time_str,
-        "timeRange.end_time": end_time_str,
+        "timeRange.start_time": start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        "timeRange.end_time": end_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
         "limit": max_values,  # Limit to specified number of results
     }
 
-    # Make the API request
-    response = client.session.get(url, params=params, timeout=timeout)
-    if response.status_code != 200:
-        raise APIError(
-            f"Error executing stats search: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
+    results = chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=":udmSearch",
+        api_version=APIVersion.V1ALPHA,
+        params=params,
+        timeout=timeout,
+    )
 
-    results = response.json()
-
-    # Check if stats data is available in the response
     if "stats" not in results:
         raise APIError("No stats found in response")
 
