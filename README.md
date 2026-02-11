@@ -1403,6 +1403,134 @@ case = cases.get_case("case-id-1")
 
 > **Note**: The case management API uses the `legacy:legacyBatchGetCases` endpoint to retrieve multiple cases in a single request. You can retrieve up to 1000 cases in a single batch.
 
+### Case Management
+
+Chronicle provides comprehensive case management capabilities for tracking and managing security investigations. The SDK supports listing, retrieving, updating, and performing bulk operations on cases.
+
+#### List cases
+
+Retrieve cases with optional filtering and pagination:
+
+```python
+# List all cases with default pagination
+result = chronicle.list_cases(page_size=50)
+for case_data in result["cases"]:
+    case_id = case_data["name"].split("/")[-1]
+    print(f"Case {case_id}: {case_data['displayName']}")
+
+# List with filtering
+open_cases = chronicle.list_cases(
+    page_size=100,
+    filter_query='status = "OPENED"',
+    order_by="createTime desc"
+)
+
+# Get cases as a flat list instead of paginated dict
+cases_list = chronicle.list_cases(page_size=50, as_list=True)
+for case in cases_list:
+    print(f"{case['displayName']}: {case['priority']}")
+```
+
+#### Get case details
+
+Retrieve detailed information about a specific case:
+
+```python
+# Get case by ID
+case = chronicle.get_case("12345")
+print(f"Case: {case.display_name}")
+print(f"Priority: {case.priority}")
+print(f"Status: {case.status}")
+print(f"Stage: {case.stage}")
+
+# Get case with expanded fields
+case_expanded = chronicle.get_case("12345", expand="tags,products")
+```
+
+#### Update a case
+
+Update case fields using partial updates:
+
+```python
+# Update case priority
+updated_case = chronicle.patch_case(
+    case_name="12345",
+    case_data={"priority": "PRIORITY_HIGH"},
+    update_mask="priority"
+)
+
+# Update multiple fields
+updated_case = chronicle.patch_case(
+    case_name="12345",
+    case_data={
+        "priority": "PRIORITY_MEDIUM",
+        "stage": "Investigation"
+    },
+    update_mask="priority,stage"
+)
+```
+
+#### Merge cases
+
+Merge multiple cases into a single target case:
+
+```python
+# Merge source cases into target case
+result = chronicle.merge_cases(
+    case_ids=[12345, 67890],
+    case_to_merge_with=11111
+)
+
+if result.get("isRequestValid"):
+    print(f"Cases merged into case {result['newCaseId']}")
+else:
+    print(f"Merge failed: {result.get('errors')}")
+```
+
+#### Bulk operations
+
+Perform operations on multiple cases simultaneously:
+
+```python
+# Bulk add tags
+chronicle.execute_bulk_add_tag(
+    case_ids=[12345, 67890],
+    tags=["phishing", "high-priority"]
+)
+
+# Bulk assign cases
+chronicle.execute_bulk_assign(
+    case_ids=[12345, 67890],
+    username="@SecurityTeam"
+)
+
+# Bulk change priority
+chronicle.execute_bulk_change_priority(
+    case_ids=[12345, 67890],
+    priority="PRIORITY_HIGH"
+)
+
+# Bulk change stage
+chronicle.execute_bulk_change_stage(
+    case_ids=[12345, 67890],
+    stage="Remediation"
+)
+
+# Bulk close cases
+chronicle.execute_bulk_close(
+    case_ids=[12345, 67890],
+    close_reason="NOT_MALICIOUS",
+    root_cause="False positive - benign activity",
+    close_comment="Verified with asset owner"
+)
+
+# Bulk reopen cases
+chronicle.execute_bulk_reopen(
+    case_ids=[12345, 67890],
+    reopen_comment="New evidence discovered"
+)
+```
+
 ### Investigation Management
 
 Chronicle investigations provide automated analysis and recommendations for alerts and cases. The SDK provides methods to list, retrieve, trigger, and fetch associated investigations.
