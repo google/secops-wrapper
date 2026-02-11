@@ -26,11 +26,7 @@ from secops.exceptions import APIError
 
 @pytest.mark.integration
 def test_list_and_get_cases_workflow():
-    """Test listing and getting cases workflow.
-
-    Tests basic list, list with as_list parameter, list with filter,
-    and get case by ID.
-    """
+    """Test listing and getting cases workflow."""
     client = SecOpsClient()
     chronicle = client.chronicle(**CHRONICLE_CONFIG)
 
@@ -81,7 +77,6 @@ def test_case_update_workflow():
     """Test case update (patch) workflow.
 
     Tests patching a case's priority and verifying the change.
-    Uses test case ID 7418669 to avoid tampering with actual cases.
     """
     client = SecOpsClient()
     chronicle = client.chronicle(**CHRONICLE_CONFIG)
@@ -127,11 +122,7 @@ def test_case_update_workflow():
 
 @pytest.mark.integration
 def test_bulk_operations_workflow():
-    """Test bulk operations workflow including tag, assign, priority, stage.
-
-    This test performs a complete workflow of bulk operations on cases.
-    Uses test case ID 7418669 to avoid tampering with actual cases.
-    """
+    """Test bulk operations workflow including tag, priority, stage."""
     client = SecOpsClient()
     chronicle = client.chronicle(**CHRONICLE_CONFIG)
 
@@ -150,14 +141,6 @@ def test_bulk_operations_workflow():
     except APIError as e:
         print(f"Bulk add tag: {e}")
 
-    # Test bulk assign
-    try:
-        result = chronicle.execute_bulk_assign(case_ids, "@Tier1")
-        assert isinstance(result, dict)
-        print("Bulk assign: SUCCESS")
-    except APIError as e:
-        print(f"Bulk assign: {e}")
-
     # Test bulk change priority
     try:
         result = chronicle.execute_bulk_change_priority(
@@ -175,6 +158,28 @@ def test_bulk_operations_workflow():
         print("Bulk change stage: SUCCESS")
     except APIError as e:
         print(f"Bulk change stage: {e}")
+
+
+@pytest.mark.integration
+def test_bulk_assign():
+    """Test bulk assign operation."""
+    client = SecOpsClient()
+    chronicle = client.chronicle(**CHRONICLE_CONFIG)
+
+    # Use dedicated test case ID
+    case_ids = [7418669]
+
+    try:
+        result = chronicle.execute_bulk_assign(case_ids, "@Administrator")
+        assert isinstance(result, dict)
+        print("Bulk assign: SUCCESS")
+    except APIError as e:
+        error_msg = str(e)
+        # Skip if API returns INTERNAL/500 error
+        if "INTERNAL" in error_msg or "500" in error_msg:
+            pytest.skip(f"Bulk assign API returned INTERNAL error: {e}")
+        # Re-raise other errors
+        raise
 
 
 @pytest.mark.integration
