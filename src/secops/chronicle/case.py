@@ -150,7 +150,7 @@ def execute_bulk_add_tag(
         client,
         method="POST",
         endpoint_path="cases:executeBulkAddTag",
-        api_version=APIVersion.V1ALPHA,
+        api_version=APIVersion.V1BETA,
         json=body,
         error_message="Failed to add tags to cases",
     )
@@ -178,7 +178,7 @@ def execute_bulk_assign(
         client,
         method="POST",
         endpoint_path="cases:executeBulkAssign",
-        api_version=APIVersion.V1ALPHA,
+        api_version=APIVersion.V1BETA,
         json=body,
         error_message="Failed to assign cases",
     )
@@ -220,7 +220,7 @@ def execute_bulk_change_priority(
         client,
         method="POST",
         endpoint_path="cases:executeBulkChangePriority",
-        api_version=APIVersion.V1ALPHA,
+        api_version=APIVersion.V1BETA,
         json=body,
         error_message="Failed to change case priority",
     )
@@ -248,7 +248,7 @@ def execute_bulk_change_stage(
         client,
         method="POST",
         endpoint_path="cases:executeBulkChangeStage",
-        api_version=APIVersion.V1ALPHA,
+        api_version=APIVersion.V1BETA,
         json=body,
         error_message="Failed to change case stage",
     )
@@ -312,7 +312,7 @@ def execute_bulk_close(
         client,
         method="POST",
         endpoint_path="cases:executeBulkClose",
-        api_version=APIVersion.V1ALPHA,
+        api_version=APIVersion.V1BETA,
         json=body,
         error_message="Failed to close cases",
     )
@@ -340,7 +340,7 @@ def execute_bulk_reopen(
         client,
         method="POST",
         endpoint_path="cases:executeBulkReopen",
-        api_version=APIVersion.V1ALPHA,
+        api_version=APIVersion.V1BETA,
         json=body,
         error_message="Failed to reopen cases",
     )
@@ -376,7 +376,7 @@ def get_case(client, case_name: str, expand: str | None = None) -> Case:
         client,
         method="GET",
         endpoint_path=endpoint_path,
-        api_version=APIVersion.V1ALPHA,
+        api_version=APIVersion.V1BETA,
         params=params,
         error_message="Failed to get case",
     )
@@ -430,7 +430,7 @@ def list_cases(
 
     return chronicle_paginated_request(
         client,
-        api_version=APIVersion.V1ALPHA,
+        api_version=APIVersion.V1BETA,
         path="cases",
         items_key="cases",
         page_size=page_size,
@@ -470,7 +470,7 @@ def merge_cases(
         client,
         method="POST",
         endpoint_path="cases:merge",
-        api_version=APIVersion.V1ALPHA,
+        api_version=APIVersion.V1BETA,
         json=body,
         error_message="Failed to merge cases",
     )
@@ -527,7 +527,7 @@ def patch_case(
         client,
         method="PATCH",
         endpoint_path=endpoint_path,
-        api_version=APIVersion.V1ALPHA,
+        api_version=APIVersion.V1BETA,
         json=case_data,
         params=params if params else None,
         error_message="Failed to patch case",
