@@ -20,14 +20,14 @@ They interact with real Chronicle API endpoints.
 
 import pytest
 from secops import SecOpsClient
-from ..config import CHRONICLE_CONFIG
+from ..config import CHRONICLE_CONFIG, SERVICE_ACCOUNT_JSON
 from secops.exceptions import APIError
 
 
 @pytest.mark.integration
 def test_list_and_get_cases_workflow():
     """Test listing and getting cases workflow."""
-    client = SecOpsClient()
+    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
     chronicle = client.chronicle(**CHRONICLE_CONFIG)
 
     # Test basic list
@@ -78,7 +78,7 @@ def test_case_update_workflow():
 
     Tests patching a case's priority and verifying the change.
     """
-    client = SecOpsClient()
+    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
     chronicle = client.chronicle(**CHRONICLE_CONFIG)
 
     # Use dedicated test case ID
@@ -123,7 +123,7 @@ def test_case_update_workflow():
 @pytest.mark.integration
 def test_bulk_operations_workflow():
     """Test bulk operations workflow including tag, priority, stage."""
-    client = SecOpsClient()
+    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
     chronicle = client.chronicle(**CHRONICLE_CONFIG)
 
     # Use dedicated test case ID
@@ -163,7 +163,7 @@ def test_bulk_operations_workflow():
 @pytest.mark.integration
 def test_bulk_assign():
     """Test bulk assign operation."""
-    client = SecOpsClient()
+    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
     chronicle = client.chronicle(**CHRONICLE_CONFIG)
 
     # Use dedicated test case ID
@@ -188,7 +188,7 @@ def test_bulk_close_reopen_workflow():
 
     This test closes cases and then reopens them.
     """
-    client = SecOpsClient()
+    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
     chronicle = client.chronicle(**CHRONICLE_CONFIG)
 
     # Use dedicated test case ID
