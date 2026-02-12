@@ -132,32 +132,20 @@ def test_bulk_operations_workflow():
     print(f"\nTesting bulk operations on cases: {case_ids}")
 
     # Test bulk add tag
-    try:
-        result = chronicle.execute_bulk_add_tag(
-            case_ids, ["integration-test-tag"]
-        )
-        assert isinstance(result, dict)
-        print("Bulk add tag: SUCCESS")
-    except APIError as e:
-        print(f"Bulk add tag: {e}")
+
+    result = chronicle.execute_bulk_add_tag(case_ids, ["integration-test-tag"])
+    assert isinstance(result, dict)
+    print("Bulk add tag: SUCCESS")
 
     # Test bulk change priority
-    try:
-        result = chronicle.execute_bulk_change_priority(
-            case_ids, "PRIORITY_MEDIUM"
-        )
-        assert isinstance(result, dict)
-        print("Bulk change priority: SUCCESS")
-    except APIError as e:
-        print(f"Bulk change priority: {e}")
+    result = chronicle.execute_bulk_change_priority(case_ids, "PRIORITY_MEDIUM")
+    assert isinstance(result, dict)
+    print("Bulk change priority: SUCCESS")
 
     # Test bulk change stage
-    try:
-        result = chronicle.execute_bulk_change_stage(case_ids, "Triage")
-        assert isinstance(result, dict)
-        print("Bulk change stage: SUCCESS")
-    except APIError as e:
-        print(f"Bulk change stage: {e}")
+    result = chronicle.execute_bulk_change_stage(case_ids, "Triage")
+    assert isinstance(result, dict)
+    print("Bulk change stage: SUCCESS")
 
 
 @pytest.mark.integration
