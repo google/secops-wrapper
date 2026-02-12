@@ -7,6 +7,7 @@ Following shows mapping between SecOps [REST Resource](https://cloud.google.com/
 ## Implementation Statistics
 
 - **v1:** 17 endpoints implemented
+- **v1beta:** 10 endpoints implemented
 - **v1alpha:** 113 endpoints implemented
 
 ## Endpoint Mapping
@@ -85,6 +86,16 @@ Following shows mapping between SecOps [REST Resource](https://cloud.google.com/
 | watchlists.get                                                                 | v1beta  |                                                                                                                   |                                                |
 | watchlists.list                                                                | v1beta  |                                                                                                                   |                                                |
 | watchlists.patch                                                               | v1beta  |                                                                                                                   |                                                |
+| cases.executeBulkAddTag                                                        | v1beta  | chronicle.case.execute_bulk_add_tag                                                                               | secops case bulk-add-tag                       |
+| cases.executeBulkAssign                                                        | v1beta  | chronicle.case.execute_bulk_assign                                                                                | secops case bulk-assign                        |
+| cases.executeBulkChangePriority                                                | v1beta  | chronicle.case.execute_bulk_change_priority                                                                       | secops case bulk-change-priority               |
+| cases.executeBulkChangeStage                                                   | v1beta  | chronicle.case.execute_bulk_change_stage                                                                          | secops case bulk-change-stage                  |
+| cases.executeBulkClose                                                         | v1beta  | chronicle.case.execute_bulk_close                                                                                 | secops case bulk-close                         |
+| cases.executeBulkReopen                                                        | v1beta  | chronicle.case.execute_bulk_reopen                                                                                | secops case bulk-reopen                        |
+| cases.get                                                                      | v1beta  | chronicle.case.get_case                                                                                           | secops case get                                |
+| cases.list                                                                     | v1beta  | chronicle.case.list_cases                                                                                         | secops case list                               |
+| cases.merge                                                                    | v1beta  | chronicle.case.merge_cases                                                                                        | secops case merge                              |
+| cases.patch                                                                    | v1beta  | chronicle.case.patch_case                                                                                         | secops case update                             |
 | analytics.entities.analyticValues.list                                         | v1alpha |                                                                                                                   |                                                |
 | analytics.list                                                                 | v1alpha |                                                                                                                   |                                                |
 | batchValidateWatchlistEntities                                                 | v1alpha |                                                                                                                   |                                                |
