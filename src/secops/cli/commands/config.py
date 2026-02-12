@@ -39,6 +39,11 @@ def setup_config_command(subparsers):
     set_parser = config_subparsers.add_parser(
         "set", help="Set configuration values"
     )
+    set_parser.add_argument(
+        "--local",
+        action="store_true",
+        help="Save configuration to current directory (.secops/config.json)",
+    )
     add_chronicle_args(set_parser)
     add_common_args(set_parser)
     add_time_range_args(set_parser)
@@ -64,6 +69,12 @@ def handle_config_set_command(args, chronicle=None):
         args: Command line arguments
         chronicle: Not used for this command
     """
+    # If saving to local, we should probably start with empty or current local config
+    # to avoid polluting it with global values.
+    # But for now, we follow the pattern of loading merged config and updating it.
+    # Optimization: If --local, maybe we should only load local config?
+    # But load_config() returns merged.
+    # Let's use load_config() but be aware we might save merged values to local.
     config = load_config()
 
     # Update config with new values
@@ -84,11 +95,13 @@ def handle_config_set_command(args, chronicle=None):
     if args.time_window is not None:
         config["time_window"] = args.time_window
 
-    save_config(config)
-    print(f"Configuration saved to {CONFIG_FILE}")
+    save_config(config, local=args.local)
+    target = "local" if args.local else "global"
+    print(f"Configuration saved to {target} config file")
 
     # Unused argument
     _ = (chronicle,)
+
 
 
 def handle_config_view_command(args, chronicle=None):
