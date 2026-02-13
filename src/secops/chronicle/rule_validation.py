@@ -65,7 +65,6 @@ def validate_rule(
 
     body = {"ruleText": cleaned_rule}
 
-    # response = client.session.post(url, json=body)
     result = chronicle_request(
         client,
         method="POST",

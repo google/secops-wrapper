@@ -65,11 +65,12 @@ def create_retrohunt(
         endpoint_path=f"rules/{rule_id}/retrohunts",
         json=body,
         api_version=api_version,
+        error_message="Failed to create retrohunt",
     )
 
 
 def get_retrohunt(
-    client,
+    client: "ChronicleClient",
     rule_id: str,
     operation_id: str,
     api_version: APIVersion | None = APIVersion.V1,
@@ -94,6 +95,7 @@ def get_retrohunt(
         method="GET",
         endpoint_path=f"rules/{rule_id}/retrohunts/{operation_id}",
         api_version=api_version,
+        error_message="Failed to get retrohunt",
     )
 
 

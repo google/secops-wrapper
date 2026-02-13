@@ -82,8 +82,7 @@ def add_chronicle_args(parser: argparse.ArgumentParser) -> None:
 
 
 def add_time_range_args(
-        parser: argparse.ArgumentParser,
-        required: bool = False
+    parser: argparse.ArgumentParser, required: bool = False
 ) -> None:
     """Add time range arguments to a parser.
 
