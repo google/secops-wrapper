@@ -15,14 +15,20 @@
 """Retrohunt functionality for Chronicle rules."""
 
 from datetime import datetime
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from secops.chronicle.models import APIVersion
-from secops.exceptions import APIError
+from secops.chronicle.utils.request_utils import (
+    chronicle_request,
+    chronicle_paginated_request,
+)
+
+if TYPE_CHECKING:
+    from secops.chronicle.client import ChronicleClient
 
 
 def create_retrohunt(
-    client,
+    client: "ChronicleClient",
     rule_id: str,
     start_time: datetime,
     end_time: datetime,
@@ -46,11 +52,6 @@ def create_retrohunt(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url(api_version, list(APIVersion))}/"
-        f"{client.instance_id}/rules/{rule_id}/retrohunts"
-    )
-
     body = {
         "process_interval": {
             "start_time": start_time.isoformat(),
@@ -58,16 +59,18 @@ def create_retrohunt(
         },
     }
 
-    response = client.session.post(url, json=body)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to create retrohunt: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=f"rules/{rule_id}/retrohunts",
+        json=body,
+        api_version=api_version,
+        error_message="Failed to create retrohunt",
+    )
 
 
 def get_retrohunt(
-    client,
+    client: "ChronicleClient",
     rule_id: str,
     operation_id: str,
     api_version: APIVersion | None = APIVersion.V1,
@@ -87,14 +90,46 @@ def get_retrohunt(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url(api_version, list(APIVersion))}/"
-        f"{client.instance_id}/rules/{rule_id}/retrohunts/{operation_id}"
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"rules/{rule_id}/retrohunts/{operation_id}",
+        api_version=api_version,
+        error_message="Failed to get retrohunt",
     )
 
-    response = client.session.get(url)
 
-    if response.status_code != 200:
-        raise APIError(f"Failed to get retrohunt: {response.text}")
+def list_retrohunts(
+    client: "ChronicleClient",
+    rule_id: str,
+    page_size: int | None = None,
+    page_token: str | None = None,
+    api_version: APIVersion | None = APIVersion.V1,
+    as_list: bool = False,
+) -> dict[str, Any] | list[dict[str, Any]]:
+    """Get a list of retrohunts for a rule.
 
-    return response.json()
+    Args:
+        client: ChronicleClient instance
+        rule_id: Unique ID of the rule to list retrohunts for
+        page_size: Page size to use for paginated results
+        page_token: Page token to use for paginated results
+        api_version: Preferred API version to use. Defaults to V1
+        as_list: Whether to return results as a list or dictionary
+
+    Returns:
+        If as_list is True: List of retrohunts.
+        If as_list is False: Dict with retrohunts list and nextPageToken.
+
+    Raises:
+        APIError: If the API request fails
+    """
+    return chronicle_paginated_request(
+        client,
+        api_version=api_version,
+        path=f"rules/{rule_id}/retrohunts",
+        items_key="retrohunts",
+        page_size=page_size,
+        page_token=page_token,
+        as_list=as_list,
+    )

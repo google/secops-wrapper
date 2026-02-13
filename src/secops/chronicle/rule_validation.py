@@ -14,9 +14,15 @@
 #
 """Rule validation functionality for Chronicle."""
 
-from typing import NamedTuple
+from typing import NamedTuple, TYPE_CHECKING
 
-from secops.exceptions import APIError
+from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import (
+    chronicle_request,
+)
+
+if TYPE_CHECKING:
+    from secops.chronicle.client import ChronicleClient
 
 
 class ValidationResult(NamedTuple):
@@ -34,7 +40,9 @@ class ValidationResult(NamedTuple):
     position: dict[str, int] | None = None
 
 
-def validate_rule(client, rule_text: str) -> ValidationResult:
+def validate_rule(
+    client: "ChronicleClient", rule_text: str
+) -> ValidationResult:
     """Validates a YARA-L2 rule against the Chronicle API.
 
     Args:
@@ -51,20 +59,20 @@ def validate_rule(client, rule_text: str) -> ValidationResult:
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}:verifyRuleText"
-
     # Clean up the rule text by removing leading/trailing backticks and
     # whitespace
     cleaned_rule = rule_text.strip("` \n\t\r")
 
     body = {"ruleText": cleaned_rule}
 
-    response = client.session.post(url, json=body)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to validate rule: {response.text}")
-
-    result = response.json()
+    result = chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=":verifyRuleText",
+        json=body,
+        api_version=APIVersion.V1ALPHA,
+        error_message="Failed to validate rule",
+    )
 
     # Check if the response indicates success
     if result.get("success", False):

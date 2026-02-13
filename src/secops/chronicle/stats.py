@@ -78,6 +78,7 @@ def get_stats(
         api_version=APIVersion.V1ALPHA,
         params=params,
         timeout=timeout,
+        error_message="Failed to get stats",
     )
 
     if "stats" not in results:

@@ -81,35 +81,46 @@ def add_chronicle_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def add_time_range_args(parser: argparse.ArgumentParser) -> None:
+def add_time_range_args(
+    parser: argparse.ArgumentParser, required: bool = False
+) -> None:
     """Add time range arguments to a parser.
 
     Args:
-        parser: Parser to add arguments to
+        parser: Parser to add arguments to.
+        required: Whether a time range is required.
     """
     config = load_config()
+    time_window_default = None if required else config.get("time_window", 24)
 
-    parser.add_argument(
+    group = parser.add_mutually_exclusive_group(required=required)
+
+    group.add_argument(
         "--start-time",
         "--start_time",
         dest="start_time",
         default=config.get("start_time"),
-        help="Start time in ISO format (YYYY-MM-DDTHH:MM:SSZ)",
+        help="Start time in ISO format "
+        "(YYYY-MM-DDTHH:MM:SSZ). "
+        "Must be used with --end-time",
     )
+    group.add_argument(
+        "--time-window",
+        "--time_window",
+        dest="time_window",
+        type=int,
+        default=time_window_default,
+        help="Time window in hours " "(alternative to start/end time)",
+    )
+
     parser.add_argument(
         "--end-time",
         "--end_time",
         dest="end_time",
         default=config.get("end_time"),
-        help="End time in ISO format (YYYY-MM-DDTHH:MM:SSZ)",
-    )
-    parser.add_argument(
-        "--time-window",
-        "--time_window",
-        dest="time_window",
-        type=int,
-        default=config.get("time_window", 24),
-        help="Time window in hours (alternative to start/end time)",
+        help="End time in ISO format "
+        "(YYYY-MM-DDTHH:MM:SSZ). "
+        "Used with --start-time",
     )
 
 
