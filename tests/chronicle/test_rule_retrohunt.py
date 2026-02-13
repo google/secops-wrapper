@@ -137,3 +137,59 @@ def test_list_retrohunts_propagates_api_error(client: Mock) -> None:
     ):
         with pytest.raises(Exception, match="boom"):
             list_retrohunts(client=client, rule_id="ru_abc123")
+
+
+def test_create_retrohunt_propagates_api_error(client: Mock) -> None:
+    start = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    end = datetime(2024, 1, 2, tzinfo=timezone.utc)
+
+    with patch(
+        "secops.chronicle.rule_retrohunt.chronicle_request",
+        side_effect=Exception("API error"),
+    ):
+        with pytest.raises(Exception, match="API error"):
+            create_retrohunt(
+                client=client,
+                rule_id="ru_abc123",
+                start_time=start,
+                end_time=end,
+            )
+
+
+def test_get_retrohunt_propagates_api_error(client: Mock) -> None:
+    with patch(
+        "secops.chronicle.rule_retrohunt.chronicle_request",
+        side_effect=Exception("Not found"),
+    ):
+        with pytest.raises(Exception, match="Not found"):
+            get_retrohunt(
+                client=client,
+                rule_id="ru_abc123",
+                operation_id="op_123",
+            )
+
+
+def test_create_retrohunt_with_invalid_time_range(
+    client: Mock,
+) -> None:
+    start = datetime(2024, 1, 2, tzinfo=timezone.utc)
+    end = datetime(2024, 1, 1, tzinfo=timezone.utc)
+
+    expected = {"name": "operations/op_123"}
+
+    with patch(
+        "secops.chronicle.rule_retrohunt.chronicle_request",
+        return_value=expected,
+    ) as req:
+        result = create_retrohunt(
+            client=client,
+            rule_id="ru_abc123",
+            start_time=start,
+            end_time=end,
+        )
+
+    assert result == expected
+    req.assert_called_once()
+    body = req.call_args[1]["json"]
+    assert body["process_interval"]["start_time"] == start.isoformat()
+    assert body["process_interval"]["end_time"] == end.isoformat()
