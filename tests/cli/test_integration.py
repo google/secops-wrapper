@@ -1768,8 +1768,6 @@ def test_cli_config_lifecycle(cli_env):
                 "2023-01-01T00:00:00Z",
                 "--end-time",
                 "2023-01-02T00:00:00Z",
-                "--time-window",
-                "48",
             ]
 
             time_set_result = subprocess.run(
@@ -1778,6 +1776,22 @@ def test_cli_config_lifecycle(cli_env):
 
             # Check that the time set command executed successfully
             assert time_set_result.returncode == 0
+            assert "Configuration saved" in time_set_result.stdout
+
+            time_window_set_cmd = [
+                "secops",
+                "config",
+                "set",
+                "--time-window",
+                "48",
+            ]
+
+            time_window_set_result = subprocess.run(
+                time_window_set_cmd, env=cli_env, capture_output=True, text=True
+            )
+
+            # Check that the time set command executed successfully
+            assert time_window_set_result.returncode == 0
             assert "Configuration saved" in time_set_result.stdout
 
             # 3. View configuration
