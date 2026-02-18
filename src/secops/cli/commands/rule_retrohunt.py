@@ -22,7 +22,7 @@ from secops.cli.utils.common_args import (
     add_pagination_args,
     add_as_list_arg,
 )
-from secops.cli.utils.time_utils import parse_datetime
+from secops.cli.utils.time_utils import get_time_range
 
 
 def setup_rule_retrohunt_command(subparsers):
@@ -98,10 +98,12 @@ def handle_retrohunt_list_command(args, chronicle):
 def handle_rule_retrohunt_create_command(args, chronicle):
     """Create rule retrohunt"""
     try:
+        start_time, end_time = get_time_range(args)
+
         out = chronicle.create_retrohunt(
             rule_id=args.rule_id,
-            start_time=parse_datetime(args.start_time),
-            end_time=parse_datetime(args.end_time),
+            start_time=start_time,
+            end_time=end_time,
         )
         output_formatter(out, getattr(args, "output", "json"))
     except Exception as e:  # pylint: disable=broad-exception-caught
