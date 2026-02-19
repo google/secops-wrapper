@@ -54,7 +54,9 @@ def search_udm(
         as_list: Whether to return results as a list or dictionary
 
     Returns:
-        Dict containing the search results with events
+        If as_list is True: List of Events.
+        If as_list is False: Dict with event list, total number of event and
+            flag to check if more data is available.
 
     Raises:
         APIError: If the API request fails

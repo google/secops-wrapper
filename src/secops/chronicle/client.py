@@ -891,7 +891,8 @@ class ChronicleClient:
 
         Returns:
             If as_list is True: List of Events.
-            If as_list is False: Dict with event list and nextPageToken.
+            If as_list is False: Dict with event list, total number of event and
+                flag to check if more data is available.
 
         Raises:
             APIError: If the API request fails
