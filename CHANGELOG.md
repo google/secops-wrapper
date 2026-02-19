@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.0] - 2026-02-18
+### Added
+- CLI commands for rule retrohunt management
+  - `secops rule-retrohunt create` - Create new retrohunt
+  - `secops rule-retrohunt get` - Get retrohunt status
+  - `secops rule-retrohunt list` - List retrohunts for a rule
+- `list_retrohunts()` method with pagination support
+- Mutually exclusive time range argument groups in CLI
+  - Either `--start-time` and `--end-time` or `--time-window` required
+
+### Updated
+- Migrated `rule_retrohunt` to use `chronicle_request` helper
+- Migrated `rule_validation` to use `chronicle_request` helper
+
+## [0.34.3] - 2026-02-09
+### Updated
+- `get_stats()` to use `chronicle_request` helper for improved error handling and consistency
+- `chronicle_request` helper function to support `timeout` parameter
+
+## [0.34.2] - 2026-02-03
+### Fixed
+- `ingest_log()` method to correctly skip log type validation when `force_log_type=True`, preventing unnecessary API calls
+- `timestampVal` type handling in stats queries for timebucket results
+
+
 ## [0.34.1] - 2026-01-29
 ### Updated
 - Following methods for streamlined URL formation/construction

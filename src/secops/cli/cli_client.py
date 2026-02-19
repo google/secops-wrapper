@@ -38,6 +38,7 @@ from secops.cli.commands.search import setup_search_command
 from secops.cli.commands.stats import setup_stats_command
 from secops.cli.commands.udm_search import setup_udm_search_view_command
 from secops.cli.commands.watchlist import setup_watchlist_command
+from secops.cli.commands.rule_retrohunt import setup_rule_retrohunt_command
 from secops.cli.utils.common_args import add_chronicle_args, add_common_args
 from secops.cli.utils.config_utils import load_config
 from secops.exceptions import AuthenticationError, SecOpsError
@@ -187,6 +188,7 @@ def build_parser() -> argparse.ArgumentParser:
     setup_dashboard_command(subparsers)
     setup_dashboard_query_command(subparsers)
     setup_watchlist_command(subparsers)
+    setup_rule_retrohunt_command(subparsers)
 
     # Add common args to all subparsers to support global flags after subcommand
     # e.g. "secops search ... --output json"

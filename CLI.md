@@ -943,6 +943,23 @@ secops alert --snapshot-query "feedback_summary.status != \"CLOSED\"" --time-win
 secops alert --baseline-query "detection.rule_name = \"My Rule\"" --time-window 24
 ```
 
+### Rule Retrohunt Management
+
+List all retrohunts for a rule
+```bash
+secops rule-retrohunt list --rule-id "ru_abcdef"
+```
+
+Create a new retrohunt for a rule
+```bash
+secops rule-retrohunt create --rule-id "ru_abcdef" --start-time "2026-01-01T00:00:00Z" --end-time "2026-01-02T00:00:00Z"
+```
+
+Get specific retrohunt details
+```bash
+secops rule-retrohunt get --rule-id "ru_abcdef" --operation-id "oh_abcdef"
+```
+
 ### Rule Exclusions Management
 
 Rule Exclusions allow you to exclude specific events from triggering detections in Chronicle. Use these commands to manage rule exclusions and their deployments:
