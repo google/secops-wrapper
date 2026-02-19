@@ -266,8 +266,9 @@ from secops.chronicle.rule_exclusion import (
 )
 from secops.chronicle.rule_retrohunt import (
     create_retrohunt as _create_retrohunt,
+    get_retrohunt as _get_retrohunt,
+    list_retrohunts as _list_retrohunts,
 )
-from secops.chronicle.rule_retrohunt import get_retrohunt as _get_retrohunt
 from secops.chronicle.rule_set import (
     batch_update_curated_rule_set_deployments as _batch_update_curated_rule_set_deployments,  # pylint: disable=line-too-long
 )
@@ -2226,6 +2227,39 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _get_retrohunt(self, rule_id, operation_id, api_version)
+
+    def list_retrohunts(
+        self,
+        rule_id: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1,
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """Get a list of retrohunts for a rule.
+
+        Args:
+            rule_id: Unique ID of the rule to list retrohunts for
+            page_size: Page size to use for paginated results
+            page_token: Page token to use for paginated results
+            api_version: Preferred API version to use. Defaults to V1
+            as_list: Whether to return results as a list or dictionary
+
+        Returns:
+            If as_list is True: List of retrohunts.
+            If as_list is False: Dict with retrohunts list and nextPageToken.
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _list_retrohunts(
+            self,
+            rule_id,
+            page_size,
+            page_token,
+            api_version,
+            as_list,
+        )
 
     # Parser Management methods
 
