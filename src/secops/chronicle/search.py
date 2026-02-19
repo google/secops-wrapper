@@ -60,7 +60,7 @@ def search_udm(
         APIError: If the API request fails
     """
     # Unused parameters, kept for backward compatibility
-    _ = (case_insensitive, max_attempts, timeout)
+    _ = (case_insensitive, max_attempts)
 
     # Format times for the API
     start_time_str = start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
@@ -89,8 +89,10 @@ def search_udm(
 
     if as_list:
         return result.get("events", [])
+
+    events = result.get("events", [])
     return {
-        "events": result.get("events", []),
-        "total_events": len(result.get("events", [])),
+        "events": events,
+        "total_events": len(events),
         "more_data_available": result.get("moreDataAvailable", False),
     }

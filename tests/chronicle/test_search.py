@@ -19,7 +19,9 @@ class TestChronicleUdmSearch(unittest.TestCase):
         self.end_time = datetime.now(tz=timezone.utc)
 
     @mock.patch("secops.chronicle.search.chronicle_request")
-    def test_search_udm_returns_expected_shape(self, mock_chronicle_request: mock.MagicMock) -> None:
+    def test_search_udm_returns_expected_shape(
+        self, mock_chronicle_request: mock.MagicMock
+    ) -> None:
         mock_chronicle_request.return_value = {
             "events": [{"id": 1}, {"id": 2}],
             "moreDataAvailable": True,
@@ -45,7 +47,9 @@ class TestChronicleUdmSearch(unittest.TestCase):
         self.assertEqual(kwargs["api_version"], APIVersion.V1ALPHA)
 
         params = kwargs["params"]
-        self.assertEqual(params["query"], 'metadata.event_type = "NETWORK_CONNECTION"')
+        self.assertEqual(
+            params["query"], 'metadata.event_type = "NETWORK_CONNECTION"'
+        )
         self.assertEqual(params["limit"], 500)
         self.assertEqual(
             params["timeRange.start_time"],
@@ -57,7 +61,9 @@ class TestChronicleUdmSearch(unittest.TestCase):
         )
 
     @mock.patch("secops.chronicle.search.chronicle_request")
-    def test_search_udm_defaults_when_keys_missing(self, mock_chronicle_request: mock.MagicMock) -> None:
+    def test_search_udm_defaults_when_keys_missing(
+        self, mock_chronicle_request: mock.MagicMock
+    ) -> None:
         # Missing "events" and "moreDataAvailable" should default safely
         mock_chronicle_request.return_value = {}
 
@@ -74,7 +80,9 @@ class TestChronicleUdmSearch(unittest.TestCase):
 
     @mock.patch("secops.chronicle.search.chronicle_request")
     @mock.patch("builtins.print")
-    def test_search_udm_debug_prints(self, mock_print: mock.MagicMock, mock_chronicle_request: mock.MagicMock) -> None:
+    def test_search_udm_debug_prints(
+        self, mock_print: mock.MagicMock, mock_chronicle_request: mock.MagicMock
+    ) -> None:
         mock_chronicle_request.return_value = {"events": []}
 
         search_udm(
@@ -89,7 +97,9 @@ class TestChronicleUdmSearch(unittest.TestCase):
         self.assertGreaterEqual(mock_print.call_count, 2)
 
     @mock.patch("secops.chronicle.search.chronicle_request")
-    def test_search_udm_propagates_api_error(self, mock_chronicle_request: mock.MagicMock) -> None:
+    def test_search_udm_propagates_api_error(
+        self, mock_chronicle_request: mock.MagicMock
+    ) -> None:
         mock_chronicle_request.side_effect = Exception("boom")
 
         with self.assertRaises(Exception) as ctx:
@@ -101,6 +111,89 @@ class TestChronicleUdmSearch(unittest.TestCase):
             )
 
         self.assertIn("boom", str(ctx.exception))
+
+    @mock.patch("secops.chronicle.search.chronicle_request")
+    def test_search_udm_as_list_returns_list(
+        self, mock_chronicle_request: mock.MagicMock
+    ) -> None:
+        """Test that as_list=True returns a list of events."""
+        mock_chronicle_request.return_value = {
+            "events": [{"id": 1}, {"id": 2}, {"id": 3}],
+            "moreDataAvailable": True,
+        }
+
+        result = search_udm(
+            client=self.client,
+            query="test",
+            start_time=self.start_time,
+            end_time=self.end_time,
+            as_list=True,
+        )
+
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result, [{"id": 1}, {"id": 2}, {"id": 3}])
+
+    @mock.patch("secops.chronicle.search.chronicle_request")
+    def test_search_udm_as_list_with_missing_events(
+        self, mock_chronicle_request: mock.MagicMock
+    ) -> None:
+        """Test that as_list=True returns empty list when events missing."""
+        mock_chronicle_request.return_value = {
+            "moreDataAvailable": False,
+        }
+
+        result = search_udm(
+            client=self.client,
+            query="test",
+            start_time=self.start_time,
+            end_time=self.end_time,
+            as_list=True,
+        )
+
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 0)
+        self.assertEqual(result, [])
+
+    @mock.patch("secops.chronicle.search.chronicle_request")
+    def test_search_udm_timeout_parameter_passed(
+        self, mock_chronicle_request: mock.MagicMock
+    ) -> None:
+        """Test that timeout parameter is correctly passed."""
+        mock_chronicle_request.return_value = {"events": []}
+
+        search_udm(
+            client=self.client,
+            query="test",
+            start_time=self.start_time,
+            end_time=self.end_time,
+            timeout=60,
+        )
+
+        mock_chronicle_request.assert_called_once()
+        _, kwargs = mock_chronicle_request.call_args
+        self.assertEqual(kwargs["timeout"], 60)
+
+    @mock.patch("secops.chronicle.search.chronicle_request")
+    def test_search_udm_empty_events_list(
+        self, mock_chronicle_request: mock.MagicMock
+    ) -> None:
+        """Test handling of empty events list in response."""
+        mock_chronicle_request.return_value = {
+            "events": [],
+            "moreDataAvailable": False,
+        }
+
+        result = search_udm(
+            client=self.client,
+            query="test",
+            start_time=self.start_time,
+            end_time=self.end_time,
+        )
+
+        self.assertEqual(result["events"], [])
+        self.assertEqual(result["total_events"], 0)
+        self.assertFalse(result["more_data_available"])
 
 
 if __name__ == "__main__":

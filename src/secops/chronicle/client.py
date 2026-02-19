@@ -873,7 +873,7 @@ class ChronicleClient:
         timeout: int = 30,
         debug: bool = False,
         as_list: bool = False,
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         """Search UDM events in Chronicle.
 
         Args:
@@ -885,13 +885,12 @@ class ChronicleClient:
             max_attempts: Maximum number of polling attempts (default: 30)
             timeout: Timeout in seconds for each API request (default: 30)
             debug: Print debug information during execution
+            as_list: If True, return a list of events instead of a dict
+                with events list and nextPageToken.
 
         Returns:
-            Dictionary with search results containing:
-            - events: List of UDM events with 'name' and 'udm' fields
-            - total_events: Number of events returned
-            - more_data_available: Boolean indicating
-                if more results are available
+            If as_list is True: List of Events.
+            If as_list is False: Dict with event list and nextPageToken.
 
         Raises:
             APIError: If the API request fails
