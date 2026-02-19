@@ -243,12 +243,13 @@ jobs:
         run: |
           echo "**Deployment Summary**"
           echo ""
-          echo "${{ needs.version-check.outputs.change-summary }}"
+          echo "${NEEDS_VERSION_CHECK_OUTPUTS_CHANGE_SUMMARY}"
           echo ""
           echo "**Action Required:** A maintainer must approve this deployment"
           echo "   to proceed with publishing to PyPI."
         env:
           SUMMARY: ${{ needs.version-check.outputs.change-summary }}
+          NEEDS_VERSION_CHECK_OUTPUTS_CHANGE_SUMMARY: ${{ needs.version-check.outputs.change-summary }}
       
       - name: Approval checkpoint
         run: |
