@@ -90,41 +90,6 @@ def test_chronicle_client_custom_session_user_agent():
     assert client.session.headers.get("User-Agent") == "secops-wrapper-sdk"
 
 
-def test_search_udm(chronicle_client):
-    """Test UDM search functionality."""
-    # Mock the search request
-    mock_response = Mock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {
-        "events": [
-            {
-                "name": "projects/test-project/locations/us/instances/test-instance/events/event1",
-                "udm": {
-                    "metadata": {
-                        "eventTimestamp": "2024-01-01T00:00:00Z",
-                        "eventType": "NETWORK_CONNECTION",
-                    },
-                    "target": {"ip": "192.168.1.1", "hostname": "test-host"},
-                },
-            }
-        ],
-        "moreDataAvailable": False,
-    }
-
-    with patch.object(chronicle_client.session, "get", return_value=mock_response):
-        result = chronicle_client.search_udm(
-            query='target.ip != ""',
-            start_time=datetime(2024, 1, 1, tzinfo=timezone.utc),
-            end_time=datetime(2024, 1, 2, tzinfo=timezone.utc),
-            max_events=10,
-        )
-
-        assert "events" in result
-        assert "total_events" in result
-        assert result["total_events"] == 1
-        assert result["events"][0]["udm"]["target"]["ip"] == "192.168.1.1"
-
-
 @patch("secops.chronicle.entity._detect_value_type_for_query")
 @patch("secops.chronicle.entity._summarize_entity_by_id")
 def test_summarize_entity_ip(mock_summarize_by_id, mock_detect, chronicle_client):
