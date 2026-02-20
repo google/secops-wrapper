@@ -1,13 +1,12 @@
 """Constants for CLI"""
 
+import os
 from pathlib import Path
 
 # Define config directory and file paths
 # Global config (user home)
 CONFIG_DIR = Path.home() / ".secops"
 CONFIG_FILE = CONFIG_DIR / "config.json"
-
-import os
 
 # Local config (current working directory or from env var)
 # If SECOPS_LOCAL_CONFIG_DIR is set, use it.

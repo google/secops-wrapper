@@ -69,9 +69,10 @@ def handle_config_set_command(args, chronicle=None):
         args: Command line arguments
         chronicle: Not used for this command
     """
-    # If saving to local, we should probably start with empty or current local config
-    # to avoid polluting it with global values.
-    # But for now, we follow the pattern of loading merged config and updating it.
+    # If saving to local, we should probably start with empty or
+    # current local config to avoid polluting it with global values.
+    # But for now, we follow the pattern of loading merged config and
+    # updating it.
     # Optimization: If --local, maybe we should only load local config?
     # But load_config() returns merged.
     # Let's use load_config() but be aware we might save merged values to local.
@@ -101,7 +102,6 @@ def handle_config_set_command(args, chronicle=None):
 
     # Unused argument
     _ = (chronicle,)
-
 
 
 def handle_config_view_command(args, chronicle=None):

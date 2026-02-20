@@ -43,7 +43,7 @@ def _load_json_file(path) -> dict[str, Any]:
 
 def load_config() -> dict[str, Any]:
     """Load configuration from config files.
-    
+
     Merges global config (~/.secops/config.json) with
     local config (./.secops/config.json).
     Local config takes precedence.
@@ -73,25 +73,32 @@ def save_config(config: dict[str, Any], local: bool = False) -> None:
     target_dir.mkdir(exist_ok=True)
 
     try:
-        # Load existing config to preserve other values if we are doing a partial update?
-        # For now, we assume 'config' contains the full desired state for that scope
-        # OR we should probably read the existing file and update it.
-        # But 'config set' usually reads existing config, updates it, and passes it here.
+        # Load existing config to preserve other values if we are doing a
+        # partial update?
+        # For now, we assume 'config' contains the full desired state for
+        # that scope OR we should probably read the existing file and update it.
+        # But 'config set' usually reads existing config, updates it, and passes
+        # it here.
         # However, load_config() returns MERGED config.
         # If we save that to local, we might copy global values to local.
         # That's a risk.
-        # Ideally, we should only save the *changes* or specific values to local??
+        # Ideally, we should only save the *changes*
+        # or specific values to local??
         # But commonly 'save_config' takes the whole dict.
-        # Let's assume the caller handles what to save, but for 'set', we need to be careful.
-        
-        # ACTUALLY, to avoid polluting local with global values, we should probably
-        # read the TARGET file specifically before saving if we want to merge.
+        # Let's assume the caller handles what to save, but for 'set',
+        # we need to be careful.
+
+        # ACTUALLY, to avoid polluting local with global values,
+        # we should probably read the TARGET file specifically before saving
+        # if we want to merge.
         # specific implementation details depend on how 'set' is implemented.
-        # For this refactor, let's keep it simple: overwrite the file with provided config.
+        # For this refactor, let's keep it simple: overwrite the file with
+        # provided config.
         # BUT 'set' command loads MERGED config.
-        # FAULKNER: We need to filter? Or just accept that 'set' might duplicate?
+        # FAULKNER: We need to filter? Or just accept that 'set' might
+        # duplicate?
         # Let's stick to simple overwrite for now, but 'set' needs to check.
-        
+
         with open(target_file, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2)
     except OSError as e:

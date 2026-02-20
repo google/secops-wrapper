@@ -18,6 +18,7 @@ import argparse
 
 from secops.cli.utils.config_utils import load_config
 
+
 def _add_argument_if_not_exists(
     parser: argparse.ArgumentParser, *args: str, **kwargs
 ) -> None:
@@ -28,8 +29,9 @@ def _add_argument_if_not_exists(
         *args: Positional arguments (flags)
         **kwargs: Keyword arguments
     """
+    parser_actions = getattr(parser, "_option_string_actions", {})
     for option_string in args:
-        if option_string in parser._option_string_actions:
+        if option_string in parser_actions:
             return
     parser.add_argument(*args, **kwargs)
 
@@ -41,7 +43,8 @@ def add_common_args(
 
     Args:
         parser: Parser to add arguments to
-        suppress_defaults: If True, do not set default values (let parent parser handle it)
+        suppress_defaults: If True, do not set default values
+        (let parent parser handle it)
     """
     config = load_config()
     default_base = argparse.SUPPRESS if suppress_defaults else None
