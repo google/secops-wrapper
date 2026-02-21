@@ -28,6 +28,11 @@ from secops.chronicle.models import (
     TileType,
 )
 from secops.exceptions import APIError, SecOpsError
+from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import (
+    chronicle_request,
+    chronicle_paginated_request,
+)
 
 if TYPE_CHECKING:
     from secops.chronicle.client import ChronicleClient
@@ -209,6 +214,8 @@ def list_dashboards(
     client: "ChronicleClient",
     page_size: int | None = None,
     page_token: str | None = None,
+    api_version: APIVersion | None = APIVersion.V1ALPHA,
+    as_list: bool = False,
 ) -> dict[str, Any]:
     """List all available dashboards in Basic View.
 
@@ -216,26 +223,25 @@ def list_dashboards(
         client: ChronicleClient instance
         page_size: Maximum number of results to return
         page_token: Token for pagination
+        api_version: Preferred API version to use. Defaults to V1ALPHA
+        as_list: Whether to return results as a list or dictionary
 
     Returns:
-        Dictionary containing dashboard list and pagination info
+        If as_list is True: List of dashboards.
+        If as_list is False: Dictionary containing list of dashboards and pagination info.
+
+    Raises:
+        APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/nativeDashboards"
-    params = {}
-    if page_size:
-        params["pageSize"] = page_size
-    if page_token:
-        params["pageToken"] = page_token
-
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to list dashboards: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_paginated_request(
+        client,
+        api_version=api_version,
+        path="nativeDashboards",
+        items_key="nativeDashboards",
+        page_size=page_size,
+        page_token=page_token,
+        as_list=as_list,
+    )
 
 
 def get_dashboard(
