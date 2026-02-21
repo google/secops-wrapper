@@ -4156,20 +4156,30 @@ class ChronicleClient:
         self,
         page_size: int | None = None,
         page_token: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1ALPHA,
+        as_list: bool = False,
     ) -> dict[str, Any]:
-        """List all available dashboards.
+        """List all available dashboards in Basic View.
 
         Args:
             page_size: Maximum number of results to return
             page_token: Token for pagination
+            api_version: Preferred API version to use. Defaults to V1ALPHA
+            as_list: Whether to return results as a list or dictionary
 
         Returns:
-            Dictionary containing dashboard list and pagination info
+            If as_list is True: List of dashboards.
+            If as_list is False: Dictionary containing list of dashboards and pagination info.
+
+        Raises:
+            APIError: If the API request fails
         """
         return _list_dashboards(
             self,
             page_size=page_size,
             page_token=page_token,
+            api_version=api_version,
+            as_list=as_list,
         )
 
     def get_dashboard(
