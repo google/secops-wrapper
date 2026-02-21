@@ -33,6 +33,7 @@ from secops.chronicle.utils.request_utils import (
     chronicle_request,
     chronicle_paginated_request,
 )
+from secops.chronicle.utils.format_utils import format_resource_id, parse_json_list
 
 if TYPE_CHECKING:
     from secops.chronicle.client import ChronicleClient
@@ -71,6 +72,7 @@ def create_dashboard(
     description: str | None = None,
     filters: list[dict[str, Any]] | str | None = None,
     charts: list[dict[str, Any]] | str | None = None,
+    api_version: APIVersion | None = APIVersion.V1ALPHA,
 ) -> dict[str, Any]:
     """Create a new native dashboard.
 
@@ -79,8 +81,9 @@ def create_dashboard(
         display_name: Name of the dashboard to create
         access_type: Access type for the dashboard (Public or Private)
         description: Description for the dashboard
-        filters: Dictionary of filters to apply to the dashboard
+        filters: List of filters to apply to the dashboard
         charts: List of charts to include in the dashboard
+        api_version: Preferred API version to use. Defaults to V1ALPHA
 
     Returns:
         Dictionary containing the created dashboard details
@@ -88,53 +91,42 @@ def create_dashboard(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/nativeDashboards"
+    if filters is not None:
+        filters = parse_json_list(filters, "filters")
 
-    if filters and isinstance(filters, str):
-        try:
-            filters = json.loads(filters)
-            if not isinstance(filters, list):
-                filters = [filters]
-        except ValueError as e:
-            raise APIError("Invalid filters JSON") from e
+    if charts is not None:
+        charts = parse_json_list(charts, "charts")
 
-    if charts and isinstance(charts, str):
-        try:
-            charts = json.loads(charts)
-            if not isinstance(charts, list):
-                charts = [charts]
-        except ValueError as e:
-            raise APIError("Invalid charts JSON") from e
+    definition: dict[str, Any] = {}
+    if filters is not None:
+        definition["filters"] = filters
+    if charts is not None:
+        definition["charts"] = charts
 
     payload = {
         "displayName": display_name,
-        "definition": {},
+        "definition": definition,
         "access": access_type,
         "type": "CUSTOM",
     }
 
-    if description:
+    if description is not None:
         payload["description"] = description
 
-    if filters:
-        payload["definition"]["filters"] = filters
-
-    if charts:
-        payload["definition"]["charts"] = charts
-
-    response = client.session.post(url, json=payload)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to create dashboard: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="nativeDashboards",
+        api_version=api_version,
+        json=payload,
+        error_message="Failed to create dashboard",
+    )
 
 
 def import_dashboard(
-    client: "ChronicleClient", dashboard: dict[str, Any]
+    client: "ChronicleClient",
+    dashboard: dict[str, Any],
+    api_version: APIVersion | None = APIVersion.V1ALPHA,
 ) -> dict[str, Any]:
     """Import a native dashboard.
 
@@ -148,8 +140,6 @@ def import_dashboard(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/nativeDashboards:import"
-
     # Validate dashboard data keys
     valid_keys = ["dashboard", "dashboardCharts", "dashboardQueries"]
     dashboard_keys = set(dashboard.keys())
@@ -161,15 +151,14 @@ def import_dashboard(
 
     payload = {"source": {"dashboards": [dashboard]}}
 
-    response = client.session.post(url, json=payload)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to import dashboard: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="nativeDashboards:import",
+        api_version=APIVersion.V1ALPHA,
+        json=payload,
+        error_message="Failed to import dashboard",
+    )
 
 
 def export_dashboard(
@@ -248,6 +237,7 @@ def get_dashboard(
     client: "ChronicleClient",
     dashboard_id: str,
     view: DashboardView | None = None,
+    api_version: APIVersion | None = APIVersion.V1ALPHA,
 ) -> dict[str, Any]:
     """Get information about a specific dashboard.
 
@@ -256,30 +246,27 @@ def get_dashboard(
         dashboard_id: ID of the dashboard to retrieve
         view: Level of detail to include in the response
             Defaults to BASIC
+        api_version: Preferred API version to use. Defaults to V1ALPHA
 
     Returns:
         Dictionary containing dashboard details
+
+    Raises:
+        APIError: If the API request fails
     """
+    dashboard_id = format_resource_id(dashboard_id)
 
-    if dashboard_id.startswith("projects/"):
-        dashboard_id = dashboard_id.split("projects/")[-1]
-
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"nativeDashboards/{dashboard_id}"
-    )
     view = view or DashboardView.BASIC
     params = {"view": view.value}
 
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to get dashboard: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"nativeDashboards/{dashboard_id}",
+        api_version=api_version,
+        params=params,
+        error_message=f"Failed to get dashboard with ID {dashboard_id}",
+    )
 
 
 # Updated update_dashboard function
@@ -290,6 +277,7 @@ def update_dashboard(
     description: str | None = None,
     filters: list[dict[str, Any]] | str | None = None,
     charts: list[dict[str, Any]] | str | None = None,
+    api_version: APIVersion | None = APIVersion.V1ALPHA,
 ) -> dict[str, Any]:
     """Update an existing dashboard.
 
@@ -300,17 +288,12 @@ def update_dashboard(
         description: New description for the dashboard (optional)
         filters: New filters for the dashboard (optional)
         charts: New charts for the dashboard (optional)
+        api_version: Preferred API version to use. Defaults to V1ALPHA
 
     Returns:
         Dictionary containing the updated dashboard details
     """
-    if dashboard_id.startswith("projects/"):
-        dashboard_id = dashboard_id.split("projects/")[-1]
-
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"nativeDashboards/{dashboard_id}"
-    )
+    dashboard_id = format_resource_id(dashboard_id)
 
     payload = {"definition": {}}
     update_mask = []
@@ -349,20 +332,18 @@ def update_dashboard(
 
     params = {"updateMask": ",".join(update_mask)}
 
-    response = client.session.patch(url, json=payload, params=params)
+    return chronicle_request(
+        client,
+        method="PATCH",
+        endpoint_path=f"nativeDashboards/{dashboard_id}",
+        api_version=api_version,
+        json=payload,
+        params=params,
+        error_message=f"Failed to update dashboard with ID {dashboard_id}",
+    )
 
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to update dashboard: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
 
-    return response.json()
-
-
-def delete_dashboard(
-    client: "ChronicleClient", dashboard_id: str
-) -> dict[str, Any]:
+def delete_dashboard(client: "ChronicleClient", dashboard_id: str) -> dict[str, Any]:
     """Delete a dashboard.
 
     Args:
@@ -376,10 +357,7 @@ def delete_dashboard(
     if dashboard_id.startswith("projects/"):
         dashboard_id = dashboard_id.split("projects/")[-1]
 
-    url = (
-        f"{client.base_url}/{client.instance_id}"
-        f"/nativeDashboards/{dashboard_id}"
-    )
+    url = f"{client.base_url}/{client.instance_id}" f"/nativeDashboards/{dashboard_id}"
 
     response = client.session.delete(url)
 
@@ -501,9 +479,7 @@ def add_chart(
         if interval and isinstance(interval, str):
             interval = json.loads(interval)
     except ValueError as e:
-        raise APIError(
-            f"Failed to parse JSON. Must be a valid JSON string: {e}"
-        ) from e
+        raise APIError(f"Failed to parse JSON. Must be a valid JSON string: {e}") from e
 
     payload = {
         "dashboardChart": {
@@ -654,9 +630,7 @@ def edit_chart(
     if dashboard_query:
         if isinstance(dashboard_query, str):
             try:
-                dashboard_query = DashboardQuery.from_dict(
-                    json.loads(dashboard_query)
-                )
+                dashboard_query = DashboardQuery.from_dict(json.loads(dashboard_query))
             except ValueError as e:
                 raise SecOpsError("Invalid dashboard query JSON") from e
         if isinstance(dashboard_query, dict):
@@ -672,9 +646,7 @@ def edit_chart(
     if dashboard_chart:
         if isinstance(dashboard_chart, str):
             try:
-                dashboard_chart = DashboardChart.from_dict(
-                    json.loads(dashboard_chart)
-                )
+                dashboard_chart = DashboardChart.from_dict(json.loads(dashboard_chart))
             except ValueError as e:
                 raise SecOpsError("Invalid dashboard chart JSON") from e
         if isinstance(dashboard_chart, dict):

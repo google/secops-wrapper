@@ -4089,6 +4089,7 @@ class ChronicleClient:
         description: str | None = None,
         filters: list[dict[str, Any]] | str | None = None,
         charts: list[dict[str, Any]] | str | None = None,
+        api_version: APIVersion | None = APIVersion.V1ALPHA,
     ) -> dict[str, Any]:
         """Create a new native dashboard.
 
@@ -4100,6 +4101,7 @@ class ChronicleClient:
                 (JSON or JSON string)
             charts: List of charts to include in the dashboard
                 (JSON or JSON string)
+            api_version: Preferred API version to use. Defaults to V1ALPHA
 
         Returns:
             Dictionary containing the created dashboard details
@@ -4119,6 +4121,7 @@ class ChronicleClient:
             description=description,
             filters=filters,
             charts=charts,
+            api_version=api_version,
         )
 
     def import_dashboard(self, dashboard: dict[str, Any]) -> dict[str, Any]:
@@ -4186,6 +4189,7 @@ class ChronicleClient:
         self,
         dashboard_id: str,
         view: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1ALPHA,
     ) -> dict[str, Any]:
         """Get information about a specific dashboard.
 
@@ -4193,9 +4197,13 @@ class ChronicleClient:
             dashboard_id: ID of the dashboard to retrieve
             view: Level of detail to include in the response
                 Defaults to BASIC
+            api_version: Preferred API version to use. Defaults to V1ALPHA
 
         Returns:
             Dictionary containing dashboard details
+
+        Raises:
+            APIError: If the API request fails
         """
         if view:
             try:
@@ -4207,6 +4215,7 @@ class ChronicleClient:
             self,
             dashboard_id=dashboard_id,
             view=view,
+            api_version=api_version,
         )
 
     def update_dashboard(
