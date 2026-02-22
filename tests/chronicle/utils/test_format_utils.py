@@ -27,9 +27,9 @@ def test_format_resource_id_returns_bare_id_unchanged() -> None:
 
 
 def test_format_resource_id_extracts_id_from_full_resource_name() -> None:
-    # Full resource name should have everything up to and including "projects/" stripped
+    # Full resource name should have the ID extracted correctly
     full_name = "projects/12345/locations/eu/instances/my-instance/nativeDashboards/123-ID-abc"
-    assert format_resource_id(full_name) == "12345/locations/eu/instances/my-instance/nativeDashboards/123-ID-abc"
+    assert format_resource_id(full_name) == "123-ID-abc"
 
 
 def test_format_resource_id_handles_minimal_projects_prefix() -> None:

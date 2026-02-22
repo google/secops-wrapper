@@ -36,7 +36,7 @@ def format_resource_id(resource_id: str) -> str:
         The extracted ID from the resource string, or the original string if it doesn't match the expected format.
     """
     if resource_id.startswith("projects/"):
-        return resource_id.split("projects/")[-1]
+        return resource_id.split("/")[-1]
     return resource_id
 
 
