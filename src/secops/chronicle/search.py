@@ -15,15 +15,19 @@
 """UDM search functionality for Chronicle."""
 
 from datetime import datetime
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
-import requests
+from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import (
+    chronicle_request,
+)
 
-from secops.exceptions import APIError
+if TYPE_CHECKING:
+    from secops.chronicle.client import ChronicleClient
 
 
 def search_udm(
-    client,
+    client: "ChronicleClient",
     query: str,
     start_time: datetime,
     end_time: datetime,
@@ -32,7 +36,8 @@ def search_udm(
     max_attempts: int = 30,
     timeout: int = 30,
     debug: bool = False,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[dict[str, Any]]:
     """Perform a UDM search query using the Chronicle V1alpha API.
 
     Args:
@@ -46,22 +51,18 @@ def search_udm(
                         for backwards compatibility)
         timeout: Timeout in seconds for each API request (default: 30)
         debug: Print debug information during execution
+        as_list: Whether to return results as a list or dictionary
 
     Returns:
-        Dict containing the search results with events
+        If as_list is True: List of Events.
+        If as_list is False: Dict with event list, total number of event and
+            flag to check if more data is available.
 
     Raises:
         APIError: If the API request fails
     """
-
     # Unused parameters, kept for backward compatibility
     _ = (case_insensitive, max_attempts)
-
-    # Format the instance ID for the API call
-    instance = client.instance_id
-
-    # Endpoint for UDM search
-    url = f"{client.base_url}/{instance}:udmSearch"
 
     # Format times for the API
     start_time_str = start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
@@ -79,40 +80,21 @@ def search_udm(
         print(f"Executing UDM search: {query}")
         print(f"Time range: {start_time_str} to {end_time_str}")
 
-    try:
-        response = client.session.get(url, params=params, timeout=timeout)
+    result = chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=":udmSearch",
+        api_version=APIVersion.V1ALPHA,
+        params=params,
+        timeout=timeout,
+    )
 
-        if response.status_code != 200:
-            error_msg = (
-                f"Error executing search: Status {response.status_code}, "
-                f"Response: {response.text}"
-            )
-            if debug:
-                print(f"Error: {error_msg}")
-            raise APIError(error_msg)
+    if as_list:
+        return result.get("events", [])
 
-        # Parse the response
-        response_data = response.json()
-
-        # Extract events and metadata
-        events = response_data.get("events", [])
-        more_data_available = response_data.get("moreDataAvailable", False)
-
-        if debug:
-            print(f"Found {len(events)} events")
-            print(f"More data available: {more_data_available}")
-
-        # Build the result structure to match the expected format
-        result = {
-            "events": events,
-            "total_events": len(events),
-            "more_data_available": more_data_available,
-        }
-
-        return result
-
-    except requests.exceptions.RequestException as e:
-        error_msg = f"Request failed: {str(e)}"
-        if debug:
-            print(f"Error: {error_msg}")
-        raise APIError(error_msg) from e
+    events = result.get("events", [])
+    return {
+        "events": events,
+        "total_events": len(events),
+        "more_data_available": result.get("moreDataAvailable", False),
+    }

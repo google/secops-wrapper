@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.1] - 2026-02-23
+### Added
+- `as_list` parameter to `search_udm()` for returning events as a list instead of dictionary
+- CLI `--as-list` flag for `secops search` command
+
+### Updated
+- Migrated `search_udm()` to use `chronicle_request` helper for improved error handling and consistency
+
 ## [0.35.0] - 2026-02-18
 ### Added
 - CLI commands for rule retrohunt management
