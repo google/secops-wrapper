@@ -19,6 +19,7 @@ import sys
 from secops.cli.utils.common_args import (
     add_pagination_args,
     add_time_range_args,
+    add_as_list_arg,
 )
 from secops.cli.utils.formatters import output_formatter
 from secops.cli.utils.time_utils import get_time_range
@@ -58,6 +59,7 @@ def setup_search_command(subparsers):
         "--csv", action="store_true", help="Output in CSV format"
     )
     add_time_range_args(search_parser)
+    add_as_list_arg(search_parser)
     search_parser.set_defaults(func=handle_search_command)
 
     search_subparser = search_parser.add_subparsers(
@@ -115,6 +117,7 @@ def handle_search_command(args, chronicle):
                 start_time=start_time,
                 end_time=end_time,
                 max_events=args.max_events,
+                as_list=args.as_list or False,
             )
             output_formatter(result, args.output)
     except Exception as e:  # pylint: disable=broad-exception-caught
