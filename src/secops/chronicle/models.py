@@ -73,6 +73,28 @@ class DetectionType(StrEnum):
     CASE = "DETECTION_TYPE_CASE"
 
 
+class CasePriority(StrEnum):
+    """Priority levels for cases."""
+
+    UNSPECIFIED = "PRIORITY_UNSPECIFIED"
+    INFO = "PRIORITY_INFO"
+    LOW = "PRIORITY_LOW"
+    MEDIUM = "PRIORITY_MEDIUM"
+    HIGH = "PRIORITY_HIGH"
+    CRITICAL = "PRIORITY_CRITICAL"
+
+
+class CaseCloseReason(StrEnum):
+    """Close reason values for cases."""
+
+    UNSPECIFIED = "CLOSE_REASON_UNSPECIFIED"
+    MALICIOUS = "MALICIOUS"
+    NOT_MALICIOUS = "NOT_MALICIOUS"
+    MAINTENANCE = "MAINTENANCE"
+    INCONCLUSIVE = "INCONCLUSIVE"
+    UNKNOWN = "UNKNOWN"
+
+
 @dataclass
 class TimeInterval:
     """Time interval with start and end times."""
