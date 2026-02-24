@@ -955,3 +955,176 @@ def test_run_parser_validation_non_string_log(chronicle_client):
         )
     assert "All logs must be strings" in str(exc_info.value)
     assert "index 1" in str(exc_info.value)
+
+
+def test_run_parser_with_statedump_parsing(chronicle_client, mock_response):
+    """Test run_parser with parse_statedump=True."""
+    log_type = "WINEVTLOG"
+    parser_code = "filter {}"
+    logs = ["test log"]
+
+    statedump_string = '\n\nInternal State (label=):\n{\n  "key": "value"\n}'
+
+    expected_result = {
+        "runParserResults": [
+            {
+                "parsedEvents": {"events": []},
+                "statedumpResults": [{"statedumpResult": statedump_string}],
+            }
+        ]
+    }
+    mock_response.json.return_value = expected_result
+
+    with patch.object(
+        chronicle_client.session, "post", return_value=mock_response
+    ) as mock_post:
+        result = run_parser(
+            chronicle_client,
+            log_type=log_type,
+            parser_code=parser_code,
+            parser_extension_code="",
+            logs=logs,
+            statedump_allowed=True,
+            parse_statedump=True,
+        )
+
+        called_args = mock_post.call_args
+        request_body = called_args[1]["json"]
+        assert request_body["statedump_allowed"] is True
+
+        assert "runParserResults" in result
+        assert len(result["runParserResults"]) == 1
+        statedump_results = result["runParserResults"][0]["statedumpResults"]
+        assert len(statedump_results) == 1
+        parsed_statedump = statedump_results[0]["statedumpResult"]
+        assert isinstance(parsed_statedump, dict)
+        assert "info" in parsed_statedump
+        assert "state" in parsed_statedump
+        assert parsed_statedump["info"] == "Internal State (label=):"
+        assert parsed_statedump["state"]["key"] == "value"
+
+
+def test_run_parser_without_statedump_parsing(chronicle_client, mock_response):
+    """Test run_parser with parse_statedump=False (default)."""
+    log_type = "WINEVTLOG"
+    parser_code = "filter {}"
+    logs = ["test log"]
+
+    statedump_string = '\n\nInternal State (label=):\n{\n  "key": "value"\n}'
+
+    expected_result = {
+        "runParserResults": [
+            {
+                "parsedEvents": {"events": []},
+                "statedumpResults": [{"statedumpResult": statedump_string}],
+            }
+        ]
+    }
+    mock_response.json.return_value = expected_result
+
+    with patch.object(
+        chronicle_client.session, "post", return_value=mock_response
+    ):
+        result = run_parser(
+            chronicle_client,
+            log_type=log_type,
+            parser_code=parser_code,
+            parser_extension_code="",
+            logs=logs,
+            statedump_allowed=True,
+            parse_statedump=False,
+        )
+
+        assert "runParserResults" in result
+        statedump_results = result["runParserResults"][0]["statedumpResults"]
+        original_statedump = statedump_results[0]["statedumpResult"]
+        assert original_statedump == statedump_string
+
+
+def test_run_parser_statedump_parsing_with_invalid_json(
+    chronicle_client, mock_response, capsys
+):
+    """Test statedump parsing handles invalid JSON gracefully."""
+    log_type = "WINEVTLOG"
+    parser_code = "filter {}"
+    logs = ["test log"]
+
+    expected_result = {
+        "runParserResults": [
+            {
+                "parsedEvents": {"events": []},
+                "statedumpResults": [
+                    {"statedumpResult": "Internal State:\n{invalid json}"}
+                ],
+            }
+        ]
+    }
+    mock_response.json.return_value = expected_result
+
+    with patch.object(
+        chronicle_client.session, "post", return_value=mock_response
+    ):
+        result = run_parser(
+            chronicle_client,
+            log_type=log_type,
+            parser_code=parser_code,
+            parser_extension_code="",
+            logs=logs,
+            statedump_allowed=True,
+            parse_statedump=True,
+        )
+
+        captured = capsys.readouterr()
+        assert "Warning: Failed to parse statedump" in captured.out
+
+        assert "runParserResults" in result
+        statedump_results = result["runParserResults"][0]["statedumpResults"]
+        assert (
+            statedump_results[0]["statedumpResult"]
+            == "Internal State:\n{invalid json}"
+        )
+
+
+def test_run_parser_statedump_parsing_multiple_results(
+    chronicle_client, mock_response
+):
+    """Test statedump parsing with multiple statedump results."""
+    log_type = "WINEVTLOG"
+    parser_code = "filter {}"
+    logs = ["test log 1", "test log 2"]
+
+    statedump1 = '\n\nInternal State (label=):\n{\n  "log": "1"\n}'
+    statedump2 = '\n\nInternal State (label=):\n{\n  "log": "2"\n}'
+
+    expected_result = {
+        "runParserResults": [
+            {
+                "parsedEvents": {"events": []},
+                "statedumpResults": [
+                    {"statedumpResult": statedump1},
+                    {"statedumpResult": statedump2},
+                ],
+            }
+        ]
+    }
+    mock_response.json.return_value = expected_result
+
+    with patch.object(
+        chronicle_client.session, "post", return_value=mock_response
+    ):
+        result = run_parser(
+            chronicle_client,
+            log_type=log_type,
+            parser_code=parser_code,
+            parser_extension_code="",
+            logs=logs,
+            statedump_allowed=True,
+            parse_statedump=True,
+        )
+
+        statedump_results = result["runParserResults"][0]["statedumpResults"]
+        assert len(statedump_results) == 2
+        assert isinstance(statedump_results[0]["statedumpResult"], dict)
+        assert statedump_results[0]["statedumpResult"]["state"]["log"] == "1"
+        assert isinstance(statedump_results[1]["statedumpResult"], dict)
+        assert statedump_results[1]["statedumpResult"]["state"]["log"] == "2"

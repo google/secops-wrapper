@@ -223,6 +223,11 @@ def setup_parser_command(subparsers):
         action="store_true",
         help="Enable statedump filter for the parser configuration",
     )
+    run_parser_sub.add_argument(
+        "--parse-statedump",
+        action="store_true",
+        help=("Parse statedump results into readable format"),
+    )
     run_parser_sub.set_defaults(func=handle_parser_run_command)
 
 
@@ -404,6 +409,7 @@ def handle_parser_run_command(args, chronicle):
             parser_extension_code,
             logs,
             args.statedump_allowed,
+            args.parse_statedump,
         )
 
         output_formatter(result, args.output)

@@ -1666,6 +1666,27 @@ if "runParserResults" in result:
             print(f"  Parsed events: {parser_result['parsedEvents']}")
         if "errors" in parser_result:
             print(f"  Errors: {parser_result['errors']}")
+
+# Run parser with statedump for debugging
+# Statedump provides internal parser state useful for troubleshooting
+result_with_statedump = chronicle.run_parser(
+    log_type=log_type, 
+    parser_code=parser_text,
+    parser_extension_code=None,
+    logs=sample_logs,
+    statedump_allowed=True,  # Enable statedump in parser output
+    parse_statedump=True     # Parse statedump string into structured format
+)
+
+# Check statedump results (useful for parser debugging)
+if "runParserResults" in result_with_statedump:
+    for i, parser_result in enumerate(result_with_statedump["runParserResults"]):
+        if "statedumpResults" in parser_result:
+            for dump in parser_result["statedumpResults"]:
+                statedump = dump.get("statedumpResult", {})
+                print(f"\nParser state for log {i+1}:")
+                print(f"  Info: {statedump.get('info', '')}")
+                print(f"  State: {statedump.get('state', {})}")
 ```
 
 The `run_parser` function includes comprehensive validation:
