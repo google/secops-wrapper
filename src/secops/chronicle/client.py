@@ -2441,6 +2441,7 @@ class ChronicleClient:
         parser_extension_code: str,
         logs: list,
         statedump_allowed: bool = False,
+        parse_statedump: bool = False,
     ):
         """Run parser against sample logs.
 
@@ -2451,6 +2452,8 @@ class ChronicleClient:
             parser_extension_code: Content of the parser extension
             logs: list of logs to test parser against
             statedump_allowed: Statedump filter is enabled or not for a config
+            parse_statedump: Whether to parse statedump results into
+                structured format.
 
         Returns:
             Dictionary containing the parser result
@@ -2465,6 +2468,7 @@ class ChronicleClient:
             parser_extension_code=parser_extension_code,
             logs=logs,
             statedump_allowed=statedump_allowed,
+            parse_statedump=parse_statedump,
         )
 
     # Rule Set methods

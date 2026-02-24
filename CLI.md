@@ -616,7 +616,17 @@ secops parser run \
 secops parser run \
   --log-type OKTA \
   --logs-file "./test.log"
+
+# Run parser with statedump for debugging (outputs readable parser state)
+secops parser run \
+  --log-type WINEVTLOG \
+  --parser-code-file "./parser.conf" \
+  --logs-file "./logs.txt" \
+  --statedump-allowed \
+  --parse-statedump
 ```
+
+The `--statedump-allowed` flag enables statedump output in the parser results, which shows the internal state of the parser during execution. The `--parse-statedump` flag converts the statedump string into a structured JSON format.
 
 The command validates:
 - Log type and parser code are provided

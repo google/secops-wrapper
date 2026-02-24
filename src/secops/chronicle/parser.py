@@ -15,6 +15,7 @@
 """Parser management functionality for Chronicle."""
 
 import base64
+import json
 from typing import Any
 
 from secops.exceptions import APIError
@@ -319,6 +320,7 @@ def run_parser(
     parser_extension_code: str | None,
     logs: list[str],
     statedump_allowed: bool = False,
+    parse_statedump: bool = False,
 ) -> dict[str, Any]:
     """Run parser against sample logs.
 
@@ -329,6 +331,8 @@ def run_parser(
         parser_extension_code: Optional content of the parser extension
         logs: List of log strings to test parser against
         statedump_allowed: Whether statedump filter is enabled for the config
+        parse_statedump: Whether to parse statedump results into structured
+            format.
 
     Returns:
         Dictionary containing the parser evaluation results with structure:
@@ -336,10 +340,13 @@ def run_parser(
             "runParserResults": [
                 {
                     "parsedEvents": [...],
-                    "errors": [...]
+                    "errors": [...],
+                    "statedumpResults": [...] (if statedump_allowed=True)
                 }
             ]
         }
+        If parse_statedump is True, statedumpResult strings are converted
+        to structured objects.
 
     Raises:
         ValueError: If input parameters are invalid
@@ -450,4 +457,35 @@ def run_parser(
 
         raise APIError(error_detail)
 
-    return response.json()
+    result = response.json()
+
+    if parse_statedump and "runParserResults" in result:
+        for run_result in result["runParserResults"]:
+            if "statedumpResults" in run_result:
+                for statedump_item in run_result["statedumpResults"]:
+                    if "statedumpResult" in statedump_item:
+                        try:
+                            dump_str = statedump_item["statedumpResult"]
+                            if isinstance(dump_str, str):
+                                stripped = dump_str.strip()
+                                if ":" in stripped:
+                                    parts = stripped.split("\n", 1)
+                                    info_line = parts[0].strip()
+                                    if "Internal State" in info_line:
+                                        info = info_line
+                                        if len(parts) > 1:
+                                            state_json = parts[1].strip()
+                                            state = json.loads(state_json)
+                                        else:
+                                            state = {}
+                                        statedump_item["statedumpResult"] = {
+                                            "info": info,
+                                            "state": state,
+                                        }
+                        except (
+                            ValueError,
+                            json.JSONDecodeError,
+                        ) as e:
+                            print(f"Warning: Failed to parse statedump: {e}")
+
+    return result
