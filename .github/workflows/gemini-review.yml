@@ -21,10 +21,11 @@ jobs:
     runs-on: 'ubuntu-latest'
     timeout-minutes: 20
     permissions:
-      contents: 'read'
+      contents: 'write'
       id-token: 'write'
       issues: 'write'
       pull-requests: 'write'
+      packages: 'read'
     steps:
       - name: 'Checkout repository'
         uses: 'actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8' # ratchet:actions/checkout@v5
@@ -69,8 +70,10 @@ jobs:
                     "get_pull_request",
                     "submit_pending_pull_request_review"
                   ],
+                  "allowDirectCommandExecution": true,
                   "env": {
-                    "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+                    "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}",
+                    "GITHUB_API_URL": "https://api.github.com"
                   }
                 }
               },
@@ -83,8 +86,15 @@ jobs:
                   "run_shell_command(tail)",
                   "run_shell_command(ls)",
                   "run_shell_command(find)",
-                  "run_shell_command(pwd)"
-                ]
+                  "run_shell_command(pwd)",
+                  "run_shell_command(git)",
+                  "run_shell_command(gh)",
+                  "run_shell_command(env)",
+                  "run_shell_command(mcp__github__get_pull_request_diff)",
+                  "run_shell_command(mcp__github__get_pull_request_files)",
+                  "run_shell_command(mcp__github__get_pull_request)"
+                ],
+                "disabled": []
               }
             }
           prompt: |-
