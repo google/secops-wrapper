@@ -22,10 +22,15 @@ import sys
 from typing import TYPE_CHECKING, Any
 
 from secops.chronicle.models import (
+    APIVersion,
     DashboardChart,
     DashboardQuery,
     InputInterval,
     TileType,
+)
+from secops.chronicle.utils.request_utils import (
+    chronicle_request,
+    chronicle_paginated_request,
 )
 from secops.exceptions import APIError, SecOpsError
 
@@ -83,8 +88,6 @@ def create_dashboard(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/nativeDashboards"
-
     if filters and isinstance(filters, str):
         try:
             filters = json.loads(filters)
@@ -104,7 +107,7 @@ def create_dashboard(
     payload = {
         "displayName": display_name,
         "definition": {},
-        "access": access_type,
+        "access": access_type.value,
         "type": "CUSTOM",
     }
 
@@ -117,15 +120,14 @@ def create_dashboard(
     if charts:
         payload["definition"]["charts"] = charts
 
-    response = client.session.post(url, json=payload)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to create dashboard: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="nativeDashboards",
+        api_version=APIVersion.V1ALPHA,
+        json=payload,
+        error_message="Failed to create dashboard",
+    )
 
 
 def import_dashboard(
@@ -143,8 +145,6 @@ def import_dashboard(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/nativeDashboards:import"
-
     # Validate dashboard data keys
     valid_keys = ["dashboard", "dashboardCharts", "dashboardQueries"]
     dashboard_keys = set(dashboard.keys())
@@ -156,15 +156,14 @@ def import_dashboard(
 
     payload = {"source": {"dashboards": [dashboard]}}
 
-    response = client.session.post(url, json=payload)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to import dashboard: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="nativeDashboards:import",
+        api_version=APIVersion.V1ALPHA,
+        json=payload,
+        error_message="Failed to import dashboard",
+    )
 
 
 def export_dashboard(
@@ -183,8 +182,6 @@ def export_dashboard(
     Raises:
         APIError: If the API request fails.
     """
-    url = f"{client.base_url}/{client.instance_id}/nativeDashboards:export"
-
     # Ensure dashboard names are fully qualified
     qualified_names = []
     for name in dashboard_names:
@@ -194,48 +191,47 @@ def export_dashboard(
 
     payload = {"names": qualified_names}
 
-    response = client.session.post(url, json=payload)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to export dashboards: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="nativeDashboards:export",
+        api_version=APIVersion.V1ALPHA,
+        json=payload,
+        error_message="Failed to export dashboards",
+    )
 
 
 def list_dashboards(
     client: "ChronicleClient",
     page_size: int | None = None,
     page_token: str | None = None,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[dict[str, Any]]:
     """List all available dashboards in Basic View.
 
     Args:
         client: ChronicleClient instance
         page_size: Maximum number of results to return
         page_token: Token for pagination
+        as_list: If True, return a list of dashboards instead of a dict
+            with dashboards list and nextPageToken.
 
     Returns:
-        Dictionary containing dashboard list and pagination info
+        If as_list is True: List of dashboards.
+        If as_list is False: Dict with dashboards list and nextPageToken.
+
+    Raises:
+        APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/nativeDashboards"
-    params = {}
-    if page_size:
-        params["pageSize"] = page_size
-    if page_token:
-        params["pageToken"] = page_token
-
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to list dashboards: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_paginated_request(
+        client,
+        api_version=APIVersion.V1ALPHA,
+        path="nativeDashboards",
+        items_key="nativeDashboards",
+        page_size=page_size,
+        page_token=page_token,
+        as_list=as_list,
+    )
 
 
 def get_dashboard(
@@ -253,30 +249,26 @@ def get_dashboard(
 
     Returns:
         Dictionary containing dashboard details
-    """
 
+    Raises:
+        APIError: If the API request fails
+    """
     if dashboard_id.startswith("projects/"):
         dashboard_id = dashboard_id.split("projects/")[-1]
 
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"nativeDashboards/{dashboard_id}"
-    )
     view = view or DashboardView.BASIC
     params = {"view": view.value}
 
-    response = client.session.get(url, params=params)
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"nativeDashboards/{dashboard_id}",
+        api_version=APIVersion.V1ALPHA,
+        params=params,
+        error_message=f"Failed to get dashboard: {dashboard_id}",
+    )
 
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to get dashboard: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
 
-    return response.json()
-
-
-# Updated update_dashboard function
 def update_dashboard(
     client: "ChronicleClient",
     dashboard_id: str,
@@ -297,14 +289,12 @@ def update_dashboard(
 
     Returns:
         Dictionary containing the updated dashboard details
+
+    Raises:
+        APIError: If the API request fails
     """
     if dashboard_id.startswith("projects/"):
         dashboard_id = dashboard_id.split("projects/")[-1]
-
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"nativeDashboards/{dashboard_id}"
-    )
 
     payload = {"definition": {}}
     update_mask = []
@@ -343,15 +333,15 @@ def update_dashboard(
 
     params = {"updateMask": ",".join(update_mask)}
 
-    response = client.session.patch(url, json=payload, params=params)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to update dashboard: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="PATCH",
+        endpoint_path=f"nativeDashboards/{dashboard_id}",
+        api_version=APIVersion.V1ALPHA,
+        json=payload,
+        params=params,
+        error_message=f"Failed to update dashboard: {dashboard_id}",
+    )
 
 
 def delete_dashboard(
@@ -365,25 +355,20 @@ def delete_dashboard(
 
     Returns:
         Empty dictionary on success
-    """
 
+    Raises:
+        APIError: If the API request fails
+    """
     if dashboard_id.startswith("projects/"):
         dashboard_id = dashboard_id.split("projects/")[-1]
 
-    url = (
-        f"{client.base_url}/{client.instance_id}"
-        f"/nativeDashboards/{dashboard_id}"
+    return chronicle_request(
+        client,
+        method="DELETE",
+        endpoint_path=f"nativeDashboards/{dashboard_id}",
+        api_version=APIVersion.V1ALPHA,
+        error_message=f"Failed to delete dashboard: {dashboard_id}",
     )
-
-    response = client.session.delete(url)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to delete dashboard: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
-
-    return {"status": "success", "code": response.status_code}
 
 
 def duplicate_dashboard(
@@ -405,14 +390,12 @@ def duplicate_dashboard(
 
     Returns:
         Dictionary containing the duplicated dashboard details
+
+    Raises:
+        APIError: If the API request fails
     """
     if dashboard_id.startswith("projects/"):
         dashboard_id = dashboard_id.split("projects/")[-1]
-
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"nativeDashboards/{dashboard_id}:duplicate"
-    )
 
     payload = {
         "nativeDashboard": {
@@ -425,15 +408,14 @@ def duplicate_dashboard(
     if description:
         payload["nativeDashboard"]["description"] = description
 
-    response = client.session.post(url, json=payload)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to duplicate dashboard: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=f"nativeDashboards/{dashboard_id}:duplicate",
+        api_version=APIVersion.V1ALPHA,
+        json=payload,
+        error_message=f"Failed to duplicate dashboard: {dashboard_id}",
+    )
 
 
 def add_chart(
@@ -468,17 +450,14 @@ def add_chart(
         **kwargs: Additional keyword arguments
             (It will be added to the request payload)
 
-
     Returns:
         Dictionary containing the updated dashboard with new chart
+
+    Raises:
+        APIError: If the API request fails
     """
     if dashboard_id.startswith("projects/"):
         dashboard_id = dashboard_id.split("projects/")[-1]
-
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"nativeDashboards/{dashboard_id}:addChart"
-    )
 
     tile_type = TileType.VISUALIZATION if tile_type is None else tile_type
 
@@ -532,15 +511,14 @@ def add_chart(
             }
         )
 
-    response = client.session.post(url, json=payload)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to add chart: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=f"nativeDashboards/{dashboard_id}:addChart",
+        api_version=APIVersion.V1ALPHA,
+        json=payload,
+        error_message=f"Failed to add chart to dashboard: {dashboard_id}",
+    )
 
 
 def get_chart(client: "ChronicleClient", chart_id: str) -> dict[str, Any]:
@@ -551,20 +529,21 @@ def get_chart(client: "ChronicleClient", chart_id: str) -> dict[str, Any]:
         chart_id: ID of the chart
 
     Returns:
-        Dict[str, Any]: Dictionary containing chart details
+        Dictionary containing chart details
+
+    Raises:
+        APIError: If the API request fails
     """
     if chart_id.startswith("projects/"):
         chart_id = chart_id.split("/")[-1]
 
-    url = f"{client.base_url}/{client.instance_id}/dashboardCharts/{chart_id}"
-    response = client.session.get(url)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to get chart details: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
-    return response.json()
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"dashboardCharts/{chart_id}",
+        api_version=APIVersion.V1ALPHA,
+        error_message=f"Failed to get chart details: {chart_id}",
+    )
 
 
 def remove_chart(
@@ -591,22 +570,16 @@ def remove_chart(
     if not chart_id.startswith("projects/"):
         chart_id = f"{client.instance_id}/dashboardCharts/{chart_id}"
 
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"nativeDashboards/{dashboard_id}:removeChart"
-    )
-
     payload = {"dashboardChart": chart_id}
 
-    response = client.session.post(url, json=payload)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to remove chart: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=f"nativeDashboards/{dashboard_id}:removeChart",
+        api_version=APIVersion.V1ALPHA,
+        json=payload,
+        error_message=f"Failed to remove chart from dashboard: {dashboard_id}",
+    )
 
 
 def edit_chart(
@@ -636,8 +609,12 @@ def edit_chart(
                 "chartDatasource": { "dataSources":[]},
                 "etag": "123131231321321"
             }
+
     Returns:
         Dictionary containing the updated dashboard with edited chart
+
+    Raises:
+        APIError: If the API request fails
     """
     if dashboard_id.startswith("projects/"):
         dashboard_id = dashboard_id.split("projects/")[-1]
@@ -683,16 +660,11 @@ def edit_chart(
 
     payload["editMask"] = ",".join(update_fields)
 
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"nativeDashboards/{dashboard_id}:editChart"
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=f"nativeDashboards/{dashboard_id}:editChart",
+        api_version=APIVersion.V1ALPHA,
+        json=payload,
+        error_message=f"Failed to edit chart in dashboard: {dashboard_id}",
     )
-    response = client.session.post(url, json=payload)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to edit chart: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
-
-    return response.json()

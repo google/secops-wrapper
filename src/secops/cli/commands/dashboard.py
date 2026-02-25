@@ -17,7 +17,7 @@
 import json
 import sys
 
-from secops.cli.utils.common_args import add_pagination_args
+from secops.cli.utils.common_args import add_as_list_arg, add_pagination_args
 from secops.cli.utils.formatters import output_formatter
 from secops.exceptions import APIError, SecOpsError
 
@@ -40,6 +40,7 @@ def setup_dashboard_command(subparsers):
         "list", help="List dashboards"
     )
     add_pagination_args(list_parser)
+    add_as_list_arg(list_parser)
     list_parser.set_defaults(func=handle_dashboard_list_command)
 
     # Get dashboard
@@ -375,7 +376,9 @@ def handle_dashboard_list_command(args, chronicle):
     """Handle list dashboards command."""
     try:
         result = chronicle.list_dashboards(
-            page_size=args.page_size, page_token=args.page_token
+            page_size=args.page_size,
+            page_token=args.page_token,
+            as_list=args.as_list,
         )
         output_formatter(result, args.output)
     except APIError as e:
