@@ -930,7 +930,8 @@ class ChronicleClient:
             allow_partial_results: Optional. Whether to allow partial results.
             snapshot_query: Optional. Query to filter results.
             case_sensitive: Optional. Whether search is case-sensitive.
-            log_types: Optional. Limit results to specific log types by display name (e.g. ["OKTA"]).
+            log_types: Optional. Limit results to specific log types
+                by display name (e.g. ["OKTA"]).
             max_aggregations_per_field: Optional. Max values for a UDM field.
             page_size: Optional. Maximum number of results to return.
 
