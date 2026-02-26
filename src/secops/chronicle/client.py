@@ -4357,7 +4357,6 @@ class ChronicleClient:
         """Duplicate an existing dashboard.
 
         Args:
-            client: ChronicleClient instance
             dashboard_id: ID of the dashboard to duplicate
             display_name: New name for the duplicated dashboard
             access_type: Access type for the duplicated dashboard
