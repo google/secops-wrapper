@@ -2930,9 +2930,13 @@ dashboard = chronicle.get_dashboard(
 print(f"Dashboard Details: {dashboard}")
 ```
 
-### List Dashboards with pagination
+### List Dashboards
 ```python
-# List dashboards (first page)
+dashboards = chronicle.list_dashboards()
+for dashboard in dashboards.get("nativeDashboards", []):
+    print(f"- {dashboard.get('displayName')}")
+
+# List dashboards with pagination(first page)
 dashboards = chronicle.list_dashboards(page_size=10)
 for dashboard in dashboards.get("nativeDashboards", []):
     print(f"- {dashboard.get('displayName')}")
