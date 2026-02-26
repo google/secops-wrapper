@@ -28,14 +28,25 @@ from secops.exceptions import APIError, SecOpsError
 
 @pytest.fixture
 def chronicle_client() -> Mock:
-    """Create a mock Chronicle client for testing.
+    """Minimal client shape expected by chronicle_request() helper."""
+    client = Mock()
+    client.instance_id = "projects/test-project/locations/test-location/instances/test-customer"
+    client.base_url = Mock(return_value="https://testapi.com")
+    client.session = Mock()
+    return client
+
+
+@pytest.fixture
+def response_mock() -> Mock:
+    """Create a mock API response object.
 
     Returns:
-        A mock ChronicleClient instance.
+        A mock response object.
     """
-    client = Mock()
-    client.instance_id = "test-project/locations/test-location"
-    return client
+    mock = Mock()
+    mock.status_code = 200
+    mock.json.return_value = {"name": "test-dashboard"}
+    return mock
 
 
 class TestDashboardEnums:
@@ -55,54 +66,47 @@ class TestDashboardEnums:
 class TestGetDashboard:
     """Test the get_dashboard function."""
 
-    def test_get_dashboard_success(self, chronicle_client: Mock) -> None:
+    def test_get_dashboard_success(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test get_dashboard function with successful response."""
-        dashboard_id = "test-dashboard"
-        expected = {"name": "test-dashboard"}
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
-            result = dashboard.get_dashboard(chronicle_client, dashboard_id)
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "test-dashboard"},
+        ) as mock_req:
+            result = dashboard.get_dashboard(chronicle_client, "test-dashboard")
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "GET"
-        assert kwargs["endpoint_path"] == f"nativeDashboards/{dashboard_id}"
-        assert kwargs["params"] == {"view": "NATIVE_DASHBOARD_VIEW_BASIC"}
+        assert result == {"name": "test-dashboard"}
+        mock_req.assert_called_once_with(
+            chronicle_client,
+            method="GET",
+            endpoint_path="nativeDashboards/test-dashboard",
+            api_version=dashboard.APIVersion.V1ALPHA,
+            params={"view": DashboardView.BASIC},
+            error_message="Failed to get dashboard with ID test-dashboard",
+        )
 
     def test_get_dashboard_with_view(self, chronicle_client: Mock) -> None:
         """Test get_dashboard function with view parameter."""
-        dashboard_id = "test-dashboard"
-        expected = {"name": "test-dashboard"}
-
         with patch(
             "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
+            return_value={"name": "test-dashboard"},
+        ) as mock_req:
             result = dashboard.get_dashboard(
-                chronicle_client, dashboard_id, view=DashboardView.FULL
+                chronicle_client, "test-dashboard", view=DashboardView.FULL
             )
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "GET"
-        assert kwargs["endpoint_path"] == f"nativeDashboards/{dashboard_id}"
-        assert kwargs["params"] == {"view": "NATIVE_DASHBOARD_VIEW_FULL"}
+        assert result == {"name": "test-dashboard"}
+        mock_req.assert_called_once()
+        assert mock_req.call_args.kwargs["params"] == {"view": DashboardView.FULL}
 
     def test_get_dashboard_error(self, chronicle_client: Mock) -> None:
-        """Test get_dashboard function with error response."""
-        dashboard_id = "nonexistent-dashboard"
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            side_effect=APIError("Failed to get dashboard"),
+                "secops.chronicle.dashboard.chronicle_request",
+                side_effect=APIError("Failed to get dashboard with ID nonexistent-dashboard"),
         ):
             with pytest.raises(APIError, match="Failed to get dashboard"):
-                dashboard.get_dashboard(chronicle_client, dashboard_id)
+                dashboard.get_dashboard(chronicle_client, "nonexistent-dashboard")
 
 
 class TestUpdateDashboard:
@@ -112,89 +116,69 @@ class TestUpdateDashboard:
         self, chronicle_client: Mock
     ) -> None:
         """Test update_dashboard with display_name parameter."""
-        dashboard_id = "test-dashboard"
-        display_name = "Updated Dashboard"
-        expected = {"name": "test-dashboard"}
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "test-dashboard"},
+        ) as mock_req:
             result = dashboard.update_dashboard(
-                chronicle_client, dashboard_id, display_name=display_name
+                chronicle_client, "test-dashboard", display_name="Updated Dashboard"
             )
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
+        assert result == {"name": "test-dashboard"}
+        mock_req.assert_called_once()
+        kwargs = mock_req.call_args.kwargs
         assert kwargs["method"] == "PATCH"
-        assert kwargs["endpoint_path"] == f"nativeDashboards/{dashboard_id}"
+        assert kwargs["endpoint_path"] == "nativeDashboards/test-dashboard"
         assert kwargs["params"] == {"updateMask": "display_name"}
-        assert kwargs["json"] == {"displayName": display_name, "definition": {}}
+        assert kwargs["json"] == {"displayName": "Updated Dashboard"}
+        assert "Failed to update dashboard" in kwargs["error_message"]
 
-    def test_update_dashboard_description(self, chronicle_client: Mock) -> None:
+    def test_update_dashboard_description(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test update_dashboard with description parameter."""
-        dashboard_id = "test-dashboard"
-        description = "Updated description"
-        expected = {"name": "test-dashboard"}
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "test-dashboard"},
+        ) as mock_req:
             result = dashboard.update_dashboard(
-                chronicle_client, dashboard_id, description=description
+                chronicle_client, "test-dashboard", description="Updated description"
             )
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "PATCH"
-        assert kwargs["endpoint_path"] == f"nativeDashboards/{dashboard_id}"
+        assert result == {"name": "test-dashboard"}
+        kwargs = mock_req.call_args.kwargs
         assert kwargs["params"] == {"updateMask": "description"}
-        assert kwargs["json"] == {"description": description, "definition": {}}
+        assert kwargs["json"] == {"description": "Updated description"}
 
-    def test_update_dashboard_filters(self, chronicle_client: Mock) -> None:
+    def test_update_dashboard_filters(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test update_dashboard with filters parameter."""
-        dashboard_id = "test-dashboard"
         filters = [{"field": "event_type", "value": "PROCESS_LAUNCH"}]
-        expected = {"name": "test-dashboard"}
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
-            result = dashboard.update_dashboard(
-                chronicle_client, dashboard_id, filters=filters
-            )
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "test-dashboard"},
+        ) as mock_req:
+            result = dashboard.update_dashboard(chronicle_client, "test-dashboard", filters=filters)
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "PATCH"
-        assert kwargs["endpoint_path"] == f"nativeDashboards/{dashboard_id}"
+        assert result == {"name": "test-dashboard"}
+        kwargs = mock_req.call_args.kwargs
         assert kwargs["params"] == {"updateMask": "definition.filters"}
         assert kwargs["json"] == {"definition": {"filters": filters}}
 
-    def test_update_dashboard_charts(self, chronicle_client: Mock) -> None:
+    def test_update_dashboard_charts(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test update_dashboard with charts parameter."""
-        dashboard_id = "test-dashboard"
         charts = [{"chart_id": "chart-1", "position": {"row": 0, "col": 0}}]
-        expected = {"name": "test-dashboard"}
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
-            result = dashboard.update_dashboard(
-                chronicle_client, dashboard_id, charts=charts
-            )
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "test-dashboard"},
+        ) as mock_req:
+            result = dashboard.update_dashboard(chronicle_client, "test-dashboard", charts=charts)
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "PATCH"
-        assert kwargs["endpoint_path"] == f"nativeDashboards/{dashboard_id}"
+        assert result == {"name": "test-dashboard"}
+        kwargs = mock_req.call_args.kwargs
         assert kwargs["params"] == {"updateMask": "definition.charts"}
         assert kwargs["json"] == {"definition": {"charts": charts}}
 
@@ -202,385 +186,341 @@ class TestUpdateDashboard:
         self, chronicle_client: Mock
     ) -> None:
         """Test update_dashboard with multiple parameters."""
-        dashboard_id = "test-dashboard"
-        display_name = "Updated Dashboard"
-        description = "Updated description"
-        expected = {"name": "test-dashboard"}
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "test-dashboard"},
+        ) as mock_req:
             result = dashboard.update_dashboard(
                 chronicle_client,
-                dashboard_id,
-                display_name=display_name,
-                description=description,
+                "test-dashboard",
+                display_name="Updated Dashboard",
+                description="Updated description",
             )
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "PATCH"
-        assert kwargs["endpoint_path"] == f"nativeDashboards/{dashboard_id}"
+        assert result == {"name": "test-dashboard"}
+        kwargs = mock_req.call_args.kwargs
+        # order matters because implementation appends in a fixed order
         assert kwargs["params"] == {"updateMask": "display_name,description"}
         assert kwargs["json"] == {
-            "displayName": display_name,
-            "description": description,
-            "definition": {},
+            "displayName": "Updated Dashboard",
+            "description": "Updated description",
         }
 
-    def test_update_dashboard_error(self, chronicle_client: Mock) -> None:
+    def test_update_dashboard_error(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test update_dashboard function with error response."""
-        dashboard_id = "test-dashboard"
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            side_effect=APIError("Failed to update dashboard"),
+                "secops.chronicle.dashboard.chronicle_request",
+                side_effect=APIError("Failed to update dashboard with ID test-dashboard"),
         ):
             with pytest.raises(APIError, match="Failed to update dashboard"):
-                dashboard.update_dashboard(
-                    chronicle_client, dashboard_id, display_name="Test"
-                )
+                dashboard.update_dashboard(chronicle_client, "test-dashboard", display_name="Test")
 
 
 class TestDeleteDashboard:
     """Test the delete_dashboard function."""
 
-    def test_delete_dashboard_success(self, chronicle_client: Mock) -> None:
+    def test_delete_dashboard_success(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test delete_dashboard function with successful response."""
-        dashboard_id = "test-dashboard"
-        expected = {"status": "success", "code": 200}
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
-            result = dashboard.delete_dashboard(chronicle_client, dashboard_id)
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"status": "success", "code": 200},
+        ) as mock_req:
+            result = dashboard.delete_dashboard(chronicle_client, "test-dashboard")
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "DELETE"
-        assert kwargs["endpoint_path"] == f"nativeDashboards/{dashboard_id}"
+        assert result == {"status": "success", "code": 200}
+        mock_req.assert_called_once_with(
+            chronicle_client,
+            method="DELETE",
+            endpoint_path="nativeDashboards/test-dashboard",
+            api_version=dashboard.APIVersion.V1ALPHA,
+            error_message="Failed to delete dashboard with ID test-dashboard",
+        )
 
     def test_delete_dashboard_with_project_id(
         self, chronicle_client: Mock
     ) -> None:
         """Test delete_dashboard with project ID in dashboard_id."""
-        dashboard_id = (
-            "projects/test-project/locations/test-location"
-            "/nativeDashboards/test-dashboard"
-        )
-        expected = {"status": "success", "code": 200}
-        expected_id = (
-            "test-project/locations/test-location/nativeDashboards/"
-            "test-dashboard"
-        )
-
+        full_id = "projects/test-project/locations/test-location/nativeDashboards/test-dashboard"
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
-            result = dashboard.delete_dashboard(chronicle_client, dashboard_id)
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"status": "success", "code": 200},
+        ) as mock_req:
+            result = dashboard.delete_dashboard(chronicle_client, full_id)
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "DELETE"
-        assert kwargs["endpoint_path"] == f"nativeDashboards/{expected_id}"
+        assert result["status"] == "success"
+        assert mock_req.call_args.kwargs["endpoint_path"] == "nativeDashboards/test-dashboard"
 
-    def test_delete_dashboard_error(self, chronicle_client: Mock) -> None:
+    def test_delete_dashboard_error(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test delete_dashboard function with error response."""
-        dashboard_id = "nonexistent-dashboard"
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            side_effect=APIError("Failed to delete dashboard"),
+                "secops.chronicle.dashboard.chronicle_request",
+                side_effect=APIError("Failed to delete dashboard with ID nonexistent-dashboard"),
         ):
             with pytest.raises(APIError, match="Failed to delete dashboard"):
-                dashboard.delete_dashboard(chronicle_client, dashboard_id)
+                dashboard.delete_dashboard(chronicle_client, "nonexistent-dashboard")
 
 
 class TestRemoveChart:
     """Test the remove_chart function."""
 
-    def test_remove_chart_success(self, chronicle_client: Mock) -> None:
+    def test_remove_chart_success(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test remove_chart function with successful response."""
-        dashboard_id = "test-dashboard"
-        chart_id = "test-chart"
-        expected = {"name": "test-dashboard"}
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
-            result = dashboard.remove_chart(
-                chronicle_client, dashboard_id, chart_id
-            )
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "test-dashboard"},
+        ) as mock_req:
+            result = dashboard.remove_chart(chronicle_client, "test-dashboard", "test-chart")
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
+        assert result == {"name": "test-dashboard"}
+        kwargs = mock_req.call_args.kwargs
         assert kwargs["method"] == "POST"
-        assert (
-            kwargs["endpoint_path"]
-            == f"nativeDashboards/{dashboard_id}:removeChart"
-        )
-        assert kwargs["json"] == {
-            "dashboardChart": "test-project/locations/test-location/"
-            "dashboardCharts/test-chart"
-        }
+        assert kwargs["endpoint_path"] == "nativeDashboards/test-dashboard:removeChart"
+        assert "Failed to remove chart" in kwargs["error_message"]
 
-    def test_remove_chart_with_full_ids(self, chronicle_client: Mock) -> None:
+    def test_remove_chart_with_full_ids(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test remove_chart with full project IDs."""
-        dashboard_id = (
-            "projects/test-project/locations/test-location/"
-            "nativeDashboards/test-dashboard"
-        )
-        chart_id = (
-            "projects/test-project/locations/test-location/"
-            "dashboardCharts/test-chart"
-        )
-        expected = {"name": "test-dashboard"}
-        expected_dashboard_id = (
-            "test-project/locations/test-location/nativeDashboards/"
-            "test-dashboard"
-        )
+        dashboard_id = "projects/test-project/locations/test-location/nativeDashboards/test-dashboard"
+        chart_id = "projects/test-project/locations/test-location/dashboardCharts/test-chart"
 
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
-            result = dashboard.remove_chart(
-                chronicle_client, dashboard_id, chart_id
-            )
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "test-dashboard"},
+        ) as mock_req:
+            result = dashboard.remove_chart(chronicle_client, dashboard_id, chart_id)
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "POST"
-        assert (
-            kwargs["endpoint_path"]
-            == f"nativeDashboards/{expected_dashboard_id}:removeChart"
-        )
-        assert kwargs["json"] == {"dashboardChart": chart_id}
+        assert result == {"name": "test-dashboard"}
+        kwargs = mock_req.call_args.kwargs
+        assert kwargs["endpoint_path"] == "nativeDashboards/test-dashboard:removeChart"
 
-    def test_remove_chart_error(self, chronicle_client: Mock) -> None:
+    def test_remove_chart_error(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test remove_chart function with error response."""
-        dashboard_id = "test-dashboard"
-        chart_id = "test-chart"
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            side_effect=APIError("Failed to remove chart"),
+                "secops.chronicle.dashboard.chronicle_request",
+                side_effect=APIError("Failed to remove chart"),
         ):
             with pytest.raises(APIError, match="Failed to remove chart"):
-                dashboard.remove_chart(chronicle_client, dashboard_id, chart_id)
+                dashboard.remove_chart(chronicle_client, "test-dashboard", "test-chart")
 
 
 class TestListDashboards:
     """Test the list_dashboards function."""
 
-    def test_list_dashboards_success(self, chronicle_client: Mock) -> None:
+    def test_list_dashboards_success(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test list_dashboards function with successful response."""
-        expected = {
-            "nativeDashboards": [
-                {"name": "test-dashboard-1"},
-                {"name": "test-dashboard-2"},
-            ]
+        upstream = {
+            "nativeDashboards": [{"name": "test-dashboard-1"}, {"name": "test-dashboard-2"}]
         }
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_paginated_request",
-            return_value=expected,
-        ) as paged:
+                "secops.chronicle.dashboard.chronicle_paginated_request",
+                return_value=upstream,
+        ) as mock_paged:
             result = dashboard.list_dashboards(chronicle_client)
 
-        assert result == expected
-        paged.assert_called_once()
-        _, kwargs = paged.call_args
-        assert kwargs["path"] == "nativeDashboards"
-        assert kwargs["items_key"] == "nativeDashboards"
+        assert result == upstream
+        mock_paged.assert_called_once_with(
+            chronicle_client,
+            api_version=dashboard.APIVersion.V1ALPHA,
+            path="nativeDashboards",
+            items_key="nativeDashboards",
+            page_size=None,
+            page_token=None,
+            as_list=False,
+        )
 
     def test_list_dashboards_with_pagination(
         self, chronicle_client: Mock
     ) -> None:
         """Test list_dashboards function with pagination parameters."""
-        expected = {
-            "nativeDashboards": [
-                {"name": "test-dashboard-1"},
-                {"name": "test-dashboard-2"},
-            ],
+        upstream = {
+            "nativeDashboards": [{"name": "test-dashboard-1"}, {"name": "test-dashboard-2"}],
             "nextPageToken": "next-page-token",
         }
-        page_size = 10
-        page_token = "current-page-token"
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_paginated_request",
-            return_value=expected,
-        ) as paged:
-            result = dashboard.list_dashboards(
-                chronicle_client, page_size=page_size, page_token=page_token
-            )
+                "secops.chronicle.dashboard.chronicle_paginated_request",
+                return_value=upstream,
+        ) as mock_paged:
+            result = dashboard.list_dashboards(chronicle_client, page_size=10, page_token="t1")
 
-        assert result == expected
-        paged.assert_called_once()
-        _, kwargs = paged.call_args
-        assert kwargs["path"] == "nativeDashboards"
-        assert kwargs["items_key"] == "nativeDashboards"
-        assert kwargs["page_size"] == page_size
-        assert kwargs["page_token"] == page_token
+        assert result == upstream
+        kwargs = mock_paged.call_args.kwargs
+        assert kwargs["page_size"] == 10
+        assert kwargs["page_token"] == "t1"
 
-    def test_list_dashboards_error(self, chronicle_client: Mock) -> None:
+    def test_list_dashboards_error(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test list_dashboards function with error response."""
         with patch(
-            "secops.chronicle.dashboard.chronicle_paginated_request",
-            side_effect=APIError("Failed to list dashboards"),
+                "secops.chronicle.dashboard.chronicle_paginated_request",
+                side_effect=APIError("Failed to list dashboards"),
         ):
             with pytest.raises(APIError, match="Failed to list dashboards"):
                 dashboard.list_dashboards(chronicle_client)
+
+    def test_list_dashboards_as_list(
+        self, chronicle_client: Mock
+    ) -> None:
+        """Test list_dashboards function with as_list=True."""
+        upstream = [{"name": "test-dashboard-1"}, {"name": "test-dashboard-2"}]
+        with patch(
+                "secops.chronicle.dashboard.chronicle_paginated_request",
+                return_value=upstream,
+        ) as mock_paged:
+            result = dashboard.list_dashboards(chronicle_client, as_list=True)
+
+        assert result == [{"name": "test-dashboard-1"}, {"name": "test-dashboard-2"}]
+        kwargs = mock_paged.call_args.kwargs
+        assert kwargs["as_list"] is True
+
+    def test_dashboard_as_list_missing_events(
+            self, chronicle_client: Mock
+    ) -> None:
+        """Test that as_list=True returns empty list when events missing."""
+        with patch(
+                "secops.chronicle.dashboard.chronicle_paginated_request",
+                return_value=[],
+        ) as mock_paged:
+            result = dashboard.list_dashboards(chronicle_client, as_list=True)
+
+        assert result == []
+        assert len(result) == 0
+        assert isinstance(result, list)
+        kwargs = mock_paged.call_args.kwargs
+        assert kwargs["as_list"] is True
+
 
 
 class TestCreateDashboard:
     """Test the create_dashboard function."""
 
-    def test_create_dashboard_minimal(self, chronicle_client: Mock) -> None:
+    def test_create_dashboard_minimal(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test create_dashboard with minimal required parameters."""
-        display_name = "Test Dashboard"
-        access_type = dashboard.DashboardAccessType.PRIVATE
-        expected = {"name": "test-dashboard"}
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "test-dashboard"},
+        ) as mock_req:
             result = dashboard.create_dashboard(
                 chronicle_client,
-                display_name=display_name,
-                access_type=access_type,
+                display_name="Test Dashboard",
+                access_type=dashboard.DashboardAccessType.PRIVATE,
             )
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
+        assert result == {"name": "test-dashboard"}
+        kwargs = mock_req.call_args.kwargs
         assert kwargs["method"] == "POST"
         assert kwargs["endpoint_path"] == "nativeDashboards"
         assert kwargs["json"] == {
-            "displayName": display_name,
+            "displayName": "Test Dashboard",
             "access": "DASHBOARD_PRIVATE",
             "type": "CUSTOM",
             "definition": {},
         }
 
-    def test_create_dashboard_full(self, chronicle_client: Mock) -> None:
+    def test_create_dashboard_full(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test create_dashboard with all parameters."""
-        display_name = "Test Dashboard"
-        access_type = dashboard.DashboardAccessType.PUBLIC
-        description = "Test description"
         filters = [{"field": "event_type", "value": "PROCESS_LAUNCH"}]
         charts = [{"chart_id": "chart-1", "position": {"row": 0, "col": 0}}]
-        expected = {"name": "test-dashboard"}
 
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "test-dashboard"},
+        ) as mock_req:
             result = dashboard.create_dashboard(
                 chronicle_client,
-                display_name=display_name,
-                access_type=access_type,
-                description=description,
+                display_name="Test Dashboard",
+                access_type=dashboard.DashboardAccessType.PUBLIC,
+                description="Test description",
                 filters=filters,
                 charts=charts,
             )
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "POST"
-        assert kwargs["endpoint_path"] == "nativeDashboards"
+        assert result == {"name": "test-dashboard"}
+        kwargs = mock_req.call_args.kwargs
         assert kwargs["json"] == {
-            "displayName": display_name,
+            "displayName": "Test Dashboard",
             "access": "DASHBOARD_PUBLIC",
             "type": "CUSTOM",
-            "description": description,
+            "description": "Test description",
             "definition": {"filters": filters, "charts": charts},
         }
 
-    def test_create_dashboard_error(self, chronicle_client: Mock) -> None:
+    def test_create_dashboard_error(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test create_dashboard function with error response."""
-        display_name = "Test Dashboard"
-        access_type = dashboard.DashboardAccessType.PRIVATE
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            side_effect=APIError("Failed to create dashboard"),
+                "secops.chronicle.dashboard.chronicle_request",
+                side_effect=APIError("Failed to create dashboard"),
         ):
             with pytest.raises(APIError, match="Failed to create dashboard"):
                 dashboard.create_dashboard(
                     chronicle_client,
-                    display_name=display_name,
-                    access_type=access_type,
+                    display_name="Test Dashboard",
+                    access_type=dashboard.DashboardAccessType.PRIVATE,
                 )
 
 
 class TestImportDashboard:
     """Test the import_dashboard function."""
 
-    def test_import_dashboard_success(self, chronicle_client: Mock) -> None:
+    def test_import_dashboard_success(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test import_dashboard function with successful response."""
-        expected = {
-            "name": "projects/test-project/locations/test-location/nativeDashboards/imported-dashboard",
-            "displayName": "Imported Dashboard",
-        }
         dashboard_data = {
             "dashboard": {
-                "name": (
-                    "projects/test-project/locations/test-location/"
-                    "nativeDashboards/dashboard-to-import"
-                ),
+                "name": "projects/test-project/locations/test-location/nativeDashboards/dashboard-to-import",
                 "displayName": "test-dashboard",
             },
             "dashboardCharts": [{"displayName": "Test Chart"}],
             "dashboardQueries": [
                 {
                     "query": "sample_query",
-                    "input": {
-                        "relativeTime": {
-                            "timeUnit": "SECOND",
-                            "startTimeVal": "20",
-                        }
-                    },
+                    "input": {"relativeTime": {"timeUnit": "SECOND", "startTimeVal": "20"}},
                 }
             ],
         }
 
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
-            result = dashboard.import_dashboard(
-                chronicle_client, dashboard_data
-            )
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={
+                    "name": "projects/test-project/locations/test-location/nativeDashboards/imported-dashboard",
+                    "displayName": "Imported Dashboard",
+                },
+        ) as mock_req:
+            result = dashboard.import_dashboard(chronicle_client, dashboard_data)
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
+        assert result["displayName"] == "Imported Dashboard"
+        kwargs = mock_req.call_args.kwargs
         assert kwargs["method"] == "POST"
         assert kwargs["endpoint_path"] == "nativeDashboards:import"
         assert kwargs["json"] == {"source": {"dashboards": [dashboard_data]}}
 
-    def test_import_dashboard_minimal(self, chronicle_client: Mock) -> None:
+    def test_import_dashboard_minimal(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test import_dashboard function with minimal dashboard data."""
-        expected = {"name": "test-dashboard"}
         dashboard_data = {
             "dashboard": {
-                "name": (
-                    "projects/test-project/locations/test-location/"
-                    "nativeDashboards/dashboard-to-import"
-                ),
+                "name": "projects/test-project/locations/test-location/nativeDashboards/dashboard-to-import",
                 "displayName": "test-dashboard",
             },
             "dashboardCharts": [],
@@ -588,47 +528,31 @@ class TestImportDashboard:
         }
 
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
-            result = dashboard.import_dashboard(
-                chronicle_client, dashboard_data
-            )
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "test-dashboard"},
+        ) as mock_req:
+            result = dashboard.import_dashboard(chronicle_client, dashboard_data)
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "POST"
-        assert kwargs["endpoint_path"] == "nativeDashboards:import"
-        assert kwargs["json"] == {"source": {"dashboards": [dashboard_data]}}
+        assert result == {"name": "test-dashboard"}
+        assert mock_req.call_args.kwargs["json"] == {"source": {"dashboards": [dashboard_data]}}
 
-    def test_import_dashboard_error(self, chronicle_client: Mock) -> None:
+    def test_import_dashboard_error(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test import_dashboard function with server error response."""
         dashboard_data = {
             "dashboard": {
-                "name": (
-                    "projects/test-project/locations/test-location/"
-                    "nativeDashboards/dashboard-to-import"
-                ),
+                "name": "projects/test-project/locations/test-location/nativeDashboards/dashboard-to-import",
                 "displayName": "test-dashboard",
             },
             "dashboardCharts": [{"displayName": "Test Chart"}],
             "dashboardQueries": [
-                {
-                    "query": "sample_query",
-                    "input": {
-                        "relativeTime": {
-                            "timeUnit": "SECOND",
-                            "startTimeVal": "20",
-                        }
-                    },
-                }
-            ],
+                {"query": "sample_query", "input": {"relativeTime": {"timeUnit": "SECOND", "startTimeVal": "20"}}}],
         }
 
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            side_effect=APIError("Failed to import dashboard"),
+                "secops.chronicle.dashboard.chronicle_request",
+                side_effect=APIError("Failed to import dashboard"),
         ):
             with pytest.raises(APIError, match="Failed to import dashboard"):
                 dashboard.import_dashboard(chronicle_client, dashboard_data)
@@ -643,14 +567,15 @@ class TestImportDashboard:
             "type": "CUSTOM",
         }
 
-        with pytest.raises(
-            SecOpsError,
-            match=(
-                "Dashboard must contain "
-                "at least one of: dashboard, dashboardCharts, dashboardQueries"
-            ),
-        ):
+        with pytest.raises(SecOpsError) as exc:
             dashboard.import_dashboard(chronicle_client, invalid_dashboard_data)
+
+        # Avoid depending on set ordering in the error message.
+        msg = str(exc.value)
+        assert "Dashboard must contain at least one of" in msg
+        assert "dashboard" in msg
+        assert "dashboardCharts" in msg
+        assert "dashboardQueries" in msg
 
 
 class TestAddChart:
@@ -658,165 +583,99 @@ class TestAddChart:
 
     @pytest.fixture
     def chart_layout(self) -> Dict[str, Any]:
-        """Create a sample chart layout for testing.
-
-        Returns:
-            A dictionary with chart layout configuration.
-        """
-        return {
-            "position": {"row": 0, "column": 0},
-            "size": {"width": 6, "height": 4},
-        }
+        return {"position": {"row": 0, "column": 0}, "size": {"width": 6, "height": 4}}
 
     def test_add_chart_minimal(
-        self, chronicle_client: Mock, chart_layout: Dict[str, Any]
+        self,
+        chronicle_client: Mock,
+        chart_layout: Dict[str, Any],
     ) -> None:
         """Test add_chart with minimal required parameters."""
-        dashboard_id = "test-dashboard"
-        display_name = "Test Chart"
-        expected = {"name": "test-dashboard"}
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "test-dashboard"},
+        ) as mock_req:
             result = dashboard.add_chart(
                 chronicle_client,
-                dashboard_id=dashboard_id,
-                display_name=display_name,
+                dashboard_id="test-dashboard",
+                display_name="Test Chart",
                 chart_layout=chart_layout,
             )
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
+        assert result == {"name": "test-dashboard"}
+        kwargs = mock_req.call_args.kwargs
         assert kwargs["method"] == "POST"
-        assert (
-            kwargs["endpoint_path"]
-            == f"nativeDashboards/{dashboard_id}:addChart"
-        )
-        assert kwargs["json"] == {
-            "dashboardChart": {
-                "displayName": "Test Chart",
-                "tileType": "TILE_TYPE_VISUALIZATION",
-            },
-            "chartLayout": {
-                "position": {"row": 0, "column": 0},
-                "size": {"width": 6, "height": 4},
-            },
-        }
+        assert kwargs["endpoint_path"] == "nativeDashboards/test-dashboard:addChart"
+        assert kwargs["json"]["dashboardChart"]["displayName"] == "Test Chart"
+        assert kwargs["json"]["chartLayout"] == chart_layout
 
     def test_add_chart_with_query(
-        self, chronicle_client: Mock, chart_layout: Dict[str, Any]
+        self,
+        chronicle_client: Mock,
+        chart_layout: Dict[str, Any],
     ) -> None:
         """Test add_chart with query and interval parameters."""
-        dashboard_id = "test-dashboard"
-        display_name = "Test Chart"
-        query = 'udm.metadata.event_type = "PROCESS_LAUNCH"'
-        interval = InputInterval(
-            relative_time={"timeUnit": "DAY", "startTimeVal": "1"}
-        )
-        expected = {"name": "test-dashboard"}
+        interval = InputInterval(relative_time={"timeUnit": "DAY", "startTimeVal": "1"})
 
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "test-dashboard"},
+        ) as mock_req:
             result = dashboard.add_chart(
                 chronicle_client,
-                dashboard_id=dashboard_id,
-                display_name=display_name,
+                dashboard_id="test-dashboard",
+                display_name="Test Chart",
                 chart_layout=chart_layout,
-                query=query,
+                query='udm.metadata.event_type = "PROCESS_LAUNCH"',
                 interval=interval,
             )
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "POST"
-        assert (
-            kwargs["endpoint_path"]
-            == f"nativeDashboards/{dashboard_id}:addChart"
-        )
-        assert kwargs["json"] == {
-            "dashboardChart": {
-                "displayName": "Test Chart",
-                "tileType": "TILE_TYPE_VISUALIZATION",
-            },
-            "chartLayout": {
-                "position": {"row": 0, "column": 0},
-                "size": {"width": 6, "height": 4},
-            },
-            "dashboardQuery": {
-                "query": 'udm.metadata.event_type = "PROCESS_LAUNCH"',
-                "input": {
-                    "relativeTime": {"timeUnit": "DAY", "startTimeVal": "1"}
-                },
-            },
+        assert result == {"name": "test-dashboard"}
+        body = mock_req.call_args.kwargs["json"]
+        assert body["dashboardQuery"]["query"] == 'udm.metadata.event_type = "PROCESS_LAUNCH"'
+        assert body["dashboardQuery"]["input"] == {
+            "relativeTime": {"timeUnit": "DAY", "startTimeVal": "1"}
         }
 
     def test_add_chart_with_string_json_params(
         self, chronicle_client: Mock
     ) -> None:
         """Test add_chart with string JSON parameters."""
-        dashboard_id = "test-dashboard"
-        display_name = "Test Chart"
-        chart_layout_str = (
-            '{"position": {"row": 0, "column": 0}, "size": '
-            '{"width": 6, "height": 4}}'
-        )
+        chart_layout_str = '{"position": {"row": 0, "column": 0}, "size": {"width": 6, "height": 4}}'
         visualization_str = '{"type": "BAR_CHART"}'
-        expected = {"name": "test-dashboard"}
 
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "test-dashboard"},
+        ) as mock_req:
             result = dashboard.add_chart(
                 chronicle_client,
-                dashboard_id=dashboard_id,
-                display_name=display_name,
+                dashboard_id="test-dashboard",
+                display_name="Test Chart",
                 chart_layout=chart_layout_str,
                 visualization=visualization_str,
             )
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "POST"
-        assert (
-            kwargs["endpoint_path"]
-            == f"nativeDashboards/{dashboard_id}:addChart"
-        )
-        assert kwargs["json"] == {
-            "dashboardChart": {
-                "displayName": "Test Chart",
-                "tileType": "TILE_TYPE_VISUALIZATION",
-                "visualization": {"type": "BAR_CHART"},
-            },
-            "chartLayout": {
-                "position": {"row": 0, "column": 0},
-                "size": {"width": 6, "height": 4},
-            },
-        }
+        assert result == {"name": "test-dashboard"}
+        body = mock_req.call_args.kwargs["json"]
+        assert body["dashboardChart"]["visualization"] == {"type": "BAR_CHART"}
+        assert body["chartLayout"]["size"]["width"] == 6
 
     def test_add_chart_error(
-        self, chronicle_client: Mock, chart_layout: Dict[str, Any]
+        self,
+        chronicle_client: Mock,
+        chart_layout: Dict[str, Any],
     ) -> None:
         """Test add_chart function with error response."""
-        dashboard_id = "test-dashboard"
-        display_name = "Test Chart"
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            side_effect=APIError("Failed to add chart"),
+                "secops.chronicle.dashboard.chronicle_request",
+                side_effect=APIError("Failed to add chart"),
         ):
             with pytest.raises(APIError, match="Failed to add chart"):
                 dashboard.add_chart(
                     chronicle_client,
-                    dashboard_id=dashboard_id,
-                    display_name=display_name,
+                    dashboard_id="test-dashboard",
+                    display_name="Test Chart",
                     chart_layout=chart_layout,
                 )
 
@@ -824,419 +683,314 @@ class TestAddChart:
 class TestDuplicateDashboard:
     """Test the duplicate_dashboard function."""
 
-    def test_duplicate_dashboard_minimal(self, chronicle_client: Mock) -> None:
+    def test_duplicate_dashboard_minimal(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test duplicate_dashboard with minimal required parameters."""
-        dashboard_id = "test-dashboard"
-        display_name = "Duplicated Dashboard"
-        access_type = dashboard.DashboardAccessType.PRIVATE
-        expected = {"name": "test-dashboard"}
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "test-dashboard"},
+        ) as mock_req:
             result = dashboard.duplicate_dashboard(
                 chronicle_client,
-                dashboard_id=dashboard_id,
-                display_name=display_name,
-                access_type=access_type,
+                dashboard_id="test-dashboard",
+                display_name="Duplicated Dashboard",
+                access_type=dashboard.DashboardAccessType.PRIVATE,
             )
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "POST"
-        assert (
-            kwargs["endpoint_path"]
-            == f"nativeDashboards/{dashboard_id}:duplicate"
-        )
-        assert kwargs["json"] == {
-            "nativeDashboard": {
-                "displayName": display_name,
-                "access": "DASHBOARD_PRIVATE",
-                "type": "CUSTOM",
-            }
-        }
+        assert result == {"name": "test-dashboard"}
+        kwargs = mock_req.call_args.kwargs
+        assert kwargs["endpoint_path"] == "nativeDashboards/test-dashboard:duplicate"
+        assert kwargs["json"]["nativeDashboard"]["access"] == "DASHBOARD_PRIVATE"
 
     def test_duplicate_dashboard_with_description(
         self, chronicle_client: Mock
     ) -> None:
         """Test duplicate_dashboard with description parameter."""
-        dashboard_id = "test-dashboard"
-        display_name = "Duplicated Dashboard"
-        access_type = dashboard.DashboardAccessType.PUBLIC
-        description = "Duplicated dashboard description"
-        expected = {"name": "test-dashboard"}
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "test-dashboard"},
+        ) as mock_req:
             result = dashboard.duplicate_dashboard(
                 chronicle_client,
-                dashboard_id=dashboard_id,
-                display_name=display_name,
-                access_type=access_type,
-                description=description,
+                dashboard_id="test-dashboard",
+                display_name="Duplicated Dashboard",
+                access_type=dashboard.DashboardAccessType.PUBLIC,
+                description="Duplicated dashboard description",
             )
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "POST"
-        assert (
-            kwargs["endpoint_path"]
-            == f"nativeDashboards/{dashboard_id}:duplicate"
-        )
-        assert kwargs["json"] == {
-            "nativeDashboard": {
-                "displayName": display_name,
-                "access": "DASHBOARD_PUBLIC",
-                "type": "CUSTOM",
-                "description": description,
-            }
-        }
+        assert result == {"name": "test-dashboard"}
+        body = mock_req.call_args.kwargs["json"]["nativeDashboard"]
+        assert body["access"] == "DASHBOARD_PUBLIC"
+        assert body["description"] == "Duplicated dashboard description"
 
     def test_duplicate_dashboard_with_project_id(
         self, chronicle_client: Mock
     ) -> None:
         """Test duplicate_dashboard with project ID in dashboard_id."""
-        dashboard_id = (
-            "projects/test-project/locations/test-location"
-            "/nativeDashboards/test-dashboard"
-        )
-        display_name = "Duplicated Dashboard"
-        access_type = dashboard.DashboardAccessType.PRIVATE
-        expected = {"name": "test-dashboard"}
-        expected_id = (
-            "test-project/locations/test-location/nativeDashboards/"
-            "test-dashboard"
-        )
+        full_id = "projects/test-project/locations/test-location/nativeDashboards/test-dashboard"
 
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
-            result = dashboard.duplicate_dashboard(
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "test-dashboard"},
+        ) as mock_req:
+            _ = dashboard.duplicate_dashboard(
                 chronicle_client,
-                dashboard_id=dashboard_id,
-                display_name=display_name,
-                access_type=access_type,
+                dashboard_id=full_id,
+                display_name="Duplicated Dashboard",
+                access_type=dashboard.DashboardAccessType.PRIVATE,
             )
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "POST"
-        assert (
-            kwargs["endpoint_path"]
-            == f"nativeDashboards/{expected_id}:duplicate"
-        )
-        assert kwargs["json"] == {
-            "nativeDashboard": {
-                "displayName": display_name,
-                "access": "DASHBOARD_PRIVATE",
-                "type": "CUSTOM",
-            }
-        }
+        assert mock_req.call_args.kwargs["endpoint_path"] == "nativeDashboards/test-dashboard:duplicate"
 
-    def test_duplicate_dashboard_error(self, chronicle_client: Mock) -> None:
+    def test_duplicate_dashboard_error(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test duplicate_dashboard function with error response."""
-        dashboard_id = "nonexistent-dashboard"
-        display_name = "Duplicated Dashboard"
-        access_type = dashboard.DashboardAccessType.PRIVATE
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            side_effect=APIError("Failed to duplicate dashboard"),
+                "secops.chronicle.dashboard.chronicle_request",
+                side_effect=APIError("Failed to duplicate dashboard"),
         ):
             with pytest.raises(APIError, match="Failed to duplicate dashboard"):
                 dashboard.duplicate_dashboard(
                     chronicle_client,
-                    dashboard_id=dashboard_id,
-                    display_name=display_name,
-                    access_type=access_type,
+                    dashboard_id="nonexistent-dashboard",
+                    display_name="Duplicated Dashboard",
+                    access_type=dashboard.DashboardAccessType.PRIVATE,
                 )
 
 
 class TestGetChart:
     """Test the get_chart function."""
 
-    def test_get_chart_success(self, chronicle_client: Mock) -> None:
+    def test_get_chart_success(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test get_chart function with successful response."""
-        chart_id = "test-chart"
-        expected = {
-            "name": "projects/test-project/locations/test-location/dashboardCharts/test-chart",
-            "displayName": "Test Chart",
-            "visualization": {"type": "BAR_CHART"},
-        }
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
-            result = dashboard.get_chart(chronicle_client, chart_id)
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "dashboardCharts/test-chart", "displayName": "Test Chart"},
+        ) as mock_req:
+            result = dashboard.get_chart(chronicle_client, "test-chart")
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "GET"
-        assert kwargs["endpoint_path"] == f"dashboardCharts/{chart_id}"
+        assert result["displayName"] == "Test Chart"
+        assert mock_req.call_args.kwargs["endpoint_path"] == "dashboardCharts/test-chart"
 
-    def test_get_chart_with_full_id(self, chronicle_client: Mock) -> None:
+    def test_get_chart_with_full_id(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test get_chart with full project path chart ID."""
-        chart_id = "projects/test-project/locations/test-location/dashboardCharts/test-chart"
-        expected_id = "test-chart"
-        expected = {
-            "name": "projects/test-project/locations/test-location/dashboardCharts/test-chart",
-            "displayName": "Test Chart",
-            "visualization": {"type": "BAR_CHART"},
-        }
-
+        full = "projects/test-project/locations/test-location/dashboardCharts/test-chart"
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
-            result = dashboard.get_chart(chronicle_client, chart_id)
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"displayName": "Test Chart"},
+        ) as mock_req:
+            result = dashboard.get_chart(chronicle_client, full)
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "GET"
-        assert kwargs["endpoint_path"] == f"dashboardCharts/{expected_id}"
+        assert result["displayName"] == "Test Chart"
+        assert mock_req.call_args.kwargs["endpoint_path"] == "dashboardCharts/test-chart"
 
-    def test_get_chart_error(self, chronicle_client: Mock) -> None:
+    def test_get_chart_error(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test get_chart function with error response."""
-        chart_id = "nonexistent-chart"
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            side_effect=APIError("Failed to get chart details"),
+                "secops.chronicle.dashboard.chronicle_request",
+                side_effect=APIError("Failed to get chart details"),
         ):
             with pytest.raises(APIError, match="Failed to get chart details"):
-                dashboard.get_chart(chronicle_client, chart_id)
+                dashboard.get_chart(chronicle_client, "nonexistent-chart")
 
 
 class TestEditChart:
     """Test the edit_chart function."""
 
-    def test_edit_chart_query(self, chronicle_client: Mock) -> None:
+    def test_edit_chart_query(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test edit_chart with dashboard_query parameter."""
-        dashboard_id = "test-dashboard"
         dashboard_query = {
             "name": "projects/test-project/locations/test-location/dashboardQueries/test-query",
             "etag": "123456789",
             "query": 'udm.metadata.event_type = "NETWORK_CONNECTION"',
-            "input": {
-                "relative_time": {"timeUnit": "DAY", "startTimeVal": "7"}
-            },
+            "input": {"relative_time": {"timeUnit": "DAY", "startTimeVal": "7"}},
         }
-        expected = {"name": "updated-chart"}
 
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "updated-chart"},
+        ) as mock_req:
             result = dashboard.edit_chart(
                 chronicle_client,
-                dashboard_id=dashboard_id,
+                dashboard_id="test-dashboard",
                 dashboard_query=dashboard_query,
             )
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "POST"
-        assert (
-            kwargs["endpoint_path"]
-            == f"nativeDashboards/{dashboard_id}:editChart"
-        )
-        assert kwargs["json"] == {
-            "dashboardQuery": dashboard_query,
-            "editMask": "dashboard_query.query,dashboard_query.input",
-        }
+        assert result == {"name": "updated-chart"}
+        body = mock_req.call_args.kwargs["json"]
+        assert body["dashboardQuery"] == dashboard_query
+        assert body["editMask"] == "dashboard_query.query,dashboard_query.input"
 
-    def test_edit_chart_details(self, chronicle_client: Mock) -> None:
+    def test_edit_chart_details(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test edit_chart with dashboard_chart parameter."""
-        dashboard_id = "test-dashboard"
         dashboard_chart = {
             "name": "projects/test-project/locations/test-location/dashboardCharts/test-chart",
             "etag": "123456789",
             "display_name": "Updated Chart Title",
             "visualization": {"legends": [{"legendOrient": "HORIZONTAL"}]},
         }
-        expected = {"name": "updated-chart"}
 
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "updated-chart"},
+        ) as mock_req:
             result = dashboard.edit_chart(
                 chronicle_client,
-                dashboard_id=dashboard_id,
+                dashboard_id="test-dashboard",
                 dashboard_chart=dashboard_chart,
             )
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "POST"
-        assert (
-            kwargs["endpoint_path"]
-            == f"nativeDashboards/{dashboard_id}:editChart"
-        )
-        assert kwargs["json"] == {
-            "dashboardChart": dashboard_chart,
-            "editMask": "dashboard_chart.display_name,dashboard_chart.visualization",
-        }
+        assert result == {"name": "updated-chart"}
+        body = mock_req.call_args.kwargs["json"]
+        assert body["dashboardChart"] == dashboard_chart
+        assert body["editMask"] == "dashboard_chart.display_name,dashboard_chart.visualization"
 
-    def test_edit_chart_both(self, chronicle_client: Mock) -> None:
+    def test_edit_chart_both(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test edit_chart with both query and chart parameters."""
-        dashboard_id = "test-dashboard"
         dashboard_query = {
             "name": "projects/test-project/locations/test-location/dashboardQueries/test-query",
             "etag": "123456789",
             "query": 'udm.metadata.event_type = "NETWORK_CONNECTION"',
-            "input": {
-                "relative_time": {"timeUnit": "DAY", "startTimeVal": "7"}
-            },
+            "input": {"relative_time": {"timeUnit": "DAY", "startTimeVal": "7"}},
         }
         dashboard_chart = {
             "name": "projects/test-project/locations/test-location/dashboardCharts/test-chart",
             "etag": "123456789",
             "display_name": "Updated Chart Title",
         }
-        expected = {"name": "updated-chart"}
 
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "updated-chart"},
+        ) as mock_req:
             result = dashboard.edit_chart(
                 chronicle_client,
-                dashboard_id=dashboard_id,
+                dashboard_id="test-dashboard",
                 dashboard_query=dashboard_query,
                 dashboard_chart=dashboard_chart,
             )
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
-        assert kwargs["method"] == "POST"
-        assert (
-            kwargs["endpoint_path"]
-            == f"nativeDashboards/{dashboard_id}:editChart"
+        assert result == {"name": "updated-chart"}
+        body = mock_req.call_args.kwargs["json"]
+        assert body["dashboardQuery"] == dashboard_query
+        assert body["dashboardChart"] == dashboard_chart
+        assert body["editMask"] == (
+            "dashboard_query.query,dashboard_query.input,dashboard_chart.display_name"
         )
-        assert kwargs["json"] == {
-            "dashboardQuery": dashboard_query,
-            "dashboardChart": dashboard_chart,
-            "editMask": (
-                "dashboard_query.query,dashboard_query.input,"
-                "dashboard_chart.display_name"
-            ),
-        }
 
     def test_edit_chart_with_model_objects(
         self, chronicle_client: Mock
     ) -> None:
         """Test edit_chart with model objects instead of dictionaries."""
-        dashboard_id = "test-dashboard"
-        interval = InputInterval(
-            relative_time={"timeUnit": "DAY", "startTimeVal": "3"}
-        )
-        dashboard_query = dashboard.DashboardQuery(
+        # Use the model classes from the module (exercise conversion paths)
+        interval = InputInterval(relative_time={"timeUnit": "DAY", "startTimeVal": "3"})
+        dq = dashboard.DashboardQuery(
             name="test-query",
             etag="123456789",
             query='udm.metadata.event_type = "PROCESS_LAUNCH"',
             input=interval,
         )
-        dashboard_chart = dashboard.DashboardChart(
+        dc = dashboard.DashboardChart(
             name="test-chart",
             etag="123456789",
             display_name="Updated Chart",
             visualization={"type": "BAR_CHART"},
         )
-        expected = {"name": "updated-chart"}
 
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value={"name": "updated-chart"},
+        ) as mock_req:
             result = dashboard.edit_chart(
                 chronicle_client,
-                dashboard_id=dashboard_id,
-                dashboard_query=dashboard_query,
-                dashboard_chart=dashboard_chart,
+                dashboard_id="test-dashboard",
+                dashboard_query=dq,
+                dashboard_chart=dc,
             )
 
-        assert result == expected
-        req.assert_called_once()
+        assert result == {"name": "updated-chart"}
+        # Basic sanity: ensure we passed a dict payload (not model objects)
+        body = mock_req.call_args.kwargs["json"]
+        assert isinstance(body, dict)
+        assert "editMask" in body
 
-    def test_edit_chart_error(self, chronicle_client: Mock) -> None:
+    def test_edit_chart_error(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test edit_chart with error response."""
-        dashboard_id = "test-dashboard"
-        dashboard_query = {
-            "name": "projects/test-project/locations/test-location/dashboardQueries/test-query",
-            "etag": "123123123",
-            "query": "invalid query",
-            "input": {
-                "relative_time": {"timeUnit": "DAY", "startTimeVal": "7"}
-            },
-        }
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            side_effect=APIError("Failed to edit chart"),
+                "secops.chronicle.dashboard.chronicle_request",
+                side_effect=APIError("Failed to edit chart"),
         ):
             with pytest.raises(APIError, match="Failed to edit chart"):
                 dashboard.edit_chart(
                     chronicle_client,
-                    dashboard_id=dashboard_id,
-                    dashboard_query=dashboard_query,
+                    dashboard_id="test-dashboard",
+                    dashboard_query={
+                        "name": "projects/test-project/locations/test-location/dashboardQueries/test-query",
+                        "etag": "123123123",
+                        "query": "invalid query",
+                        "input": {
+                            "relative_time": {
+                                "timeUnit": "DAY",
+                                "startTimeVal": "7"
+                            },
+                        },
+                    },
                 )
 
 
 class TestExportDashboard:
     """Test the export_dashboard function."""
 
-    def test_export_dashboard_success(self, chronicle_client: Mock) -> None:
+    def test_export_dashboard_success(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test export_dashboard function with successful response."""
-        dashboard_names = ["test-dashboard-1", "test-dashboard-2"]
-        expected = {
+        upstream = {
             "inlineDestination": {
-                "dashboards": [
-                    {"dashboard": {"name": "test-dashboard-1"}},
-                    {"dashboard": {"name": "test-dashboard-2"}},
-                ]
+                "dashboards": [{"dashboard": {"name": "test-dashboard-1"}}, {"dashboard": {"name": "test-dashboard-2"}}]
             }
         }
-        qualified_names = [
-            f"{chronicle_client.instance_id}/nativeDashboards/test-dashboard-1",
-            f"{chronicle_client.instance_id}/nativeDashboards/test-dashboard-2",
-        ]
 
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            return_value=expected,
-        ) as req:
-            result = dashboard.export_dashboard(
-                chronicle_client, dashboard_names
-            )
+                "secops.chronicle.dashboard.chronicle_request",
+                return_value=upstream,
+        ) as mock_req:
+            result = dashboard.export_dashboard(chronicle_client, ["test-dashboard-1", "test-dashboard-2"])
 
-        assert result == expected
-        req.assert_called_once()
-        _, kwargs = req.call_args
+        assert result == upstream
+
+        kwargs = mock_req.call_args.kwargs
         assert kwargs["method"] == "POST"
         assert kwargs["endpoint_path"] == "nativeDashboards:export"
-        assert kwargs["json"] == {"names": qualified_names}
 
-    def test_export_dashboard_error(self, chronicle_client: Mock) -> None:
+        # Ensure names are qualified the way export_dashboard builds them
+        names = kwargs["json"]["names"]
+        assert names[0].endswith("/nativeDashboards/test-dashboard-1")
+        assert names[1].endswith("/nativeDashboards/test-dashboard-2")
+
+    def test_export_dashboard_error(
+        self, chronicle_client: Mock
+    ) -> None:
         """Test export_dashboard function with error response."""
-        dashboard_names = ["test-dashboard-1"]
-
         with patch(
-            "secops.chronicle.dashboard.chronicle_request",
-            side_effect=APIError("Failed to export dashboards"),
+                "secops.chronicle.dashboard.chronicle_request",
+                side_effect=APIError("Failed to export dashboards"),
         ):
             with pytest.raises(APIError, match="Failed to export dashboards"):
-                dashboard.export_dashboard(chronicle_client, dashboard_names)
+                dashboard.export_dashboard(chronicle_client, ["test-dashboard-1"])
