@@ -153,7 +153,8 @@ def import_dashboard(
     """
     if not any(key in dashboard for key in _VALID_DASHBOARD_KEYS):
         raise SecOpsError(
-            f'Dashboard must contain at least one of: {", ".join(_VALID_DASHBOARD_KEYS)}'
+            "Dashboard must contain at least one "
+            f'of: {", ".join(_VALID_DASHBOARD_KEYS)}'
         )
 
     payload = {"source": {"dashboards": [dashboard]}}
@@ -224,7 +225,8 @@ def list_dashboards(
 
     Returns:
         If as_list is True: List of dashboards.
-        If as_list is False: Dictionary containing list of dashboards and pagination info.
+        If as_list is False: Dictionary containing list of dashboards
+            and pagination info.
 
     Raises:
         APIError: If the API request fails
@@ -275,6 +277,7 @@ def get_dashboard(
         error_message=f"Failed to get dashboard with ID {dashboard_id}",
     )
 
+
 def update_dashboard(
     client: "ChronicleClient",
     dashboard_id: str,
@@ -300,7 +303,8 @@ def update_dashboard(
 
     Raises:
         ValueError: If no fields are provided to update
-        APIError: If filters or charts JSON is invalid, or if the API request fails
+        APIError: If filters or charts JSON is invalid,
+            or if the API request fails
     """
     dashboard_id = format_resource_id(dashboard_id)
 
@@ -524,7 +528,9 @@ def add_chart(
         endpoint_path=f"nativeDashboards/{dashboard_id}:addChart",
         api_version=api_version,
         json=payload,
-        error_message=f"Failed to add chart to dashboard with ID {dashboard_id}",
+        error_message=(
+            f"Failed to add chart to dashboard with ID {dashboard_id}"
+        ),
     )
 
 
@@ -585,7 +591,10 @@ def remove_chart(
         endpoint_path=f"nativeDashboards/{dashboard_id}:removeChart",
         api_version=api_version,
         json={"dashboardChart": chart_id},
-        error_message=f"Failed to remove chart with ID {chart_id} from dashboard with ID {dashboard_id}",
+        error_message=(
+            f"Failed to remove chart with ID {chart_id} "
+            f"from dashboard with ID {dashboard_id}"
+        ),
     )
 
 
@@ -674,5 +683,7 @@ def edit_chart(
         endpoint_path=f"nativeDashboards/{dashboard_id}:editChart",
         api_version=api_version,
         json=payload,
-        error_message=f"Failed to edit chart in dashboard with ID {dashboard_id}",
+        error_message=(
+            f"Failed to edit chart in dashboard with ID {dashboard_id}"
+        ),
     )

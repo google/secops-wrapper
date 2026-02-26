@@ -33,7 +33,8 @@ def format_resource_id(resource_id: str) -> str:
         resource_id: The full resource string or just the ID.
 
     Returns:
-        The extracted ID from the resource string, or the original string if it doesn't match the expected format.
+        The extracted ID from the resource string,
+            or the original string if it doesn't match the expected format.
     """
     if resource_id.startswith("projects/"):
         return resource_id.split("/")[-1]
@@ -46,11 +47,13 @@ def parse_json_list(
     """Parse a JSON string into a list, or return the list as-is.
 
     Args:
-        value: A list of dictionaries or a JSON string representing a list of dictionaries.
+        value: A list of dictionaries or
+            a JSON string representing a list of dictionaries.
         field_name: The name of the field being parsed, used for error messages.
 
     Returns:
-        A list of dictionaries parsed from the JSON string, or the original list if it was already a list.
+        A list of dictionaries parsed from the JSON string,
+            or the original list if it was already a list.
 
     Raises:
         APIError: If the input is a string but cannot be parsed as valid JSON.

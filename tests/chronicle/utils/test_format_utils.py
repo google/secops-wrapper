@@ -17,7 +17,10 @@ from __future__ import annotations
 
 import pytest
 
-from secops.chronicle.utils.format_utils import format_resource_id, parse_json_list
+from secops.chronicle.utils.format_utils import (
+    format_resource_id,
+    parse_json_list,
+)
 from secops.exceptions import APIError
 
 
@@ -39,7 +42,10 @@ def test_format_resource_id_handles_minimal_projects_prefix() -> None:
 
 def test_format_resource_id_does_not_alter_non_projects_paths() -> None:
     # Paths that don't start with "projects/" should be returned as-is
-    assert format_resource_id("instances/my-instance/dashboards/abc") == "instances/my-instance/dashboards/abc"
+    assert (
+        format_resource_id("instances/my-instance/dashboards/abc")
+        == "instances/my-instance/dashboards/abc"
+    )
 
 
 def test_format_resource_id_empty_string_returns_empty_string() -> None:

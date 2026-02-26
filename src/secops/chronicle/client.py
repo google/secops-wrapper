@@ -4186,7 +4186,8 @@ class ChronicleClient:
 
         Returns:
             If as_list is True: List of dashboards.
-            If as_list is False: Dictionary containing list of dashboards and pagination info.
+            If as_list is False: Dictionary containing list of dashboards
+                and pagination info.
 
         Raises:
             APIError: If the API request fails
@@ -4360,7 +4361,7 @@ class ChronicleClient:
             dashboard_id: ID of the dashboard to duplicate
             display_name: New name for the duplicated dashboard
             access_type: Access type for the duplicated dashboard
-                        (DashboardAccessType.PRIVATE or DashboardAccessType.PUBLIC)
+                    (DashboardAccessType.PRIVATE or DashboardAccessType.PUBLIC)
             description: Description for the duplicated dashboard
             api_version: Preferred API version to use. Defaults to V1ALPHA
 
@@ -4407,7 +4408,7 @@ class ChronicleClient:
             self,
             dashboard_id=dashboard_id,
             chart_id=chart_id,
-            api_version=api_version
+            api_version=api_version,
         )
 
     def get_chart(
