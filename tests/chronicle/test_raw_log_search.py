@@ -30,9 +30,7 @@ def test_search_raw_logs_calls_chronicle_request_correctly(client):
     end_time = datetime(2023, 1, 2, 12, 0, 0)
     query = 'user = "foo"'
 
-    with patch(
-        "secops.chronicle.raw_log_search.chronicle_request"
-    ) as mock_request:
+    with patch("secops.chronicle.log_search.chronicle_request") as mock_request:
         search_raw_logs(
             client,
             query=query,
@@ -73,9 +71,7 @@ def test_search_raw_logs_defaults(client):
     end_time = datetime(2023, 1, 2, 12, 0, 0)
     query = 'user = "foo"'
 
-    with patch(
-        "secops.chronicle.raw_log_search.chronicle_request"
-    ) as mock_request:
+    with patch("secops.chronicle.log_search.chronicle_request") as mock_request:
         search_raw_logs(
             client,
             query=query,
