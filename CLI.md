@@ -124,6 +124,9 @@ Search for events using UDM query syntax:
 
 ```bash
 secops search --query "metadata.event_type = \"NETWORK_CONNECTION\"" --max-events 10
+
+# Get result as list
+secops search --query "metadata.event_type = \"NETWORK_CONNECTION\"" --max-events 10 --as-list
 ```
 
 Search using natural language:
