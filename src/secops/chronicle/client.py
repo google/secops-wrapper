@@ -309,7 +309,7 @@ from secops.chronicle.featured_content_rules import (
 )
 from secops.chronicle.rule_validation import validate_rule as _validate_rule
 from secops.chronicle.search import search_udm as _search_udm
-from secops.chronicle.raw_log_search import search_raw_logs as _search_raw_logs
+from secops.chronicle.log_search import search_raw_logs as _search_raw_logs
 from secops.chronicle.stats import get_stats as _get_stats
 from secops.chronicle.udm_mapping import RowLogFormat
 from secops.chronicle.udm_mapping import (

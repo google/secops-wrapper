@@ -184,7 +184,7 @@ from secops.chronicle.udm_mapping import (
     RowLogFormat,
     generate_udm_key_value_mappings,
 )
-from secops.chronicle.raw_log_search import search_raw_logs
+from secops.chronicle.log_search import search_raw_logs
 from secops.chronicle.udm_search import (
     fetch_udm_search_csv,
     fetch_udm_search_view,
