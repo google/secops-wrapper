@@ -309,6 +309,7 @@ from secops.chronicle.featured_content_rules import (
 )
 from secops.chronicle.rule_validation import validate_rule as _validate_rule
 from secops.chronicle.search import search_udm as _search_udm
+from secops.chronicle.log_search import search_raw_logs as _search_raw_logs
 from secops.chronicle.stats import get_stats as _get_stats
 from secops.chronicle.udm_mapping import RowLogFormat
 from secops.chronicle.udm_mapping import (
@@ -908,6 +909,51 @@ class ChronicleClient:
             timeout,
             debug,
             as_list,
+        )
+
+    def search_raw_logs(
+        self,
+        query: str,
+        start_time: datetime,
+        end_time: datetime,
+        allow_partial_results: bool = False,
+        snapshot_query: str | None = None,
+        case_sensitive: bool = False,
+        log_types: list[str] | None = None,
+        max_aggregations_per_field: int | None = None,
+        page_size: int | None = None,
+    ) -> dict[str, Any]:
+        """Search for raw logs in Chronicle.
+
+        Args:
+            query: Query to search for raw logs.
+            start_time: Search start time (inclusive).
+            end_time: Search end time (exclusive).
+            allow_partial_results: Optional. Whether to allow partial results.
+            snapshot_query: Optional. Query to filter results.
+            case_sensitive: Optional. Whether search is case-sensitive.
+            log_types: Optional. Limit results to specific log types
+                by display name (e.g. ["OKTA"]).
+            max_aggregations_per_field: Optional. Max values for a UDM field.
+            page_size: Optional. Maximum number of results to return.
+
+        Returns:
+            Dictionary containing search results.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _search_raw_logs(
+            self,
+            query=query,
+            start_time=start_time,
+            end_time=end_time,
+            snapshot_query=snapshot_query,
+            case_sensitive=case_sensitive,
+            log_types=log_types,
+            max_aggregations_per_field=max_aggregations_per_field,
+            page_size=page_size,
+            allow_partial_results=allow_partial_results,
         )
 
     def find_udm_field_values(
