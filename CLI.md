@@ -174,6 +174,21 @@ Search ingested UDM field values that match a query:
 secops search udm-field-values --query "source" --page-size 10
 ```
 
+### Search Raw Logs
+
+Search for raw logs in Chronicle using the query language:
+
+```bash
+secops search raw-logs \
+  --query 'raw = \"authentication\"' \
+  --snapshot-query 'user != ""' \
+  --time-window 24 \
+  --case-sensitive \
+  --log-types "OKTA,AZURE_AD" \
+  --max-aggregations-per-field 100 \
+  --page-size 25
+```
+
 ### Get Statistics
 
 Run statistical analyses on your data:

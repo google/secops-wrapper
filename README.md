@@ -1109,6 +1109,27 @@ results = chronicle.find_udm_field_values(
 }
 ```
 
+### Raw Log Search
+
+Search for raw logs in Chronicle using the query language:
+
+```python
+from datetime import datetime, timedelta, timezone
+
+# Set time range for search
+end_time = datetime.now(timezone.utc)
+start_time = end_time - timedelta(hours=24)
+
+results = chronicle.search_raw_logs(
+    query='raw != "authentication"',
+    start_time=start_time,
+    end_time=end_time,
+    snapshot_query='status = "success"',
+    max_aggregations_per_field=100,
+    page_size=20
+)
+```
+
 ### Statistics Queries
 
 Get statistics about network connections grouped by hostname:

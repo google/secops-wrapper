@@ -76,6 +76,42 @@ def setup_search_command(subparsers):
         func=handle_find_udm_field_values_command
     )
 
+    raw_logs_parser = search_subparser.add_parser(
+        "raw-logs", help="Search raw logs"
+    )
+    raw_logs_parser.add_argument(
+        "--query", required=True, help="Query to search for raw logs"
+    )
+    raw_logs_parser.add_argument(
+        "--snapshot-query",
+        "--snapshot_query",
+        dest="snapshot_query",
+        help="Query to filter results",
+    )
+    raw_logs_parser.add_argument(
+        "--case-sensitive",
+        "--case_sensitive",
+        dest="case_sensitive",
+        action="store_true",
+        help="Whether search is case-sensitive",
+    )
+    raw_logs_parser.add_argument(
+        "--log-types",
+        "--log_types",
+        dest="log_types",
+        help="Comma-separated list of log types to filter by",
+    )
+    raw_logs_parser.add_argument(
+        "--max-aggregations-per-field",
+        "--max_aggregations_per_field",
+        dest="max_aggregations_per_field",
+        type=int,
+        help="Max values for a UDM field",
+    )
+    add_time_range_args(raw_logs_parser, required=True)
+    add_pagination_args(raw_logs_parser)
+    raw_logs_parser.set_defaults(func=handle_search_raw_logs_command)
+
 
 def handle_search_command(args, chronicle):
     """Handle the search command.
@@ -132,6 +168,47 @@ def handle_find_udm_field_values_command(args, chronicle):
             query=args.query,
             page_size=args.page_size,
         )
+        output_formatter(result, args.output)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_search_raw_logs_command(args, chronicle):
+    """Handle search raw logs command.
+
+    Args:
+        args: Command line arguments
+        chronicle: Chronicle client
+    """
+    start_time, end_time = get_time_range(args)
+
+    try:
+        kwargs = {
+            "query": args.query,
+            "start_time": start_time,
+            "end_time": end_time,
+        }
+
+        if args.snapshot_query:
+            kwargs["snapshot_query"] = args.snapshot_query
+
+        if args.case_sensitive:
+            kwargs["case_sensitive"] = True
+
+        if args.log_types:
+            log_types = [lt.strip() for lt in args.log_types.split(",")]
+            kwargs["log_types"] = log_types
+
+        if args.max_aggregations_per_field is not None:
+            kwargs["max_aggregations_per_field"] = (
+                args.max_aggregations_per_field
+            )
+
+        if args.page_size is not None:
+            kwargs["page_size"] = args.page_size
+
+        result = chronicle.search_raw_logs(**kwargs)
         output_formatter(result, args.output)
     except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error: {e}", file=sys.stderr)

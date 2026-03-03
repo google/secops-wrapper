@@ -360,7 +360,7 @@ Following shows mapping between SecOps [REST Resource](https://cloud.google.com/
 |rules.retrohunts.list                                                         |v1alpha|                                                            |                                       |
 |rules.updateDeployment                                                        |v1alpha|                    |                     |
 |searchEntities                                                                |v1alpha|                                                            |                                       |
-|searchRawLogs                                                                 |v1alpha|                                                            |                                       |
+|searchRawLogs                                                                 |v1alpha|chronicle.log_search.search_raw_logs                        |secops search raw-logs                 |
 |summarizeEntitiesFromQuery                                                    |v1alpha|chronicle.entity.summarize_entity                           |secops entity                          |
 |summarizeEntity                                                               |v1alpha|chronicle.entity.summarize_entity                           |                                       |
 |testFindingsRefinement                                                        |v1alpha|                                                            |                                       |
