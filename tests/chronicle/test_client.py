@@ -309,14 +309,14 @@ def test_get_cases(chronicle_client):
     }
 
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
-    ) as mock_get:
+        chronicle_client.session, "request", return_value=mock_response
+    ) as mock_request:
         result = chronicle_client.get_cases(["case-123"])
 
         # Verify the correct endpoint was called
-        mock_get.assert_called_once()
-        call_args = mock_get.call_args
-        assert "legacy:legacyBatchGetCases" in call_args[0][0]
+        mock_request.assert_called_once()
+        call_args = mock_request.call_args
+        assert "legacy:legacyBatchGetCases" in call_args[1]["url"]
 
         # Verify the correct parameter name was used
         assert call_args[1]["params"] == {"names": ["case-123"]}
@@ -349,7 +349,9 @@ def test_get_cases_filtering(chronicle_client):
         ]
     }
 
-    with patch.object(chronicle_client.session, "get", return_value=mock_response):
+    with patch.object(
+        chronicle_client.session, "request", return_value=mock_response
+    ):
         result = chronicle_client.get_cases(["case-1", "case-2"])
 
         high_priority = result.filter_by_priority("PRIORITY_HIGH")
@@ -366,8 +368,11 @@ def test_get_cases_error(chronicle_client):
     mock_response = Mock()
     mock_response.status_code = 400
     mock_response.text = "Invalid request"
+    mock_response.json.return_value = {"error": "Invalid request"}
 
-    with patch.object(chronicle_client.session, "get", return_value=mock_response):
+    with patch.object(
+        chronicle_client.session, "request", return_value=mock_response
+    ):
         with pytest.raises(APIError, match="Failed to get cases"):
             chronicle_client.get_cases(["invalid-id"])
 
