@@ -15,6 +15,7 @@
 """
 Provides ingestion feed management functionality for Chronicle.
 """
+
 import json
 import os
 import sys
