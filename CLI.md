@@ -745,6 +745,434 @@ Delete a watchlist:
 secops watchlist delete --watchlist-id "abc-123-def"
 ```
 
+### Integration Management
+
+#### Integration Connectors
+
+List integration connectors:
+
+```bash
+# List all connectors for an integration
+secops integration connectors list --integration-name "MyIntegration"
+
+# List connectors as a direct list (fetches all pages automatically)
+secops integration connectors list --integration-name "MyIntegration" --as-list
+
+# List with pagination
+secops integration connectors list --integration-name "MyIntegration" --page-size 50
+
+# List with filtering
+secops integration connectors list --integration-name "MyIntegration" --filter-string "enabled = true"
+```
+
+Get connector details:
+
+```bash
+secops integration connectors get --integration-name "MyIntegration" --connector-id "c1"
+```
+
+Create a new connector:
+
+```bash
+secops integration connectors create \
+  --integration-name "MyIntegration" \
+  --display-name "Data Ingestion" \
+  --code "def fetch_data(context): return []"
+
+# Create with description and custom ID
+secops integration connectors create \
+  --integration-name "MyIntegration" \
+  --display-name "My Connector" \
+  --code "def fetch_data(context): return []" \
+  --description "Connector description" \
+  --connector-id "custom-connector-id"
+```
+
+Update an existing connector:
+
+```bash
+# Update display name
+secops integration connectors update \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --display-name "Updated Connector Name"
+
+# Update code
+secops integration connectors update \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --code "def fetch_data(context): return updated_data()"
+
+# Update multiple fields with update mask
+secops integration connectors update \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --display-name "New Name" \
+  --description "New description" \
+  --update-mask "displayName,description"
+```
+
+Delete a connector:
+
+```bash
+secops integration connectors delete --integration-name "MyIntegration" --connector-id "c1"
+```
+
+Test a connector:
+
+```bash
+secops integration connectors test --integration-name "MyIntegration" --connector-id "c1"
+```
+
+Get connector template:
+
+```bash
+secops integration connectors template --integration-name "MyIntegration"
+```
+
+#### Connector Revisions
+
+List connector revisions:
+
+```bash
+# List all revisions for a connector
+secops integration connector-revisions list \
+  --integration-name "MyIntegration" \
+  --connector-id "c1"
+
+# List revisions as a direct list
+secops integration connector-revisions list \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --as-list
+
+# List with pagination
+secops integration connector-revisions list \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --page-size 10
+
+# List with filtering and ordering
+secops integration connector-revisions list \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --filter-string 'version = "1.0"' \
+  --order-by "createTime desc"
+```
+
+Create a revision backup:
+
+```bash
+# Create revision with comment
+secops integration connector-revisions create \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --comment "Backup before field mapping changes"
+
+# Create revision without comment
+secops integration connector-revisions create \
+  --integration-name "MyIntegration" \
+  --connector-id "c1"
+```
+
+Rollback to a previous revision:
+
+```bash
+secops integration connector-revisions rollback \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --revision-id "r456"
+```
+
+Delete an old revision:
+
+```bash
+secops integration connector-revisions delete \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --revision-id "r789"
+```
+
+#### Connector Context Properties
+
+List connector context properties:
+
+```bash
+# List all properties for a connector context
+secops integration connector-context-properties list \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --context-id "mycontext"
+
+# List properties as a direct list
+secops integration connector-context-properties list \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --context-id "mycontext" \
+  --as-list
+
+# List with pagination
+secops integration connector-context-properties list \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --context-id "mycontext" \
+  --page-size 50
+
+# List with filtering
+secops integration connector-context-properties list \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --context-id "mycontext" \
+  --filter-string 'key = "last_run_time"'
+```
+
+Get a specific context property:
+
+```bash
+secops integration connector-context-properties get \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --context-id "mycontext" \
+  --property-id "prop123"
+```
+
+Create a new context property:
+
+```bash
+# Store last run time
+secops integration connector-context-properties create \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --context-id "mycontext" \
+  --key "last_run_time" \
+  --value "2026-03-09T10:00:00Z"
+
+# Store checkpoint for incremental sync
+secops integration connector-context-properties create \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --context-id "mycontext" \
+  --key "checkpoint" \
+  --value "page_token_xyz123"
+```
+
+Update a context property:
+
+```bash
+# Update last run time
+secops integration connector-context-properties update \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --context-id "mycontext" \
+  --property-id "prop123" \
+  --value "2026-03-09T11:00:00Z"
+```
+
+Delete a context property:
+
+```bash
+secops integration connector-context-properties delete \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --context-id "mycontext" \
+  --property-id "prop123"
+```
+
+Clear all context properties:
+
+```bash
+# Clear all properties for a specific context
+secops integration connector-context-properties clear-all \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --context-id "mycontext"
+```
+
+#### Connector Instance Logs
+
+List connector instance logs:
+
+```bash
+# List all logs for a connector instance
+secops integration connector-instance-logs list \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --connector-instance-id "inst123"
+
+# List logs as a direct list
+secops integration connector-instance-logs list \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --connector-instance-id "inst123" \
+  --as-list
+
+# List with pagination
+secops integration connector-instance-logs list \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --connector-instance-id "inst123" \
+  --page-size 50
+
+# List with filtering (filter by severity or timestamp)
+secops integration connector-instance-logs list \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --connector-instance-id "inst123" \
+  --filter-string 'severity = "ERROR"' \
+  --order-by "createTime desc"
+```
+
+Get a specific log entry:
+
+```bash
+secops integration connector-instance-logs get \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --connector-instance-id "inst123" \
+  --log-id "log456"
+```
+
+#### Connector Instances
+
+List connector instances:
+
+```bash
+# List all instances for a connector
+secops integration connector-instances list \
+  --integration-name "MyIntegration" \
+  --connector-id "c1"
+
+# List instances as a direct list
+secops integration connector-instances list \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --as-list
+
+# List with pagination
+secops integration connector-instances list \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --page-size 50
+
+# List with filtering
+secops integration connector-instances list \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --filter-string 'enabled = true'
+```
+
+Get connector instance details:
+
+```bash
+secops integration connector-instances get \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --connector-instance-id "inst123"
+```
+
+Create a new connector instance:
+
+```bash
+# Create basic connector instance
+secops integration connector-instances create \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --environment "production" \
+  --display-name "Production Data Collector"
+
+# Create with schedule and timeout
+secops integration connector-instances create \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --environment "production" \
+  --display-name "Hourly Sync" \
+  --interval-seconds 3600 \
+  --timeout-seconds 300 \
+  --enabled
+```
+
+Update a connector instance:
+
+```bash
+# Update display name
+secops integration connector-instances update \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --connector-instance-id "inst123" \
+  --display-name "Updated Display Name"
+
+# Update interval and timeout
+secops integration connector-instances update \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --connector-instance-id "inst123" \
+  --interval-seconds 7200 \
+  --timeout-seconds 600
+
+# Enable or disable instance
+secops integration connector-instances update \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --connector-instance-id "inst123" \
+  --enabled true
+
+# Update multiple fields with update mask
+secops integration connector-instances update \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --connector-instance-id "inst123" \
+  --display-name "New Name" \
+  --interval-seconds 3600 \
+  --update-mask "displayName,intervalSeconds"
+```
+
+Delete a connector instance:
+
+```bash
+secops integration connector-instances delete \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --connector-instance-id "inst123"
+```
+
+Fetch latest definition:
+
+```bash
+# Get the latest definition of a connector instance
+secops integration connector-instances fetch-latest \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --connector-instance-id "inst123"
+```
+
+Enable or disable log collection:
+
+```bash
+# Enable log collection for debugging
+secops integration connector-instances set-logs \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --connector-instance-id "inst123" \
+  --enabled true
+
+# Disable log collection
+secops integration connector-instances set-logs \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --connector-instance-id "inst123" \
+  --enabled false
+```
+
+Run connector instance on demand:
+
+```bash
+# Trigger an immediate execution for testing
+secops integration connector-instances run-ondemand \
+  --integration-name "MyIntegration" \
+  --connector-id "c1" \
+  --connector-instance-id "inst123"
+```
+
 ### Rule Management
 
 List detection rules:
@@ -896,7 +1324,6 @@ secops curated-rule search-detections \
   --end-time "2024-01-31T23:59:59Z" \
   --list-basis "DETECTION_TIME" \
   --page-size 50
-
 ```
 
 List all curated rule sets:
@@ -1543,39 +1970,7 @@ secops reference-list create \
 secops parser list
 
 # Get details of a specific parser
-secops parser get --log-type "WINDOWS" --id "pa_12345"
-
-# Create a custom parser for a new log format
-secops parser create \
-  --log-type "CUSTOM_APPLICATION" \
-  --parser-code-file "/path/to/custom_parser.conf" \
-  --validated-on-empty-logs
-
-# Copy an existing parser as a starting point
-secops parser copy --log-type "OKTA" --id "pa_okta_base"
-
-# Activate your custom parser
-secops parser activate --log-type "CUSTOM_APPLICATION" --id "pa_new_custom"
-
-# If needed, deactivate and delete old parser
-secops parser deactivate --log-type "CUSTOM_APPLICATION" --id "pa_old_custom"
-secops parser delete --log-type "CUSTOM_APPLICATION" --id "pa_old_custom"
-```
-
-### Complete Parser Workflow Example: Retrieve, Run, and Ingest
-
-This example demonstrates the complete workflow of retrieving an OKTA parser, running it against a sample log, and ingesting the parsed UDM event:
-
-```bash
-# Step 1: List OKTA parsers to find an active one
-secops parser list --log-type "OKTA" > okta_parsers.json
-
-# Extract the first parser ID (you can use jq or grep)
-PARSER_ID=$(cat okta_parsers.json | jq -r '.[0].name' | awk -F'/' '{print $NF}')
-echo "Using parser: $PARSER_ID"
-
-# Step 2: Get the parser details and save to a file
-secops parser get --log-type "OKTA" --id "$PARSER_ID" > parser_details.json
+secops parser get --log-type "WINDOWS" --id "$PARSER_ID" > parser_details.json
 
 # Extract and decode the parser code (base64 encoded in 'cbn' field)
 cat parser_details.json | jq -r '.cbn' | base64 -d > okta_parser.conf
@@ -1713,7 +2108,7 @@ secops feed update --id "feed-123" --display-name "Updated Feed Name"
 secops feed update --id "feed-123" --details '{"httpSettings":{"uri":"https://example.com/updated-feed","sourceType":"FILES"}}'
 
 # Update both display name and details
-secops feed update --id "feed-123" --display-name "Updated Name" --details '{"httpSettings":{"uri":"https://example.com/updated-feed"}}'
+secops feed update --id "feed-123" --display-name "New Name" --details '{"httpSettings":{"uri":"https://example.com/updated-feed"}}'
 ```
 
 Enable and disable feeds:
@@ -1855,3 +2250,4 @@ secops dashboard-query get --id query-id
 ## Conclusion
 
 The SecOps CLI provides a powerful way to interact with Google Security Operations products directly from your terminal. For more detailed information about the SDK capabilities, refer to the [main README](README.md).
+

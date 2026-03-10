@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 """Chronicle API client."""
+
 import ipaddress
 import re
 from collections.abc import Iterator
@@ -22,246 +23,226 @@ from typing import Any, Literal, Union
 
 from google.auth.transport import requests as google_auth_requests
 
+# pylint: disable=line-too-long
 from secops import auth as secops_auth
 from secops.auth import RetryConfig
 from secops.chronicle.alert import get_alerts as _get_alerts
 from secops.chronicle.case import get_cases_from_list
-from secops.chronicle.dashboard import DashboardAccessType, DashboardView
-from secops.chronicle.dashboard import add_chart as _add_chart
-from secops.chronicle.dashboard import create_dashboard as _create_dashboard
-from secops.chronicle.dashboard import delete_dashboard as _delete_dashboard
 from secops.chronicle.dashboard import (
+    DashboardAccessType,
+    DashboardView,
+    add_chart as _add_chart,
+    create_dashboard as _create_dashboard,
+    delete_dashboard as _delete_dashboard,
     duplicate_dashboard as _duplicate_dashboard,
+    edit_chart as _edit_chart,
+    export_dashboard as _export_dashboard,
+    get_chart as _get_chart,
+    get_dashboard as _get_dashboard,
+    import_dashboard as _import_dashboard,
+    list_dashboards as _list_dashboards,
+    remove_chart as _remove_chart,
+    update_dashboard as _update_dashboard,
 )
-from secops.chronicle.dashboard import edit_chart as _edit_chart
-from secops.chronicle.dashboard import export_dashboard as _export_dashboard
-from secops.chronicle.dashboard import get_chart as _get_chart
-from secops.chronicle.dashboard import get_dashboard as _get_dashboard
-from secops.chronicle.dashboard import import_dashboard as _import_dashboard
-from secops.chronicle.dashboard import list_dashboards as _list_dashboards
-from secops.chronicle.dashboard import remove_chart as _remove_chart
-from secops.chronicle.dashboard import update_dashboard as _update_dashboard
 from secops.chronicle.dashboard_query import (
     execute_query as _execute_dashboard_query,
-)
-from secops.chronicle.dashboard_query import (
     get_execute_query as _get_execute_query,
 )
 from secops.chronicle.data_export import (
     cancel_data_export as _cancel_data_export,
-)
-from secops.chronicle.data_export import (
     create_data_export as _create_data_export,
-)
-from secops.chronicle.data_export import (
     fetch_available_log_types as _fetch_available_log_types,
-)
-from secops.chronicle.data_export import get_data_export as _get_data_export
-from secops.chronicle.data_export import list_data_export as _list_data_export
-from secops.chronicle.data_export import (
+    get_data_export as _get_data_export,
+    list_data_export as _list_data_export,
     update_data_export as _update_data_export,
 )
-from secops.chronicle.data_table import DataTableColumnType
-from secops.chronicle.data_table import create_data_table as _create_data_table
 from secops.chronicle.data_table import (
+    DataTableColumnType,
+    create_data_table as _create_data_table,
     create_data_table_rows as _create_data_table_rows,
-)
-from secops.chronicle.data_table import delete_data_table as _delete_data_table
-from secops.chronicle.data_table import (
+    delete_data_table as _delete_data_table,
     delete_data_table_rows as _delete_data_table_rows,
-)
-from secops.chronicle.data_table import get_data_table as _get_data_table
-from secops.chronicle.data_table import (
+    get_data_table as _get_data_table,
     list_data_table_rows as _list_data_table_rows,
-)
-from secops.chronicle.data_table import list_data_tables as _list_data_tables
-from secops.chronicle.data_table import (
+    list_data_tables as _list_data_tables,
     replace_data_table_rows as _replace_data_table_rows,
-)
-from secops.chronicle.data_table import update_data_table as _update_data_table
-from secops.chronicle.data_table import (
+    update_data_table as _update_data_table,
     update_data_table_rows as _update_data_table_rows,
 )
-from secops.chronicle.entity import _detect_value_type_for_query
-from secops.chronicle.entity import summarize_entity as _summarize_entity
-from secops.chronicle.feeds import CreateFeedModel, UpdateFeedModel
-from secops.chronicle.feeds import create_feed as _create_feed
-from secops.chronicle.feeds import delete_feed as _delete_feed
-from secops.chronicle.feeds import disable_feed as _disable_feed
-from secops.chronicle.feeds import enable_feed as _enable_feed
-from secops.chronicle.feeds import generate_secret as _generate_secret
-from secops.chronicle.feeds import get_feed as _get_feed
-from secops.chronicle.feeds import list_feeds as _list_feeds
-from secops.chronicle.feeds import update_feed as _update_feed
-from secops.chronicle.gemini import GeminiResponse
-from secops.chronicle.gemini import opt_in_to_gemini as _opt_in_to_gemini
-from secops.chronicle.gemini import query_gemini as _query_gemini
-from secops.chronicle.ioc import list_iocs as _list_iocs
+from secops.chronicle.entity import (
+    _detect_value_type_for_query,
+    summarize_entity as _summarize_entity,
+)
+from secops.chronicle.featured_content_rules import (
+    list_featured_content_rules as _list_featured_content_rules,
+)
+from secops.chronicle.feeds import (
+    CreateFeedModel,
+    UpdateFeedModel,
+    create_feed as _create_feed,
+    delete_feed as _delete_feed,
+    disable_feed as _disable_feed,
+    enable_feed as _enable_feed,
+    generate_secret as _generate_secret,
+    get_feed as _get_feed,
+    list_feeds as _list_feeds,
+    update_feed as _update_feed,
+)
+from secops.chronicle.gemini import (
+    GeminiResponse,
+    opt_in_to_gemini as _opt_in_to_gemini,
+    query_gemini as _query_gemini,
+)
 from secops.chronicle.investigations import (
     fetch_associated_investigations as _fetch_associated_investigations,
-)
-from secops.chronicle.investigations import (
     get_investigation as _get_investigation,
-)
-from secops.chronicle.investigations import (
     list_investigations as _list_investigations,
-)
-from secops.chronicle.investigations import (
     trigger_investigation as _trigger_investigation,
 )
-from secops.chronicle.log_ingest import create_forwarder as _create_forwarder
-from secops.chronicle.log_ingest import delete_forwarder as _delete_forwarder
-from secops.chronicle.log_ingest import get_forwarder as _get_forwarder
+from secops.chronicle.ioc import list_iocs as _list_iocs
 from secops.chronicle.log_ingest import (
+    create_forwarder as _create_forwarder,
+    delete_forwarder as _delete_forwarder,
+    get_forwarder as _get_forwarder,
     get_or_create_forwarder as _get_or_create_forwarder,
+    import_entities as _import_entities,
+    ingest_log as _ingest_log,
+    ingest_udm as _ingest_udm,
+    list_forwarders as _list_forwarders,
+    update_forwarder as _update_forwarder,
 )
-from secops.chronicle.log_ingest import import_entities as _import_entities
-from secops.chronicle.log_ingest import ingest_log as _ingest_log
-from secops.chronicle.log_ingest import ingest_udm as _ingest_udm
-from secops.chronicle.log_ingest import list_forwarders as _list_forwarders
-from secops.chronicle.log_ingest import update_forwarder as _update_forwarder
-from secops.chronicle.log_types import classify_logs as _classify_logs
-from secops.chronicle.log_types import get_all_log_types as _get_all_log_types
-from secops.chronicle.log_types import (
-    get_log_type_description as _get_log_type_description,
-)
-from secops.chronicle.log_types import is_valid_log_type as _is_valid_log_type
-from secops.chronicle.log_types import search_log_types as _search_log_types
 from secops.chronicle.log_processing_pipelines import (
     associate_streams as _associate_streams,
-)
-from secops.chronicle.log_processing_pipelines import (
     create_log_processing_pipeline as _create_log_processing_pipeline,
-)
-from secops.chronicle.log_processing_pipelines import (
     delete_log_processing_pipeline as _delete_log_processing_pipeline,
-)
-from secops.chronicle.log_processing_pipelines import (
     dissociate_streams as _dissociate_streams,
-)
-from secops.chronicle.log_processing_pipelines import (
     fetch_associated_pipeline as _fetch_associated_pipeline,
-)
-from secops.chronicle.log_processing_pipelines import (
     fetch_sample_logs_by_streams as _fetch_sample_logs_by_streams,
-)
-from secops.chronicle.log_processing_pipelines import (
     get_log_processing_pipeline as _get_log_processing_pipeline,
-)
-from secops.chronicle.log_processing_pipelines import (
     list_log_processing_pipelines as _list_log_processing_pipelines,
-)
-from secops.chronicle.log_processing_pipelines import (
+    test_pipeline as _test_pipeline,
     update_log_processing_pipeline as _update_log_processing_pipeline,
 )
-from secops.chronicle.log_processing_pipelines import (
-    test_pipeline as _test_pipeline,
+from secops.chronicle.log_types import (
+    classify_logs as _classify_logs,
+    get_all_log_types as _get_all_log_types,
+    get_log_type_description as _get_log_type_description,
+    is_valid_log_type as _is_valid_log_type,
+    search_log_types as _search_log_types,
+)
+from secops.chronicle.integration.connectors import (
+    create_integration_connector as _create_integration_connector,
+    delete_integration_connector as _delete_integration_connector,
+    execute_integration_connector_test as _execute_integration_connector_test,
+    get_integration_connector as _get_integration_connector,
+    get_integration_connector_template as _get_integration_connector_template,
+    list_integration_connectors as _list_integration_connectors,
+    update_integration_connector as _update_integration_connector,
+)
+from secops.chronicle.integration.connector_revisions import (
+    create_integration_connector_revision as _create_integration_connector_revision,
+    delete_integration_connector_revision as _delete_integration_connector_revision,
+    list_integration_connector_revisions as _list_integration_connector_revisions,
+    rollback_integration_connector_revision as _rollback_integration_connector_revision,
+)
+from secops.chronicle.integration.connector_context_properties import (
+    create_connector_context_property as _create_connector_context_property,
+    delete_all_connector_context_properties as _delete_all_connector_context_properties,
+    delete_connector_context_property as _delete_connector_context_property,
+    get_connector_context_property as _get_connector_context_property,
+    list_connector_context_properties as _list_connector_context_properties,
+    update_connector_context_property as _update_connector_context_property,
+)
+from secops.chronicle.integration.connector_instance_logs import (
+    get_connector_instance_log as _get_connector_instance_log,
+    list_connector_instance_logs as _list_connector_instance_logs,
+)
+from secops.chronicle.integration.connector_instances import (
+    create_connector_instance as _create_connector_instance,
+    delete_connector_instance as _delete_connector_instance,
+    get_connector_instance as _get_connector_instance,
+    get_connector_instance_latest_definition as _get_connector_instance_latest_definition,
+    list_connector_instances as _list_connector_instances,
+    run_connector_instance_on_demand as _run_connector_instance_on_demand,
+    set_connector_instance_logs_collection as _set_connector_instance_logs_collection,
+    update_connector_instance as _update_connector_instance,
 )
 from secops.chronicle.models import (
     APIVersion,
     CaseList,
+    ConnectorParameter,
+    ConnectorRule,
     DashboardChart,
     DashboardQuery,
     EntitySummary,
     InputInterval,
     TileType,
+    ConnectorInstanceParameter,
 )
-from secops.chronicle.nl_search import nl_search as _nl_search
-from secops.chronicle.nl_search import translate_nl_to_udm
-from secops.chronicle.parser import activate_parser as _activate_parser
+from secops.chronicle.nl_search import (
+    nl_search as _nl_search,
+    translate_nl_to_udm,
+)
 from secops.chronicle.parser import (
+    activate_parser as _activate_parser,
     activate_release_candidate_parser as _activate_release_candidate_parser,
+    copy_parser as _copy_parser,
+    create_parser as _create_parser,
+    deactivate_parser as _deactivate_parser,
+    delete_parser as _delete_parser,
+    get_parser as _get_parser,
+    list_parsers as _list_parsers,
+    run_parser as _run_parser,
 )
-from secops.chronicle.parser import copy_parser as _copy_parser
-from secops.chronicle.parser import create_parser as _create_parser
-from secops.chronicle.parser import deactivate_parser as _deactivate_parser
-from secops.chronicle.parser import delete_parser as _delete_parser
-from secops.chronicle.parser import get_parser as _get_parser
-from secops.chronicle.parser import list_parsers as _list_parsers
-from secops.chronicle.parser import run_parser as _run_parser
-from secops.chronicle.parser_extension import ParserExtensionConfig
 from secops.chronicle.parser_extension import (
+    ParserExtensionConfig,
     activate_parser_extension as _activate_parser_extension,
-)
-from secops.chronicle.parser_extension import (
     create_parser_extension as _create_parser_extension,
-)
-from secops.chronicle.parser_extension import (
     delete_parser_extension as _delete_parser_extension,
-)
-from secops.chronicle.parser_extension import (
     get_parser_extension as _get_parser_extension,
-)
-from secops.chronicle.parser_extension import (
     list_parser_extensions as _list_parser_extensions,
 )
 from secops.chronicle.reference_list import (
     ReferenceListSyntaxType,
     ReferenceListView,
-)
-from secops.chronicle.reference_list import (
     create_reference_list as _create_reference_list,
-)
-from secops.chronicle.reference_list import (
     get_reference_list as _get_reference_list,
-)
-from secops.chronicle.reference_list import (
     list_reference_lists as _list_reference_lists,
-)
-from secops.chronicle.reference_list import (
     update_reference_list as _update_reference_list,
 )
-
-# Import rule functions
-from secops.chronicle.rule import create_rule as _create_rule
-from secops.chronicle.rule import delete_rule as _delete_rule
-from secops.chronicle.rule import enable_rule as _enable_rule
-from secops.chronicle.rule import get_rule as _get_rule
-from secops.chronicle.rule import get_rule_deployment as _get_rule_deployment
 from secops.chronicle.rule import (
+    create_rule as _create_rule,
+    delete_rule as _delete_rule,
+    enable_rule as _enable_rule,
+    get_rule as _get_rule,
+    get_rule_deployment as _get_rule_deployment,
     list_rule_deployments as _list_rule_deployments,
-)
-from secops.chronicle.rule import list_rules as _list_rules
-from secops.chronicle.rule import run_rule_test
-from secops.chronicle.rule import search_rules as _search_rules
-from secops.chronicle.rule import set_rule_alerting as _set_rule_alerting
-from secops.chronicle.rule import update_rule as _update_rule
-from secops.chronicle.rule import (
+    list_rules as _list_rules,
+    run_rule_test,
+    search_rules as _search_rules,
+    set_rule_alerting as _set_rule_alerting,
+    update_rule as _update_rule,
     update_rule_deployment as _update_rule_deployment,
 )
 from secops.chronicle.rule_alert import (
     bulk_update_alerts as _bulk_update_alerts,
-)
-from secops.chronicle.rule_alert import get_alert as _get_alert
-from secops.chronicle.rule_alert import (
+    get_alert as _get_alert,
     search_rule_alerts as _search_rule_alerts,
+    update_alert as _update_alert,
 )
-from secops.chronicle.rule_alert import update_alert as _update_alert
-from secops.chronicle.rule_detection import list_detections as _list_detections
-from secops.chronicle.rule_detection import list_errors as _list_errors
+from secops.chronicle.rule_detection import (
+    list_detections as _list_detections,
+    list_errors as _list_errors,
+)
 from secops.chronicle.rule_exclusion import (
     RuleExclusionType,
     UpdateRuleDeployment,
-)
-from secops.chronicle.rule_exclusion import (
     compute_rule_exclusion_activity as _compute_rule_exclusion_activity,
-)
-from secops.chronicle.rule_exclusion import (
     create_rule_exclusion as _create_rule_exclusion,
-)
-from secops.chronicle.rule_exclusion import (
     get_rule_exclusion as _get_rule_exclusion,
-)
-from secops.chronicle.rule_exclusion import (
     get_rule_exclusion_deployment as _get_rule_exclusion_deployment,
-)
-from secops.chronicle.rule_exclusion import (
     list_rule_exclusions as _list_rule_exclusions,
-)
-from secops.chronicle.rule_exclusion import (
     patch_rule_exclusion as _patch_rule_exclusion,
-)
-from secops.chronicle.rule_exclusion import (
     update_rule_exclusion_deployment as _update_rule_exclusion_deployment,
 )
 from secops.chronicle.rule_retrohunt import (
@@ -270,71 +251,44 @@ from secops.chronicle.rule_retrohunt import (
     list_retrohunts as _list_retrohunts,
 )
 from secops.chronicle.rule_set import (
-    batch_update_curated_rule_set_deployments as _batch_update_curated_rule_set_deployments,  # pylint: disable=line-too-long
-)
-from secops.chronicle.rule_set import get_curated_rule as _get_curated_rule
-from secops.chronicle.rule_set import (
+    batch_update_curated_rule_set_deployments as _batch_update_curated_rule_set_deployments,
+    get_curated_rule as _get_curated_rule,
     get_curated_rule_by_name as _get_curated_rule_by_name,
-)
-from secops.chronicle.rule_set import (
     get_curated_rule_set as _get_curated_rule_set,
-)
-from secops.chronicle.rule_set import (
     get_curated_rule_set_category as _get_curated_rule_set_category,
-)
-from secops.chronicle.rule_set import (
     get_curated_rule_set_deployment as _get_curated_rule_set_deployment,
-)
-from secops.chronicle.rule_set import (
-    get_curated_rule_set_deployment_by_name as _get_curated_rule_set_deployment_by_name,  # pylint: disable=line-too-long
-)
-from secops.chronicle.rule_set import (
+    get_curated_rule_set_deployment_by_name as _get_curated_rule_set_deployment_by_name,
     list_curated_rule_set_categories as _list_curated_rule_set_categories,
-)
-from secops.chronicle.rule_set import (
     list_curated_rule_set_deployments as _list_curated_rule_set_deployments,
-)
-from secops.chronicle.rule_set import (
     list_curated_rule_sets as _list_curated_rule_sets,
-)
-from secops.chronicle.rule_set import list_curated_rules as _list_curated_rules
-from secops.chronicle.rule_set import (
+    list_curated_rules as _list_curated_rules,
     search_curated_detections as _search_curated_detections,
-)
-from secops.chronicle.rule_set import (
     update_curated_rule_set_deployment as _update_curated_rule_set_deployment,
-)
-from secops.chronicle.featured_content_rules import (
-    list_featured_content_rules as _list_featured_content_rules,
 )
 from secops.chronicle.rule_validation import validate_rule as _validate_rule
 from secops.chronicle.search import search_udm as _search_udm
 from secops.chronicle.log_search import search_raw_logs as _search_raw_logs
 from secops.chronicle.stats import get_stats as _get_stats
-from secops.chronicle.udm_mapping import RowLogFormat
 from secops.chronicle.udm_mapping import (
+    RowLogFormat,
     generate_udm_key_value_mappings as _generate_udm_key_value_mappings,
 )
-
-# Import functions from the new modules
 from secops.chronicle.udm_search import (
     fetch_udm_search_csv as _fetch_udm_search_csv,
-)
-from secops.chronicle.udm_search import (
     fetch_udm_search_view as _fetch_udm_search_view,
-)
-from secops.chronicle.udm_search import (
     find_udm_field_values as _find_udm_field_values,
 )
 from secops.chronicle.validate import validate_query as _validate_query
 from secops.chronicle.watchlist import (
-    list_watchlists as _list_watchlists,
-    get_watchlist as _get_watchlist,
-    delete_watchlist as _delete_watchlist,
     create_watchlist as _create_watchlist,
+    delete_watchlist as _delete_watchlist,
+    get_watchlist as _get_watchlist,
+    list_watchlists as _list_watchlists,
     update_watchlist as _update_watchlist,
 )
 from secops.exceptions import SecOpsError
+
+# pylint: enable=line-too-long
 
 
 class ValueType(Enum):
@@ -759,6 +713,1223 @@ class ChronicleClient:
             entity_population_mechanism,
             watchlist_user_preferences,
             update_mask,
+        )
+
+    # -------------------------------------------------------------------------
+    # Integration Connector methods
+    # -------------------------------------------------------------------------
+
+    def list_integration_connectors(
+        self,
+        integration_name: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        exclude_staging: bool | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """List all connectors defined for a specific integration.
+
+        Args:
+            integration_name: Name of the integration to list connectors
+                for.
+            page_size: Maximum number of connectors to return. Defaults
+                to 50, maximum is 1000.
+            page_token: Page token from a previous call to retrieve the
+                next page.
+            filter_string: Filter expression to filter connectors.
+            order_by: Field to sort the connectors by.
+            exclude_staging: Whether to exclude staging connectors from
+                the response. By default, staging connectors are included.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+            as_list: If True, return a list of connectors instead of a
+                dict with connectors list and nextPageToken.
+
+        Returns:
+            If as_list is True: List of connectors.
+            If as_list is False: Dict with connectors list and
+                nextPageToken.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _list_integration_connectors(
+            self,
+            integration_name,
+            page_size=page_size,
+            page_token=page_token,
+            filter_string=filter_string,
+            order_by=order_by,
+            exclude_staging=exclude_staging,
+            api_version=api_version,
+            as_list=as_list,
+        )
+
+    def get_integration_connector(
+        self,
+        integration_name: str,
+        connector_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Get a single connector for a given integration.
+
+        Use this method to retrieve the Python script, configuration parameters,
+        and field mapping logic for a specific connector.
+
+        Args:
+            integration_name: Name of the integration the connector belongs to.
+            connector_id: ID of the connector to retrieve.
+            api_version: API version to use for the request. Default is V1BETA.
+
+        Returns:
+            Dict containing details of the specified IntegrationConnector.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_integration_connector(
+            self,
+            integration_name,
+            connector_id,
+            api_version=api_version,
+        )
+
+    def delete_integration_connector(
+        self,
+        integration_name: str,
+        connector_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> None:
+        """Delete a specific custom connector from a given integration.
+
+        Only custom connectors can be deleted; commercial connectors are
+        immutable.
+
+        Args:
+            integration_name: Name of the integration the connector belongs to.
+            connector_id: ID of the connector to delete.
+            api_version: API version to use for the request. Default is V1BETA.
+
+        Returns:
+            None
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _delete_integration_connector(
+            self,
+            integration_name,
+            connector_id,
+            api_version=api_version,
+        )
+
+    def create_integration_connector(
+        self,
+        integration_name: str,
+        display_name: str,
+        script: str,
+        timeout_seconds: int,
+        enabled: bool,
+        product_field_name: str,
+        event_field_name: str,
+        description: str | None = None,
+        parameters: list[dict[str, Any] | ConnectorParameter] | None = None,
+        rules: list[dict[str, Any] | ConnectorRule] | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Create a new custom connector for a given integration.
+
+        Use this method to define how to fetch and parse alerts from a
+        unique or unofficial data source. Each connector must have a
+        unique display name and a functional Python script.
+
+        Args:
+            integration_name: Name of the integration to create the
+                connector for.
+            display_name: Connector's display name. Required.
+            script: Connector's Python script. Required.
+            timeout_seconds: Timeout in seconds for a single script run.
+                Required.
+            enabled: Whether the connector is enabled or disabled.
+                Required.
+            product_field_name: Field name used to determine the device
+                product. Required.
+            event_field_name: Field name used to determine the event
+                name (sub-type). Required.
+            description: Connector's description. Optional.
+            parameters: List of ConnectorParameter instances or dicts.
+                Optional.
+            rules: List of ConnectorRule instances or dicts. Optional.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the newly created IntegrationConnector
+                resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _create_integration_connector(
+            self,
+            integration_name,
+            display_name,
+            script,
+            timeout_seconds,
+            enabled,
+            product_field_name,
+            event_field_name,
+            description=description,
+            parameters=parameters,
+            rules=rules,
+            api_version=api_version,
+        )
+
+    def update_integration_connector(
+        self,
+        integration_name: str,
+        connector_id: str,
+        display_name: str | None = None,
+        script: str | None = None,
+        timeout_seconds: int | None = None,
+        enabled: bool | None = None,
+        product_field_name: str | None = None,
+        event_field_name: str | None = None,
+        description: str | None = None,
+        parameters: list[dict[str, Any] | ConnectorParameter] | None = None,
+        rules: list[dict[str, Any] | ConnectorRule] | None = None,
+        update_mask: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Update an existing custom connector for a given integration.
+
+        Only custom connectors can be updated; commercial connectors are
+        immutable.
+
+        Args:
+            integration_name: Name of the integration the connector belongs to.
+            connector_id: ID of the connector to update.
+            display_name: Connector's display name.
+            script: Connector's Python script.
+            timeout_seconds: Timeout in seconds for a single script run.
+            enabled: Whether the connector is enabled or disabled.
+            product_field_name: Field name used to determine the device product.
+            event_field_name: Field name used to determine the event name
+                (sub-type).
+            description: Connector's description.
+            parameters: List of ConnectorParameter instances or dicts.
+            rules: List of ConnectorRule instances or dicts.
+            update_mask: Comma-separated list of fields to update. If omitted,
+                the mask is auto-generated from whichever fields are provided.
+                Example: "displayName,script".
+            api_version: API version to use for the request. Default is V1BETA.
+
+        Returns:
+            Dict containing the updated IntegrationConnector resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _update_integration_connector(
+            self,
+            integration_name,
+            connector_id,
+            display_name=display_name,
+            script=script,
+            timeout_seconds=timeout_seconds,
+            enabled=enabled,
+            product_field_name=product_field_name,
+            event_field_name=event_field_name,
+            description=description,
+            parameters=parameters,
+            rules=rules,
+            update_mask=update_mask,
+            api_version=api_version,
+        )
+
+    def execute_integration_connector_test(
+        self,
+        integration_name: str,
+        connector: dict[str, Any],
+        agent_identifier: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Execute a test run of a connector's Python script.
+
+        Use this method to verify data fetching logic, authentication,
+        and parsing logic before enabling the connector for production
+        ingestion. The full connector object is required as the test
+        can be run without saving the connector first.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector: Dict containing the IntegrationConnector to test.
+            agent_identifier: Agent identifier for remote testing.
+                Optional.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the test execution results with the
+                following fields:
+                - outputMessage: Human-readable output message set by
+                    the script.
+                - debugOutputMessage: The script debug output.
+                - resultJson: The result JSON if it exists (optional).
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _execute_integration_connector_test(
+            self,
+            integration_name,
+            connector,
+            agent_identifier=agent_identifier,
+            api_version=api_version,
+        )
+
+    def get_integration_connector_template(
+        self,
+        integration_name: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Retrieve a default Python script template for a new
+        integration connector.
+
+        Use this method to rapidly initialize the development of a new
+        connector.
+
+        Args:
+            integration_name: Name of the integration to fetch the
+                template for.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the IntegrationConnector template.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_integration_connector_template(
+            self,
+            integration_name,
+            api_version=api_version,
+        )
+
+    # -------------------------------------------------------------------------
+    # Integration Connector Revisions methods
+    # -------------------------------------------------------------------------
+
+    def list_integration_connector_revisions(
+        self,
+        integration_name: str,
+        connector_id: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """List all revisions for a specific integration connector.
+
+        Use this method to browse the version history and identify
+        potential rollback targets.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector to list revisions for.
+            page_size: Maximum number of revisions to return.
+            page_token: Page token from a previous call to retrieve the
+                next page.
+            filter_string: Filter expression to filter revisions.
+            order_by: Field to sort the revisions by.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+            as_list: If True, return a list of revisions instead of a
+                dict with revisions list and nextPageToken.
+
+        Returns:
+            If as_list is True: List of revisions.
+            If as_list is False: Dict with revisions list and
+                nextPageToken.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _list_integration_connector_revisions(
+            self,
+            integration_name,
+            connector_id,
+            page_size=page_size,
+            page_token=page_token,
+            filter_string=filter_string,
+            order_by=order_by,
+            api_version=api_version,
+            as_list=as_list,
+        )
+
+    def delete_integration_connector_revision(
+        self,
+        integration_name: str,
+        connector_id: str,
+        revision_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> None:
+        """Delete a specific revision for a given integration
+        connector.
+
+        Use this method to clean up old or incorrect snapshots from the
+        version history.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector the revision belongs to.
+            revision_id: ID of the revision to delete.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            None
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _delete_integration_connector_revision(
+            self,
+            integration_name,
+            connector_id,
+            revision_id,
+            api_version=api_version,
+        )
+
+    def create_integration_connector_revision(
+        self,
+        integration_name: str,
+        connector_id: str,
+        connector: dict[str, Any],
+        comment: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Create a new revision snapshot of the current integration
+        connector.
+
+        Use this method to save a stable configuration before making
+        experimental changes. Only custom connectors can be versioned.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector to create a revision for.
+            connector: Dict containing the IntegrationConnector to
+                snapshot.
+            comment: Comment describing the revision. Maximum 400
+                characters. Optional.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the newly created ConnectorRevision
+                resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _create_integration_connector_revision(
+            self,
+            integration_name,
+            connector_id,
+            connector,
+            comment=comment,
+            api_version=api_version,
+        )
+
+    def rollback_integration_connector_revision(
+        self,
+        integration_name: str,
+        connector_id: str,
+        revision_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Revert the current connector definition to a previously
+        saved revision.
+
+        Use this method to quickly revert to a known good configuration
+        if an investigation or update is unsuccessful.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector to rollback.
+            revision_id: ID of the revision to rollback to.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the ConnectorRevision rolled back to.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _rollback_integration_connector_revision(
+            self,
+            integration_name,
+            connector_id,
+            revision_id,
+            api_version=api_version,
+        )
+
+    # -------------------------------------------------------------------------
+    # Connector Context Properties methods
+    # -------------------------------------------------------------------------
+
+    def list_connector_context_properties(
+        self,
+        integration_name: str,
+        connector_id: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """List all context properties for a specific integration
+        connector.
+
+        Use this method to discover all custom data points associated
+        with a connector.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector to list context
+                properties for.
+            page_size: Maximum number of context properties to return.
+            page_token: Page token from a previous call to retrieve the
+                next page.
+            filter_string: Filter expression to filter context
+                properties.
+            order_by: Field to sort the context properties by.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+            as_list: If True, return a list of context properties
+                instead of a dict with context properties list and
+                nextPageToken.
+
+        Returns:
+            If as_list is True: List of context properties.
+            If as_list is False: Dict with context properties list and
+                nextPageToken.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _list_connector_context_properties(
+            self,
+            integration_name,
+            connector_id,
+            page_size=page_size,
+            page_token=page_token,
+            filter_string=filter_string,
+            order_by=order_by,
+            api_version=api_version,
+            as_list=as_list,
+        )
+
+    def get_connector_context_property(
+        self,
+        integration_name: str,
+        connector_id: str,
+        context_property_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Get a single context property for a specific integration
+        connector.
+
+        Use this method to retrieve the value of a specific key within
+        a connector's context.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector the context property
+                belongs to.
+            context_property_id: ID of the context property to
+                retrieve.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing details of the specified ContextProperty.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_connector_context_property(
+            self,
+            integration_name,
+            connector_id,
+            context_property_id,
+            api_version=api_version,
+        )
+
+    def delete_connector_context_property(
+        self,
+        integration_name: str,
+        connector_id: str,
+        context_property_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> None:
+        """Delete a specific context property for a given integration
+        connector.
+
+        Use this method to remove a custom data point that is no longer
+        relevant to the connector's context.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector the context property
+                belongs to.
+            context_property_id: ID of the context property to delete.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            None
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _delete_connector_context_property(
+            self,
+            integration_name,
+            connector_id,
+            context_property_id,
+            api_version=api_version,
+        )
+
+    def create_connector_context_property(
+        self,
+        integration_name: str,
+        connector_id: str,
+        value: str,
+        key: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Create a new context property for a specific integration
+        connector.
+
+        Use this method to attach custom data to a connector's context.
+        Property keys must be unique within their context. Key values
+        must be 4-63 characters and match /[a-z][0-9]-/.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector to create the context
+                property for.
+            value: The property value. Required.
+            key: The context property ID to use. Must be 4-63
+                characters and match /[a-z][0-9]-/. Optional.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the newly created ContextProperty resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _create_connector_context_property(
+            self,
+            integration_name,
+            connector_id,
+            value,
+            key=key,
+            api_version=api_version,
+        )
+
+    def update_connector_context_property(
+        self,
+        integration_name: str,
+        connector_id: str,
+        context_property_id: str,
+        value: str,
+        update_mask: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Update an existing context property for a given integration
+        connector.
+
+        Use this method to modify the value of a previously saved key.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector the context property
+                belongs to.
+            context_property_id: ID of the context property to update.
+            value: The new property value. Required.
+            update_mask: Comma-separated list of fields to update. Only
+                "value" is supported. If omitted, defaults to "value".
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the updated ContextProperty resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _update_connector_context_property(
+            self,
+            integration_name,
+            connector_id,
+            context_property_id,
+            value,
+            update_mask=update_mask,
+            api_version=api_version,
+        )
+
+    def delete_all_connector_context_properties(
+        self,
+        integration_name: str,
+        connector_id: str,
+        context_id: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> None:
+        """Delete all context properties for a specific integration
+        connector.
+
+        Use this method to quickly clear all supplemental data from a
+        connector's context.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector to clear context
+                properties from.
+            context_id: The context ID to remove context properties
+                from. Must be 4-63 characters and match /[a-z][0-9]-/.
+                Optional.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            None
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _delete_all_connector_context_properties(
+            self,
+            integration_name,
+            connector_id,
+            context_id=context_id,
+            api_version=api_version,
+        )
+
+    # -------------------------------------------------------------------------
+    # Connector Instance Logs methods
+    # -------------------------------------------------------------------------
+
+    def list_connector_instance_logs(
+        self,
+        integration_name: str,
+        connector_id: str,
+        connector_instance_id: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """List all logs for a specific connector instance.
+
+        Use this method to browse the execution history and diagnostic
+        output of a connector. Supports filtering and pagination to
+        efficiently navigate large volumes of log data.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector the instance belongs to.
+            connector_instance_id: ID of the connector instance to list
+                logs for.
+            page_size: Maximum number of logs to return.
+            page_token: Page token from a previous call to retrieve the
+                next page.
+            filter_string: Filter expression to filter logs.
+            order_by: Field to sort the logs by.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+            as_list: If True, return a list of logs instead of a dict
+                with logs list and nextPageToken.
+
+        Returns:
+            If as_list is True: List of logs.
+            If as_list is False: Dict with logs list and nextPageToken.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _list_connector_instance_logs(
+            self,
+            integration_name,
+            connector_id,
+            connector_instance_id,
+            page_size=page_size,
+            page_token=page_token,
+            filter_string=filter_string,
+            order_by=order_by,
+            api_version=api_version,
+            as_list=as_list,
+        )
+
+    def get_connector_instance_log(
+        self,
+        integration_name: str,
+        connector_id: str,
+        connector_instance_id: str,
+        log_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Get a single log entry for a specific connector instance.
+
+        Use this method to retrieve a specific log entry from a
+        connector instance's execution, including its message,
+        timestamp, and severity level. Useful for auditing and detailed
+        troubleshooting of a specific connector run.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector the instance belongs to.
+            connector_instance_id: ID of the connector instance the log
+                belongs to.
+            log_id: ID of the log entry to retrieve.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing details of the specified ConnectorLog.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_connector_instance_log(
+            self,
+            integration_name,
+            connector_id,
+            connector_instance_id,
+            log_id,
+            api_version=api_version,
+        )
+
+    # -------------------------------------------------------------------------
+    # Connector Instance methods
+    # -------------------------------------------------------------------------
+
+    def list_connector_instances(
+        self,
+        integration_name: str,
+        connector_id: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """List all instances for a specific integration connector.
+
+        Use this method to discover all configured instances of a
+        connector.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector to list instances for.
+            page_size: Maximum number of instances to return.
+            page_token: Page token from a previous call to retrieve the
+                next page.
+            filter_string: Filter expression to filter instances.
+            order_by: Field to sort the instances by.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+            as_list: If True, return a list of instances instead of a
+                dict with instances list and nextPageToken.
+
+        Returns:
+            If as_list is True: List of connector instances.
+            If as_list is False: Dict with connector instances list and
+                nextPageToken.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _list_connector_instances(
+            self,
+            integration_name,
+            connector_id,
+            page_size=page_size,
+            page_token=page_token,
+            filter_string=filter_string,
+            order_by=order_by,
+            api_version=api_version,
+            as_list=as_list,
+        )
+
+    def get_connector_instance(
+        self,
+        integration_name: str,
+        connector_id: str,
+        connector_instance_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Get a single connector instance by ID.
+
+        Use this method to retrieve the configuration of a specific
+        connector instance, including its parameters, schedule, and
+        runtime settings.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector the instance belongs to.
+            connector_instance_id: ID of the connector instance to
+                retrieve.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing details of the specified ConnectorInstance.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_connector_instance(
+            self,
+            integration_name,
+            connector_id,
+            connector_instance_id,
+            api_version=api_version,
+        )
+
+    def delete_connector_instance(
+        self,
+        integration_name: str,
+        connector_id: str,
+        connector_instance_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> None:
+        """Delete a specific connector instance.
+
+        Use this method to permanently remove a connector instance and
+        its configuration.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector the instance belongs to.
+            connector_instance_id: ID of the connector instance to
+                delete.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            None
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _delete_connector_instance(
+            self,
+            integration_name,
+            connector_id,
+            connector_instance_id,
+            api_version=api_version,
+        )
+
+    def create_connector_instance(
+        self,
+        integration_name: str,
+        connector_id: str,
+        environment: str,
+        display_name: str,
+        interval_seconds: int,
+        timeout_seconds: int,
+        description: str | None = None,
+        parameters: list[ConnectorInstanceParameter | dict] | None = None,
+        agent: str | None = None,
+        allow_list: list[str] | None = None,
+        product_field_name: str | None = None,
+        event_field_name: str | None = None,
+        integration_version: str | None = None,
+        version: str | None = None,
+        logging_enabled_until_unix_ms: str | None = None,
+        connector_instance_id: str | None = None,
+        enabled: bool | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Create a new connector instance.
+
+        Use this method to configure a new instance of a connector with
+        specific parameters and schedule settings.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector to create an instance for.
+            environment: Environment for the instance (e.g.,
+                "production").
+            display_name: Display name for the instance. Required.
+            interval_seconds: Interval in seconds for recurring
+                execution. Required.
+            timeout_seconds: Timeout in seconds for execution. Required.
+            description: Description of the instance. Optional.
+            parameters: List of parameters for the instance. Optional.
+            agent: Agent identifier for remote execution. Optional.
+            allow_list: List of allowed IP addresses. Optional.
+            product_field_name: Product field name. Optional.
+            event_field_name: Event field name. Optional.
+            integration_version: Integration version. Optional.
+            version: Version. Optional.
+            logging_enabled_until_unix_ms: Logging enabled until
+                timestamp. Optional.
+            connector_instance_id: Custom ID for the instance. Optional.
+            enabled: Whether the instance is enabled. Optional.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the newly created ConnectorInstance resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _create_connector_instance(
+            self,
+            integration_name,
+            connector_id,
+            environment,
+            display_name,
+            interval_seconds,
+            timeout_seconds,
+            description=description,
+            parameters=parameters,
+            agent=agent,
+            allow_list=allow_list,
+            product_field_name=product_field_name,
+            event_field_name=event_field_name,
+            integration_version=integration_version,
+            version=version,
+            logging_enabled_until_unix_ms=logging_enabled_until_unix_ms,
+            connector_instance_id=connector_instance_id,
+            enabled=enabled,
+            api_version=api_version,
+        )
+
+    def update_connector_instance(
+        self,
+        integration_name: str,
+        connector_id: str,
+        connector_instance_id: str,
+        display_name: str | None = None,
+        description: str | None = None,
+        interval_seconds: int | None = None,
+        timeout_seconds: int | None = None,
+        parameters: list[ConnectorInstanceParameter | dict] | None = None,
+        allow_list: list[str] | None = None,
+        product_field_name: str | None = None,
+        event_field_name: str | None = None,
+        integration_version: str | None = None,
+        version: str | None = None,
+        logging_enabled_until_unix_ms: str | None = None,
+        enabled: bool | None = None,
+        update_mask: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Update an existing connector instance.
+
+        Use this method to modify the configuration, parameters, or
+        schedule of a connector instance.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector the instance belongs to.
+            connector_instance_id: ID of the connector instance to
+                update.
+            display_name: Display name for the instance. Optional.
+            description: Description of the instance. Optional.
+            interval_seconds: Interval in seconds for recurring
+                execution. Optional.
+            timeout_seconds: Timeout in seconds for execution. Optional.
+            parameters: List of parameters for the instance. Optional.
+            agent: Agent identifier for remote execution. Optional.
+            allow_list: List of allowed IP addresses. Optional.
+            product_field_name: Product field name. Optional.
+            event_field_name: Event field name. Optional.
+            integration_version: Integration version. Optional.
+            version: Version. Optional.
+            logging_enabled_until_unix_ms: Logging enabled until
+                timestamp. Optional.
+            enabled: Whether the instance is enabled. Optional.
+            update_mask: Comma-separated list of fields to update. If
+                omitted, all provided fields will be updated.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the updated ConnectorInstance resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _update_connector_instance(
+            self,
+            integration_name,
+            connector_id,
+            connector_instance_id,
+            display_name=display_name,
+            description=description,
+            interval_seconds=interval_seconds,
+            timeout_seconds=timeout_seconds,
+            parameters=parameters,
+            allow_list=allow_list,
+            product_field_name=product_field_name,
+            event_field_name=event_field_name,
+            integration_version=integration_version,
+            version=version,
+            logging_enabled_until_unix_ms=logging_enabled_until_unix_ms,
+            enabled=enabled,
+            update_mask=update_mask,
+            api_version=api_version,
+        )
+
+    def get_connector_instance_latest_definition(
+        self,
+        integration_name: str,
+        connector_id: str,
+        connector_instance_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Fetch the latest definition for a connector instance.
+
+        Use this method to refresh a connector instance with the latest
+        connector definition from the marketplace.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector the instance belongs to.
+            connector_instance_id: ID of the connector instance to
+                refresh.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the refreshed ConnectorInstance with latest
+                definition.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_connector_instance_latest_definition(
+            self,
+            integration_name,
+            connector_id,
+            connector_instance_id,
+            api_version=api_version,
+        )
+
+    def set_connector_instance_logs_collection(
+        self,
+        integration_name: str,
+        connector_id: str,
+        connector_instance_id: str,
+        enabled: bool,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Enable or disable logs collection for a connector instance.
+
+        Use this method to control whether execution logs are collected
+        for a specific connector instance.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector the instance belongs to.
+            connector_instance_id: ID of the connector instance to
+                configure.
+            enabled: Whether to enable or disable logs collection.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the updated logs collection status.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _set_connector_instance_logs_collection(
+            self,
+            integration_name,
+            connector_id,
+            connector_instance_id,
+            enabled,
+            api_version=api_version,
+        )
+
+    def run_connector_instance_on_demand(
+        self,
+        integration_name: str,
+        connector_id: str,
+        connector_instance_id: str,
+        connector_instance: dict[str, Any],
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Run a connector instance on demand for testing.
+
+        Use this method to execute a connector instance immediately
+        without waiting for its scheduled run. Useful for testing
+        configuration changes.
+
+        Args:
+            integration_name: Name of the integration the connector
+                belongs to.
+            connector_id: ID of the connector the instance belongs to.
+            connector_instance_id: ID of the connector instance to run.
+            connector_instance: The connector instance configuration to
+                test. Should include parameters and other settings.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the execution result, including success
+                status and debug output.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _run_connector_instance_on_demand(
+            self,
+            integration_name,
+            connector_id,
+            connector_instance_id,
+            connector_instance,
+            api_version=api_version,
         )
 
     def get_stats(

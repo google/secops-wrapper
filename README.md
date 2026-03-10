@@ -1,3 +1,5 @@
+from tests.chronicle.test_rule_integration import chronicle
+
 # Google SecOps SDK for Python
 
 [![PyPI version](https://img.shields.io/pypi/v/secops.svg)](https://pypi.org/project/secops/)
@@ -1905,6 +1907,774 @@ for watchlist in watchlists.get("watchlists", []):
 watchlists = chronicle.list_watchlists(as_list=True)
 for watchlist in watchlists:
     print(f"Watchlist: {watchlist.get('displayName')}")
+```
+
+## Integration Management
+
+### Integration Connectors
+
+List all available connectors for an integration:
+
+```python
+# Get all connectors for an integration
+connectors = chronicle.list_integration_connectors("AWSSecurityHub")
+
+# Get all connectors as a list
+connectors = chronicle.list_integration_connectors("AWSSecurityHub", as_list=True)
+
+# Get only enabled connectors
+connectors = chronicle.list_integration_connectors(
+    "AWSSecurityHub",
+    filter_string="enabled = true"
+)
+
+# Exclude staging connectors
+connectors = chronicle.list_integration_connectors(
+    "AWSSecurityHub",
+    exclude_staging=True
+)
+```
+
+Get details of a specific connector:
+
+```python
+connector = chronicle.get_integration_connector(
+    integration_name="AWSSecurityHub",
+    connector_id="123"
+)
+```
+
+Create an integration connector:
+
+```python
+from secops.chronicle.models import (
+   ConnectorParameter,
+   ParamType,
+   ConnectorParamMode,
+   ConnectorRule,
+   ConnectorRuleType
+)
+
+new_connector = chronicle.create_integration_connector(
+   integration_name="MyIntegration",
+   display_name="New Connector",
+   description="This is a new connector",
+   script="print('Fetching data...')",
+   timeout_seconds=300,
+   enabled=True,
+   product_field_name="product",
+   event_field_name="event_type",
+   parameters=[
+      ConnectorParameter(
+         display_name="API Key",
+         type=ParamType.PASSWORD,
+         mode=ConnectorParamMode.CONNECTIVITY,
+         mandatory=True,
+         description="API key for authentication"
+      )
+   ],
+   rules=[
+      ConnectorRule(
+         display_name="Allow List",
+         type=ConnectorRuleType.ALLOW_LIST
+      )
+   ]
+)
+```
+
+Update an integration connector:
+
+```python
+from secops.chronicle.models import (
+   ConnectorParameter,
+   ParamType,
+   ConnectorParamMode
+)
+
+updated_connector = chronicle.update_integration_connector(
+   integration_name="MyIntegration",
+   connector_id="123",
+   display_name="Updated Connector Name",
+   description="Updated description",
+   enabled=False,
+   timeout_seconds=600,
+   parameters=[
+      ConnectorParameter(
+         display_name="API Token",
+         type=ParamType.PASSWORD,
+         mode=ConnectorParamMode.CONNECTIVITY,
+         mandatory=True,
+         description="Updated authentication token"
+      )
+   ],
+   script="print('Updated connector script')"
+)
+```
+
+Delete an integration connector:
+
+```python
+chronicle.delete_integration_connector(
+    integration_name="MyIntegration",
+    connector_id="123"
+)
+```
+
+Execute a test run of an integration connector:
+
+```python
+# Test a connector before saving it
+connector_config = {
+    "displayName": "Test Connector",
+    "script": "print('Testing connector')",
+    "enabled": True,
+    "timeoutSeconds": 300,
+    "productFieldName": "product",
+    "eventFieldName": "event_type"
+}
+
+test_result = chronicle.execute_integration_connector_test(
+    integration_name="MyIntegration",
+    connector=connector_config
+)
+
+print(f"Output: {test_result.get('outputMessage')}")
+print(f"Debug: {test_result.get('debugOutputMessage')}")
+
+# Test with a specific agent for remote execution
+test_result = chronicle.execute_integration_connector_test(
+    integration_name="MyIntegration",
+    connector=connector_config,
+    agent_identifier="agent-123"
+)
+```
+
+Get a template for creating a connector in an integration:
+
+```python
+template = chronicle.get_integration_connector_template("MyIntegration")
+print(f"Template script: {template.get('script')}")
+```
+
+### Integration Connector Revisions
+
+List all revisions for a specific integration connector:
+
+```python
+# Get all revisions for a connector
+revisions = chronicle.list_integration_connector_revisions(
+    integration_name="MyIntegration",
+    connector_id="c1"
+)
+for revision in revisions.get("revisions", []):
+    print(f"Revision ID: {revision.get('name')}")
+    print(f"Comment: {revision.get('comment')}")
+    print(f"Created: {revision.get('createTime')}")
+
+# Get all revisions as a list
+revisions = chronicle.list_integration_connector_revisions(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    as_list=True
+)
+
+# Filter revisions with order
+revisions = chronicle.list_integration_connector_revisions(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    order_by="createTime desc",
+    page_size=10
+)
+```
+
+Delete a specific connector revision:
+
+```python
+# Clean up old revision from version history
+chronicle.delete_integration_connector_revision(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    revision_id="r1"
+)
+```
+
+Create a new connector revision snapshot:
+
+```python
+# Get the current connector configuration
+connector = chronicle.get_integration_connector(
+    integration_name="MyIntegration",
+    connector_id="c1"
+)
+
+# Create a revision without comment
+new_revision = chronicle.create_integration_connector_revision(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector=connector
+)
+
+# Create a revision with descriptive comment
+new_revision = chronicle.create_integration_connector_revision(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector=connector,
+    comment="Stable version before adding new field mapping"
+)
+
+print(f"Created revision: {new_revision.get('name')}")
+```
+
+Rollback a connector to a previous revision:
+
+```python
+# Revert to a known good configuration
+rolled_back = chronicle.rollback_integration_connector_revision(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    revision_id="r1"
+)
+
+print(f"Rolled back to revision: {rolled_back.get('name')}")
+print(f"Connector script restored")
+```
+
+Example workflow: Safe connector updates with revisions:
+
+```python
+# 1. Get current connector
+connector = chronicle.get_integration_connector(
+    integration_name="MyIntegration",
+    connector_id="c1"
+)
+
+# 2. Create backup revision before changes
+backup = chronicle.create_integration_connector_revision(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector=connector,
+    comment="Backup before timeout increase"
+)
+print(f"Backup created: {backup.get('name')}")
+
+# 3. Update the connector
+updated_connector = chronicle.update_integration_connector(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    timeout_seconds=600,
+    description="Increased timeout for large data pulls"
+)
+
+# 4. Test the updated connector
+test_result = chronicle.execute_integration_connector_test(
+    integration_name="MyIntegration",
+    connector=updated_connector
+)
+
+# 5. If test fails, rollback to the backup
+if not test_result.get("outputMessage"):
+    print("Test failed, rolling back...")
+    chronicle.rollback_integration_connector_revision(
+        integration_name="MyIntegration",
+        connector_id="c1",
+        revision_id=backup.get("name").split("/")[-1]
+    )
+    print("Rollback complete")
+else:
+    print("Test passed, changes applied successfully")
+```
+
+### Connector Context Properties
+
+List all context properties for a specific connector:
+
+```python
+# Get all context properties for a connector
+context_properties = chronicle.list_connector_context_properties(
+    integration_name="MyIntegration",
+    connector_id="c1"
+)
+for prop in context_properties.get("contextProperties", []):
+    print(f"Key: {prop.get('key')}, Value: {prop.get('value')}")
+
+# Get all context properties as a list
+context_properties = chronicle.list_connector_context_properties(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    as_list=True
+)
+
+# Filter context properties
+context_properties = chronicle.list_connector_context_properties(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    filter_string='key = "last_run_time"',
+    order_by="key"
+)
+```
+
+Get a specific context property:
+
+```python
+property_value = chronicle.get_connector_context_property(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    context_property_id="last_run_time"
+)
+print(f"Value: {property_value.get('value')}")
+```
+
+Create a new context property:
+
+```python
+# Create context property with auto-generated key
+new_property = chronicle.create_connector_context_property(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    value="2026-03-09T10:00:00Z"
+)
+
+# Create context property with custom key
+new_property = chronicle.create_connector_context_property(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    value="2026-03-09T10:00:00Z",
+    key="last-sync-time"
+)
+print(f"Created property: {new_property.get('name')}")
+```
+
+Update an existing context property:
+
+```python
+# Update property value
+updated_property = chronicle.update_connector_context_property(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    context_property_id="last-sync-time",
+    value="2026-03-09T11:00:00Z"
+)
+print(f"Updated value: {updated_property.get('value')}")
+```
+
+Delete a context property:
+
+```python
+chronicle.delete_connector_context_property(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    context_property_id="last-sync-time"
+)
+```
+
+Delete all context properties:
+
+```python
+# Clear all properties for a connector
+chronicle.delete_all_connector_context_properties(
+    integration_name="MyIntegration",
+    connector_id="c1"
+)
+
+# Clear all properties for a specific context ID
+chronicle.delete_all_connector_context_properties(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    context_id="my-context"
+)
+```
+
+Example workflow: Track connector state with context properties:
+
+```python
+# 1. Check if we have a last run time stored
+try:
+    last_run = chronicle.get_connector_context_property(
+        integration_name="MyIntegration",
+        connector_id="c1",
+        context_property_id="last-run-time"
+    )
+    print(f"Last run: {last_run.get('value')}")
+except APIError:
+    print("No previous run time found")
+    # Create initial property
+    chronicle.create_connector_context_property(
+        integration_name="MyIntegration",
+        connector_id="c1",
+        value="2026-01-01T00:00:00Z",
+        key="last-run-time"
+    )
+
+# 2. Run the connector and process data
+# ... connector execution logic ...
+
+# 3. Update the last run time after successful execution
+from datetime import datetime
+current_time = datetime.utcnow().isoformat() + "Z"
+chronicle.update_connector_context_property(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    context_property_id="last-run-time",
+    value=current_time
+)
+
+# 4. Store additional context like record count
+chronicle.create_connector_context_property(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    value="1500",
+    key="records-processed"
+)
+
+# 5. List all context to see connector state
+all_context = chronicle.list_connector_context_properties(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    as_list=True
+)
+for prop in all_context:
+    print(f"{prop.get('key')}: {prop.get('value')}")
+```
+
+### Connector Instance Logs
+
+List all execution logs for a connector instance:
+
+```python
+# Get all logs for a connector instance
+logs = chronicle.list_connector_instance_logs(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector_instance_id="ci1"
+)
+for log in logs.get("logs", []):
+    print(f"Log ID: {log.get('name')}, Severity: {log.get('severity')}")
+    print(f"Timestamp: {log.get('timestamp')}")
+    print(f"Message: {log.get('message')}")
+
+# Get all logs as a list
+logs = chronicle.list_connector_instance_logs(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector_instance_id="ci1",
+    as_list=True
+)
+
+# Filter logs by severity
+logs = chronicle.list_connector_instance_logs(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector_instance_id="ci1",
+    filter_string='severity = "ERROR"',
+    order_by="timestamp desc"
+)
+```
+
+Get a specific log entry:
+
+```python
+log_entry = chronicle.get_connector_instance_log(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector_instance_id="ci1",
+    log_id="log123"
+)
+print(f"Severity: {log_entry.get('severity')}")
+print(f"Timestamp: {log_entry.get('timestamp')}")
+print(f"Message: {log_entry.get('message')}")
+```
+
+Monitor connector execution and troubleshooting:
+
+```python
+# Get recent logs for monitoring
+recent_logs = chronicle.list_connector_instance_logs(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector_instance_id="ci1",
+    order_by="timestamp desc",
+    page_size=10,
+    as_list=True
+)
+
+# Check for errors
+for log in recent_logs:
+    if log.get("severity") in ["ERROR", "CRITICAL"]:
+        print(f"Error at {log.get('timestamp')}")
+        log_details = chronicle.get_connector_instance_log(
+            integration_name="MyIntegration",
+            connector_id="c1",
+            connector_instance_id="ci1",
+            log_id=log.get("name").split("/")[-1]
+        )
+        print(f"Error message: {log_details.get('message')}")
+```
+
+Analyze connector performance and reliability:
+
+```python
+# Get all logs to calculate error rate
+all_logs = chronicle.list_connector_instance_logs(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector_instance_id="ci1",
+    as_list=True
+)
+
+errors = sum(1 for log in all_logs if log.get("severity") in ["ERROR", "CRITICAL"])
+warnings = sum(1 for log in all_logs if log.get("severity") == "WARNING")
+total = len(all_logs)
+
+if total > 0:
+    error_rate = (errors / total) * 100
+    print(f"Error Rate: {error_rate:.2f}%")
+    print(f"Total Logs: {total}")
+    print(f"Errors: {errors}, Warnings: {warnings}")
+```
+
+### Connector Instances
+
+List all connector instances for a specific connector:
+
+```python
+# Get all instances for a connector
+instances = chronicle.list_connector_instances(
+    integration_name="MyIntegration",
+    connector_id="c1"
+)
+for instance in instances.get("connectorInstances", []):
+    print(f"Instance: {instance.get('displayName')}, Enabled: {instance.get('enabled')}")
+
+# Get all instances as a list
+instances = chronicle.list_connector_instances(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    as_list=True
+)
+
+# Filter instances
+instances = chronicle.list_connector_instances(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    filter_string='enabled = true',
+    order_by="displayName"
+)
+```
+
+Get a specific connector instance:
+
+```python
+instance = chronicle.get_connector_instance(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector_instance_id="ci1"
+)
+print(f"Display Name: {instance.get('displayName')}")
+print(f"Environment: {instance.get('environment')}")
+print(f"Interval: {instance.get('intervalSeconds')} seconds")
+```
+
+Create a new connector instance:
+
+```python
+from secops.chronicle.models import ConnectorInstanceParameter
+
+# Create basic connector instance
+new_instance = chronicle.create_connector_instance(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    environment="production",
+    display_name="Production Instance",
+    interval_seconds=3600,  # Run every hour
+    timeout_seconds=300,    # 5 minute timeout
+    enabled=True
+)
+
+# Create instance with parameters
+param = ConnectorInstanceParameter()
+param.value = "my-api-key"
+
+new_instance = chronicle.create_connector_instance(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    environment="production",
+    display_name="Production Instance",
+    interval_seconds=3600,
+    timeout_seconds=300,
+    description="Main production connector instance",
+    parameters=[param],
+    enabled=True
+)
+print(f"Created instance: {new_instance.get('name')}")
+```
+
+Update an existing connector instance:
+
+```python
+# Update display name
+updated_instance = chronicle.update_connector_instance(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector_instance_id="ci1",
+    display_name="Updated Production Instance"
+)
+
+# Update multiple fields including parameters
+param = ConnectorInstanceParameter()
+param.value = "new-api-key"
+
+updated_instance = chronicle.update_connector_instance(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector_instance_id="ci1",
+    display_name="Updated Instance",
+    interval_seconds=7200,  # Change to every 2 hours
+    parameters=[param],
+    enabled=True
+)
+```
+
+Delete a connector instance:
+
+```python
+chronicle.delete_connector_instance(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector_instance_id="ci1"
+)
+```
+
+Refresh instance with latest connector definition:
+
+```python
+# Fetch latest definition from marketplace
+refreshed_instance = chronicle.get_connector_instance_latest_definition(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector_instance_id="ci1"
+)
+print(f"Updated to latest definition")
+```
+
+Enable/disable logs collection for debugging:
+
+```python
+# Enable logs collection
+result = chronicle.set_connector_instance_logs_collection(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector_instance_id="ci1",
+    enabled=True
+)
+print(f"Logs enabled until: {result.get('loggingEnabledUntilUnixMs')}")
+
+# Disable logs collection
+chronicle.set_connector_instance_logs_collection(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector_instance_id="ci1",
+    enabled=False
+)
+```
+
+Run a connector instance on demand for testing:
+
+```python
+# Get the current instance configuration
+instance = chronicle.get_connector_instance(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector_instance_id="ci1"
+)
+
+# Run on demand to test configuration
+test_result = chronicle.run_connector_instance_on_demand(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector_instance_id="ci1",
+    connector_instance=instance
+)
+
+if test_result.get("success"):
+    print("Test execution successful!")
+    print(f"Debug output: {test_result.get('debugOutput')}")
+else:
+    print("Test execution failed")
+    print(f"Error: {test_result.get('debugOutput')}")
+```
+
+Example workflow: Deploy and test a new connector instance:
+
+```python
+from secops.chronicle.models import ConnectorInstanceParameter
+
+# 1. Create a new connector instance
+param = ConnectorInstanceParameter()
+param.value = "test-api-key"
+
+new_instance = chronicle.create_connector_instance(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    environment="development",
+    display_name="Dev Test Instance",
+    interval_seconds=3600,
+    timeout_seconds=300,
+    description="Development testing instance",
+    parameters=[param],
+    enabled=False  # Start disabled for testing
+)
+
+instance_id = new_instance.get("name").split("/")[-1]
+print(f"Created instance: {instance_id}")
+
+# 2. Enable logs collection for debugging
+chronicle.set_connector_instance_logs_collection(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector_instance_id=instance_id,
+    enabled=True
+)
+
+# 3. Run on demand to test
+test_result = chronicle.run_connector_instance_on_demand(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    connector_instance_id=instance_id,
+    connector_instance=new_instance
+)
+
+# 4. Check test results
+if test_result.get("success"):
+    print("✓ Test passed - enabling instance")
+    # Enable the instance for scheduled runs
+    chronicle.update_connector_instance(
+        integration_name="MyIntegration",
+        connector_id="c1",
+        connector_instance_id=instance_id,
+        enabled=True
+    )
+else:
+    print("✗ Test failed - reviewing logs")
+    # Get logs to debug the issue
+    logs = chronicle.list_connector_instance_logs(
+        integration_name="MyIntegration",
+        connector_id="c1",
+        connector_instance_id=instance_id,
+        filter_string='severity = "ERROR"',
+        as_list=True
+    )
+    for log in logs:
+        print(f"Error: {log.get('message')}")
+
+# 5. Monitor execution after enabling
+instances = chronicle.list_connector_instances(
+    integration_name="MyIntegration",
+    connector_id="c1",
+    filter_string=f'name = "{new_instance.get("name")}"',
+    as_list=True
+)
+if instances:
+    print(f"Instance status: Enabled={instances[0].get('enabled')}")
 ```
 
 ## Rule Management
