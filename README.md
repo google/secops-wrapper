@@ -1,3 +1,5 @@
+from tests.chronicle.test_rule_integration import chronicle
+
 # Google SecOps SDK for Python
 
 [![PyPI version](https://img.shields.io/pypi/v/secops.svg)](https://pypi.org/project/secops/)
@@ -1905,6 +1907,682 @@ for watchlist in watchlists.get("watchlists", []):
 watchlists = chronicle.list_watchlists(as_list=True)
 for watchlist in watchlists:
     print(f"Watchlist: {watchlist.get('displayName')}")
+```
+
+## Integration Management
+
+### Integration Jobs
+
+List all available jobs for an integration:
+
+```python
+# Get all jobs for an integration
+jobs = chronicle.list_integration_jobs("MyIntegration")
+for job in jobs.get("jobs", []):
+    print(f"Job: {job.get('displayName')}, ID: {job.get('name')}")
+
+# Get all jobs as a list
+jobs = chronicle.list_integration_jobs("MyIntegration", as_list=True)
+
+# Get only custom jobs
+jobs = chronicle.list_integration_jobs(
+    "MyIntegration",
+    filter_string="custom = true"
+)
+
+# Exclude staging jobs
+jobs = chronicle.list_integration_jobs(
+    "MyIntegration",
+    exclude_staging=True
+)
+```
+
+Get details of a specific job:
+
+```python
+job = chronicle.get_integration_job(
+    integration_name="MyIntegration",
+    job_id="123"
+)
+```
+
+Create an integration job:
+
+```python
+from secops.chronicle.models import JobParameter, ParamType
+
+new_job = chronicle.create_integration_job(
+    integration_name="MyIntegration",
+    display_name="Scheduled Sync Job",
+    description="Syncs data from external source",
+    script="print('Running scheduled job...')",
+    version=1,
+    enabled=True,
+    custom=True,
+    parameters=[
+        JobParameter(
+            id=1,
+            display_name="Sync Interval",
+            description="Interval in minutes",
+            type=ParamType.INT,
+            mandatory=True,
+            default_value="60"
+        )
+    ]
+)
+```
+
+Update an integration job:
+
+```python
+from secops.chronicle.models import JobParameter, ParamType
+
+updated_job = chronicle.update_integration_job(
+    integration_name="MyIntegration",
+    job_id="123",
+    display_name="Updated Job Name",
+    description="Updated description",
+    enabled=False,
+    version=2,
+    parameters=[
+        JobParameter(
+            id=1,
+            display_name="New Parameter",
+            description="Updated parameter",
+            type=ParamType.STRING,
+            mandatory=True,
+        )
+    ],
+    script="print('Updated job script')"
+)
+```
+
+Delete an integration job:
+
+```python
+chronicle.delete_integration_job(
+    integration_name="MyIntegration",
+    job_id="123"
+)
+```
+
+Execute a test run of an integration job:
+
+```python
+# Test a job before saving it
+job = chronicle.get_integration_job(
+    integration_name="MyIntegration",
+    job_id="123"
+)
+
+test_result = chronicle.execute_integration_job_test(
+    integration_name="MyIntegration",
+    job=job
+)
+
+print(f"Output: {test_result.get('output')}")
+print(f"Debug: {test_result.get('debugOutput')}")
+
+# Test with a specific agent for remote execution
+test_result = chronicle.execute_integration_job_test(
+    integration_name="MyIntegration",
+    job=job,
+    agent_identifier="agent-123"
+)
+```
+
+Get a template for creating a job in an integration:
+
+```python
+template = chronicle.get_integration_job_template("MyIntegration")
+print(f"Template script: {template.get('script')}")
+```
+
+### Integration Job Revisions
+
+List all revisions for a specific job:
+
+```python
+# Get all revisions for a job
+revisions = chronicle.list_integration_job_revisions(
+    integration_name="MyIntegration",
+    job_id="456"
+)
+for revision in revisions.get("revisions", []):
+    print(f"Revision: {revision.get('name')}, Comment: {revision.get('comment')}")
+
+# Get all revisions as a list
+revisions = chronicle.list_integration_job_revisions(
+    integration_name="MyIntegration",
+    job_id="456",
+    as_list=True
+)
+
+# Filter revisions by version
+revisions = chronicle.list_integration_job_revisions(
+    integration_name="MyIntegration",
+    job_id="456",
+    filter_string='version = "2"',
+    order_by="createTime desc"
+)
+```
+
+Delete a job revision:
+
+```python
+chronicle.delete_integration_job_revision(
+    integration_name="MyIntegration",
+    job_id="456",
+    revision_id="r2"
+)
+```
+
+Create a new job revision snapshot:
+
+```python
+# Get the current job
+job = chronicle.get_integration_job(
+    integration_name="MyIntegration",
+    job_id="456"
+)
+
+# Create a revision before making changes
+revision = chronicle.create_integration_job_revision(
+    integration_name="MyIntegration",
+    job_id="456",
+    job=job,
+    comment="Backup before scheduled update"
+)
+print(f"Created revision: {revision.get('name')}")
+```
+
+Rollback to a previous job revision:
+
+```python
+# Rollback to a previous working version
+rollback_result = chronicle.rollback_integration_job_revision(
+    integration_name="MyIntegration",
+    job_id="456",
+    revision_id="r2"
+)
+print(f"Rolled back to: {rollback_result.get('name')}")
+```
+
+### Integration Job Instances
+
+List all job instances for a specific job:
+
+```python
+# Get all job instances for a job
+job_instances = chronicle.list_integration_job_instances(
+    integration_name="MyIntegration",
+    job_id="456"
+)
+for instance in job_instances.get("jobInstances", []):
+    print(f"Instance: {instance.get('displayName')}, Enabled: {instance.get('enabled')}")
+
+# Get all job instances as a list
+job_instances = chronicle.list_integration_job_instances(
+    integration_name="MyIntegration",
+    job_id="456",
+    as_list=True
+)
+
+# Filter job instances
+job_instances = chronicle.list_integration_job_instances(
+    integration_name="MyIntegration",
+    job_id="456",
+    filter_string="enabled = true",
+    order_by="displayName"
+)
+```
+
+Get details of a specific job instance:
+
+```python
+job_instance = chronicle.get_integration_job_instance(
+    integration_name="MyIntegration",
+    job_id="456",
+    job_instance_id="ji1"
+)
+print(f"Interval: {job_instance.get('intervalSeconds')} seconds")
+```
+
+Create a new job instance:
+
+```python
+from secops.chronicle.models import IntegrationJobInstanceParameter
+
+# Create a job instance with basic scheduling (interval-based)
+new_job_instance = chronicle.create_integration_job_instance(
+    integration_name="MyIntegration",
+    job_id="456",
+    display_name="Daily Data Sync",
+    description="Syncs data from external source daily",
+    interval_seconds=86400,  # 24 hours
+    enabled=True,
+    advanced=False,
+    parameters=[
+        IntegrationJobInstanceParameter(value="production"),
+        IntegrationJobInstanceParameter(value="https://api.example.com")
+    ]
+)
+```
+
+Create a job instance with advanced scheduling:
+
+```python
+from secops.chronicle.models import (
+    AdvancedConfig,
+    ScheduleType,
+    DailyScheduleDetails,
+    Date,
+    TimeOfDay
+)
+
+# Create with daily schedule
+advanced_job_instance = chronicle.create_integration_job_instance(
+    integration_name="MyIntegration",
+    job_id="456",
+    display_name="Daily Backup at 2 AM",
+    interval_seconds=86400,
+    enabled=True,
+    advanced=True,
+    advanced_config=AdvancedConfig(
+        time_zone="America/New_York",
+        schedule_type=ScheduleType.DAILY,
+        daily_schedule=DailyScheduleDetails(
+            start_date=Date(year=2025, month=1, day=1),
+            time=TimeOfDay(hours=2, minutes=0),
+            interval=1  # Every 1 day
+        )
+    ),
+    agent="agent-123"  # For remote execution
+)
+```
+
+Create a job instance with weekly schedule:
+
+```python
+from secops.chronicle.models import (
+    AdvancedConfig,
+    ScheduleType,
+    WeeklyScheduleDetails,
+    DayOfWeek,
+    Date,
+    TimeOfDay
+)
+
+# Run every Monday and Friday at 9 AM
+weekly_job_instance = chronicle.create_integration_job_instance(
+    integration_name="MyIntegration",
+    job_id="456",
+    display_name="Weekly Report",
+    interval_seconds=604800,  # 1 week
+    enabled=True,
+    advanced=True,
+    advanced_config=AdvancedConfig(
+        time_zone="UTC",
+        schedule_type=ScheduleType.WEEKLY,
+        weekly_schedule=WeeklyScheduleDetails(
+            start_date=Date(year=2025, month=1, day=1),
+            days=[DayOfWeek.MONDAY, DayOfWeek.FRIDAY],
+            time=TimeOfDay(hours=9, minutes=0),
+            interval=1  # Every 1 week
+        )
+    )
+)
+```
+
+Create a job instance with monthly schedule:
+
+```python
+from secops.chronicle.models import (
+    AdvancedConfig,
+    ScheduleType,
+    MonthlyScheduleDetails,
+    Date,
+    TimeOfDay
+)
+
+# Run on the 1st of every month at midnight
+monthly_job_instance = chronicle.create_integration_job_instance(
+    integration_name="MyIntegration",
+    job_id="456",
+    display_name="Monthly Cleanup",
+    interval_seconds=2592000,  # ~30 days
+    enabled=True,
+    advanced=True,
+    advanced_config=AdvancedConfig(
+        time_zone="America/Los_Angeles",
+        schedule_type=ScheduleType.MONTHLY,
+        monthly_schedule=MonthlyScheduleDetails(
+            start_date=Date(year=2025, month=1, day=1),
+            day=1,  # Day of month (1-31)
+            time=TimeOfDay(hours=0, minutes=0),
+            interval=1  # Every 1 month
+        )
+    )
+)
+```
+
+Create a one-time job instance:
+
+```python
+from secops.chronicle.models import (
+    AdvancedConfig,
+    ScheduleType,
+    OneTimeScheduleDetails,
+    Date,
+    TimeOfDay
+)
+
+# Run once at a specific date and time
+onetime_job_instance = chronicle.create_integration_job_instance(
+    integration_name="MyIntegration",
+    job_id="456",
+    display_name="One-Time Migration",
+    interval_seconds=0,  # Not used for one-time
+    enabled=True,
+    advanced=True,
+    advanced_config=AdvancedConfig(
+        time_zone="Europe/London",
+        schedule_type=ScheduleType.ONCE,
+        one_time_schedule=OneTimeScheduleDetails(
+            start_date=Date(year=2025, month=12, day=25),
+            time=TimeOfDay(hours=10, minutes=30)
+        )
+    )
+)
+```
+
+Update a job instance:
+
+```python
+from secops.chronicle.models import IntegrationJobInstanceParameter
+
+# Update scheduling and enable/disable
+updated_instance = chronicle.update_integration_job_instance(
+    integration_name="MyIntegration",
+    job_id="456",
+    job_instance_id="ji1",
+    display_name="Updated Sync Job",
+    interval_seconds=43200,  # 12 hours
+    enabled=False
+)
+
+# Update parameters
+updated_instance = chronicle.update_integration_job_instance(
+    integration_name="MyIntegration",
+    job_id="456",
+    job_instance_id="ji1",
+    parameters=[
+        IntegrationJobInstanceParameter(value="staging"),
+        IntegrationJobInstanceParameter(value="https://staging-api.example.com")
+    ]
+)
+
+# Update to use advanced scheduling
+from secops.chronicle.models import (
+    AdvancedConfig,
+    ScheduleType,
+    DailyScheduleDetails,
+    Date,
+    TimeOfDay
+)
+
+updated_instance = chronicle.update_integration_job_instance(
+    integration_name="MyIntegration",
+    job_id="456",
+    job_instance_id="ji1",
+    advanced=True,
+    advanced_config=AdvancedConfig(
+        time_zone="UTC",
+        schedule_type=ScheduleType.DAILY,
+        daily_schedule=DailyScheduleDetails(
+            start_date=Date(year=2025, month=1, day=1),
+            time=TimeOfDay(hours=12, minutes=0),
+            interval=1
+        )
+    )
+)
+
+# Update only specific fields
+updated_instance = chronicle.update_integration_job_instance(
+    integration_name="MyIntegration",
+    job_id="456",
+    job_instance_id="ji1",
+    enabled=True,
+    update_mask="enabled"
+)
+```
+
+Delete a job instance:
+
+```python
+chronicle.delete_integration_job_instance(
+    integration_name="MyIntegration",
+    job_id="456",
+    job_instance_id="ji1"
+)
+```
+
+Run a job instance on demand:
+
+```python
+# Run immediately without waiting for schedule
+result = chronicle.run_integration_job_instance_on_demand(
+    integration_name="MyIntegration",
+    job_id="456",
+    job_instance_id="ji1"
+)
+print(f"Job execution started: {result}")
+
+# Run with parameter overrides
+result = chronicle.run_integration_job_instance_on_demand(
+    integration_name="MyIntegration",
+    job_id="456",
+    job_instance_id="ji1",
+    parameters=[
+        IntegrationJobInstanceParameter(id=1, value="test-mode")
+    ]
+)
+```
+
+### Job Context Properties
+
+List all context properties for a job:
+
+```python
+# Get all context properties for a job
+context_properties = chronicle.list_job_context_properties(
+    integration_name="MyIntegration",
+    job_id="456"
+)
+for prop in context_properties.get("contextProperties", []):
+    print(f"Key: {prop.get('key')}, Value: {prop.get('value')}")
+
+# Get all context properties as a list
+context_properties = chronicle.list_job_context_properties(
+    integration_name="MyIntegration",
+    job_id="456",
+    as_list=True
+)
+
+# Filter context properties
+context_properties = chronicle.list_job_context_properties(
+    integration_name="MyIntegration",
+    job_id="456",
+    filter_string='key = "api-token"',
+    order_by="key"
+)
+```
+
+Get a specific context property:
+
+```python
+property_value = chronicle.get_job_context_property(
+    integration_name="MyIntegration",
+    job_id="456",
+    context_property_id="api-endpoint"
+)
+print(f"Value: {property_value.get('value')}")
+```
+
+Create a new context property:
+
+```python
+# Create with auto-generated key
+new_property = chronicle.create_job_context_property(
+    integration_name="MyIntegration",
+    job_id="456",
+    value="https://api.example.com/v2"
+)
+print(f"Created property: {new_property.get('key')}")
+
+# Create with custom key (must be 4-63 chars, match /[a-z][0-9]-/)
+new_property = chronicle.create_job_context_property(
+    integration_name="MyIntegration",
+    job_id="456",
+    value="my-secret-token",
+    key="apitoken"
+)
+```
+
+Update a context property:
+
+```python
+# Update the value of an existing property
+updated_property = chronicle.update_job_context_property(
+    integration_name="MyIntegration",
+    job_id="456",
+    context_property_id="api-endpoint",
+    value="https://api.example.com/v3"
+)
+print(f"Updated to: {updated_property.get('value')}")
+```
+
+Delete a context property:
+
+```python
+chronicle.delete_job_context_property(
+    integration_name="MyIntegration",
+    job_id="456",
+    context_property_id="api-endpoint"
+)
+```
+
+Delete all context properties:
+
+```python
+# Clear all context properties for a job
+chronicle.delete_all_job_context_properties(
+    integration_name="MyIntegration",
+    job_id="456"
+)
+
+# Clear all properties for a specific context ID
+chronicle.delete_all_job_context_properties(
+    integration_name="MyIntegration",
+    job_id="456",
+    context_id="mycontext"
+)
+```
+
+### Job Instance Logs
+
+List all execution logs for a job instance:
+
+```python
+# Get all logs for a job instance
+logs = chronicle.list_job_instance_logs(
+    integration_name="MyIntegration",
+    job_id="456",
+    job_instance_id="ji1"
+)
+for log in logs.get("logs", []):
+    print(f"Log ID: {log.get('name')}, Status: {log.get('status')}")
+    print(f"Start: {log.get('startTime')}, End: {log.get('endTime')}")
+
+# Get all logs as a list
+logs = chronicle.list_job_instance_logs(
+    integration_name="MyIntegration",
+    job_id="456",
+    job_instance_id="ji1",
+    as_list=True
+)
+
+# Filter logs by status
+logs = chronicle.list_job_instance_logs(
+    integration_name="MyIntegration",
+    job_id="456",
+    job_instance_id="ji1",
+    filter_string="status = SUCCESS",
+    order_by="startTime desc"
+)
+```
+
+Get a specific log entry:
+
+```python
+log_entry = chronicle.get_job_instance_log(
+    integration_name="MyIntegration",
+    job_id="456",
+    job_instance_id="ji1",
+    log_id="log123"
+)
+print(f"Status: {log_entry.get('status')}")
+print(f"Start Time: {log_entry.get('startTime')}")
+print(f"End Time: {log_entry.get('endTime')}")
+print(f"Output: {log_entry.get('output')}")
+```
+
+Browse historical execution logs to monitor job performance:
+
+```python
+# Get recent logs for monitoring
+recent_logs = chronicle.list_job_instance_logs(
+    integration_name="MyIntegration",
+    job_id="456",
+    job_instance_id="ji1",
+    order_by="startTime desc",
+    page_size=10,
+    as_list=True
+)
+
+# Check for failures
+for log in recent_logs:
+    if log.get("status") == "FAILED":
+        print(f"Failed execution at {log.get('startTime')}")
+        log_details = chronicle.get_job_instance_log(
+            integration_name="MyIntegration",
+            job_id="456",
+            job_instance_id="ji1",
+            log_id=log.get("name").split("/")[-1]
+        )
+        print(f"Error output: {log_details.get('output')}")
+```
+
+Monitor job reliability and performance:
+
+```python
+# Get all logs to calculate success rate
+all_logs = chronicle.list_job_instance_logs(
+    integration_name="MyIntegration",
+    job_id="456",
+    job_instance_id="ji1",
+    as_list=True
+)
+
+successful = sum(1 for log in all_logs if log.get("status") == "SUCCESS")
+failed = sum(1 for log in all_logs if log.get("status") == "FAILED")
+total = len(all_logs)
+
+if total > 0:
+    success_rate = (successful / total) * 100
+    print(f"Success Rate: {success_rate:.2f}%")
+    print(f"Total Executions: {total}")
+    print(f"Successful: {successful}, Failed: {failed}")
 ```
 
 ## Rule Management

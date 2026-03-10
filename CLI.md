@@ -745,6 +745,445 @@ Delete a watchlist:
 secops watchlist delete --watchlist-id "abc-123-def"
 ```
 
+### Integration Management
+
+#### Integration Jobs
+
+List integration jobs:
+
+```bash
+# List all jobs for an integration
+secops integration jobs list --integration-name "MyIntegration"
+
+# List jobs as a direct list (fetches all pages automatically)
+secops integration jobs list --integration-name "MyIntegration" --as-list
+
+# List with pagination
+secops integration jobs list --integration-name "MyIntegration" --page-size 50
+
+# List with filtering
+secops integration jobs list --integration-name "MyIntegration" --filter-string "enabled = true"
+
+# Exclude staging jobs
+secops integration jobs list --integration-name "MyIntegration" --exclude-staging
+```
+
+Get job details:
+
+```bash
+secops integration jobs get --integration-name "MyIntegration" --job-id "job1"
+```
+
+Create a new job:
+
+```bash
+secops integration jobs create \
+  --integration-name "MyIntegration" \
+  --display-name "Data Processing Job" \
+  --code "def process_data(context): return {'status': 'processed'}"
+
+# Create with description and custom ID
+secops integration jobs create \
+  --integration-name "MyIntegration" \
+  --display-name "Scheduled Report" \
+  --code "def generate_report(context): return report_data()" \
+  --description "Daily report generation job" \
+  --job-id "daily-report-job"
+
+# Create with parameters
+secops integration jobs create \
+  --integration-name "MyIntegration" \
+  --display-name "Configurable Job" \
+  --code "def run(context, params): return process(params)" \
+  --parameters '[{"name":"interval","type":"STRING","required":true}]'
+```
+
+Update an existing job:
+
+```bash
+# Update display name
+secops integration jobs update \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --display-name "Updated Job Name"
+
+# Update code
+secops integration jobs update \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --code "def run(context): return {'status': 'updated'}"
+
+# Update multiple fields with update mask
+secops integration jobs update \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --display-name "New Name" \
+  --description "New description" \
+  --update-mask "displayName,description"
+
+# Update parameters
+secops integration jobs update \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --parameters '[{"name":"timeout","type":"INTEGER","required":false}]'
+```
+
+Delete a job:
+
+```bash
+secops integration jobs delete --integration-name "MyIntegration" --job-id "job1"
+```
+
+Test a job:
+
+```bash
+secops integration jobs test --integration-name "MyIntegration" --job-id "job1"
+```
+
+Get job template:
+
+```bash
+secops integration jobs template --integration-name "MyIntegration"
+```
+
+#### Job Revisions
+
+List job revisions:
+
+```bash
+# List all revisions for a job
+secops integration job-revisions list \
+  --integration-name "MyIntegration" \
+  --job-id "job1"
+
+# List revisions as a direct list
+secops integration job-revisions list \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --as-list
+
+# List with pagination
+secops integration job-revisions list \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --page-size 10
+
+# List with filtering and ordering
+secops integration job-revisions list \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --filter-string 'version = "1.0"' \
+  --order-by "createTime desc"
+```
+
+Create a revision backup:
+
+```bash
+# Create revision with comment
+secops integration job-revisions create \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --comment "Backup before refactoring job logic"
+
+# Create revision without comment
+secops integration job-revisions create \
+  --integration-name "MyIntegration" \
+  --job-id "job1"
+```
+
+Rollback to a previous revision:
+
+```bash
+secops integration job-revisions rollback \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --revision-id "r456"
+```
+
+Delete an old revision:
+
+```bash
+secops integration job-revisions delete \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --revision-id "r789"
+```
+
+#### Job Context Properties
+
+List job context properties:
+
+```bash
+# List all properties for a job context
+secops integration job-context-properties list \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --context-id "mycontext"
+
+# List properties as a direct list
+secops integration job-context-properties list \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --context-id "mycontext" \
+  --as-list
+
+# List with pagination
+secops integration job-context-properties list \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --context-id "mycontext" \
+  --page-size 50
+
+# List with filtering
+secops integration job-context-properties list \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --context-id "mycontext" \
+  --filter-string 'key = "last_run_time"'
+```
+
+Get a specific context property:
+
+```bash
+secops integration job-context-properties get \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --context-id "mycontext" \
+  --property-id "prop123"
+```
+
+Create a new context property:
+
+```bash
+# Store last execution time
+secops integration job-context-properties create \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --context-id "mycontext" \
+  --key "last_execution_time" \
+  --value "2026-03-09T10:00:00Z"
+
+# Store job state for resumable operations
+secops integration job-context-properties create \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --context-id "mycontext" \
+  --key "processing_offset" \
+  --value "1000"
+```
+
+Update a context property:
+
+```bash
+# Update execution time
+secops integration job-context-properties update \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --context-id "mycontext" \
+  --property-id "prop123" \
+  --value "2026-03-09T11:00:00Z"
+```
+
+Delete a context property:
+
+```bash
+secops integration job-context-properties delete \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --context-id "mycontext" \
+  --property-id "prop123"
+```
+
+Clear all context properties:
+
+```bash
+# Clear all properties for a specific context
+secops integration job-context-properties clear-all \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --context-id "mycontext"
+```
+
+#### Job Instance Logs
+
+List job instance logs:
+
+```bash
+# List all logs for a job instance
+secops integration job-instance-logs list \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --job-instance-id "inst123"
+
+# List logs as a direct list
+secops integration job-instance-logs list \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --job-instance-id "inst123" \
+  --as-list
+
+# List with pagination
+secops integration job-instance-logs list \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --job-instance-id "inst123" \
+  --page-size 50
+
+# List with filtering (filter by severity or timestamp)
+secops integration job-instance-logs list \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --job-instance-id "inst123" \
+  --filter-string 'severity = "ERROR"' \
+  --order-by "createTime desc"
+```
+
+Get a specific log entry:
+
+```bash
+secops integration job-instance-logs get \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --job-instance-id "inst123" \
+  --log-id "log456"
+```
+
+#### Job Instances
+
+List job instances:
+
+```bash
+# List all instances for a job
+secops integration job-instances list \
+  --integration-name "MyIntegration" \
+  --job-id "job1"
+
+# List instances as a direct list
+secops integration job-instances list \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --as-list
+
+# List with pagination
+secops integration job-instances list \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --page-size 50
+
+# List with filtering
+secops integration job-instances list \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --filter-string 'enabled = true'
+```
+
+Get job instance details:
+
+```bash
+secops integration job-instances get \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --job-instance-id "inst123"
+```
+
+Create a new job instance:
+
+```bash
+# Create basic job instance
+secops integration job-instances create \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --environment "production" \
+  --display-name "Daily Report Generator"
+
+# Create with schedule and timeout
+secops integration job-instances create \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --environment "production" \
+  --display-name "Hourly Data Sync" \
+  --schedule "0 * * * *" \
+  --timeout-seconds 300 \
+  --enabled
+
+# Create with parameters
+secops integration job-instances create \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --environment "production" \
+  --display-name "Custom Job Instance" \
+  --schedule "0 0 * * *" \
+  --parameters '[{"name":"batch_size","value":"1000"}]'
+```
+
+Update a job instance:
+
+```bash
+# Update display name
+secops integration job-instances update \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --job-instance-id "inst123" \
+  --display-name "Updated Display Name"
+
+# Update schedule and timeout
+secops integration job-instances update \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --job-instance-id "inst123" \
+  --schedule "0 */2 * * *" \
+  --timeout-seconds 600
+
+# Enable or disable instance
+secops integration job-instances update \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --job-instance-id "inst123" \
+  --enabled true
+
+# Update multiple fields with update mask
+secops integration job-instances update \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --job-instance-id "inst123" \
+  --display-name "New Name" \
+  --schedule "0 6 * * *" \
+  --update-mask "displayName,schedule"
+
+# Update parameters
+secops integration job-instances update \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --job-instance-id "inst123" \
+  --parameters '[{"name":"batch_size","value":"2000"}]'
+```
+
+Delete a job instance:
+
+```bash
+secops integration job-instances delete \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --job-instance-id "inst123"
+```
+
+Run job instance on demand:
+
+```bash
+# Trigger an immediate execution for testing
+secops integration job-instances run-ondemand \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --job-instance-id "inst123"
+
+# Run with custom parameters
+secops integration job-instances run-ondemand \
+  --integration-name "MyIntegration" \
+  --job-id "job1" \
+  --job-instance-id "inst123" \
+  --parameters '[{"name":"batch_size","value":"500"}]'
+```
+
 ### Rule Management
 
 List detection rules:
@@ -896,7 +1335,6 @@ secops curated-rule search-detections \
   --end-time "2024-01-31T23:59:59Z" \
   --list-basis "DETECTION_TIME" \
   --page-size 50
-
 ```
 
 List all curated rule sets:
@@ -1543,39 +1981,7 @@ secops reference-list create \
 secops parser list
 
 # Get details of a specific parser
-secops parser get --log-type "WINDOWS" --id "pa_12345"
-
-# Create a custom parser for a new log format
-secops parser create \
-  --log-type "CUSTOM_APPLICATION" \
-  --parser-code-file "/path/to/custom_parser.conf" \
-  --validated-on-empty-logs
-
-# Copy an existing parser as a starting point
-secops parser copy --log-type "OKTA" --id "pa_okta_base"
-
-# Activate your custom parser
-secops parser activate --log-type "CUSTOM_APPLICATION" --id "pa_new_custom"
-
-# If needed, deactivate and delete old parser
-secops parser deactivate --log-type "CUSTOM_APPLICATION" --id "pa_old_custom"
-secops parser delete --log-type "CUSTOM_APPLICATION" --id "pa_old_custom"
-```
-
-### Complete Parser Workflow Example: Retrieve, Run, and Ingest
-
-This example demonstrates the complete workflow of retrieving an OKTA parser, running it against a sample log, and ingesting the parsed UDM event:
-
-```bash
-# Step 1: List OKTA parsers to find an active one
-secops parser list --log-type "OKTA" > okta_parsers.json
-
-# Extract the first parser ID (you can use jq or grep)
-PARSER_ID=$(cat okta_parsers.json | jq -r '.[0].name' | awk -F'/' '{print $NF}')
-echo "Using parser: $PARSER_ID"
-
-# Step 2: Get the parser details and save to a file
-secops parser get --log-type "OKTA" --id "$PARSER_ID" > parser_details.json
+secops parser get --log-type "WINDOWS" --id "$PARSER_ID" > parser_details.json
 
 # Extract and decode the parser code (base64 encoded in 'cbn' field)
 cat parser_details.json | jq -r '.cbn' | base64 -d > okta_parser.conf
@@ -1713,7 +2119,7 @@ secops feed update --id "feed-123" --display-name "Updated Feed Name"
 secops feed update --id "feed-123" --details '{"httpSettings":{"uri":"https://example.com/updated-feed","sourceType":"FILES"}}'
 
 # Update both display name and details
-secops feed update --id "feed-123" --display-name "Updated Name" --details '{"httpSettings":{"uri":"https://example.com/updated-feed"}}'
+secops feed update --id "feed-123" --display-name "New Name" --details '{"httpSettings":{"uri":"https://example.com/updated-feed"}}'
 ```
 
 Enable and disable feeds:
@@ -1855,3 +2261,4 @@ secops dashboard-query get --id query-id
 ## Conclusion
 
 The SecOps CLI provides a powerful way to interact with Google Security Operations products directly from your terminal. For more detailed information about the SDK capabilities, refer to the [main README](README.md).
+

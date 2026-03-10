@@ -15,6 +15,7 @@
 """
 Provides entity search, analysis and summarization functionality for Chronicle.
 """
+
 import ipaddress
 import re
 from datetime import datetime

@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 """Chronicle API client."""
+
 import ipaddress
 import re
 from collections.abc import Iterator
@@ -22,140 +23,147 @@ from typing import Any, Literal, Union
 
 from google.auth.transport import requests as google_auth_requests
 
+# pylint: disable=line-too-long
 from secops import auth as secops_auth
 from secops.auth import RetryConfig
 from secops.chronicle.alert import get_alerts as _get_alerts
 from secops.chronicle.case import get_cases_from_list
-from secops.chronicle.dashboard import DashboardAccessType, DashboardView
-from secops.chronicle.dashboard import add_chart as _add_chart
-from secops.chronicle.dashboard import create_dashboard as _create_dashboard
-from secops.chronicle.dashboard import delete_dashboard as _delete_dashboard
 from secops.chronicle.dashboard import (
+    DashboardAccessType,
+    DashboardView,
+    add_chart as _add_chart,
+    create_dashboard as _create_dashboard,
+    delete_dashboard as _delete_dashboard,
     duplicate_dashboard as _duplicate_dashboard,
+    edit_chart as _edit_chart,
+    export_dashboard as _export_dashboard,
+    get_chart as _get_chart,
+    get_dashboard as _get_dashboard,
+    import_dashboard as _import_dashboard,
+    list_dashboards as _list_dashboards,
+    remove_chart as _remove_chart,
+    update_dashboard as _update_dashboard,
 )
-from secops.chronicle.dashboard import edit_chart as _edit_chart
-from secops.chronicle.dashboard import export_dashboard as _export_dashboard
-from secops.chronicle.dashboard import get_chart as _get_chart
-from secops.chronicle.dashboard import get_dashboard as _get_dashboard
-from secops.chronicle.dashboard import import_dashboard as _import_dashboard
-from secops.chronicle.dashboard import list_dashboards as _list_dashboards
-from secops.chronicle.dashboard import remove_chart as _remove_chart
-from secops.chronicle.dashboard import update_dashboard as _update_dashboard
 from secops.chronicle.dashboard_query import (
     execute_query as _execute_dashboard_query,
-)
-from secops.chronicle.dashboard_query import (
     get_execute_query as _get_execute_query,
 )
 from secops.chronicle.data_export import (
     cancel_data_export as _cancel_data_export,
-)
-from secops.chronicle.data_export import (
     create_data_export as _create_data_export,
-)
-from secops.chronicle.data_export import (
     fetch_available_log_types as _fetch_available_log_types,
-)
-from secops.chronicle.data_export import get_data_export as _get_data_export
-from secops.chronicle.data_export import list_data_export as _list_data_export
-from secops.chronicle.data_export import (
+    get_data_export as _get_data_export,
+    list_data_export as _list_data_export,
     update_data_export as _update_data_export,
 )
-from secops.chronicle.data_table import DataTableColumnType
-from secops.chronicle.data_table import create_data_table as _create_data_table
 from secops.chronicle.data_table import (
+    DataTableColumnType,
+    create_data_table as _create_data_table,
     create_data_table_rows as _create_data_table_rows,
-)
-from secops.chronicle.data_table import delete_data_table as _delete_data_table
-from secops.chronicle.data_table import (
+    delete_data_table as _delete_data_table,
     delete_data_table_rows as _delete_data_table_rows,
-)
-from secops.chronicle.data_table import get_data_table as _get_data_table
-from secops.chronicle.data_table import (
+    get_data_table as _get_data_table,
     list_data_table_rows as _list_data_table_rows,
-)
-from secops.chronicle.data_table import list_data_tables as _list_data_tables
-from secops.chronicle.data_table import (
+    list_data_tables as _list_data_tables,
     replace_data_table_rows as _replace_data_table_rows,
-)
-from secops.chronicle.data_table import update_data_table as _update_data_table
-from secops.chronicle.data_table import (
+    update_data_table as _update_data_table,
     update_data_table_rows as _update_data_table_rows,
 )
-from secops.chronicle.entity import _detect_value_type_for_query
-from secops.chronicle.entity import summarize_entity as _summarize_entity
-from secops.chronicle.feeds import CreateFeedModel, UpdateFeedModel
-from secops.chronicle.feeds import create_feed as _create_feed
-from secops.chronicle.feeds import delete_feed as _delete_feed
-from secops.chronicle.feeds import disable_feed as _disable_feed
-from secops.chronicle.feeds import enable_feed as _enable_feed
-from secops.chronicle.feeds import generate_secret as _generate_secret
-from secops.chronicle.feeds import get_feed as _get_feed
-from secops.chronicle.feeds import list_feeds as _list_feeds
-from secops.chronicle.feeds import update_feed as _update_feed
-from secops.chronicle.gemini import GeminiResponse
-from secops.chronicle.gemini import opt_in_to_gemini as _opt_in_to_gemini
-from secops.chronicle.gemini import query_gemini as _query_gemini
-from secops.chronicle.ioc import list_iocs as _list_iocs
+from secops.chronicle.entity import (
+    _detect_value_type_for_query,
+    summarize_entity as _summarize_entity,
+)
+from secops.chronicle.featured_content_rules import (
+    list_featured_content_rules as _list_featured_content_rules,
+)
+from secops.chronicle.feeds import (
+    CreateFeedModel,
+    UpdateFeedModel,
+    create_feed as _create_feed,
+    delete_feed as _delete_feed,
+    disable_feed as _disable_feed,
+    enable_feed as _enable_feed,
+    generate_secret as _generate_secret,
+    get_feed as _get_feed,
+    list_feeds as _list_feeds,
+    update_feed as _update_feed,
+)
+from secops.chronicle.gemini import (
+    GeminiResponse,
+    opt_in_to_gemini as _opt_in_to_gemini,
+    query_gemini as _query_gemini,
+)
 from secops.chronicle.investigations import (
     fetch_associated_investigations as _fetch_associated_investigations,
-)
-from secops.chronicle.investigations import (
     get_investigation as _get_investigation,
-)
-from secops.chronicle.investigations import (
     list_investigations as _list_investigations,
-)
-from secops.chronicle.investigations import (
     trigger_investigation as _trigger_investigation,
 )
-from secops.chronicle.log_ingest import create_forwarder as _create_forwarder
-from secops.chronicle.log_ingest import delete_forwarder as _delete_forwarder
-from secops.chronicle.log_ingest import get_forwarder as _get_forwarder
+from secops.chronicle.ioc import list_iocs as _list_iocs
 from secops.chronicle.log_ingest import (
+    create_forwarder as _create_forwarder,
+    delete_forwarder as _delete_forwarder,
+    get_forwarder as _get_forwarder,
     get_or_create_forwarder as _get_or_create_forwarder,
+    import_entities as _import_entities,
+    ingest_log as _ingest_log,
+    ingest_udm as _ingest_udm,
+    list_forwarders as _list_forwarders,
+    update_forwarder as _update_forwarder,
 )
-from secops.chronicle.log_ingest import import_entities as _import_entities
-from secops.chronicle.log_ingest import ingest_log as _ingest_log
-from secops.chronicle.log_ingest import ingest_udm as _ingest_udm
-from secops.chronicle.log_ingest import list_forwarders as _list_forwarders
-from secops.chronicle.log_ingest import update_forwarder as _update_forwarder
-from secops.chronicle.log_types import classify_logs as _classify_logs
-from secops.chronicle.log_types import get_all_log_types as _get_all_log_types
-from secops.chronicle.log_types import (
-    get_log_type_description as _get_log_type_description,
-)
-from secops.chronicle.log_types import is_valid_log_type as _is_valid_log_type
-from secops.chronicle.log_types import search_log_types as _search_log_types
 from secops.chronicle.log_processing_pipelines import (
     associate_streams as _associate_streams,
-)
-from secops.chronicle.log_processing_pipelines import (
     create_log_processing_pipeline as _create_log_processing_pipeline,
-)
-from secops.chronicle.log_processing_pipelines import (
     delete_log_processing_pipeline as _delete_log_processing_pipeline,
-)
-from secops.chronicle.log_processing_pipelines import (
     dissociate_streams as _dissociate_streams,
-)
-from secops.chronicle.log_processing_pipelines import (
     fetch_associated_pipeline as _fetch_associated_pipeline,
-)
-from secops.chronicle.log_processing_pipelines import (
     fetch_sample_logs_by_streams as _fetch_sample_logs_by_streams,
-)
-from secops.chronicle.log_processing_pipelines import (
     get_log_processing_pipeline as _get_log_processing_pipeline,
-)
-from secops.chronicle.log_processing_pipelines import (
     list_log_processing_pipelines as _list_log_processing_pipelines,
-)
-from secops.chronicle.log_processing_pipelines import (
+    test_pipeline as _test_pipeline,
     update_log_processing_pipeline as _update_log_processing_pipeline,
 )
-from secops.chronicle.log_processing_pipelines import (
-    test_pipeline as _test_pipeline,
+from secops.chronicle.log_types import (
+    classify_logs as _classify_logs,
+    get_all_log_types as _get_all_log_types,
+    get_log_type_description as _get_log_type_description,
+    is_valid_log_type as _is_valid_log_type,
+    search_log_types as _search_log_types,
+)
+from secops.chronicle.integration.jobs import (
+    create_integration_job as _create_integration_job,
+    delete_integration_job as _delete_integration_job,
+    execute_integration_job_test as _execute_integration_job_test,
+    get_integration_job as _get_integration_job,
+    get_integration_job_template as _get_integration_job_template,
+    list_integration_jobs as _list_integration_jobs,
+    update_integration_job as _update_integration_job,
+)
+from secops.chronicle.integration.job_revisions import (
+    create_integration_job_revision as _create_integration_job_revision,
+    delete_integration_job_revision as _delete_integration_job_revision,
+    list_integration_job_revisions as _list_integration_job_revisions,
+    rollback_integration_job_revision as _rollback_integration_job_revision,
+)
+from secops.chronicle.integration.job_instances import (
+    create_integration_job_instance as _create_integration_job_instance,
+    delete_integration_job_instance as _delete_integration_job_instance,
+    get_integration_job_instance as _get_integration_job_instance,
+    list_integration_job_instances as _list_integration_job_instances,
+    run_integration_job_instance_on_demand as _run_integration_job_instance_on_demand,
+    update_integration_job_instance as _update_integration_job_instance,
+)
+from secops.chronicle.integration.job_context_properties import (
+    create_job_context_property as _create_job_context_property,
+    delete_all_job_context_properties as _delete_all_job_context_properties,
+    delete_job_context_property as _delete_job_context_property,
+    get_job_context_property as _get_job_context_property,
+    list_job_context_properties as _list_job_context_properties,
+    update_job_context_property as _update_job_context_property,
+)
+from secops.chronicle.integration.job_instance_logs import (
+    get_job_instance_log as _get_job_instance_log,
+    list_job_instance_logs as _list_job_instance_logs,
 )
 from secops.chronicle.models import (
     APIVersion,
@@ -164,104 +172,73 @@ from secops.chronicle.models import (
     DashboardQuery,
     EntitySummary,
     InputInterval,
+    JobParameter,
     TileType,
 )
-from secops.chronicle.nl_search import nl_search as _nl_search
-from secops.chronicle.nl_search import translate_nl_to_udm
-from secops.chronicle.parser import activate_parser as _activate_parser
+from secops.chronicle.nl_search import (
+    nl_search as _nl_search,
+    translate_nl_to_udm,
+)
 from secops.chronicle.parser import (
+    activate_parser as _activate_parser,
     activate_release_candidate_parser as _activate_release_candidate_parser,
+    copy_parser as _copy_parser,
+    create_parser as _create_parser,
+    deactivate_parser as _deactivate_parser,
+    delete_parser as _delete_parser,
+    get_parser as _get_parser,
+    list_parsers as _list_parsers,
+    run_parser as _run_parser,
 )
-from secops.chronicle.parser import copy_parser as _copy_parser
-from secops.chronicle.parser import create_parser as _create_parser
-from secops.chronicle.parser import deactivate_parser as _deactivate_parser
-from secops.chronicle.parser import delete_parser as _delete_parser
-from secops.chronicle.parser import get_parser as _get_parser
-from secops.chronicle.parser import list_parsers as _list_parsers
-from secops.chronicle.parser import run_parser as _run_parser
-from secops.chronicle.parser_extension import ParserExtensionConfig
 from secops.chronicle.parser_extension import (
+    ParserExtensionConfig,
     activate_parser_extension as _activate_parser_extension,
-)
-from secops.chronicle.parser_extension import (
     create_parser_extension as _create_parser_extension,
-)
-from secops.chronicle.parser_extension import (
     delete_parser_extension as _delete_parser_extension,
-)
-from secops.chronicle.parser_extension import (
     get_parser_extension as _get_parser_extension,
-)
-from secops.chronicle.parser_extension import (
     list_parser_extensions as _list_parser_extensions,
 )
 from secops.chronicle.reference_list import (
     ReferenceListSyntaxType,
     ReferenceListView,
-)
-from secops.chronicle.reference_list import (
     create_reference_list as _create_reference_list,
-)
-from secops.chronicle.reference_list import (
     get_reference_list as _get_reference_list,
-)
-from secops.chronicle.reference_list import (
     list_reference_lists as _list_reference_lists,
-)
-from secops.chronicle.reference_list import (
     update_reference_list as _update_reference_list,
 )
-
-# Import rule functions
-from secops.chronicle.rule import create_rule as _create_rule
-from secops.chronicle.rule import delete_rule as _delete_rule
-from secops.chronicle.rule import enable_rule as _enable_rule
-from secops.chronicle.rule import get_rule as _get_rule
-from secops.chronicle.rule import get_rule_deployment as _get_rule_deployment
 from secops.chronicle.rule import (
+    create_rule as _create_rule,
+    delete_rule as _delete_rule,
+    enable_rule as _enable_rule,
+    get_rule as _get_rule,
+    get_rule_deployment as _get_rule_deployment,
     list_rule_deployments as _list_rule_deployments,
-)
-from secops.chronicle.rule import list_rules as _list_rules
-from secops.chronicle.rule import run_rule_test
-from secops.chronicle.rule import search_rules as _search_rules
-from secops.chronicle.rule import set_rule_alerting as _set_rule_alerting
-from secops.chronicle.rule import update_rule as _update_rule
-from secops.chronicle.rule import (
+    list_rules as _list_rules,
+    run_rule_test,
+    search_rules as _search_rules,
+    set_rule_alerting as _set_rule_alerting,
+    update_rule as _update_rule,
     update_rule_deployment as _update_rule_deployment,
 )
 from secops.chronicle.rule_alert import (
     bulk_update_alerts as _bulk_update_alerts,
-)
-from secops.chronicle.rule_alert import get_alert as _get_alert
-from secops.chronicle.rule_alert import (
+    get_alert as _get_alert,
     search_rule_alerts as _search_rule_alerts,
+    update_alert as _update_alert,
 )
-from secops.chronicle.rule_alert import update_alert as _update_alert
-from secops.chronicle.rule_detection import list_detections as _list_detections
-from secops.chronicle.rule_detection import list_errors as _list_errors
+from secops.chronicle.rule_detection import (
+    list_detections as _list_detections,
+    list_errors as _list_errors,
+)
 from secops.chronicle.rule_exclusion import (
     RuleExclusionType,
     UpdateRuleDeployment,
-)
-from secops.chronicle.rule_exclusion import (
     compute_rule_exclusion_activity as _compute_rule_exclusion_activity,
-)
-from secops.chronicle.rule_exclusion import (
     create_rule_exclusion as _create_rule_exclusion,
-)
-from secops.chronicle.rule_exclusion import (
     get_rule_exclusion as _get_rule_exclusion,
-)
-from secops.chronicle.rule_exclusion import (
     get_rule_exclusion_deployment as _get_rule_exclusion_deployment,
-)
-from secops.chronicle.rule_exclusion import (
     list_rule_exclusions as _list_rule_exclusions,
-)
-from secops.chronicle.rule_exclusion import (
     patch_rule_exclusion as _patch_rule_exclusion,
-)
-from secops.chronicle.rule_exclusion import (
     update_rule_exclusion_deployment as _update_rule_exclusion_deployment,
 )
 from secops.chronicle.rule_retrohunt import (
@@ -270,71 +247,44 @@ from secops.chronicle.rule_retrohunt import (
     list_retrohunts as _list_retrohunts,
 )
 from secops.chronicle.rule_set import (
-    batch_update_curated_rule_set_deployments as _batch_update_curated_rule_set_deployments,  # pylint: disable=line-too-long
-)
-from secops.chronicle.rule_set import get_curated_rule as _get_curated_rule
-from secops.chronicle.rule_set import (
+    batch_update_curated_rule_set_deployments as _batch_update_curated_rule_set_deployments,
+    get_curated_rule as _get_curated_rule,
     get_curated_rule_by_name as _get_curated_rule_by_name,
-)
-from secops.chronicle.rule_set import (
     get_curated_rule_set as _get_curated_rule_set,
-)
-from secops.chronicle.rule_set import (
     get_curated_rule_set_category as _get_curated_rule_set_category,
-)
-from secops.chronicle.rule_set import (
     get_curated_rule_set_deployment as _get_curated_rule_set_deployment,
-)
-from secops.chronicle.rule_set import (
-    get_curated_rule_set_deployment_by_name as _get_curated_rule_set_deployment_by_name,  # pylint: disable=line-too-long
-)
-from secops.chronicle.rule_set import (
+    get_curated_rule_set_deployment_by_name as _get_curated_rule_set_deployment_by_name,
     list_curated_rule_set_categories as _list_curated_rule_set_categories,
-)
-from secops.chronicle.rule_set import (
     list_curated_rule_set_deployments as _list_curated_rule_set_deployments,
-)
-from secops.chronicle.rule_set import (
     list_curated_rule_sets as _list_curated_rule_sets,
-)
-from secops.chronicle.rule_set import list_curated_rules as _list_curated_rules
-from secops.chronicle.rule_set import (
+    list_curated_rules as _list_curated_rules,
     search_curated_detections as _search_curated_detections,
-)
-from secops.chronicle.rule_set import (
     update_curated_rule_set_deployment as _update_curated_rule_set_deployment,
-)
-from secops.chronicle.featured_content_rules import (
-    list_featured_content_rules as _list_featured_content_rules,
 )
 from secops.chronicle.rule_validation import validate_rule as _validate_rule
 from secops.chronicle.search import search_udm as _search_udm
 from secops.chronicle.log_search import search_raw_logs as _search_raw_logs
 from secops.chronicle.stats import get_stats as _get_stats
-from secops.chronicle.udm_mapping import RowLogFormat
 from secops.chronicle.udm_mapping import (
+    RowLogFormat,
     generate_udm_key_value_mappings as _generate_udm_key_value_mappings,
 )
-
-# Import functions from the new modules
 from secops.chronicle.udm_search import (
     fetch_udm_search_csv as _fetch_udm_search_csv,
-)
-from secops.chronicle.udm_search import (
     fetch_udm_search_view as _fetch_udm_search_view,
-)
-from secops.chronicle.udm_search import (
     find_udm_field_values as _find_udm_field_values,
 )
 from secops.chronicle.validate import validate_query as _validate_query
 from secops.chronicle.watchlist import (
-    list_watchlists as _list_watchlists,
-    get_watchlist as _get_watchlist,
-    delete_watchlist as _delete_watchlist,
     create_watchlist as _create_watchlist,
+    delete_watchlist as _delete_watchlist,
+    get_watchlist as _get_watchlist,
+    list_watchlists as _list_watchlists,
     update_watchlist as _update_watchlist,
 )
 from secops.exceptions import SecOpsError
+
+# pylint: enable=line-too-long
 
 
 class ValueType(Enum):
@@ -759,6 +709,1088 @@ class ChronicleClient:
             entity_population_mechanism,
             watchlist_user_preferences,
             update_mask,
+        )
+
+    # -------------------------------------------------------------------------
+    # Integration Job methods
+    # -------------------------------------------------------------------------
+
+    def list_integration_jobs(
+        self,
+        integration_name: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        exclude_staging: bool | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """List all jobs defined for a specific integration.
+
+        Use this method to browse the available background and scheduled
+        automation capabilities provided by a third-party connection.
+
+        Args:
+            integration_name: Name of the integration to list jobs for.
+            page_size: Maximum number of jobs to return.
+            page_token: Page token from a previous call to retrieve the
+                next page.
+            filter_string: Filter expression to filter jobs. Allowed
+                filters are: id, custom, system, author, version,
+                integration.
+            order_by: Field to sort the jobs by.
+            exclude_staging: Whether to exclude staging jobs from the
+                response. By default, staging jobs are included.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+            as_list: If True, return a list of jobs instead of a dict
+                with jobs list and nextPageToken.
+
+        Returns:
+            If as_list is True: List of jobs.
+            If as_list is False: Dict with jobs list and nextPageToken.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _list_integration_jobs(
+            self,
+            integration_name,
+            page_size=page_size,
+            page_token=page_token,
+            filter_string=filter_string,
+            order_by=order_by,
+            exclude_staging=exclude_staging,
+            api_version=api_version,
+            as_list=as_list,
+        )
+
+    def get_integration_job(
+        self,
+        integration_name: str,
+        job_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Get a single job for a given integration.
+
+        Use this method to retrieve the Python script, execution
+        parameters, and versioning information for a background
+        automation task.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job to retrieve.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing details of the specified IntegrationJob.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_integration_job(
+            self,
+            integration_name,
+            job_id,
+            api_version=api_version,
+        )
+
+    def delete_integration_job(
+        self,
+        integration_name: str,
+        job_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> None:
+        """Delete a specific custom job from a given integration.
+
+        Only custom jobs can be deleted; commercial and system jobs
+        are immutable.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job to delete.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            None
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _delete_integration_job(
+            self,
+            integration_name,
+            job_id,
+            api_version=api_version,
+        )
+
+    def create_integration_job(
+        self,
+        integration_name: str,
+        display_name: str,
+        script: str,
+        version: int,
+        enabled: bool,
+        custom: bool,
+        description: str | None = None,
+        parameters: list[dict[str, Any] | JobParameter] | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Create a new custom job for a given integration.
+
+        Each job must have a unique display name and a functional
+        Python script for its background execution.
+
+        Args:
+            integration_name: Name of the integration to create the job
+                for.
+            display_name: Job's display name. Maximum 400 characters.
+                Required.
+            script: Job's Python script. Required.
+            version: Job's version. Required.
+            enabled: Whether the job is enabled. Required.
+            custom: Whether the job is custom or commercial. Required.
+            description: Job's description. Optional.
+            parameters: List of JobParameter instances or dicts.
+                Optional.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the newly created IntegrationJob resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _create_integration_job(
+            self,
+            integration_name,
+            display_name,
+            script,
+            version,
+            enabled,
+            custom,
+            description=description,
+            parameters=parameters,
+            api_version=api_version,
+        )
+
+    def update_integration_job(
+        self,
+        integration_name: str,
+        job_id: str,
+        display_name: str | None = None,
+        script: str | None = None,
+        version: int | None = None,
+        enabled: bool | None = None,
+        custom: bool | None = None,
+        description: str | None = None,
+        parameters: list[dict[str, Any] | JobParameter] | None = None,
+        update_mask: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Update an existing custom job for a given integration.
+
+        Use this method to modify the Python script or adjust the
+        parameter definitions for a job.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job to update.
+            display_name: Job's display name. Maximum 400 characters.
+            script: Job's Python script.
+            version: Job's version.
+            enabled: Whether the job is enabled.
+            custom: Whether the job is custom or commercial.
+            description: Job's description.
+            parameters: List of JobParameter instances or dicts.
+            update_mask: Comma-separated list of fields to update. If
+                omitted, the mask is auto-generated from whichever
+                fields are provided. Example: "displayName,script".
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the updated IntegrationJob resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _update_integration_job(
+            self,
+            integration_name,
+            job_id,
+            display_name=display_name,
+            script=script,
+            version=version,
+            enabled=enabled,
+            custom=custom,
+            description=description,
+            parameters=parameters,
+            update_mask=update_mask,
+            api_version=api_version,
+        )
+
+    def execute_integration_job_test(
+        self,
+        integration_name: str,
+        job: dict[str, Any],
+        agent_identifier: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Execute a test run of an integration job's Python script.
+
+        Use this method to verify background automation logic and
+        connectivity before deploying the job to an instance for
+        recurring execution.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job: Dict containing the IntegrationJob to test.
+            agent_identifier: Agent identifier for remote testing.
+                Optional.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the test execution results with the
+                following fields:
+                - output: The script output.
+                - debugOutput: The script debug output.
+                - resultObjectJson: The result JSON if it exists
+                    (optional).
+                - resultName: The script result name (optional).
+                - resultValue: The script result value (optional).
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _execute_integration_job_test(
+            self,
+            integration_name,
+            job,
+            agent_identifier=agent_identifier,
+            api_version=api_version,
+        )
+
+    def get_integration_job_template(
+        self,
+        integration_name: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Retrieve a default Python script template for a new
+        integration job.
+
+        Use this method to rapidly initialize the development of a new
+        job.
+
+        Args:
+            integration_name: Name of the integration to fetch the
+                template for.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the IntegrationJob template.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_integration_job_template(
+            self,
+            integration_name,
+            api_version=api_version,
+        )
+
+    # -------------------------------------------------------------------------
+    # Integration Job Revisions methods
+    # -------------------------------------------------------------------------
+
+    def list_integration_job_revisions(
+        self,
+        integration_name: str,
+        job_id: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """List all revisions for a specific integration job.
+
+        Use this method to browse the version history of a job and
+        identify previous functional states.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job to list revisions for.
+            page_size: Maximum number of revisions to return.
+            page_token: Page token from a previous call to retrieve the
+                next page.
+            filter_string: Filter expression to filter revisions.
+            order_by: Field to sort the revisions by.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+            as_list: If True, return a list of revisions instead of a
+                dict with revisions list and nextPageToken.
+
+        Returns:
+            If as_list is True: List of revisions.
+            If as_list is False: Dict with revisions list and
+                nextPageToken.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _list_integration_job_revisions(
+            self,
+            integration_name,
+            job_id,
+            page_size=page_size,
+            page_token=page_token,
+            filter_string=filter_string,
+            order_by=order_by,
+            api_version=api_version,
+            as_list=as_list,
+        )
+
+    def delete_integration_job_revision(
+        self,
+        integration_name: str,
+        job_id: str,
+        revision_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> None:
+        """Delete a specific revision for a given integration job.
+
+        Use this method to clean up obsolete snapshots and manage the
+        historical record of jobs.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job the revision belongs to.
+            revision_id: ID of the revision to delete.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            None
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _delete_integration_job_revision(
+            self,
+            integration_name,
+            job_id,
+            revision_id,
+            api_version=api_version,
+        )
+
+    def create_integration_job_revision(
+        self,
+        integration_name: str,
+        job_id: str,
+        job: dict[str, Any],
+        comment: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Create a new revision snapshot of the current integration
+        job.
+
+        Use this method to establish a recovery point before making
+        significant updates to a job.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job to create a revision for.
+            job: Dict containing the IntegrationJob to snapshot.
+            comment: Comment describing the revision. Maximum 400
+                characters. Optional.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the newly created IntegrationJobRevision
+                resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _create_integration_job_revision(
+            self,
+            integration_name,
+            job_id,
+            job,
+            comment=comment,
+            api_version=api_version,
+        )
+
+    def rollback_integration_job_revision(
+        self,
+        integration_name: str,
+        job_id: str,
+        revision_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Revert the current job definition to a previously saved
+        revision.
+
+        Use this method to rapidly recover a functional state if an
+        update causes operational issues in scheduled or background
+        automation.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job to rollback.
+            revision_id: ID of the revision to rollback to.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the IntegrationJobRevision rolled back to.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _rollback_integration_job_revision(
+            self,
+            integration_name,
+            job_id,
+            revision_id,
+            api_version=api_version,
+        )
+
+    # -------------------------------------------------------------------------
+    # Integration Job Instances methods
+    # -------------------------------------------------------------------------
+
+    def list_integration_job_instances(
+        self,
+        integration_name: str,
+        job_id: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """List all job instances for a specific integration job.
+
+        Use this method to browse the active job instances and their
+        last execution status.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job to list instances for.
+            page_size: Maximum number of job instances to return.
+            page_token: Page token from a previous call to retrieve the
+                next page.
+            filter_string: Filter expression to filter job instances.
+            order_by: Field to sort the job instances by.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+            as_list: If True, return a list of job instances instead of
+                a dict with job instances list and nextPageToken.
+
+        Returns:
+            If as_list is True: List of job instances.
+            If as_list is False: Dict with job instances list and
+                nextPageToken.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _list_integration_job_instances(
+            self,
+            integration_name,
+            job_id,
+            page_size=page_size,
+            page_token=page_token,
+            filter_string=filter_string,
+            order_by=order_by,
+            api_version=api_version,
+            as_list=as_list,
+        )
+
+    def get_integration_job_instance(
+        self,
+        integration_name: str,
+        job_id: str,
+        job_instance_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Get a single job instance for a specific integration job.
+
+        Use this method to retrieve configuration details and the
+        current schedule settings for a job instance.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job the instance belongs to.
+            job_instance_id: ID of the job instance to retrieve.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing details of the specified
+                IntegrationJobInstance.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_integration_job_instance(
+            self,
+            integration_name,
+            job_id,
+            job_instance_id,
+            api_version=api_version,
+        )
+
+    def delete_integration_job_instance(
+        self,
+        integration_name: str,
+        job_id: str,
+        job_instance_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> None:
+        """Delete a specific job instance for a given integration job.
+
+        Use this method to remove scheduled or configured job instances
+        that are no longer needed.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job the instance belongs to.
+            job_instance_id: ID of the job instance to delete.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            None
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _delete_integration_job_instance(
+            self,
+            integration_name,
+            job_id,
+            job_instance_id,
+            api_version=api_version,
+        )
+
+    def create_integration_job_instance(
+        self,
+        integration_name: str,
+        job_id: str,
+        display_name: str,
+        interval_seconds: int,
+        enabled: bool,
+        advanced: bool,
+        description: str | None = None,
+        parameters: list[dict[str, Any]] | None = None,
+        agent: str | None = None,
+        advanced_config: dict[str, Any] | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Create a new job instance for a given integration job.
+
+        Use this method to schedule a job to run at regular intervals
+        or with advanced cron-style scheduling.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job to create an instance for.
+            display_name: Display name for the job instance.
+            interval_seconds: Interval in seconds between job runs.
+            enabled: Whether the job instance is enabled.
+            advanced: Whether advanced scheduling is used.
+            description: Description of the job instance. Optional.
+            parameters: List of parameter values for the job instance.
+                Optional.
+            agent: Agent identifier for remote execution. Optional.
+            advanced_config: Advanced scheduling configuration.
+                Optional.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the newly created IntegrationJobInstance
+                resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _create_integration_job_instance(
+            self,
+            integration_name,
+            job_id,
+            display_name,
+            interval_seconds,
+            enabled,
+            advanced,
+            description=description,
+            parameters=parameters,
+            agent=agent,
+            advanced_config=advanced_config,
+            api_version=api_version,
+        )
+
+    def update_integration_job_instance(
+        self,
+        integration_name: str,
+        job_id: str,
+        job_instance_id: str,
+        display_name: str | None = None,
+        description: str | None = None,
+        interval_seconds: int | None = None,
+        enabled: bool | None = None,
+        advanced: bool | None = None,
+        parameters: list[dict[str, Any]] | None = None,
+        advanced_config: dict[str, Any] | None = None,
+        update_mask: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Update an existing job instance for a given integration job.
+
+        Use this method to modify scheduling, parameters, or enable/
+        disable a job instance.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job the instance belongs to.
+            job_instance_id: ID of the job instance to update.
+            display_name: Display name for the job instance. Optional.
+            description: Description of the job instance. Optional.
+            interval_seconds: Interval in seconds between job runs.
+                Optional.
+            enabled: Whether the job instance is enabled. Optional.
+            advanced: Whether advanced scheduling is used. Optional.
+            parameters: List of parameter values for the job instance.
+                Optional.
+            advanced_config: Advanced scheduling configuration.
+                Optional.
+            update_mask: Comma-separated field paths to update. If not
+                provided, will be auto-generated. Optional.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the updated IntegrationJobInstance.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _update_integration_job_instance(
+            self,
+            integration_name,
+            job_id,
+            job_instance_id,
+            display_name=display_name,
+            description=description,
+            interval_seconds=interval_seconds,
+            enabled=enabled,
+            advanced=advanced,
+            parameters=parameters,
+            advanced_config=advanced_config,
+            update_mask=update_mask,
+            api_version=api_version,
+        )
+
+    def run_integration_job_instance_on_demand(
+        self,
+        integration_name: str,
+        job_id: str,
+        job_instance_id: str,
+        parameters: list[dict[str, Any]] | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Run a job instance immediately without waiting for the next
+        scheduled execution.
+
+        Use this method to manually trigger a job instance for testing
+        or immediate data collection.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job the instance belongs to.
+            job_instance_id: ID of the job instance to run.
+            parameters: Optional parameter overrides for this run.
+                Optional.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the result of the on-demand run.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _run_integration_job_instance_on_demand(
+            self,
+            integration_name,
+            job_id,
+            job_instance_id,
+            parameters=parameters,
+            api_version=api_version,
+        )
+
+    # -------------------------------------------------------------------------
+    # Job Context Properties methods
+    # -------------------------------------------------------------------------
+
+    def list_job_context_properties(
+        self,
+        integration_name: str,
+        job_id: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """List all context properties for a specific integration job.
+
+        Use this method to discover all custom data points associated
+        with a job.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job to list context properties for.
+            page_size: Maximum number of context properties to return.
+            page_token: Page token from a previous call to retrieve the
+                next page.
+            filter_string: Filter expression to filter context
+                properties.
+            order_by: Field to sort the context properties by.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+            as_list: If True, return a list of context properties
+                instead of a dict with context properties list and
+                nextPageToken.
+
+        Returns:
+            If as_list is True: List of context properties.
+            If as_list is False: Dict with context properties list and
+                nextPageToken.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _list_job_context_properties(
+            self,
+            integration_name,
+            job_id,
+            page_size=page_size,
+            page_token=page_token,
+            filter_string=filter_string,
+            order_by=order_by,
+            api_version=api_version,
+            as_list=as_list,
+        )
+
+    def get_job_context_property(
+        self,
+        integration_name: str,
+        job_id: str,
+        context_property_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Get a single context property for a specific integration
+        job.
+
+        Use this method to retrieve the value of a specific key within
+        a job's context.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job the context property belongs to.
+            context_property_id: ID of the context property to
+                retrieve.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing details of the specified ContextProperty.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_job_context_property(
+            self,
+            integration_name,
+            job_id,
+            context_property_id,
+            api_version=api_version,
+        )
+
+    def delete_job_context_property(
+        self,
+        integration_name: str,
+        job_id: str,
+        context_property_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> None:
+        """Delete a specific context property for a given integration
+        job.
+
+        Use this method to remove a custom data point that is no longer
+        relevant to the job's context.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job the context property belongs to.
+            context_property_id: ID of the context property to delete.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            None
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _delete_job_context_property(
+            self,
+            integration_name,
+            job_id,
+            context_property_id,
+            api_version=api_version,
+        )
+
+    def create_job_context_property(
+        self,
+        integration_name: str,
+        job_id: str,
+        value: str,
+        key: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Create a new context property for a specific integration
+        job.
+
+        Use this method to attach custom data to a job's context.
+        Property keys must be unique within their context.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job to create the context property for.
+            value: The property value. Required.
+            key: The context property ID to use. Must be 4-63
+                characters and match /[a-z][0-9]-/. Optional.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the newly created ContextProperty resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _create_job_context_property(
+            self,
+            integration_name,
+            job_id,
+            value,
+            key=key,
+            api_version=api_version,
+        )
+
+    def update_job_context_property(
+        self,
+        integration_name: str,
+        job_id: str,
+        context_property_id: str,
+        value: str,
+        update_mask: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Update an existing context property for a given integration
+        job.
+
+        Use this method to modify the value of a previously saved key.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job the context property belongs to.
+            context_property_id: ID of the context property to update.
+            value: The new property value. Required.
+            update_mask: Comma-separated list of fields to update. Only
+                "value" is supported. If omitted, defaults to "value".
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the updated ContextProperty resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _update_job_context_property(
+            self,
+            integration_name,
+            job_id,
+            context_property_id,
+            value,
+            update_mask=update_mask,
+            api_version=api_version,
+        )
+
+    def delete_all_job_context_properties(
+        self,
+        integration_name: str,
+        job_id: str,
+        context_id: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> None:
+        """Delete all context properties for a specific integration
+        job.
+
+        Use this method to quickly clear all supplemental data from a
+        job's context.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job to clear context properties from.
+            context_id: The context ID to remove context properties
+                from. Must be 4-63 characters and match /[a-z][0-9]-/.
+                Optional.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            None
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _delete_all_job_context_properties(
+            self,
+            integration_name,
+            job_id,
+            context_id=context_id,
+            api_version=api_version,
+        )
+
+    # -------------------------------------------------------------------------
+    # Job Instance Logs methods
+    # -------------------------------------------------------------------------
+
+    def list_job_instance_logs(
+        self,
+        integration_name: str,
+        job_id: str,
+        job_instance_id: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """List all execution logs for a specific job instance.
+
+        Use this method to browse the historical performance and
+        reliability of a background automation schedule.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job the instance belongs to.
+            job_instance_id: ID of the job instance to list logs for.
+            page_size: Maximum number of logs to return.
+            page_token: Page token from a previous call to retrieve the
+                next page.
+            filter_string: Filter expression to filter logs.
+            order_by: Field to sort the logs by.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+            as_list: If True, return a list of logs instead of a dict
+                with logs list and nextPageToken.
+
+        Returns:
+            If as_list is True: List of logs.
+            If as_list is False: Dict with logs list and nextPageToken.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _list_job_instance_logs(
+            self,
+            integration_name,
+            job_id,
+            job_instance_id,
+            page_size=page_size,
+            page_token=page_token,
+            filter_string=filter_string,
+            order_by=order_by,
+            api_version=api_version,
+            as_list=as_list,
+        )
+
+    def get_job_instance_log(
+        self,
+        integration_name: str,
+        job_id: str,
+        job_instance_id: str,
+        log_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Get a single log entry for a specific job instance.
+
+        Use this method to retrieve the detailed output message,
+        start/end times, and final status of a specific background task
+        execution.
+
+        Args:
+            integration_name: Name of the integration the job belongs
+                to.
+            job_id: ID of the job the instance belongs to.
+            job_instance_id: ID of the job instance the log belongs to.
+            log_id: ID of the log entry to retrieve.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing details of the specified JobInstanceLog.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_job_instance_log(
+            self,
+            integration_name,
+            job_id,
+            job_instance_id,
+            log_id,
+            api_version=api_version,
         )
 
     def get_stats(
