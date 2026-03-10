@@ -214,19 +214,6 @@ from secops.chronicle.watchlist import (
     create_watchlist,
     update_watchlist,
 )
-from secops.chronicle.integration.integrations import (
-    list_integrations,
-    get_integration,
-    delete_integration,
-    create_integration,
-    transition_integration,
-    update_integration,
-    update_custom_integration,
-    get_integration_affected_items,
-    get_integration_dependencies,
-    get_integration_diff,
-    get_integration_restricted_agents,
-)
 from secops.chronicle.integration.actions import (
     list_integration_actions,
     get_integration_action,
@@ -243,52 +230,6 @@ from secops.chronicle.integration.action_revisions import (
     create_integration_action_revision,
     rollback_integration_action_revision,
 )
-from secops.chronicle.integration.connectors import (
-    list_integration_connectors,
-    get_integration_connector,
-    delete_integration_connector,
-    create_integration_connector,
-    update_integration_connector,
-    execute_integration_connector_test,
-    get_integration_connector_template,
-)
-from secops.chronicle.integration.connector_revisions import (
-    list_integration_connector_revisions,
-    delete_integration_connector_revision,
-    create_integration_connector_revision,
-    rollback_integration_connector_revision,
-)
-from secops.chronicle.integration.connector_context_properties import (
-    list_connector_context_properties,
-    get_connector_context_property,
-    delete_connector_context_property,
-    create_connector_context_property,
-    update_connector_context_property,
-    delete_all_connector_context_properties,
-)
-from secops.chronicle.integration.connector_instance_logs import (
-    list_connector_instance_logs,
-    get_connector_instance_log,
-)
-from secops.chronicle.integration.connector_instances import (
-    list_connector_instances,
-    get_connector_instance,
-    delete_connector_instance,
-    create_connector_instance,
-    update_connector_instance,
-    get_connector_instance_latest_definition,
-    set_connector_instance_logs_collection,
-    run_connector_instance_on_demand,
-)
-from secops.chronicle.integration.jobs import (
-    list_integration_jobs,
-    get_integration_job,
-    delete_integration_job,
-    create_integration_job,
-    update_integration_job,
-    execute_integration_job_test,
-    get_integration_job_template,
-)
 from secops.chronicle.integration.managers import (
     list_integration_managers,
     get_integration_manager,
@@ -303,79 +244,6 @@ from secops.chronicle.integration.manager_revisions import (
     delete_integration_manager_revision,
     create_integration_manager_revision,
     rollback_integration_manager_revision,
-)
-from secops.chronicle.integration.job_revisions import (
-    list_integration_job_revisions,
-    delete_integration_job_revision,
-    create_integration_job_revision,
-    rollback_integration_job_revision,
-)
-from secops.chronicle.integration.job_instances import (
-    list_integration_job_instances,
-    get_integration_job_instance,
-    delete_integration_job_instance,
-    create_integration_job_instance,
-    update_integration_job_instance,
-    run_integration_job_instance_on_demand,
-)
-from secops.chronicle.integration.job_context_properties import (
-    list_job_context_properties,
-    get_job_context_property,
-    delete_job_context_property,
-    create_job_context_property,
-    update_job_context_property,
-    delete_all_job_context_properties,
-)
-from secops.chronicle.integration.job_instance_logs import (
-    list_job_instance_logs,
-    get_job_instance_log,
-)
-from secops.chronicle.integration.integration_instances import (
-    list_integration_instances,
-    get_integration_instance,
-    delete_integration_instance,
-    create_integration_instance,
-    update_integration_instance,
-    execute_integration_instance_test,
-    get_integration_instance_affected_items,
-    get_default_integration_instance,
-)
-from secops.chronicle.integration.transformers import (
-    list_integration_transformers,
-    get_integration_transformer,
-    delete_integration_transformer,
-    create_integration_transformer,
-    update_integration_transformer,
-    execute_integration_transformer_test,
-    get_integration_transformer_template,
-)
-from secops.chronicle.integration.transformer_revisions import (
-    list_integration_transformer_revisions,
-    delete_integration_transformer_revision,
-    create_integration_transformer_revision,
-    rollback_integration_transformer_revision,
-)
-from secops.chronicle.integration.logical_operators import (
-    list_integration_logical_operators,
-    get_integration_logical_operator,
-    delete_integration_logical_operator,
-    create_integration_logical_operator,
-    update_integration_logical_operator,
-    execute_integration_logical_operator_test,
-    get_integration_logical_operator_template,
-)
-from secops.chronicle.integration.logical_operator_revisions import (
-    list_integration_logical_operator_revisions,
-    delete_integration_logical_operator_revision,
-    create_integration_logical_operator_revision,
-    rollback_integration_logical_operator_revision,
-)
-from secops.chronicle.integration.marketplace_integrations import (
-    list_marketplace_integrations,
-    get_marketplace_integration,
-    get_marketplace_integration_diff,
-    install_marketplace_integration,
-    uninstall_marketplace_integration,
 )
 
 __all__ = [
@@ -556,18 +424,6 @@ __all__ = [
     "delete_watchlist",
     "create_watchlist",
     "update_watchlist",
-    # Integrations
-    "list_integrations",
-    "get_integration",
-    "delete_integration",
-    "create_integration",
-    "transition_integration",
-    "update_integration",
-    "update_custom_integration",
-    "get_integration_affected_items",
-    "get_integration_dependencies",
-    "get_integration_diff",
-    "get_integration_restricted_agents",
     # Integration Actions
     "list_integration_actions",
     "get_integration_action",
@@ -582,46 +438,6 @@ __all__ = [
     "delete_integration_action_revision",
     "create_integration_action_revision",
     "rollback_integration_action_revision",
-    # Integration Connectors
-    "list_integration_connectors",
-    "get_integration_connector",
-    "delete_integration_connector",
-    "create_integration_connector",
-    "update_integration_connector",
-    "execute_integration_connector_test",
-    "get_integration_connector_template",
-    # Integration Connector Revisions
-    "list_integration_connector_revisions",
-    "delete_integration_connector_revision",
-    "create_integration_connector_revision",
-    "rollback_integration_connector_revision",
-    # Connector Context Properties
-    "list_connector_context_properties",
-    "get_connector_context_property",
-    "delete_connector_context_property",
-    "create_connector_context_property",
-    "update_connector_context_property",
-    "delete_all_connector_context_properties",
-    # Connector Instance Logs
-    "list_connector_instance_logs",
-    "get_connector_instance_log",
-    # Connector Instances
-    "list_connector_instances",
-    "get_connector_instance",
-    "delete_connector_instance",
-    "create_connector_instance",
-    "update_connector_instance",
-    "get_connector_instance_latest_definition",
-    "set_connector_instance_logs_collection",
-    "run_connector_instance_on_demand",
-    # Integration Jobs
-    "list_integration_jobs",
-    "get_integration_job",
-    "delete_integration_job",
-    "create_integration_job",
-    "update_integration_job",
-    "execute_integration_job_test",
-    "get_integration_job_template",
     # Integration Managers
     "list_integration_managers",
     "get_integration_manager",
@@ -635,67 +451,4 @@ __all__ = [
     "delete_integration_manager_revision",
     "create_integration_manager_revision",
     "rollback_integration_manager_revision",
-    # Integration Job Revisions
-    "list_integration_job_revisions",
-    "delete_integration_job_revision",
-    "create_integration_job_revision",
-    "rollback_integration_job_revision",
-    # Integration Job Instances
-    "list_integration_job_instances",
-    "get_integration_job_instance",
-    "delete_integration_job_instance",
-    "create_integration_job_instance",
-    "update_integration_job_instance",
-    "run_integration_job_instance_on_demand",
-    # Job Context Properties
-    "list_job_context_properties",
-    "get_job_context_property",
-    "delete_job_context_property",
-    "create_job_context_property",
-    "update_job_context_property",
-    "delete_all_job_context_properties",
-    # Job Instance Logs
-    "list_job_instance_logs",
-    "get_job_instance_log",
-    # Integration Instances
-    "list_integration_instances",
-    "get_integration_instance",
-    "delete_integration_instance",
-    "create_integration_instance",
-    "update_integration_instance",
-    "execute_integration_instance_test",
-    "get_integration_instance_affected_items",
-    "get_default_integration_instance",
-    # Integration Transformers
-    "list_integration_transformers",
-    "get_integration_transformer",
-    "delete_integration_transformer",
-    "create_integration_transformer",
-    "update_integration_transformer",
-    "execute_integration_transformer_test",
-    "get_integration_transformer_template",
-    # Integration Transformer Revisions
-    "list_integration_transformer_revisions",
-    "delete_integration_transformer_revision",
-    "create_integration_transformer_revision",
-    "rollback_integration_transformer_revision",
-    # Integration Logical Operators
-    "list_integration_logical_operators",
-    "get_integration_logical_operator",
-    "delete_integration_logical_operator",
-    "create_integration_logical_operator",
-    "update_integration_logical_operator",
-    "execute_integration_logical_operator_test",
-    "get_integration_logical_operator_template",
-    # Integration Logical Operator Revisions
-    "list_integration_logical_operator_revisions",
-    "delete_integration_logical_operator_revision",
-    "create_integration_logical_operator_revision",
-    "rollback_integration_logical_operator_revision",
-    # Marketplace Integrations
-    "list_marketplace_integrations",
-    "get_marketplace_integration",
-    "get_marketplace_integration_diff",
-    "install_marketplace_integration",
-    "uninstall_marketplace_integration",
 ]
