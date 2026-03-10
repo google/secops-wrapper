@@ -347,7 +347,7 @@ def chronicle_request_bytes(
         try:
             data = response.json()
             raise APIError(
-                f"{error_message or "API request failed"}: method={method}, url={url}, "
+                f"{error_message or 'API request failed'}: method={method}, url={url}, "
                 f"status={response.status_code}, response={data}"
             ) from None
         except ValueError:
@@ -355,7 +355,7 @@ def chronicle_request_bytes(
                 getattr(response, "text", ""), limit=MAX_BODY_CHARS
             )
             raise APIError(
-                f"{error_message or "API request failed"}: method={method}, url={url}, "
+                f"{error_message or 'API request failed'}: method={method}, url={url}, "
                 f"status={response.status_code}, response_text={preview}"
             ) from None
 
