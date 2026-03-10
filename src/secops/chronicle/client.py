@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 """Chronicle API client."""
+
 import ipaddress
 import re
 from collections.abc import Iterator
@@ -22,140 +23,143 @@ from typing import Any, Literal, Union
 
 from google.auth.transport import requests as google_auth_requests
 
+# pylint: disable=line-too-long
 from secops import auth as secops_auth
 from secops.auth import RetryConfig
 from secops.chronicle.alert import get_alerts as _get_alerts
 from secops.chronicle.case import get_cases_from_list
-from secops.chronicle.dashboard import DashboardAccessType, DashboardView
-from secops.chronicle.dashboard import add_chart as _add_chart
-from secops.chronicle.dashboard import create_dashboard as _create_dashboard
-from secops.chronicle.dashboard import delete_dashboard as _delete_dashboard
 from secops.chronicle.dashboard import (
+    DashboardAccessType,
+    DashboardView,
+    add_chart as _add_chart,
+    create_dashboard as _create_dashboard,
+    delete_dashboard as _delete_dashboard,
     duplicate_dashboard as _duplicate_dashboard,
+    edit_chart as _edit_chart,
+    export_dashboard as _export_dashboard,
+    get_chart as _get_chart,
+    get_dashboard as _get_dashboard,
+    import_dashboard as _import_dashboard,
+    list_dashboards as _list_dashboards,
+    remove_chart as _remove_chart,
+    update_dashboard as _update_dashboard,
 )
-from secops.chronicle.dashboard import edit_chart as _edit_chart
-from secops.chronicle.dashboard import export_dashboard as _export_dashboard
-from secops.chronicle.dashboard import get_chart as _get_chart
-from secops.chronicle.dashboard import get_dashboard as _get_dashboard
-from secops.chronicle.dashboard import import_dashboard as _import_dashboard
-from secops.chronicle.dashboard import list_dashboards as _list_dashboards
-from secops.chronicle.dashboard import remove_chart as _remove_chart
-from secops.chronicle.dashboard import update_dashboard as _update_dashboard
 from secops.chronicle.dashboard_query import (
     execute_query as _execute_dashboard_query,
-)
-from secops.chronicle.dashboard_query import (
     get_execute_query as _get_execute_query,
 )
 from secops.chronicle.data_export import (
     cancel_data_export as _cancel_data_export,
-)
-from secops.chronicle.data_export import (
     create_data_export as _create_data_export,
-)
-from secops.chronicle.data_export import (
     fetch_available_log_types as _fetch_available_log_types,
-)
-from secops.chronicle.data_export import get_data_export as _get_data_export
-from secops.chronicle.data_export import list_data_export as _list_data_export
-from secops.chronicle.data_export import (
+    get_data_export as _get_data_export,
+    list_data_export as _list_data_export,
     update_data_export as _update_data_export,
 )
-from secops.chronicle.data_table import DataTableColumnType
-from secops.chronicle.data_table import create_data_table as _create_data_table
 from secops.chronicle.data_table import (
+    DataTableColumnType,
+    create_data_table as _create_data_table,
     create_data_table_rows as _create_data_table_rows,
-)
-from secops.chronicle.data_table import delete_data_table as _delete_data_table
-from secops.chronicle.data_table import (
+    delete_data_table as _delete_data_table,
     delete_data_table_rows as _delete_data_table_rows,
-)
-from secops.chronicle.data_table import get_data_table as _get_data_table
-from secops.chronicle.data_table import (
+    get_data_table as _get_data_table,
     list_data_table_rows as _list_data_table_rows,
-)
-from secops.chronicle.data_table import list_data_tables as _list_data_tables
-from secops.chronicle.data_table import (
+    list_data_tables as _list_data_tables,
     replace_data_table_rows as _replace_data_table_rows,
-)
-from secops.chronicle.data_table import update_data_table as _update_data_table
-from secops.chronicle.data_table import (
+    update_data_table as _update_data_table,
     update_data_table_rows as _update_data_table_rows,
 )
-from secops.chronicle.entity import _detect_value_type_for_query
-from secops.chronicle.entity import summarize_entity as _summarize_entity
-from secops.chronicle.feeds import CreateFeedModel, UpdateFeedModel
-from secops.chronicle.feeds import create_feed as _create_feed
-from secops.chronicle.feeds import delete_feed as _delete_feed
-from secops.chronicle.feeds import disable_feed as _disable_feed
-from secops.chronicle.feeds import enable_feed as _enable_feed
-from secops.chronicle.feeds import generate_secret as _generate_secret
-from secops.chronicle.feeds import get_feed as _get_feed
-from secops.chronicle.feeds import list_feeds as _list_feeds
-from secops.chronicle.feeds import update_feed as _update_feed
-from secops.chronicle.gemini import GeminiResponse
-from secops.chronicle.gemini import opt_in_to_gemini as _opt_in_to_gemini
-from secops.chronicle.gemini import query_gemini as _query_gemini
-from secops.chronicle.ioc import list_iocs as _list_iocs
+from secops.chronicle.entity import (
+    _detect_value_type_for_query,
+    summarize_entity as _summarize_entity,
+)
+from secops.chronicle.featured_content_rules import (
+    list_featured_content_rules as _list_featured_content_rules,
+)
+from secops.chronicle.feeds import (
+    CreateFeedModel,
+    UpdateFeedModel,
+    create_feed as _create_feed,
+    delete_feed as _delete_feed,
+    disable_feed as _disable_feed,
+    enable_feed as _enable_feed,
+    generate_secret as _generate_secret,
+    get_feed as _get_feed,
+    list_feeds as _list_feeds,
+    update_feed as _update_feed,
+)
+from secops.chronicle.gemini import (
+    GeminiResponse,
+    opt_in_to_gemini as _opt_in_to_gemini,
+    query_gemini as _query_gemini,
+)
 from secops.chronicle.investigations import (
     fetch_associated_investigations as _fetch_associated_investigations,
-)
-from secops.chronicle.investigations import (
     get_investigation as _get_investigation,
-)
-from secops.chronicle.investigations import (
     list_investigations as _list_investigations,
-)
-from secops.chronicle.investigations import (
     trigger_investigation as _trigger_investigation,
 )
-from secops.chronicle.log_ingest import create_forwarder as _create_forwarder
-from secops.chronicle.log_ingest import delete_forwarder as _delete_forwarder
-from secops.chronicle.log_ingest import get_forwarder as _get_forwarder
+from secops.chronicle.ioc import list_iocs as _list_iocs
 from secops.chronicle.log_ingest import (
+    create_forwarder as _create_forwarder,
+    delete_forwarder as _delete_forwarder,
+    get_forwarder as _get_forwarder,
     get_or_create_forwarder as _get_or_create_forwarder,
+    import_entities as _import_entities,
+    ingest_log as _ingest_log,
+    ingest_udm as _ingest_udm,
+    list_forwarders as _list_forwarders,
+    update_forwarder as _update_forwarder,
 )
-from secops.chronicle.log_ingest import import_entities as _import_entities
-from secops.chronicle.log_ingest import ingest_log as _ingest_log
-from secops.chronicle.log_ingest import ingest_udm as _ingest_udm
-from secops.chronicle.log_ingest import list_forwarders as _list_forwarders
-from secops.chronicle.log_ingest import update_forwarder as _update_forwarder
-from secops.chronicle.log_types import classify_logs as _classify_logs
-from secops.chronicle.log_types import get_all_log_types as _get_all_log_types
-from secops.chronicle.log_types import (
-    get_log_type_description as _get_log_type_description,
-)
-from secops.chronicle.log_types import is_valid_log_type as _is_valid_log_type
-from secops.chronicle.log_types import search_log_types as _search_log_types
 from secops.chronicle.log_processing_pipelines import (
     associate_streams as _associate_streams,
-)
-from secops.chronicle.log_processing_pipelines import (
     create_log_processing_pipeline as _create_log_processing_pipeline,
-)
-from secops.chronicle.log_processing_pipelines import (
     delete_log_processing_pipeline as _delete_log_processing_pipeline,
-)
-from secops.chronicle.log_processing_pipelines import (
     dissociate_streams as _dissociate_streams,
-)
-from secops.chronicle.log_processing_pipelines import (
     fetch_associated_pipeline as _fetch_associated_pipeline,
-)
-from secops.chronicle.log_processing_pipelines import (
     fetch_sample_logs_by_streams as _fetch_sample_logs_by_streams,
-)
-from secops.chronicle.log_processing_pipelines import (
     get_log_processing_pipeline as _get_log_processing_pipeline,
-)
-from secops.chronicle.log_processing_pipelines import (
     list_log_processing_pipelines as _list_log_processing_pipelines,
-)
-from secops.chronicle.log_processing_pipelines import (
+    test_pipeline as _test_pipeline,
     update_log_processing_pipeline as _update_log_processing_pipeline,
 )
-from secops.chronicle.log_processing_pipelines import (
-    test_pipeline as _test_pipeline,
+from secops.chronicle.log_types import (
+    classify_logs as _classify_logs,
+    get_all_log_types as _get_all_log_types,
+    get_log_type_description as _get_log_type_description,
+    is_valid_log_type as _is_valid_log_type,
+    search_log_types as _search_log_types,
+)
+from secops.chronicle.integration.actions import (
+    create_integration_action as _create_integration_action,
+    delete_integration_action as _delete_integration_action,
+    execute_integration_action_test as _execute_integration_action_test,
+    get_integration_action as _get_integration_action,
+    get_integration_action_template as _get_integration_action_template,
+    get_integration_actions_by_environment as _get_integration_actions_by_environment,
+    list_integration_actions as _list_integration_actions,
+    update_integration_action as _update_integration_action,
+)
+from secops.chronicle.integration.action_revisions import (
+    create_integration_action_revision as _create_integration_action_revision,
+    delete_integration_action_revision as _delete_integration_action_revision,
+    list_integration_action_revisions as _list_integration_action_revisions,
+    rollback_integration_action_revision as _rollback_integration_action_revision,
+)
+from secops.chronicle.integration.managers import (
+    create_integration_manager as _create_integration_manager,
+    delete_integration_manager as _delete_integration_manager,
+    get_integration_manager as _get_integration_manager,
+    get_integration_manager_template as _get_integration_manager_template,
+    list_integration_managers as _list_integration_managers,
+    update_integration_manager as _update_integration_manager,
+)
+from secops.chronicle.integration.manager_revisions import (
+    create_integration_manager_revision as _create_integration_manager_revision,
+    delete_integration_manager_revision as _delete_integration_manager_revision,
+    get_integration_manager_revision as _get_integration_manager_revision,
+    list_integration_manager_revisions as _list_integration_manager_revisions,
+    rollback_integration_manager_revision as _rollback_integration_manager_revision,
 )
 from secops.chronicle.models import (
     APIVersion,
@@ -166,102 +170,70 @@ from secops.chronicle.models import (
     InputInterval,
     TileType,
 )
-from secops.chronicle.nl_search import nl_search as _nl_search
-from secops.chronicle.nl_search import translate_nl_to_udm
-from secops.chronicle.parser import activate_parser as _activate_parser
+from secops.chronicle.nl_search import (
+    nl_search as _nl_search,
+    translate_nl_to_udm,
+)
 from secops.chronicle.parser import (
+    activate_parser as _activate_parser,
     activate_release_candidate_parser as _activate_release_candidate_parser,
+    copy_parser as _copy_parser,
+    create_parser as _create_parser,
+    deactivate_parser as _deactivate_parser,
+    delete_parser as _delete_parser,
+    get_parser as _get_parser,
+    list_parsers as _list_parsers,
+    run_parser as _run_parser,
 )
-from secops.chronicle.parser import copy_parser as _copy_parser
-from secops.chronicle.parser import create_parser as _create_parser
-from secops.chronicle.parser import deactivate_parser as _deactivate_parser
-from secops.chronicle.parser import delete_parser as _delete_parser
-from secops.chronicle.parser import get_parser as _get_parser
-from secops.chronicle.parser import list_parsers as _list_parsers
-from secops.chronicle.parser import run_parser as _run_parser
-from secops.chronicle.parser_extension import ParserExtensionConfig
 from secops.chronicle.parser_extension import (
+    ParserExtensionConfig,
     activate_parser_extension as _activate_parser_extension,
-)
-from secops.chronicle.parser_extension import (
     create_parser_extension as _create_parser_extension,
-)
-from secops.chronicle.parser_extension import (
     delete_parser_extension as _delete_parser_extension,
-)
-from secops.chronicle.parser_extension import (
     get_parser_extension as _get_parser_extension,
-)
-from secops.chronicle.parser_extension import (
     list_parser_extensions as _list_parser_extensions,
 )
 from secops.chronicle.reference_list import (
     ReferenceListSyntaxType,
     ReferenceListView,
-)
-from secops.chronicle.reference_list import (
     create_reference_list as _create_reference_list,
-)
-from secops.chronicle.reference_list import (
     get_reference_list as _get_reference_list,
-)
-from secops.chronicle.reference_list import (
     list_reference_lists as _list_reference_lists,
-)
-from secops.chronicle.reference_list import (
     update_reference_list as _update_reference_list,
 )
-
-# Import rule functions
-from secops.chronicle.rule import create_rule as _create_rule
-from secops.chronicle.rule import delete_rule as _delete_rule
-from secops.chronicle.rule import enable_rule as _enable_rule
-from secops.chronicle.rule import get_rule as _get_rule
-from secops.chronicle.rule import get_rule_deployment as _get_rule_deployment
 from secops.chronicle.rule import (
+    create_rule as _create_rule,
+    delete_rule as _delete_rule,
+    enable_rule as _enable_rule,
+    get_rule as _get_rule,
+    get_rule_deployment as _get_rule_deployment,
     list_rule_deployments as _list_rule_deployments,
-)
-from secops.chronicle.rule import list_rules as _list_rules
-from secops.chronicle.rule import run_rule_test
-from secops.chronicle.rule import search_rules as _search_rules
-from secops.chronicle.rule import set_rule_alerting as _set_rule_alerting
-from secops.chronicle.rule import update_rule as _update_rule
-from secops.chronicle.rule import (
+    list_rules as _list_rules,
+    run_rule_test,
+    search_rules as _search_rules,
+    set_rule_alerting as _set_rule_alerting,
+    update_rule as _update_rule,
     update_rule_deployment as _update_rule_deployment,
 )
 from secops.chronicle.rule_alert import (
     bulk_update_alerts as _bulk_update_alerts,
-)
-from secops.chronicle.rule_alert import get_alert as _get_alert
-from secops.chronicle.rule_alert import (
+    get_alert as _get_alert,
     search_rule_alerts as _search_rule_alerts,
+    update_alert as _update_alert,
 )
-from secops.chronicle.rule_alert import update_alert as _update_alert
-from secops.chronicle.rule_detection import list_detections as _list_detections
-from secops.chronicle.rule_detection import list_errors as _list_errors
+from secops.chronicle.rule_detection import (
+    list_detections as _list_detections,
+    list_errors as _list_errors,
+)
 from secops.chronicle.rule_exclusion import (
     RuleExclusionType,
     UpdateRuleDeployment,
-)
-from secops.chronicle.rule_exclusion import (
     compute_rule_exclusion_activity as _compute_rule_exclusion_activity,
-)
-from secops.chronicle.rule_exclusion import (
     create_rule_exclusion as _create_rule_exclusion,
-)
-from secops.chronicle.rule_exclusion import (
     get_rule_exclusion as _get_rule_exclusion,
-)
-from secops.chronicle.rule_exclusion import (
     get_rule_exclusion_deployment as _get_rule_exclusion_deployment,
-)
-from secops.chronicle.rule_exclusion import (
     list_rule_exclusions as _list_rule_exclusions,
-)
-from secops.chronicle.rule_exclusion import (
     patch_rule_exclusion as _patch_rule_exclusion,
-)
-from secops.chronicle.rule_exclusion import (
     update_rule_exclusion_deployment as _update_rule_exclusion_deployment,
 )
 from secops.chronicle.rule_retrohunt import (
@@ -270,71 +242,44 @@ from secops.chronicle.rule_retrohunt import (
     list_retrohunts as _list_retrohunts,
 )
 from secops.chronicle.rule_set import (
-    batch_update_curated_rule_set_deployments as _batch_update_curated_rule_set_deployments,  # pylint: disable=line-too-long
-)
-from secops.chronicle.rule_set import get_curated_rule as _get_curated_rule
-from secops.chronicle.rule_set import (
+    batch_update_curated_rule_set_deployments as _batch_update_curated_rule_set_deployments,
+    get_curated_rule as _get_curated_rule,
     get_curated_rule_by_name as _get_curated_rule_by_name,
-)
-from secops.chronicle.rule_set import (
     get_curated_rule_set as _get_curated_rule_set,
-)
-from secops.chronicle.rule_set import (
     get_curated_rule_set_category as _get_curated_rule_set_category,
-)
-from secops.chronicle.rule_set import (
     get_curated_rule_set_deployment as _get_curated_rule_set_deployment,
-)
-from secops.chronicle.rule_set import (
-    get_curated_rule_set_deployment_by_name as _get_curated_rule_set_deployment_by_name,  # pylint: disable=line-too-long
-)
-from secops.chronicle.rule_set import (
+    get_curated_rule_set_deployment_by_name as _get_curated_rule_set_deployment_by_name,
     list_curated_rule_set_categories as _list_curated_rule_set_categories,
-)
-from secops.chronicle.rule_set import (
     list_curated_rule_set_deployments as _list_curated_rule_set_deployments,
-)
-from secops.chronicle.rule_set import (
     list_curated_rule_sets as _list_curated_rule_sets,
-)
-from secops.chronicle.rule_set import list_curated_rules as _list_curated_rules
-from secops.chronicle.rule_set import (
+    list_curated_rules as _list_curated_rules,
     search_curated_detections as _search_curated_detections,
-)
-from secops.chronicle.rule_set import (
     update_curated_rule_set_deployment as _update_curated_rule_set_deployment,
-)
-from secops.chronicle.featured_content_rules import (
-    list_featured_content_rules as _list_featured_content_rules,
 )
 from secops.chronicle.rule_validation import validate_rule as _validate_rule
 from secops.chronicle.search import search_udm as _search_udm
 from secops.chronicle.log_search import search_raw_logs as _search_raw_logs
 from secops.chronicle.stats import get_stats as _get_stats
-from secops.chronicle.udm_mapping import RowLogFormat
 from secops.chronicle.udm_mapping import (
+    RowLogFormat,
     generate_udm_key_value_mappings as _generate_udm_key_value_mappings,
 )
-
-# Import functions from the new modules
 from secops.chronicle.udm_search import (
     fetch_udm_search_csv as _fetch_udm_search_csv,
-)
-from secops.chronicle.udm_search import (
     fetch_udm_search_view as _fetch_udm_search_view,
-)
-from secops.chronicle.udm_search import (
     find_udm_field_values as _find_udm_field_values,
 )
 from secops.chronicle.validate import validate_query as _validate_query
 from secops.chronicle.watchlist import (
-    list_watchlists as _list_watchlists,
-    get_watchlist as _get_watchlist,
-    delete_watchlist as _delete_watchlist,
     create_watchlist as _create_watchlist,
+    delete_watchlist as _delete_watchlist,
+    get_watchlist as _get_watchlist,
+    list_watchlists as _list_watchlists,
     update_watchlist as _update_watchlist,
 )
 from secops.exceptions import SecOpsError
+
+# pylint: enable=line-too-long
 
 
 class ValueType(Enum):
@@ -759,6 +704,952 @@ class ChronicleClient:
             entity_population_mechanism,
             watchlist_user_preferences,
             update_mask,
+        )
+
+    # -------------------------------------------------------------------------
+    # Integration Action methods
+    # -------------------------------------------------------------------------
+
+    def list_integration_actions(
+        self,
+        integration_name: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        expand: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """Get a list of actions for a given integration.
+
+        Args:
+            integration_name: Name of the integration to get actions for
+            page_size: Number of results to return per page
+            page_token: Token for the page to retrieve
+            filter_string: Filter expression to filter actions
+            order_by: Field to sort the actions by
+            expand: Comma-separated list of fields to expand in the response
+            api_version: API version to use for the request. Default is V1BETA.
+            as_list: If True, return a list of actions instead of a dict with
+                actions list and nextPageToken.
+
+        Returns:
+            If as_list is True: List of actions.
+            If as_list is False: Dict with actions list and nextPageToken.
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _list_integration_actions(
+            self,
+            integration_name,
+            page_size=page_size,
+            page_token=page_token,
+            filter_string=filter_string,
+            order_by=order_by,
+            expand=expand,
+            api_version=api_version,
+            as_list=as_list,
+        )
+
+    def get_integration_action(
+        self,
+        integration_name: str,
+        action_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Get details of a specific action for a given integration.
+
+        Args:
+            integration_name: Name of the integration the action belongs to
+            action_id: ID of the action to retrieve
+            api_version: API version to use for the request. Default is V1BETA.
+
+        Returns:
+            Dict containing details of the specified action.
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _get_integration_action(
+            self,
+            integration_name,
+            action_id,
+            api_version=api_version,
+        )
+
+    def delete_integration_action(
+        self,
+        integration_name: str,
+        action_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> None:
+        """Delete a specific action from a given integration.
+
+        Args:
+            integration_name: Name of the integration the action belongs to
+            action_id: ID of the action to delete
+            api_version: API version to use for the request. Default is V1BETA.
+
+        Returns:
+            None
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _delete_integration_action(
+            self,
+            integration_name,
+            action_id,
+            api_version=api_version,
+        )
+
+    def create_integration_action(
+        self,
+        integration_name: str,
+        display_name: str,
+        script: str,
+        timeout_seconds: int,
+        enabled: bool,
+        script_result_name: str,
+        is_async: bool,
+        description: str | None = None,
+        default_result_value: str | None = None,
+        async_polling_interval_seconds: int | None = None,
+        async_total_timeout_seconds: int | None = None,
+        dynamic_results: list[dict[str, Any]] | None = None,
+        parameters: list[dict[str, Any]] | None = None,
+        ai_generated: bool | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Create a new custom action for a given integration.
+
+        Args:
+            integration_name: Name of the integration to
+                create the action for.
+            display_name: Action's display name.
+                Maximum 150 characters. Required.
+            script: Action's Python script. Maximum size 5MB. Required.
+            timeout_seconds: Action timeout in seconds. Maximum 1200. Required.
+            enabled: Whether the action is enabled or disabled. Required.
+            script_result_name: Field name that holds the script result.
+                Maximum 100 characters. Required.
+            is_async: Whether the action is asynchronous. Required.
+            description: Action's description. Maximum 400 characters. Optional.
+            default_result_value: Action's default result value.
+                Maximum 1000 characters. Optional.
+            async_polling_interval_seconds: Polling interval
+                in seconds for async actions.
+                Cannot exceed total timeout. Optional.
+            async_total_timeout_seconds: Total async timeout in seconds. Maximum
+                1209600 (14 days). Optional.
+            dynamic_results: List of dynamic result metadata dicts.
+                Max 50. Optional.
+            parameters: List of action parameter dicts. Max 50. Optional.
+            ai_generated: Whether the action was generated by AI. Optional.
+            api_version: API version to use for the request. Default is V1BETA.
+
+        Returns:
+            Dict containing the newly created IntegrationAction resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _create_integration_action(
+            self,
+            integration_name,
+            display_name,
+            script,
+            timeout_seconds,
+            enabled,
+            script_result_name,
+            is_async,
+            description=description,
+            default_result_value=default_result_value,
+            async_polling_interval_seconds=async_polling_interval_seconds,
+            async_total_timeout_seconds=async_total_timeout_seconds,
+            dynamic_results=dynamic_results,
+            parameters=parameters,
+            ai_generated=ai_generated,
+            api_version=api_version,
+        )
+
+    def update_integration_action(
+        self,
+        integration_name: str,
+        action_id: str,
+        display_name: str | None = None,
+        script: str | None = None,
+        timeout_seconds: int | None = None,
+        enabled: bool | None = None,
+        script_result_name: str | None = None,
+        is_async: bool | None = None,
+        description: str | None = None,
+        default_result_value: str | None = None,
+        async_polling_interval_seconds: int | None = None,
+        async_total_timeout_seconds: int | None = None,
+        dynamic_results: list[dict[str, Any]] | None = None,
+        parameters: list[dict[str, Any]] | None = None,
+        ai_generated: bool | None = None,
+        update_mask: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Update an existing custom action for a given integration.
+
+        Only custom actions can be updated; predefined commercial actions are
+        immutable.
+
+        Args:
+            integration_name: Name of the integration the action belongs to.
+            action_id: ID of the action to update.
+            display_name: Action's display name. Maximum 150 characters.
+            script: Action's Python script. Maximum size 5MB.
+            timeout_seconds: Action timeout in seconds. Maximum 1200.
+            enabled: Whether the action is enabled or disabled.
+            script_result_name: Field name that holds the script result.
+                Maximum 100 characters.
+            is_async: Whether the action is asynchronous.
+            description: Action's description. Maximum 400 characters.
+            default_result_value: Action's default result value.
+                Maximum 1000 characters.
+            async_polling_interval_seconds: Polling interval
+                in seconds for async actions. Cannot exceed total timeout.
+            async_total_timeout_seconds: Total async timeout in seconds. Maximum
+                1209600 (14 days).
+            dynamic_results: List of dynamic result metadata dicts. Max 50.
+            parameters: List of action parameter dicts. Max 50.
+            ai_generated: Whether the action was generated by AI.
+            update_mask: Comma-separated list of fields to update. If omitted,
+                the mask is auto-generated from whichever fields are provided.
+                Example: "displayName,script".
+            api_version: API version to use for the request. Default is V1BETA.
+
+        Returns:
+            Dict containing the updated IntegrationAction resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _update_integration_action(
+            self,
+            integration_name,
+            action_id,
+            display_name=display_name,
+            script=script,
+            timeout_seconds=timeout_seconds,
+            enabled=enabled,
+            script_result_name=script_result_name,
+            is_async=is_async,
+            description=description,
+            default_result_value=default_result_value,
+            async_polling_interval_seconds=async_polling_interval_seconds,
+            async_total_timeout_seconds=async_total_timeout_seconds,
+            dynamic_results=dynamic_results,
+            parameters=parameters,
+            ai_generated=ai_generated,
+            update_mask=update_mask,
+            api_version=api_version,
+        )
+
+    def execute_integration_action_test(
+        self,
+        integration_name: str,
+        test_case_id: int,
+        action: dict[str, Any],
+        scope: str,
+        integration_instance_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Execute a test run of an integration action's script.
+
+        Use this method to verify custom action logic, connectivity, and data
+        parsing against a specified integration instance and test case before
+        making the action available in playbooks.
+
+        Args:
+            integration_name: Name of the integration the action belongs to.
+            test_case_id: ID of the action test case.
+            action: Dict containing the IntegrationAction to test.
+            scope: The action test scope.
+            integration_instance_id: The integration instance ID to use.
+            api_version: API version to use for the request. Default is V1BETA.
+
+        Returns:
+            Dict with the test execution results with the following fields:
+                - output: The script output.
+                - debugOutput: The script debug output.
+                - resultJson: The result JSON if it exists (optional).
+                - resultName: The script result name (optional).
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _execute_integration_action_test(
+            self,
+            integration_name,
+            test_case_id,
+            action,
+            scope,
+            integration_instance_id,
+            api_version=api_version,
+        )
+
+    def get_integration_actions_by_environment(
+        self,
+        integration_name: str,
+        environments: list[str],
+        include_widgets: bool,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """List actions executable within specified environments.
+
+        Use this method to discover which automated tasks have active
+        integration instances configured for a particular
+        network or organizational context.
+
+        Args:
+            integration_name: Name of the integration to fetch actions for.
+            environments: List of environments to filter actions by.
+            include_widgets: Whether to include widget actions in the response.
+            api_version: API version to use for the request. Default is V1BETA.
+
+        Returns:
+            Dict containing a list of IntegrationAction objects that have
+            integration instances in one of the given environments.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_integration_actions_by_environment(
+            self,
+            integration_name,
+            environments,
+            include_widgets,
+            api_version=api_version,
+        )
+
+    def get_integration_action_template(
+        self,
+        integration_name: str,
+        is_async: bool = False,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Retrieve a default Python script template for a new
+        integration action.
+
+        Use this method to jumpstart the development of a custom automated task
+        by providing boilerplate code for either synchronous or asynchronous
+        operations.
+
+        Args:
+            integration_name: Name of the integration to fetch the template for.
+            is_async: Whether to fetch a template for an async action. Default
+                is False.
+            api_version: API version to use for the request. Default is V1BETA.
+
+        Returns:
+            Dict containing the IntegrationAction template.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_integration_action_template(
+            self,
+            integration_name,
+            is_async=is_async,
+            api_version=api_version,
+        )
+
+    # -------------------------------------------------------------------------
+    # Integration Action Revisions methods
+    # -------------------------------------------------------------------------
+
+    def list_integration_action_revisions(
+        self,
+        integration_name: str,
+        action_id: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """List all revisions for a specific integration action.
+
+        Use this method to view the history of changes to an action,
+        enabling version control and the ability to rollback to
+        previous configurations.
+
+        Args:
+            integration_name: Name of the integration the action
+                belongs to.
+            action_id: ID of the action to list revisions for.
+            page_size: Maximum number of revisions to return.
+            page_token: Page token from a previous call to retrieve the
+                next page.
+            filter_string: Filter expression to filter revisions.
+            order_by: Field to sort the revisions by.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+            as_list: If True, return a list of revisions instead of a
+                dict with revisions list and nextPageToken.
+
+        Returns:
+            If as_list is True: List of action revisions.
+            If as_list is False: Dict with action revisions list and
+                nextPageToken.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _list_integration_action_revisions(
+            self,
+            integration_name,
+            action_id,
+            page_size=page_size,
+            page_token=page_token,
+            filter_string=filter_string,
+            order_by=order_by,
+            api_version=api_version,
+            as_list=as_list,
+        )
+
+    def delete_integration_action_revision(
+        self,
+        integration_name: str,
+        action_id: str,
+        revision_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> None:
+        """Delete a specific action revision.
+
+        Use this method to permanently remove a revision from the
+        action's history.
+
+        Args:
+            integration_name: Name of the integration the action
+                belongs to.
+            action_id: ID of the action the revision belongs to.
+            revision_id: ID of the revision to delete.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            None
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _delete_integration_action_revision(
+            self,
+            integration_name,
+            action_id,
+            revision_id,
+            api_version=api_version,
+        )
+
+    def create_integration_action_revision(
+        self,
+        integration_name: str,
+        action_id: str,
+        action: dict[str, Any],
+        comment: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Create a new revision for an integration action.
+
+        Use this method to save a snapshot of the current action
+        configuration before making changes, enabling easy rollback if
+        needed.
+
+        Args:
+            integration_name: Name of the integration the action
+                belongs to.
+            action_id: ID of the action to create a revision for.
+            action: The action object to save as a revision.
+            comment: Optional comment describing the revision.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the newly created ActionRevision resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _create_integration_action_revision(
+            self,
+            integration_name,
+            action_id,
+            action,
+            comment=comment,
+            api_version=api_version,
+        )
+
+    def rollback_integration_action_revision(
+        self,
+        integration_name: str,
+        action_id: str,
+        revision_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Rollback an integration action to a previous revision.
+
+        Use this method to restore an action to a previously saved
+        state, reverting any changes made since that revision.
+
+        Args:
+            integration_name: Name of the integration the action
+                belongs to.
+            action_id: ID of the action to rollback.
+            revision_id: ID of the revision to rollback to.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the rolled back IntegrationAction resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _rollback_integration_action_revision(
+            self,
+            integration_name,
+            action_id,
+            revision_id,
+            api_version=api_version,
+        )
+
+    # -------------------------------------------------------------------------
+    # Integration Manager methods
+    # -------------------------------------------------------------------------
+
+    def list_integration_managers(
+        self,
+        integration_name: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """List all managers defined for a specific integration.
+
+        Use this method to discover the library of managers available
+        within a particular integration's scope.
+
+        Args:
+            integration_name: Name of the integration to list managers
+                for.
+            page_size: Maximum number of managers to return. Defaults to
+                100, maximum is 100.
+            page_token: Page token from a previous call to retrieve the
+                next page.
+            filter_string: Filter expression to filter managers.
+            order_by: Field to sort the managers by.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+            as_list: If True, return a list of managers instead of a
+                dict with managers list and nextPageToken.
+
+        Returns:
+            If as_list is True: List of managers.
+            If as_list is False: Dict with managers list and
+                nextPageToken.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _list_integration_managers(
+            self,
+            integration_name,
+            page_size=page_size,
+            page_token=page_token,
+            filter_string=filter_string,
+            order_by=order_by,
+            api_version=api_version,
+            as_list=as_list,
+        )
+
+    def get_integration_manager(
+        self,
+        integration_name: str,
+        manager_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Get a single manager for a given integration.
+
+        Use this method to retrieve the manager script and its metadata
+        for review or reference.
+
+        Args:
+            integration_name: Name of the integration the manager
+                belongs to.
+            manager_id: ID of the manager to retrieve.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing details of the specified IntegrationManager.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_integration_manager(
+            self,
+            integration_name,
+            manager_id,
+            api_version=api_version,
+        )
+
+    def delete_integration_manager(
+        self,
+        integration_name: str,
+        manager_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> None:
+        """Delete a specific custom manager from a given integration.
+
+        Note that deleting a manager may break components (actions,
+        jobs) that depend on its code.
+
+        Args:
+            integration_name: Name of the integration the manager
+                belongs to.
+            manager_id: ID of the manager to delete.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            None
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _delete_integration_manager(
+            self,
+            integration_name,
+            manager_id,
+            api_version=api_version,
+        )
+
+    def create_integration_manager(
+        self,
+        integration_name: str,
+        display_name: str,
+        script: str,
+        description: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Create a new custom manager for a given integration.
+
+        Use this method to add a new shared code utility. Each manager
+        must have a unique display name and a script containing valid
+        Python logic for reuse across actions, jobs, and connectors.
+
+        Args:
+            integration_name: Name of the integration to create the
+                manager for.
+            display_name: Manager's display name. Maximum 150
+                characters. Required.
+            script: Manager's Python script. Maximum 5MB. Required.
+            description: Manager's description. Maximum 400 characters.
+                Optional.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the newly created IntegrationManager
+                resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _create_integration_manager(
+            self,
+            integration_name,
+            display_name,
+            script,
+            description=description,
+            api_version=api_version,
+        )
+
+    def update_integration_manager(
+        self,
+        integration_name: str,
+        manager_id: str,
+        display_name: str | None = None,
+        script: str | None = None,
+        description: str | None = None,
+        update_mask: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Update an existing custom manager for a given integration.
+
+        Use this method to modify the shared code, adjust its
+        description, or refine its logic across all components that
+        import it.
+
+        Args:
+            integration_name: Name of the integration the manager
+                belongs to.
+            manager_id: ID of the manager to update.
+            display_name: Manager's display name. Maximum 150
+                characters.
+            script: Manager's Python script. Maximum 5MB.
+            description: Manager's description. Maximum 400 characters.
+            update_mask: Comma-separated list of fields to update. If
+                omitted, the mask is auto-generated from whichever
+                fields are provided. Example: "displayName,script".
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the updated IntegrationManager resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _update_integration_manager(
+            self,
+            integration_name,
+            manager_id,
+            display_name=display_name,
+            script=script,
+            description=description,
+            update_mask=update_mask,
+            api_version=api_version,
+        )
+
+    def get_integration_manager_template(
+        self,
+        integration_name: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Retrieve a default Python script template for a new
+        integration manager.
+
+        Use this method to quickly start developing new managers.
+
+        Args:
+            integration_name: Name of the integration to fetch the
+                template for.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the IntegrationManager template.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_integration_manager_template(
+            self,
+            integration_name,
+            api_version=api_version,
+        )
+
+    # -------------------------------------------------------------------------
+    # Integration Manager Revisions methods
+    # -------------------------------------------------------------------------
+
+    def list_integration_manager_revisions(
+        self,
+        integration_name: str,
+        manager_id: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """List all revisions for a specific integration manager.
+
+        Use this method to browse the version history and identify
+        previous functional states of a manager.
+
+        Args:
+            integration_name: Name of the integration the manager
+                belongs to.
+            manager_id: ID of the manager to list revisions for.
+            page_size: Maximum number of revisions to return.
+            page_token: Page token from a previous call to retrieve the
+                next page.
+            filter_string: Filter expression to filter revisions.
+            order_by: Field to sort the revisions by.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+            as_list: If True, return a list of revisions instead of a
+                dict with revisions list and nextPageToken.
+
+        Returns:
+            If as_list is True: List of revisions.
+            If as_list is False: Dict with revisions list and
+                nextPageToken.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _list_integration_manager_revisions(
+            self,
+            integration_name,
+            manager_id,
+            page_size=page_size,
+            page_token=page_token,
+            filter_string=filter_string,
+            order_by=order_by,
+            api_version=api_version,
+            as_list=as_list,
+        )
+
+    def get_integration_manager_revision(
+        self,
+        integration_name: str,
+        manager_id: str,
+        revision_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Get a single revision for a specific integration manager.
+
+        Use this method to retrieve a specific snapshot of an
+        IntegrationManagerRevision for comparison or review.
+
+        Args:
+            integration_name: Name of the integration the manager
+                belongs to.
+            manager_id: ID of the manager the revision belongs to.
+            revision_id: ID of the revision to retrieve.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing details of the specified
+                IntegrationManagerRevision.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_integration_manager_revision(
+            self,
+            integration_name,
+            manager_id,
+            revision_id,
+            api_version=api_version,
+        )
+
+    def delete_integration_manager_revision(
+        self,
+        integration_name: str,
+        manager_id: str,
+        revision_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> None:
+        """Delete a specific revision for a given integration manager.
+
+        Use this method to clean up obsolete snapshots and manage the
+        historical record of managers.
+
+        Args:
+            integration_name: Name of the integration the manager
+                belongs to.
+            manager_id: ID of the manager the revision belongs to.
+            revision_id: ID of the revision to delete.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            None
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _delete_integration_manager_revision(
+            self,
+            integration_name,
+            manager_id,
+            revision_id,
+            api_version=api_version,
+        )
+
+    def create_integration_manager_revision(
+        self,
+        integration_name: str,
+        manager_id: str,
+        manager: dict[str, Any],
+        comment: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Create a new revision snapshot of the current integration
+        manager.
+
+        Use this method to establish a recovery point before making
+        significant updates to a manager.
+
+        Args:
+            integration_name: Name of the integration the manager
+                belongs to.
+            manager_id: ID of the manager to create a revision for.
+            manager: Dict containing the IntegrationManager to snapshot.
+            comment: Comment describing the revision. Maximum 400
+                characters. Optional.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the newly created
+                IntegrationManagerRevision resource.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _create_integration_manager_revision(
+            self,
+            integration_name,
+            manager_id,
+            manager,
+            comment=comment,
+            api_version=api_version,
+        )
+
+    def rollback_integration_manager_revision(
+        self,
+        integration_name: str,
+        manager_id: str,
+        revision_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+    ) -> dict[str, Any]:
+        """Revert the current manager definition to a previously saved
+        revision.
+
+        Use this method to rapidly recover a functional state for
+        common code if an update causes operational issues in dependent
+        actions or jobs.
+
+        Args:
+            integration_name: Name of the integration the manager
+                belongs to.
+            manager_id: ID of the manager to rollback.
+            revision_id: ID of the revision to rollback to.
+            api_version: API version to use for the request. Default is
+                V1BETA.
+
+        Returns:
+            Dict containing the IntegrationManagerRevision rolled back
+                to.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _rollback_integration_manager_revision(
+            self,
+            integration_name,
+            manager_id,
+            revision_id,
+            api_version=api_version,
         )
 
     def get_stats(

@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 """Statistics functionality for Chronicle searches."""
+
 from datetime import datetime
 from typing import Any, TYPE_CHECKING
 

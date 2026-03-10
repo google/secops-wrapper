@@ -26,6 +26,7 @@ from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.request_utils import (
     DEFAULT_PAGE_SIZE,
     chronicle_request,
+    chronicle_request_bytes,
     chronicle_paginated_request,
 )
 from secops.exceptions import APIError
@@ -654,4 +655,182 @@ def test_chronicle_request_non_json_error_body_is_truncated(client: Mock) -> Non
     msg = str(exc_info.value)
     assert "status=500" in msg
     # Should not include the full 5000 chars, should include truncation marker
+    assert "truncated" in msg
+
+
+# ---------------------------------------------------------------------------
+# chronicle_request_bytes() tests
+# ---------------------------------------------------------------------------
+
+def test_chronicle_request_bytes_success_returns_content_and_stream_true(client: Mock) -> None:
+    resp = _mock_response(status_code=200, json_value={"ignored": True})
+    resp.content = b"PK\x03\x04...zip-bytes..."  # ZIP magic prefix in real life
+    client.session.request.return_value = resp
+
+    out = chronicle_request_bytes(
+        client=client,
+        method="GET",
+        endpoint_path="integrations/foo:export",
+        api_version=APIVersion.V1BETA,
+        params={"alt": "media"},
+        headers={"Accept": "application/zip"},
+    )
+
+    assert out == b"PK\x03\x04...zip-bytes..."
+
+    client.base_url.assert_called_once_with(APIVersion.V1BETA)
+    client.session.request.assert_called_once_with(
+        method="GET",
+        url="https://example.test/chronicle/instances/instance-1/integrations/foo:export",
+        params={"alt": "media"},
+        headers={"Accept": "application/zip"},
+        timeout=None,
+        stream=True,
+    )
+
+
+def test_chronicle_request_bytes_builds_url_for_rpc_colon_prefix(client: Mock) -> None:
+    resp = _mock_response(status_code=200, json_value={"ok": True})
+    resp.content = b"binary"
+    client.session.request.return_value = resp
+
+    out = chronicle_request_bytes(
+        client=client,
+        method="POST",
+        endpoint_path=":exportSomething",
+        api_version=APIVersion.V1ALPHA,
+    )
+
+    assert out == b"binary"
+
+    _, kwargs = client.session.request.call_args
+    assert kwargs["url"] == "https://example.test/chronicle/instances/instance-1:exportSomething"
+    assert kwargs["stream"] is True
+
+
+def test_chronicle_request_bytes_accepts_multiple_expected_statuses_set(client: Mock) -> None:
+    resp = _mock_response(status_code=204, json_value=None)
+    resp.content = b""
+    client.session.request.return_value = resp
+
+    out = chronicle_request_bytes(
+        client=client,
+        method="DELETE",
+        endpoint_path="something",
+        api_version=APIVersion.V1ALPHA,
+        expected_status={200, 204},
+    )
+
+    assert out == b""
+
+
+def test_chronicle_request_bytes_status_mismatch_with_json_includes_json(client: Mock) -> None:
+    resp = _mock_response(status_code=400, json_value={"error": "bad"})
+    resp.content = b""
+    client.session.request.return_value = resp
+
+    with pytest.raises(
+        APIError,
+        match=r"API request failed: method=GET, "
+              r"url=https://example\.test/chronicle/instances/instance-1/curatedRules"
+              r", status=400, response={'error': 'bad'}",
+    ):
+        chronicle_request_bytes(
+            client=client,
+            method="GET",
+            endpoint_path="curatedRules",
+            api_version=APIVersion.V1ALPHA,
+        )
+
+
+def test_chronicle_request_bytes_status_mismatch_non_json_includes_text(client: Mock) -> None:
+    resp = _mock_response(status_code=500, json_raises=True, text="boom")
+    resp.content = b""
+    client.session.request.return_value = resp
+
+    with pytest.raises(
+        APIError,
+        match=r"API request failed: method=GET, "
+              r"url=https://example\.test/chronicle/instances/instance-1/curatedRules, "
+              r"status=500, response_text=boom",
+    ):
+        chronicle_request_bytes(
+            client=client,
+            method="GET",
+            endpoint_path="curatedRules",
+            api_version=APIVersion.V1ALPHA,
+        )
+
+
+def test_chronicle_request_bytes_custom_error_message_used(client: Mock) -> None:
+    resp = _mock_response(status_code=404, json_value={"message": "not found"})
+    resp.content = b""
+    client.session.request.return_value = resp
+
+    with pytest.raises(
+        APIError,
+        match=r"Failed to download export: method=GET, "
+              r"url=https://example\.test/chronicle/instances/instance-1/integrations/foo:export, "
+              r"status=404, response={'message': 'not found'}",
+    ):
+        chronicle_request_bytes(
+            client=client,
+            method="GET",
+            endpoint_path="integrations/foo:export",
+            api_version=APIVersion.V1BETA,
+            error_message="Failed to download export",
+        )
+
+
+def test_chronicle_request_bytes_wraps_requests_exception(client: Mock) -> None:
+    client.session.request.side_effect = requests.RequestException("no route to host")
+
+    with pytest.raises(APIError) as exc_info:
+        chronicle_request_bytes(
+            client=client,
+            method="GET",
+            endpoint_path="curatedRules",
+            api_version=APIVersion.V1ALPHA,
+        )
+
+    msg = str(exc_info.value)
+    assert "API request failed" in msg
+    assert "method=GET" in msg
+    assert "url=https://example.test/chronicle/instances/instance-1/curatedRules" in msg
+    assert "request_error=RequestException" in msg
+
+
+def test_chronicle_request_bytes_wraps_google_auth_error(client: Mock) -> None:
+    client.session.request.side_effect = GoogleAuthError("invalid_grant")
+
+    with pytest.raises(APIError) as exc_info:
+        chronicle_request_bytes(
+            client=client,
+            method="GET",
+            endpoint_path="curatedRules",
+            api_version=APIVersion.V1ALPHA,
+        )
+
+    msg = str(exc_info.value)
+    assert "Google authentication failed" in msg
+    assert "authentication_error=" in msg
+
+
+def test_chronicle_request_bytes_non_json_error_body_is_truncated(client: Mock) -> None:
+    long_text = "x" * 5000
+    resp = _mock_response(status_code=500, json_raises=True, text=long_text)
+    resp.content = b""
+    resp.headers = {"Content-Type": "text/plain"}
+    client.session.request.return_value = resp
+
+    with pytest.raises(APIError) as exc_info:
+        chronicle_request_bytes(
+            client=client,
+            method="GET",
+            endpoint_path="curatedRules",
+            api_version=APIVersion.V1ALPHA,
+        )
+
+    msg = str(exc_info.value)
+    assert "status=500" in msg
     assert "truncated" in msg

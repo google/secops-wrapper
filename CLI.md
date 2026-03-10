@@ -745,6 +745,369 @@ Delete a watchlist:
 secops watchlist delete --watchlist-id "abc-123-def"
 ```
 
+### Integration Management
+
+#### Marketplace Integrations
+
+List marketplace integrations:
+
+```bash
+# List all marketplace integration (returns dict with pagination metadata)
+secops integration marketplace list
+
+# List marketplace integration as a direct list (fetches all pages automatically)
+secops integration marketplace list --as-list
+```
+
+Get marketplace integration details:
+
+```bash
+secops integration marketplace get --integration-name "AWSSecurityHub"
+```
+
+Get marketplace integration diff between installed version and latest version:
+
+```bash
+secops integration marketplace diff --integration-name "AWSSecurityHub"
+```
+
+Install or update a marketplace integration:
+
+```bash
+# Install with default settings
+secops integration marketplace install --integration-name "AWSSecurityHub"
+
+# Install to staging environment and override any existing ontology mappings
+secops integration marketplace install --integration-name "AWSSecurityHub" --staging --override-mapping
+
+# Installing a currently installed integration with no specified version 
+# number will update it to the latest version
+secops integration marketplace install --integration-name "AWSSecurityHub"
+
+# Or you can specify a specific version to install
+secops integration marketplace install --integration-name "AWSSecurityHub" --version "5.0"
+```
+
+Uninstall a marketplace integration:
+
+```bash
+secops integration marketplace uninstall --integration-name "AWSSecurityHub"
+```
+
+#### Integration Actions
+
+List integration actions:
+
+```bash
+# List all actions for an integration
+secops integration actions list --integration-name "MyIntegration"
+
+# List actions as a direct list (fetches all pages automatically)
+secops integration actions list --integration-name "MyIntegration" --as-list
+
+# List with pagination
+secops integration actions list --integration-name "MyIntegration" --page-size 50
+
+# List with filtering
+secops integration actions list --integration-name "MyIntegration" --filter-string "enabled = true"
+```
+
+Get action details:
+
+```bash
+secops integration actions get --integration-name "MyIntegration" --action-id "123"
+```
+
+Create a new action:
+
+```bash
+# Create a basic action with Python code
+secops integration actions create \
+  --integration-name "MyIntegration" \
+  --display-name "Send Alert" \
+  --code "def main(context): return {'status': 'success'}"
+
+# Create an async action
+secops integration actions create \
+  --integration-name "MyIntegration" \
+  --display-name "Async Task" \
+  --code "async def main(context): return await process()" \
+  --is-async
+
+# Create with description
+secops integration actions create \
+  --integration-name "MyIntegration" \
+  --display-name "My Action" \
+  --code "def main(context): return {}" \
+  --description "Action description"
+```
+
+> **Note:** When creating an action, the following default values are automatically applied:
+> - `timeout_seconds`: 300 (5 minutes)
+> - `enabled`: true
+> - `script_result_name`: "result"
+> 
+> The `--code` parameter contains the Python script that will be executed by the action.
+
+Update an existing action:
+
+```bash
+# Update display name
+secops integration actions update \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --display-name "Updated Action Name"
+
+# Update code
+secops integration actions update \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --code "def main(context): return {'status': 'updated'}"
+
+# Update multiple fields with update mask
+secops integration actions update \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --display-name "New Name" \
+  --description "New description" \
+  --update-mask "displayName,description"
+```
+
+Delete an action:
+
+```bash
+secops integration actions delete --integration-name "MyIntegration" --action-id "123"
+```
+
+Test an action:
+
+```bash
+# Test an action to verify it executes correctly
+secops integration actions test --integration-name "MyIntegration" --action-id "123"
+```
+
+Get action template:
+
+```bash
+# Get synchronous action template
+secops integration actions template --integration-name "MyIntegration"
+
+# Get asynchronous action template
+secops integration actions template --integration-name "MyIntegration" --is-async
+```
+
+#### Action Revisions
+
+List action revisions:
+
+```bash
+# List all revisions for an action
+secops integration action-revisions list \
+  --integration-name "MyIntegration" \
+  --action-id "123"
+
+# List revisions as a direct list
+secops integration action-revisions list \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --as-list
+
+# List with pagination
+secops integration action-revisions list \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --page-size 10
+
+# List with filtering and ordering
+secops integration action-revisions list \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --filter-string 'version = "1.0"' \
+  --order-by "createTime desc"
+```
+
+Create a revision backup:
+
+```bash
+# Create revision with comment
+secops integration action-revisions create \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --comment "Backup before major refactor"
+
+# Create revision without comment
+secops integration action-revisions create \
+  --integration-name "MyIntegration" \
+  --action-id "123"
+```
+
+Rollback to a previous revision:
+
+```bash
+secops integration action-revisions rollback \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --revision-id "r456"
+```
+
+Delete an old revision:
+
+```bash
+secops integration action-revisions delete \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --revision-id "r789"
+```
+
+#### Integration Managers
+
+List integration managers:
+
+```bash
+# List all managers for an integration
+secops integration managers list --integration-name "MyIntegration"
+
+# List managers as a direct list (fetches all pages automatically)
+secops integration managers list --integration-name "MyIntegration" --as-list
+
+# List with pagination
+secops integration managers list --integration-name "MyIntegration" --page-size 50
+
+# List with filtering
+secops integration managers list --integration-name "MyIntegration" --filter-string "enabled = true"
+```
+
+Get manager details:
+
+```bash
+secops integration managers get --integration-name "MyIntegration" --manager-id "mgr1"
+```
+
+Create a new manager:
+
+```bash
+secops integration managers create \
+  --integration-name "MyIntegration" \
+  --display-name "Configuration Manager" \
+  --code "def manage_config(context): return {'status': 'configured'}"
+
+# Create with description and custom ID
+secops integration managers create \
+  --integration-name "MyIntegration" \
+  --display-name "My Manager" \
+  --code "def manage(context): return {}" \
+  --description "Manager description" \
+  --manager-id "custom-manager-id"
+```
+
+Update an existing manager:
+
+```bash
+# Update display name
+secops integration managers update \
+  --integration-name "MyIntegration" \
+  --manager-id "mgr1" \
+  --display-name "Updated Manager Name"
+
+# Update code
+secops integration managers update \
+  --integration-name "MyIntegration" \
+  --manager-id "mgr1" \
+  --code "def manage(context): return {'status': 'updated'}"
+
+# Update multiple fields with update mask
+secops integration managers update \
+  --integration-name "MyIntegration" \
+  --manager-id "mgr1" \
+  --display-name "New Name" \
+  --description "New description" \
+  --update-mask "displayName,description"
+```
+
+Delete a manager:
+
+```bash
+secops integration managers delete --integration-name "MyIntegration" --manager-id "mgr1"
+```
+
+Get manager template:
+
+```bash
+secops integration managers template --integration-name "MyIntegration"
+```
+
+#### Manager Revisions
+
+List manager revisions:
+
+```bash
+# List all revisions for a manager
+secops integration manager-revisions list \
+  --integration-name "MyIntegration" \
+  --manager-id "mgr1"
+
+# List revisions as a direct list
+secops integration manager-revisions list \
+  --integration-name "MyIntegration" \
+  --manager-id "mgr1" \
+  --as-list
+
+# List with pagination
+secops integration manager-revisions list \
+  --integration-name "MyIntegration" \
+  --manager-id "mgr1" \
+  --page-size 10
+
+# List with filtering and ordering
+secops integration manager-revisions list \
+  --integration-name "MyIntegration" \
+  --manager-id "mgr1" \
+  --filter-string 'version = "1.0"' \
+  --order-by "createTime desc"
+```
+
+Get a specific revision:
+
+```bash
+secops integration manager-revisions get \
+  --integration-name "MyIntegration" \
+  --manager-id "mgr1" \
+  --revision-id "r456"
+```
+
+Create a revision backup:
+
+```bash
+# Create revision with comment
+secops integration manager-revisions create \
+  --integration-name "MyIntegration" \
+  --manager-id "mgr1" \
+  --comment "Backup before major refactor"
+
+# Create revision without comment
+secops integration manager-revisions create \
+  --integration-name "MyIntegration" \
+  --manager-id "mgr1"
+```
+
+Rollback to a previous revision:
+
+```bash
+secops integration manager-revisions rollback \
+  --integration-name "MyIntegration" \
+  --manager-id "mgr1" \
+  --revision-id "r456"
+```
+
+Delete an old revision:
+
+```bash
+secops integration manager-revisions delete \
+  --integration-name "MyIntegration" \
+  --manager-id "mgr1" \
+  --revision-id "r789"
+```
+
 ### Rule Management
 
 List detection rules:
@@ -896,7 +1259,6 @@ secops curated-rule search-detections \
   --end-time "2024-01-31T23:59:59Z" \
   --list-basis "DETECTION_TIME" \
   --page-size 50
-
 ```
 
 List all curated rule sets:
@@ -1543,39 +1905,7 @@ secops reference-list create \
 secops parser list
 
 # Get details of a specific parser
-secops parser get --log-type "WINDOWS" --id "pa_12345"
-
-# Create a custom parser for a new log format
-secops parser create \
-  --log-type "CUSTOM_APPLICATION" \
-  --parser-code-file "/path/to/custom_parser.conf" \
-  --validated-on-empty-logs
-
-# Copy an existing parser as a starting point
-secops parser copy --log-type "OKTA" --id "pa_okta_base"
-
-# Activate your custom parser
-secops parser activate --log-type "CUSTOM_APPLICATION" --id "pa_new_custom"
-
-# If needed, deactivate and delete old parser
-secops parser deactivate --log-type "CUSTOM_APPLICATION" --id "pa_old_custom"
-secops parser delete --log-type "CUSTOM_APPLICATION" --id "pa_old_custom"
-```
-
-### Complete Parser Workflow Example: Retrieve, Run, and Ingest
-
-This example demonstrates the complete workflow of retrieving an OKTA parser, running it against a sample log, and ingesting the parsed UDM event:
-
-```bash
-# Step 1: List OKTA parsers to find an active one
-secops parser list --log-type "OKTA" > okta_parsers.json
-
-# Extract the first parser ID (you can use jq or grep)
-PARSER_ID=$(cat okta_parsers.json | jq -r '.[0].name' | awk -F'/' '{print $NF}')
-echo "Using parser: $PARSER_ID"
-
-# Step 2: Get the parser details and save to a file
-secops parser get --log-type "OKTA" --id "$PARSER_ID" > parser_details.json
+secops parser get --log-type "WINDOWS" --id "$PARSER_ID" > parser_details.json
 
 # Extract and decode the parser code (base64 encoded in 'cbn' field)
 cat parser_details.json | jq -r '.cbn' | base64 -d > okta_parser.conf
@@ -1713,7 +2043,7 @@ secops feed update --id "feed-123" --display-name "Updated Feed Name"
 secops feed update --id "feed-123" --details '{"httpSettings":{"uri":"https://example.com/updated-feed","sourceType":"FILES"}}'
 
 # Update both display name and details
-secops feed update --id "feed-123" --display-name "Updated Name" --details '{"httpSettings":{"uri":"https://example.com/updated-feed"}}'
+secops feed update --id "feed-123" --display-name "New Name" --details '{"httpSettings":{"uri":"https://example.com/updated-feed"}}'
 ```
 
 Enable and disable feeds:
@@ -1855,3 +2185,4 @@ secops dashboard-query get --id query-id
 ## Conclusion
 
 The SecOps CLI provides a powerful way to interact with Google Security Operations products directly from your terminal. For more detailed information about the SDK capabilities, refer to the [main README](README.md).
+

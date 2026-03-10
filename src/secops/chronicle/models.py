@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 """Data models for Chronicle API responses."""
+
 import json
 import sys
 from dataclasses import asdict, dataclass, field
@@ -71,6 +72,686 @@ class DetectionType(StrEnum):
     UNSPECIFIED = "DETECTION_TYPE_UNSPECIFIED"
     ALERT = "DETECTION_TYPE_ALERT"
     CASE = "DETECTION_TYPE_CASE"
+
+
+class PythonVersion(str, Enum):
+    """Python version for compatibility checks."""
+
+    UNSPECIFIED = "PYTHON_VERSION_UNSPECIFIED"
+    PYTHON_2_7 = "V2_7"
+    PYTHON_3_7 = "V3_7"
+    PYTHON_3_11 = "V3_11"
+
+
+class DiffType(str, Enum):
+    """Type of diff to retrieve."""
+
+    COMMERCIAL = "Commercial"
+    PRODUCTION = "Production"
+    STAGING = "Staging"
+
+
+class TargetMode(str, Enum):
+    """Target mode for integration transition."""
+
+    PRODUCTION = "Production"
+    STAGING = "Staging"
+
+
+class IntegrationType(str, Enum):
+    """Type of integration."""
+
+    UNSPECIFIED = "INTEGRATION_TYPE_UNSPECIFIED"
+    RESPONSE = "RESPONSE"
+    EXTENSION = "EXTENSION"
+
+
+class IntegrationParamType(str, Enum):
+    """Type of integration parameter."""
+
+    PARAM_TYPE_UNSPECIFIED = "PARAM_TYPE_UNSPECIFIED"
+    BOOLEAN = "BOOLEAN"
+    INT = "INT"
+    STRING = "STRING"
+    PASSWORD = "PASSWORD"
+    IP = "IP"
+    IP_OR_HOST = "IP_OR_HOST"
+    URL = "URL"
+    DOMAIN = "DOMAIN"
+    EMAIL = "EMAIL"
+    VALUES_LIST = "VALUES_LIST"
+    VALUES_AS_SEMICOLON_SEPARATED_STRING = (
+        "VALUES_AS_SEMICOLON_SEPARATED_STRING"
+    )
+    MULTI_VALUES_SELECTION = "MULTI_VALUES_SELECTION"
+    SCRIPT = "SCRIPT"
+    FILTER_LIST = "FILTER_LIST"
+
+
+@dataclass
+class IntegrationParam:
+    """A parameter definition for a Chronicle SOAR integration.
+
+    Attributes:
+        display_name: Human-readable label shown in the UI.
+        property_name: The programmatic key used in code/config.
+        type: The data type of the parameter (see IntegrationParamType).
+        description: Optional. Explanation of what the parameter is for.
+        mandatory: Whether the parameter must be supplied. Defaults to False.
+        default_value: Optional. Pre-filled value shown in the UI.
+    """
+
+    display_name: str
+    property_name: str
+    type: IntegrationParamType
+    mandatory: bool
+    description: str | None = None
+    default_value: str | None = None
+
+    def to_dict(self) -> dict:
+        """Serialize to the dict shape expected by the Chronicle API."""
+        data: dict = {
+            "displayName": self.display_name,
+            "propertyName": self.property_name,
+            "type": str(self.type.value),
+            "mandatory": self.mandatory,
+        }
+        if self.description is not None:
+            data["description"] = self.description
+        if self.default_value is not None:
+            data["defaultValue"] = self.default_value
+        return data
+
+
+class ActionParamType(str, Enum):
+    """Action parameter types for Chronicle SOAR integration actions."""
+
+    STRING = "STRING"
+    BOOLEAN = "BOOLEAN"
+    WFS_REPOSITORY = "WFS_REPOSITORY"
+    USER_REPOSITORY = "USER_REPOSITORY"
+    STAGES_REPOSITORY = "STAGES_REPOSITORY"
+    CLOSE_CASE_REASON_REPOSITORY = "CLOSE_CASE_REASON_REPOSITORY"
+    CLOSE_CASE_ROOT_CAUSE_REPOSITORY = "CLOSE_CASE_ROOT_CAUSE_REPOSITORY"
+    PRIORITIES_REPOSITORY = "PRIORITIES_REPOSITORY"
+    EMAIL_CONTENT = "EMAIL_CONTENT"
+    CONTENT = "CONTENT"
+    PASSWORD = "PASSWORD"
+    ENTITY_TYPE = "ENTITY_TYPE"
+    MULTI_VALUES = "MULTI_VALUES"
+    LIST = "LIST"
+    CODE = "CODE"
+    MULTIPLE_CHOICE_PARAMETER = "MULTIPLE_CHOICE_PARAMETER"
+
+
+class ActionType(str, Enum):
+    """Action types for Chronicle SOAR integration actions."""
+
+    UNSPECIFIED = "ACTION_TYPE_UNSPECIFIED"
+    STANDARD = "STANDARD"
+    AI_AGENT = "AI_AGENT"
+
+
+@dataclass
+class ActionParameter:
+    """A parameter definition for a Chronicle SOAR integration action.
+
+    Attributes:
+        display_name: The parameter's display name. Maximum 150 characters.
+        type: The parameter's type.
+        description: The parameter's description. Maximum 150 characters.
+        mandatory: Whether the parameter is mandatory.
+        default_value: The default value of the parameter.
+            Maximum 150 characters.
+        optional_values: Parameter's optional values. Maximum 50 items.
+    """
+
+    display_name: str
+    type: ActionParamType
+    description: str
+    mandatory: bool
+    default_value: str | None = None
+    optional_values: list[str] | None = None
+
+    def to_dict(self) -> dict:
+        """Serialize to the dict shape expected by the Chronicle API."""
+        data: dict = {
+            "displayName": self.display_name,
+            "type": str(self.type.value),
+            "description": self.description,
+            "mandatory": self.mandatory,
+        }
+        if self.default_value is not None:
+            data["defaultValue"] = self.default_value
+        if self.optional_values is not None:
+            data["optionalValues"] = self.optional_values
+        return data
+
+
+class ParamType(str, Enum):
+    """Parameter types for Chronicle SOAR integration functions."""
+
+    UNSPECIFIED = "PARAM_TYPE_UNSPECIFIED"
+    BOOLEAN = "BOOLEAN"
+    INT = "INT"
+    STRING = "STRING"
+    PASSWORD = "PASSWORD"
+    IP = "IP"
+    IP_OR_HOST = "IP_OR_HOST"
+    URL = "URL"
+    DOMAIN = "DOMAIN"
+    EMAIL = "EMAIL"
+    VALUES_LIST = "VALUES_LIST"
+    VALUES_AS_SEMICOLON_SEPARATED_STRING = (
+        "VALUES_AS_SEMICOLON_SEPARATED_STRING"
+    )
+    MULTI_VALUES_SELECTION = "MULTI_VALUES_SELECTION"
+    SCRIPT = "SCRIPT"
+    FILTER_LIST = "FILTER_LIST"
+    NUMERICAL_VALUES = "NUMERICAL_VALUES"
+
+
+class ConnectorParamMode(str, Enum):
+    """Parameter modes for Chronicle SOAR integration connectors."""
+
+    UNSPECIFIED = "PARAM_MODE_UNSPECIFIED"
+    REGULAR = "REGULAR"
+    CONNECTIVITY = "CONNECTIVITY"
+    SCRIPT = "SCRIPT"
+
+
+class ConnectorRuleType(str, Enum):
+    """Rule types for Chronicle SOAR integration connectors."""
+
+    UNSPECIFIED = "RULE_TYPE_UNSPECIFIED"
+    ALLOW_LIST = "ALLOW_LIST"
+    BLOCK_LIST = "BLOCK_LIST"
+
+
+@dataclass
+class ConnectorParameter:
+    """A parameter definition for a Chronicle SOAR integration connector.
+
+    Attributes:
+        display_name: The parameter's display name.
+        type: The parameter's type.
+        mode: The parameter's mode.
+        mandatory: Whether the parameter is mandatory for configuring a
+            connector instance.
+        default_value: The default value of the parameter. Required for
+            boolean and mandatory parameters.
+        description: The parameter's description.
+        advanced: The parameter's advanced flag.
+    """
+
+    display_name: str
+    type: ParamType
+    mode: ConnectorParamMode
+    mandatory: bool
+    default_value: str | None = None
+    description: str | None = None
+    advanced: bool | None = None
+
+    def to_dict(self) -> dict:
+        """Serialize to the dict shape expected by the Chronicle API."""
+        data: dict = {
+            "displayName": self.display_name,
+            "type": str(self.type.value),
+            "mode": str(self.mode.value),
+            "mandatory": self.mandatory,
+        }
+        if self.default_value is not None:
+            data["defaultValue"] = self.default_value
+        if self.description is not None:
+            data["description"] = self.description
+        if self.advanced is not None:
+            data["advanced"] = self.advanced
+        return data
+
+
+@dataclass
+class IntegrationJobInstanceParameter:
+    """A parameter instance for a Chronicle SOAR integration job instance.
+
+    Note: Most fields are output-only and will be populated by the API.
+    Only value needs to be provided when configuring a job instance.
+
+    Attributes:
+        value: The value of the parameter.
+    """
+
+    value: str | None = None
+
+    def to_dict(self) -> dict:
+        """Serialize to the dict shape expected by the Chronicle API."""
+        data: dict = {}
+        if self.value is not None:
+            data["value"] = self.value
+        return data
+
+
+class ScheduleType(str, Enum):
+    """Schedule types for Chronicle SOAR integration job
+    instance advanced config."""
+
+    UNSPECIFIED = "SCHEDULE_TYPE_UNSPECIFIED"
+    ONCE = "ONCE"
+    DAILY = "DAILY"
+    WEEKLY = "WEEKLY"
+    MONTHLY = "MONTHLY"
+
+
+class DayOfWeek(str, Enum):
+    """Days of the week for Chronicle SOAR weekly schedule details."""
+
+    UNSPECIFIED = "DAY_OF_WEEK_UNSPECIFIED"
+    MONDAY = "MONDAY"
+    TUESDAY = "TUESDAY"
+    WEDNESDAY = "WEDNESDAY"
+    THURSDAY = "THURSDAY"
+    FRIDAY = "FRIDAY"
+    SATURDAY = "SATURDAY"
+    SUNDAY = "SUNDAY"
+
+
+@dataclass
+class Date:
+    """A calendar date for Chronicle SOAR schedule details.
+
+    Attributes:
+        year: The year.
+        month: The month of the year (1-12).
+        day: The day of the month (1-31).
+    """
+
+    year: int
+    month: int
+    day: int
+
+    def to_dict(self) -> dict:
+        """Serialize to the dict shape expected by the Chronicle API."""
+        return {"year": self.year, "month": self.month, "day": self.day}
+
+
+@dataclass
+class TimeOfDay:
+    """A time of day for Chronicle SOAR schedule details.
+
+    Attributes:
+        hours: The hour of the day (0-23).
+        minutes: The minute of the hour (0-59).
+        seconds: The second of the minute (0-59).
+        nanos: The nanoseconds of the second (0-999999999).
+    """
+
+    hours: int
+    minutes: int
+    seconds: int = 0
+    nanos: int = 0
+
+    def to_dict(self) -> dict:
+        """Serialize to the dict shape expected by the Chronicle API."""
+        return {
+            "hours": self.hours,
+            "minutes": self.minutes,
+            "seconds": self.seconds,
+            "nanos": self.nanos,
+        }
+
+
+@dataclass
+class OneTimeScheduleDetails:
+    """One-time schedule details for a Chronicle SOAR job instance.
+
+    Attributes:
+        start_date: The date to run the job.
+        time: The time to run the job.
+    """
+
+    start_date: Date
+    time: TimeOfDay
+
+    def to_dict(self) -> dict:
+        """Serialize to the dict shape expected by the Chronicle API."""
+        return {
+            "startDate": self.start_date.to_dict(),
+            "time": self.time.to_dict(),
+        }
+
+
+@dataclass
+class DailyScheduleDetails:
+    """Daily schedule details for a Chronicle SOAR job instance.
+
+    Attributes:
+        start_date: The start date.
+        time: The time to run the job.
+        interval: The day interval.
+    """
+
+    start_date: Date
+    time: TimeOfDay
+    interval: int
+
+    def to_dict(self) -> dict:
+        """Serialize to the dict shape expected by the Chronicle API."""
+        return {
+            "startDate": self.start_date.to_dict(),
+            "time": self.time.to_dict(),
+            "interval": self.interval,
+        }
+
+
+@dataclass
+class WeeklyScheduleDetails:
+    """Weekly schedule details for a Chronicle SOAR job instance.
+
+    Attributes:
+        start_date: The start date.
+        days: The days of the week to run the job.
+        time: The time to run the job.
+        interval: The week interval.
+    """
+
+    start_date: Date
+    days: list[DayOfWeek]
+    time: TimeOfDay
+    interval: int
+
+    def to_dict(self) -> dict:
+        """Serialize to the dict shape expected by the Chronicle API."""
+        return {
+            "startDate": self.start_date.to_dict(),
+            "days": [d.value for d in self.days],
+            "time": self.time.to_dict(),
+            "interval": self.interval,
+        }
+
+
+@dataclass
+class MonthlyScheduleDetails:
+    """Monthly schedule details for a Chronicle SOAR job instance.
+
+    Attributes:
+        start_date: The start date.
+        day: The day of the month to run the job.
+        time: The time to run the job.
+        interval: The month interval.
+    """
+
+    start_date: Date
+    day: int
+    time: TimeOfDay
+    interval: int
+
+    def to_dict(self) -> dict:
+        """Serialize to the dict shape expected by the Chronicle API."""
+        return {
+            "startDate": self.start_date.to_dict(),
+            "day": self.day,
+            "time": self.time.to_dict(),
+            "interval": self.interval,
+        }
+
+
+@dataclass
+class AdvancedConfig:
+    """Advanced scheduling configuration for a Chronicle SOAR job instance.
+
+    Exactly one of the schedule detail fields should be provided, corresponding
+    to the schedule_type.
+
+    Attributes:
+        time_zone: The zone id.
+        schedule_type: The schedule type.
+        one_time_schedule: One-time schedule details. Use with ONCE.
+        daily_schedule: Daily schedule details. Use with DAILY.
+        weekly_schedule: Weekly schedule details. Use with WEEKLY.
+        monthly_schedule: Monthly schedule details. Use with MONTHLY.
+    """
+
+    time_zone: str
+    schedule_type: ScheduleType
+    one_time_schedule: OneTimeScheduleDetails | None = None
+    daily_schedule: DailyScheduleDetails | None = None
+    weekly_schedule: WeeklyScheduleDetails | None = None
+    monthly_schedule: MonthlyScheduleDetails | None = None
+
+    def to_dict(self) -> dict:
+        """Serialize to the dict shape expected by the Chronicle API."""
+        data: dict = {
+            "timeZone": self.time_zone,
+            "scheduleType": str(self.schedule_type.value),
+        }
+        if self.one_time_schedule is not None:
+            data["oneTimeSchedule"] = self.one_time_schedule.to_dict()
+        if self.daily_schedule is not None:
+            data["dailySchedule"] = self.daily_schedule.to_dict()
+        if self.weekly_schedule is not None:
+            data["weeklySchedule"] = self.weekly_schedule.to_dict()
+        if self.monthly_schedule is not None:
+            data["monthlySchedule"] = self.monthly_schedule.to_dict()
+        return data
+
+
+@dataclass
+class JobParameter:
+    """A parameter definition for a Chronicle SOAR integration job.
+
+    Attributes:
+        id: The parameter's id.
+        display_name: The parameter's display name.
+        description: The parameter's description.
+        mandatory: Whether the parameter is mandatory.
+        type: The parameter's type.
+        default_value: The default value of the parameter.
+    """
+
+    id: int
+    display_name: str
+    description: str
+    mandatory: bool
+    type: ParamType
+    default_value: str | None = None
+
+    def to_dict(self) -> dict:
+        """Serialize to the dict shape expected by the Chronicle API."""
+        data: dict = {
+            "id": self.id,
+            "displayName": self.display_name,
+            "description": self.description,
+            "mandatory": self.mandatory,
+            "type": str(self.type.value),
+        }
+        if self.default_value is not None:
+            data["defaultValue"] = self.default_value
+        return data
+
+
+class IntegrationParameterType(str, Enum):
+    """Parameter types for Chronicle SOAR integration instances."""
+
+    UNSPECIFIED = "INTEGRATION_PARAMETER_TYPE_UNSPECIFIED"
+    BOOLEAN = "BOOLEAN"
+    INT = "INT"
+    STRING = "STRING"
+    PASSWORD = "PASSWORD"
+    IP = "IP"
+    IP_OR_HOST = "IP_OR_HOST"
+    URL = "URL"
+    DOMAIN = "DOMAIN"
+    EMAIL = "EMAIL"
+    VALUES_LIST = "VALUES_LIST"
+    VALUES_AS_SEMICOLON_SEPARATED_STRING = (
+        "VALUES_AS_SEMICOLON_SEPARATED_STRING"
+    )
+    MULTI_VALUES_SELECTION = "MULTI_VALUES_SELECTION"
+    SCRIPT = "SCRIPT"
+    FILTER_LIST = "FILTER_LIST"
+
+
+@dataclass
+class IntegrationInstanceParameter:
+    """A parameter instance for a Chronicle SOAR integration instance.
+
+    Note: Most fields are output-only and will be populated by the API.
+    Only value needs to be provided when configuring an integration instance.
+
+    Attributes:
+        value: The parameter's value.
+    """
+
+    value: str | None = None
+
+    def to_dict(self) -> dict:
+        """Serialize to the dict shape expected by the Chronicle API."""
+        data: dict = {}
+        if self.value is not None:
+            data["value"] = self.value
+        return data
+
+
+class ConnectorConnectivityStatus(str, Enum):
+    """Connectivity status for Chronicle SOAR connector instances."""
+
+    LIVE = "LIVE"
+    NOT_LIVE = "NOT_LIVE"
+
+
+@dataclass
+class ConnectorInstanceParameter:
+    """A parameter instance for a Chronicle SOAR connector instance.
+
+    Note: Most fields are output-only and will be populated by the API.
+    Only value needs to be provided when configuring a connector instance.
+
+    Attributes:
+        value: The value of the parameter.
+    """
+
+    value: str | None = None
+
+    def to_dict(self) -> dict:
+        """Serialize to the dict shape expected by the Chronicle API."""
+        data: dict = {}
+        if self.value is not None:
+            data["value"] = self.value
+        return data
+
+
+class TransformerType(str, Enum):
+    """Transformer types for Chronicle SOAR integration transformers."""
+
+    UNSPECIFIED = "TRANSFORMER_TYPE_UNSPECIFIED"
+    BUILT_IN = "BUILT_IN"
+    CUSTOM = "CUSTOM"
+
+
+@dataclass
+class TransformerDefinitionParameter:
+    """A parameter definition for a Chronicle SOAR transformer definition.
+
+    Attributes:
+        display_name: The parameter's display name. May contain letters,
+            numbers, and underscores. Maximum 150 characters.
+        mandatory: Whether the parameter is mandatory for configuring a
+            transformer instance.
+        id: The parameter's id. Server-generated on creation; must be
+            provided when updating an existing parameter.
+        default_value: The default value of the parameter. Required for
+            boolean and mandatory parameters.
+        description: The parameter's description. Maximum 2050 characters.
+    """
+
+    display_name: str
+    mandatory: bool
+    id: str | None = None
+    default_value: str | None = None
+    description: str | None = None
+
+    def to_dict(self) -> dict:
+        """Serialize to the dict shape expected by the Chronicle API."""
+        data: dict = {
+            "displayName": self.display_name,
+            "mandatory": self.mandatory,
+        }
+        if self.id is not None:
+            data["id"] = self.id
+        if self.default_value is not None:
+            data["defaultValue"] = self.default_value
+        if self.description is not None:
+            data["description"] = self.description
+        return data
+
+
+class LogicalOperatorType(str, Enum):
+    """Logical operator types for Chronicle SOAR
+    integration logical operators."""
+
+    UNSPECIFIED = "LOGICAL_OPERATOR_TYPE_UNSPECIFIED"
+    BUILT_IN = "BUILT_IN"
+    CUSTOM = "CUSTOM"
+
+
+@dataclass
+class IntegrationLogicalOperatorParameter:
+    """A parameter definition for a Chronicle SOAR logical operator.
+
+    Attributes:
+        display_name: The parameter's display name. May contain letters,
+            numbers, and underscores. Maximum 150 characters.
+        mandatory: Whether the parameter is mandatory for configuring a
+            logical operator instance.
+        id: The parameter's id. Server-generated on creation; must be
+            provided when updating an existing parameter.
+        default_value: The default value of the parameter. Required for
+            boolean and mandatory parameters.
+        order: The parameter's order in the parameters list.
+        description: The parameter's description. Maximum 2050 characters.
+    """
+
+    display_name: str
+    mandatory: bool
+    id: str | None = None
+    default_value: str | None = None
+    order: int | None = None
+    description: str | None = None
+
+    def to_dict(self) -> dict:
+        """Serialize to the dict shape expected by the Chronicle API."""
+        data: dict = {
+            "displayName": self.display_name,
+            "mandatory": self.mandatory,
+        }
+        if self.id is not None:
+            data["id"] = self.id
+        if self.default_value is not None:
+            data["defaultValue"] = self.default_value
+        if self.order is not None:
+            data["order"] = self.order
+        if self.description is not None:
+            data["description"] = self.description
+        return data
+
+
+@dataclass
+class ConnectorRule:
+    """A rule definition for a Chronicle SOAR integration connector.
+
+    Attributes:
+        display_name: Connector's rule data name.
+        type: Connector's rule data type.
+    """
+
+    display_name: str
+    type: ConnectorRuleType
+
+    def to_dict(self) -> dict:
+        """Serialize to the dict shape expected by the Chronicle API."""
+        return {
+            "displayName": self.display_name,
+            "type": str(self.type.value),
+        }
 
 
 @dataclass
