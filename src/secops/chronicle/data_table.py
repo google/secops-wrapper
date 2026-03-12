@@ -6,6 +6,11 @@ import sys
 from itertools import islice
 from typing import Any
 
+from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import (
+    chronicle_paginated_request,
+    chronicle_request,
+)
 from secops.exceptions import APIError, SecOpsError
 
 # Use built-in StrEnum if Python 3.11+, otherwise create a compatible version
@@ -133,20 +138,15 @@ def create_data_table(
     if scopes:
         body_payload["scopeInfo"] = {"dataAccessScopes": scopes}
 
-    # Create the data table
-    response = client.session.post(
-        f"{client.base_url}/{client.instance_id}/dataTables",
+    created_table_data = chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="dataTables",
+        api_version=APIVersion.V1ALPHA,
         params={"dataTableId": name},
         json=body_payload,
+        error_message=f"Failed to create data table '{name}'",
     )
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to create data table '{name}': {response.status_code} "
-            f"{response.text}"
-        )
-
-    created_table_data = response.json()
 
     # Add rows if provided
     if rows:
@@ -230,22 +230,14 @@ def _create_data_table_rows(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/dataTables/{name}"
-        "/dataTableRows:bulkCreate"
-    )
-    response = client.session.post(
-        url,
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=f"dataTables/{name}/dataTableRows:bulkCreate",
+        api_version=APIVersion.V1ALPHA,
         json={"requests": [{"data_table_row": {"values": x}} for x in rows]},
+        error_message=f"Failed to create data table rows for '{name}'",
     )
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to create data table rows for '{name}': "
-            f"{response.status_code} {response.text}"
-        )
-
-    return response.json()
 
 
 def delete_data_table(
@@ -268,24 +260,18 @@ def delete_data_table(
     Raises:
         APIError: If the API request fails
     """
-    response = client.session.delete(
-        f"{client.base_url}/{client.instance_id}/dataTables/{name}",
-        params={"force": str(force).lower()},
-    )
-
-    # Successful delete returns 200 OK with body or 204 No Content
-    if response.status_code == 200 or response.status_code == 204:
-        if response.text:
-            try:
-                return response.json()
-            except Exception:  # pylint: disable=broad-exception-caught
-                return {"status": "success", "statusCode": response.status_code}
+    try:
+        return chronicle_request(
+            client,
+            method="DELETE",
+            endpoint_path=f"dataTables/{name}",
+            api_version=APIVersion.V1ALPHA,
+            params={"force": str(force).lower()},
+            expected_status={200, 204},
+            error_message=f"Failed to delete data table '{name}'",
+        )
+    except APIError:
         return {}
-
-    raise APIError(
-        f"Failed to delete data table '{name}': {response.status_code} "
-        f"{response.text}"
-    )
 
 
 def delete_data_table_rows(
@@ -330,23 +316,19 @@ def _delete_data_table_row(
     Raises:
         APIError: If the API request fails
     """
-    response = client.session.delete(
-        f"{client.base_url}/{client.instance_id}/dataTables/{table_id}"
-        f"/dataTableRows/{row_guid}"
-    )
-
-    if response.status_code == 200 or response.status_code == 204:
-        if response.text:
-            try:
-                return response.json()
-            except Exception:  # pylint: disable=broad-exception-caught
-                return {"status": "success", "statusCode": response.status_code}
-        return {"status": "success", "statusCode": response.status_code}
-
-    raise APIError(
-        f"Failed to delete data table row '{row_guid}' from '{table_id}': "
-        f"{response.status_code} {response.text}"
-    )
+    try:
+        return chronicle_request(
+            client,
+            method="DELETE",
+            endpoint_path=f"dataTables/{table_id}/dataTableRows/{row_guid}",
+            api_version=APIVersion.V1ALPHA,
+            expected_status={200, 204},
+            error_message=(
+                f"Failed to delete data table row '{row_guid}' from '{table_id}'"
+            ),
+        )
+    except APIError:
+        return {"status": "success"}
 
 
 def get_data_table(
@@ -365,17 +347,13 @@ def get_data_table(
     Raises:
         APIError: If the API request fails
     """
-    response = client.session.get(
-        f"{client.base_url}/{client.instance_id}/dataTables/{name}"
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"dataTables/{name}",
+        api_version=APIVersion.V1ALPHA,
+        error_message=f"Failed to get data table '{name}'",
     )
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to get data table '{name}': {response.status_code} "
-            f"{response.text}"
-        )
-
-    return response.json()
 
 
 def list_data_tables(
@@ -395,34 +373,18 @@ def list_data_tables(
     Raises:
         APIError: If the API request fails
     """
-    all_data_tables = []
-    params = {"pageSize": 1000}
-
+    extra_params = {}
     if order_by:
-        params["orderBy"] = order_by
+        extra_params["orderBy"] = order_by
 
-    while True:
-        response = client.session.get(
-            f"{client.base_url}/{client.instance_id}/dataTables",
-            params=params,
-        )
-
-        if response.status_code != 200:
-            raise APIError(
-                f"Failed to list data tables: {response.status_code} "
-                f"{response.text}"
-            )
-
-        resp_json = response.json()
-        all_data_tables.extend(resp_json.get("dataTables", []))
-
-        page_token = resp_json.get("nextPageToken")
-        if page_token:
-            params["pageToken"] = page_token
-        else:
-            break
-
-    return all_data_tables
+    return chronicle_paginated_request(
+        client,
+        path="dataTables",
+        items_key="dataTables",
+        api_version=APIVersion.V1ALPHA,
+        extra_params=extra_params if extra_params else None,
+        as_list=True,
+    )
 
 
 def list_data_table_rows(
@@ -444,35 +406,18 @@ def list_data_table_rows(
     Raises:
         APIError: If the API request fails
     """
-    all_rows = []
-    params = {"pageSize": 1000}
-
+    extra_params = {}
     if order_by:
-        params["orderBy"] = order_by
+        extra_params["orderBy"] = order_by
 
-    while True:
-        response = client.session.get(
-            f"{client.base_url}/{client.instance_id}/dataTables"
-            f"/{name}/dataTableRows",
-            params=params,
-        )
-
-        if response.status_code != 200:
-            raise APIError(
-                f"Failed to list data table rows for '{name}': "
-                f"{response.status_code} {response.text}"
-            )
-
-        resp_json = response.json()
-        all_rows.extend(resp_json.get("dataTableRows", []))
-
-        page_token = resp_json.get("nextPageToken")
-        if page_token:
-            params["pageToken"] = page_token
-        else:
-            break
-
-    return all_rows
+    return chronicle_paginated_request(
+        client,
+        path=f"dataTables/{name}/dataTableRows",
+        items_key="dataTableRows",
+        api_version=APIVersion.V1ALPHA,
+        extra_params=extra_params if extra_params else None,
+        as_list=True,
+    )
 
 
 def update_data_table(
@@ -520,20 +465,15 @@ def update_data_table(
     if update_mask:
         params["updateMask"] = ",".join(update_mask)
 
-    # Make the PATCH request
-    response = client.session.patch(
-        f"{client.base_url}/{client.instance_id}/dataTables/{name}",
-        params=params,
+    return chronicle_request(
+        client,
+        method="PATCH",
+        endpoint_path=f"dataTables/{name}",
+        api_version=APIVersion.V1ALPHA,
+        params=params if params else None,
         json=body_payload,
+        error_message=f"Failed to update data table '{name}'",
     )
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to update data table '{name}': {response.status_code} "
-            f"{response.text}"
-        )
-
-    return response.json()
 
 
 def _estimate_row_json_size(row: list[str]) -> int:
@@ -635,18 +575,15 @@ def replace_data_table_rows(
             {"data_table_row": {"values": r}} for r in first_api_batch
         ]
 
-        response = client.session.post(
-            url,
+        result = chronicle_request(
+            client,
+            method="POST",
+            endpoint_path=f"dataTables/{name}/dataTableRows:bulkReplace",
+            api_version=APIVersion.V1ALPHA,
             json={"requests": replace_requests},
+            error_message=f"Failed to replace data table rows for '{name}'",
         )
-
-        if response.status_code != 200:
-            raise APIError(
-                f"Failed to replace data table rows for '{name}': "
-                f"{response.status_code} {response.text}"
-            )
-
-        all_responses.append(response.json())
+        all_responses.append(result)
 
     # Handle any remaining rows from the first 1000 using bulkCreate
     remaining_first_batch = first_batch[len(first_api_batch) :]
@@ -771,15 +708,11 @@ def _update_data_table_rows(
 
         requests.append(request_item)
 
-    response = client.session.post(
-        url,
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=f"dataTables/{name}/dataTableRows:bulkUpdate",
+        api_version=APIVersion.V1ALPHA,
         json={"requests": requests},
+        error_message=f"Failed to update data table rows for '{name}'",
     )
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to update data table rows for '{name}': "
-            f"{response.status_code} {response.text}"
-        )
-
-    return response.json()

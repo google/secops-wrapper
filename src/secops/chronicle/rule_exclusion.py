@@ -20,7 +20,12 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Annotated, Any
 
-from secops.exceptions import APIError, SecOpsError
+from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import (
+    chronicle_paginated_request,
+    chronicle_request,
+)
+from secops.exceptions import SecOpsError
 
 # Use built-in StrEnum if Python 3.11+, otherwise create a compatible version
 if sys.version_info >= (3, 11):
@@ -78,7 +83,7 @@ class UpdateRuleDeployment:
 
 
 def list_rule_exclusions(
-    client, page_size: int = 100, page_token: str | None = None
+    client, page_size: int | None = None, page_token: str | None = None
 ) -> dict[str, Any]:
     """List rule exclusions.
 
@@ -93,18 +98,14 @@ def list_rule_exclusions(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/findingsRefinements"
-
-    params = {"pageSize": page_size}
-    if page_token:
-        params["pageToken"] = page_token
-
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to list rule exclusions: {response.text}")
-
-    return response.json()
+    return chronicle_paginated_request(
+        client,
+        path="findingsRefinements",
+        items_key="findingsRefinements",
+        api_version=APIVersion.V1ALPHA,
+        page_size=page_size,
+        page_token=page_token,
+    )
 
 
 def get_rule_exclusion(client, exclusion_id: str) -> dict[str, Any]:
@@ -120,19 +121,18 @@ def get_rule_exclusion(client, exclusion_id: str) -> dict[str, Any]:
     Raises:
         APIError: If the API request fails
     """
-    # Check if name is a full resource name or just an ID
-    name = exclusion_id
     if not exclusion_id.startswith("projects/"):
-        name = f"{client.instance_id}/findingsRefinements/{exclusion_id}"
+        endpoint_path = f"findingsRefinements/{exclusion_id}"
+    else:
+        endpoint_path = exclusion_id
 
-    url = f"{client.base_url}/{name}"
-
-    response = client.session.get(url)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to get rule exclusion: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=endpoint_path,
+        api_version=APIVersion.V1ALPHA,
+        error_message="Failed to get rule exclusion",
+    )
 
 
 def create_rule_exclusion(
@@ -155,20 +155,20 @@ def create_rule_exclusion(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/findingsRefinements"
-
     body = {
         "display_name": display_name,
         "type": refinement_type,
         "query": query,
     }
 
-    response = client.session.post(url, json=body)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to create rule exclusion: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="findingsRefinements",
+        api_version=APIVersion.V1ALPHA,
+        json=body,
+        error_message="Failed to create rule exclusion",
+    )
 
 
 def patch_rule_exclusion(
@@ -198,15 +198,12 @@ def patch_rule_exclusion(
     Raises:
         APIError: If the API request fails
     """
-    name = exclusion_id
-    # Check if name is a full resource name or just an ID
     if not exclusion_id.startswith("projects/"):
-        name = f"{client.instance_id}/findingsRefinements/{exclusion_id}"
-
-    url = f"{client.base_url}/{name}"
+        endpoint_path = f"findingsRefinements/{exclusion_id}"
+    else:
+        endpoint_path = exclusion_id
 
     body = {}
-
     if display_name:
         body["display_name"] = display_name
     if refinement_type:
@@ -218,12 +215,15 @@ def patch_rule_exclusion(
     if update_mask:
         params["updateMask"] = update_mask
 
-    response = client.session.patch(url, params=params, json=body)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to update rule exclusion: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="PATCH",
+        endpoint_path=endpoint_path,
+        api_version=APIVersion.V1ALPHA,
+        params=params,
+        json=body,
+        error_message="Failed to update rule exclusion",
+    )
 
 
 def compute_rule_exclusion_activity(
@@ -246,16 +246,15 @@ def compute_rule_exclusion_activity(
     Raises:
         APIError: If the API request fails
     """
-    name = exclusion_id
-    # Check if name is a full resource name or just an ID
-    if not name.startswith("projects/"):
-        name = f"{client.instance_id}/findingsRefinements/{exclusion_id}"
-
-    url = f"{client.base_url}/{name}:computeFindingsRefinementActivity"
+    if not exclusion_id.startswith("projects/"):
+        endpoint_path = (
+            f"findingsRefinements/{exclusion_id}"
+            ":computeFindingsRefinementActivity"
+        )
+    else:
+        endpoint_path = f"{exclusion_id}:computeFindingsRefinementActivity"
 
     body = {}
-
-    # Add time range if provided
     if start_time or end_time:
         time_range = {}
         try:
@@ -263,26 +262,24 @@ def compute_rule_exclusion_activity(
                 time_range["start_time"] = start_time.strftime(
                     "%Y-%m-%dT%H:%M:%S.%fZ"
                 )
-
             if end_time:
                 time_range["end_time"] = end_time.strftime(
                     "%Y-%m-%dT%H:%M:%S.%fZ"
                 )
-
             body["interval"] = time_range
         except ValueError as e:
             raise SecOpsError(
                 "Failed to convert time interval to required format"
             ) from e
 
-    response = client.session.post(url, json=body)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to compute rule exclusion activity: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=endpoint_path,
+        api_version=APIVersion.V1ALPHA,
+        json=body,
+        error_message="Failed to compute rule exclusion activity",
+    )
 
 
 def get_rule_exclusion_deployment(client, exclusion_id: str) -> dict[str, Any]:
@@ -298,21 +295,18 @@ def get_rule_exclusion_deployment(client, exclusion_id: str) -> dict[str, Any]:
     Raises:
         APIError: If the API request fails
     """
-    name = exclusion_id
-    # Check if name is a full resource name or just an ID
-    if not name.startswith("projects/"):
-        name = f"{client.instance_id}/findingsRefinements/{name}"
+    if not exclusion_id.startswith("projects/"):
+        endpoint_path = f"findingsRefinements/{exclusion_id}/deployment"
+    else:
+        endpoint_path = f"{exclusion_id}/deployment"
 
-    url = f"{client.base_url}/{name}/deployment"
-
-    response = client.session.get(url)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to get rule exclusion deployment: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=endpoint_path,
+        api_version=APIVersion.V1ALPHA,
+        error_message="Failed to get rule exclusion deployment",
+    )
 
 
 def update_rule_exclusion_deployment(
@@ -336,12 +330,10 @@ def update_rule_exclusion_deployment(
     Raises:
         APIError: If the API request fails
     """
-    name = exclusion_id
-    # Check if name is a full resource name or just an ID
-    if not name.startswith("projects/"):
-        name = f"{client.instance_id}/findingsRefinements/{name}"
-
-    url = f"{client.base_url}/{name}/deployment"
+    if not exclusion_id.startswith("projects/"):
+        endpoint_path = f"findingsRefinements/{exclusion_id}/deployment"
+    else:
+        endpoint_path = f"{exclusion_id}/deployment"
 
     params = {}
     if update_mask:
@@ -353,13 +345,12 @@ def update_rule_exclusion_deployment(
                 fields.append(k)
         params["updateMask"] = ",".join(fields)
 
-    response = client.session.patch(
-        url, params=params, json=deployment_details.to_dict()
+    return chronicle_request(
+        client,
+        method="PATCH",
+        endpoint_path=endpoint_path,
+        api_version=APIVersion.V1ALPHA,
+        params=params,
+        json=deployment_details.to_dict(),
+        error_message="Failed to update rule exclusion deployment",
     )
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to update rule exclusion deployment: {response.text}"
-        )
-
-    return response.json()

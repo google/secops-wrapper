@@ -19,6 +19,7 @@ from datetime import datetime
 from typing import Any
 
 from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import chronicle_request
 from secops.exceptions import APIError
 
 
@@ -36,65 +37,20 @@ def translate_nl_to_udm(client, text: str) -> str:
         APIError: If the API request fails or no valid query can be
             generated after retries
     """
-    max_retries = 10
-    retry_count = 0
-    wait_time = 5  # seconds, will double with each retry
 
-    url = (
-        f"{client.base_url(APIVersion.V1ALPHA)}/{client.instance_id}"
-        f":translateUdmQuery"
+    result = chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=":translateUdmQuery",
+        api_version=APIVersion.V1ALPHA,
+        json={"text": text},
+        error_message="Chronicle API request failed",
     )
 
-    payload = {"text": text}
+    if "message" in result:
+        raise APIError(result["message"])
 
-    while retry_count <= max_retries:
-        try:
-            response = client.session.post(url, json=payload)
-
-            if response.status_code != 200:
-                # If it's a 429 error, handle it specially
-                if (
-                    response.status_code == 429
-                    or "RESOURCE_EXHAUSTED" in response.text
-                ):
-                    if retry_count < max_retries:
-                        retry_count += 1
-                        print(
-                            "Received 429 error in translation, retrying "
-                            f"({retry_count}/{max_retries}) after "
-                            f"{wait_time} seconds"
-                        )
-                        time.sleep(wait_time)
-                        wait_time *= 2  # Double the wait time for next retry
-                        continue
-                # For non-429 errors or if we've exhausted retries
-                raise APIError(f"Chronicle API request failed: {response.text}")
-
-            result = response.json()
-
-            if "message" in result:
-                raise APIError(result["message"])
-
-            return result.get("query", "")
-
-        except APIError as e:
-            # Only retry for 429 errors
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                if retry_count < max_retries:
-                    retry_count += 1
-                    print(
-                        "Received 429 error, retrying "
-                        f"({retry_count}/{max_retries}) after "
-                        f"{wait_time} seconds"
-                    )
-                    time.sleep(wait_time)
-                    wait_time *= 2  # Double the wait time for next retry
-                    continue
-            # For other errors or if we've exhausted retries, raise the error
-            raise e
-
-    # This should not happen, but just in case
-    raise APIError("Failed to translate query after retries")
+    return result.get("query", "")
 
 
 def nl_search(

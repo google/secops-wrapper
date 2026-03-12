@@ -35,6 +35,7 @@ from secops.chronicle.models import (
     TimelineBucket,
     WidgetMetadata,
 )
+from secops.chronicle.utils.request_utils import chronicle_request
 from secops.exceptions import APIError
 
 
@@ -168,8 +169,6 @@ def _summarize_entity_by_id(
     Raises:
         APIError: If API request fails.
     """
-    url = f"{client.base_url}/{client.instance_id}:summarizeEntity"
-
     params = {
         "entityId": entity_id,
         "timeRange.startTime": start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
@@ -182,15 +181,15 @@ def _summarize_entity_by_id(
     if page_token:
         params["pageToken"] = page_token
 
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Error getting entity summary by ID ({entity_id}): {response.text}"
-        )
-
     try:
-        return response.json()
+        return chronicle_request(
+            client,
+            method="GET",
+            endpoint_path=":summarizeEntity",
+            api_version=APIVersion.V1ALPHA,
+            params=params,
+            error_message=(f"Error getting entity summary by ID ({entity_id})"),
+        )
     except Exception as e:
         raise APIError(
             "Error parsing entity summary response for "
@@ -239,24 +238,21 @@ def summarize_entity(
 
     final_preferred_type = preferred_entity_type or auto_detected_preferred_type
 
-    # Query for entities
-    query_url = (
-        f"{client.base_url}/{client.instance_id}:summarizeEntitiesFromQuery"
-    )
     query_params = {
         "query": query_fragment,
         "timeRange.startTime": start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
         "timeRange.endTime": end_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
     }
 
-    query_response = client.session.get(query_url, params=query_params)
-    if query_response.status_code != 200:
-        raise APIError(
-            f"Error querying entity summaries: {query_response.text}"
-        )
-
     try:
-        query_data = query_response.json()
+        query_data = chronicle_request(
+            client,
+            method="GET",
+            endpoint_path=":summarizeEntitiesFromQuery",
+            api_version=APIVersion.V1ALPHA,
+            params=query_params,
+            error_message="Error querying entity summaries",
+        )
     except Exception as e:
         raise APIError(
             f"Error parsing entity summaries query response: {str(e)}"

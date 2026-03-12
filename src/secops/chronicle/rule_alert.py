@@ -17,7 +17,8 @@
 from datetime import datetime
 from typing import Any, Literal
 
-from secops.exceptions import APIError
+from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import chronicle_request
 
 
 def get_alert(
@@ -36,21 +37,18 @@ def get_alert(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/legacy:legacyGetAlert"
-
-    params = {
-        "alertId": alert_id,
-    }
-
+    params = {"alertId": alert_id}
     if include_detections:
         params["includeDetections"] = True
 
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to get alert: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path="legacy:legacyGetAlert",
+        api_version=APIVersion.V1ALPHA,
+        params=params,
+        error_message="Failed to get alert",
+    )
 
 
 def update_alert(
@@ -113,8 +111,6 @@ def update_alert(
         APIError: If the API request fails
         ValueError: If invalid values are provided
     """
-    url = f"{client.base_url}/{client.instance_id}/legacy:legacyUpdateAlert"
-
     # Validate inputs
     priority_values = [
         "PRIORITY_UNSPECIFIED",
@@ -190,12 +186,14 @@ def update_alert(
         "feedback": feedback,
     }
 
-    response = client.session.post(url, json=payload)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to update alert: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="legacy:legacyUpdateAlert",
+        api_version=APIVersion.V1ALPHA,
+        json=payload,
+        error_message="Failed to update alert",
+    )
 
 
 def bulk_update_alerts(
@@ -324,27 +322,20 @@ def search_rule_alerts(
     Raises:
         APIError: If the API request fails
     """
-    # Unused argument. Kept for backward compatibility.
     _ = (rule_status,)
 
-    url = (
-        f"{client.base_url}/{client.instance_id}/legacy:legacySearchRulesAlerts"
-    )
-
-    # Build request parameters
     params = {
         "timeRange.start_time": start_time.isoformat(),
         "timeRange.end_time": end_time.isoformat(),
     }
-
-    # Remove rule status filtering as it doesn't seem to be supported
     if page_size:
         params["maxNumAlertsToReturn"] = page_size
 
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        error_msg = f"Failed to search rule alerts: {response.text}"
-        raise APIError(error_msg)
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path="legacy:legacySearchRulesAlerts",
+        api_version=APIVersion.V1ALPHA,
+        params=params,
+        error_message="Failed to search rule alerts",
+    )

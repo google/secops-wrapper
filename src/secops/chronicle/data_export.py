@@ -22,7 +22,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from secops.exceptions import APIError
+from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import chronicle_request
 
 
 @dataclass
@@ -91,17 +92,13 @@ def get_data_export(client, data_export_id: str) -> dict[str, Any]:
         print(f"Export status: {export['data_export_status']['stage']}")
         ```
     """
-    url = (
-        f"{_get_base_url(client)}/{client.instance_id}/"
-        f"dataExports/{data_export_id}"
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"dataExports/{data_export_id}",
+        api_version=APIVersion.V1ALPHA,
+        error_message="Failed to get data export",
     )
-
-    response = client.session.get(url)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to get data export: {response.text}")
-
-    return response.json()
 
 
 def create_data_export(
@@ -210,15 +207,14 @@ def create_data_export(
         # Setting log types as empty list for all log export
         payload["includeLogTypes"] = []
 
-    # Construct the URL and send the request
-    url = f"{_get_base_url(client)}/{client.instance_id}/dataExports"
-
-    response = client.session.post(url, json=payload)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to create data export: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="dataExports",
+        api_version=APIVersion.V1ALPHA,
+        json=payload,
+        error_message="Failed to create data export",
+    )
 
 
 def cancel_data_export(client, data_export_id: str) -> dict[str, Any]:
@@ -240,17 +236,13 @@ def cancel_data_export(client, data_export_id: str) -> dict[str, Any]:
         print("Export cancellation request submitted")
         ```
     """
-    url = (
-        f"{_get_base_url(client)}/{client.instance_id}/dataExports/"
-        f"{data_export_id}:cancel"
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=f"dataExports/{data_export_id}:cancel",
+        api_version=APIVersion.V1ALPHA,
+        error_message="Failed to cancel data export",
     )
-
-    response = client.session.post(url)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to cancel data export: {response.text}")
-
-    return response.json()
 
 
 def fetch_available_log_types(
@@ -316,19 +308,14 @@ def fetch_available_log_types(
     if page_token:
         payload["pageToken"] = page_token
 
-    # Construct the URL and send the request
-    url = (
-        f"{_get_base_url(client)}/{client.instance_id}/"
-        "dataExports:fetchavailablelogtypes"
+    result = chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="dataExports:fetchavailablelogtypes",
+        api_version=APIVersion.V1ALPHA,
+        json=payload,
+        error_message="Failed to fetch available log types",
     )
-
-    response = client.session.post(url, json=payload)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to fetch available log types: {response.text}")
-
-    # Parse the response
-    result = response.json()
 
     # Convert the API response to AvailableLogType objects
     available_log_types = []
@@ -412,19 +399,17 @@ def update_data_export(
     if not payload:
         raise ValueError("At least one field to update must be provided.")
 
-    # Construct the URL and send the request
-    url = (
-        f"{_get_base_url(client)}/{client.instance_id}/dataExports/"
-        f"{data_export_id}"
-    )
     params = {"update_mask": ",".join(update_mask)}
 
-    response = client.session.patch(url, json=payload, params=params)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to update data export: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="PATCH",
+        endpoint_path=f"dataExports/{data_export_id}",
+        api_version=APIVersion.V1ALPHA,
+        params=params,
+        json=payload,
+        error_message="Failed to update data export",
+    )
 
 
 def list_data_export(
@@ -452,17 +437,17 @@ def list_data_export(
         export = chronicle.list_data_export()
         ```
     """
-    url = f"{_get_base_url(client)}/{client.instance_id}/dataExports"
-
     params = {
         "pageSize": page_size,
         "pageToken": page_token,
         "filter": filters,
     }
 
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to get data export: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path="dataExports",
+        api_version=APIVersion.V1ALPHA,
+        params=params,
+        error_message="Failed to get data export",
+    )

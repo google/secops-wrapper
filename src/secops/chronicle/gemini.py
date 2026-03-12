@@ -16,9 +16,10 @@
 
 Provides access to Chronicle's Gemini conversational AI interface.
 """
-import re
 from typing import Any
 
+from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import chronicle_request
 from secops.exceptions import APIError
 
 
@@ -327,26 +328,23 @@ def create_conversation(client, display_name: str = "New chat") -> str:
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/users/me/conversations"
-
-    # Include the required request body with displayName
     payload = {"displayName": display_name}
 
     try:
-        response = client.session.post(url, json=payload)
-        response.raise_for_status()
-        conversation_data = response.json()
+        conversation_data = chronicle_request(
+            client,
+            method="POST",
+            endpoint_path="users/me/conversations",
+            api_version=APIVersion.V1ALPHA,
+            json=payload,
+            error_message="Failed to create conversation",
+        )
 
-        # Extract conversation ID from the name field (last part of the path)
         conversation_id = conversation_data.get("name", "").split("/")[-1]
         return conversation_id
 
     except Exception as e:
         error_message = f"Failed to create conversation: {str(e)}"
-        if hasattr(e, "response") and e.response is not None:
-            error_message += (
-                f" - Status: {e.response.status_code}, Body: {e.response.text}"
-            )
         raise APIError(error_message) from e
 
 
@@ -365,41 +363,26 @@ def opt_in_to_gemini(client) -> bool:
     Raises:
         APIError: If the API request fails (except for permission errors)
     """
-    # Construct the URL for updating the user's preference set
-    url = f"{client.base_url}/{client.instance_id}/users/me/preferenceSet"
-
-    # Set up the request body to enable Duet AI chat
     payload = {"ui_preferences": {"enable_duet_ai_chat": True}}
-
-    # Set the update mask to only update the specific field
     params = {"updateMask": "ui_preferences.enable_duet_ai_chat"}
 
     try:
-        response = client.session.patch(url, json=payload, params=params)
-        response.raise_for_status()
+        chronicle_request(
+            client,
+            method="PATCH",
+            endpoint_path="users/me/preferenceSet",
+            api_version=APIVersion.V1ALPHA,
+            params=params,
+            json=payload,
+            expected_status={200, 403, 401},
+            error_message="Failed to opt in to Gemini",
+        )
         return True
-    except Exception as e:
-        # For permission errors, we'll log but not raise to allow
-        # graceful fallback
-        if (
-            hasattr(e, "response")
-            and e.response is not None
-            and e.response.status_code in [403, 401]
-        ):
-            error_message = (
-                f"Unable to opt in to Gemini due to permissions: {str(e)}"
-            )
-            print(f"Warning: {error_message}")
+    except APIError as e:
+        if "403" in str(e) or "401" in str(e):
+            print(f"Warning: Unable to opt in to Gemini due to permissions")
             return False
-
-        # For other errors, raise so the calling function can handle
-        # appropriately
-        error_message = f"Failed to opt in to Gemini: {str(e)}"
-        if hasattr(e, "response") and e.response is not None:
-            error_message += (
-                f" - Status: {e.response.status_code}, Body: {e.response.text}"
-            )
-        raise APIError(error_message) from e
+        raise
 
 
 def query_gemini(
@@ -440,11 +423,6 @@ def query_gemini(
         if not conversation_id:
             conversation_id = create_conversation(client)
 
-        url = (
-            f"{client.base_url}/{client.instance_id}/users/me/"
-            f"conversations/{conversation_id}/messages"
-        )
-
         payload = {
             "input": {
                 "body": query,
@@ -452,9 +430,16 @@ def query_gemini(
             }
         }
 
-        response = client.session.post(url, json=payload)
-        response.raise_for_status()
-        response_data = response.json()
+        response_data = chronicle_request(
+            client,
+            method="POST",
+            endpoint_path=(
+                f"users/me/conversations/{conversation_id}/messages"
+            ),
+            api_version=APIVersion.V1ALPHA,
+            json=payload,
+            error_message="Failed to query Gemini",
+        )
 
         return GeminiResponse.from_api_response(response_data)
 

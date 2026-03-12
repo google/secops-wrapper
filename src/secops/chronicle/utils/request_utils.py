@@ -50,10 +50,10 @@ def _safe_body_preview(text: str | None, limit: int = MAX_BODY_CHARS) -> str:
 # pylint: disable=line-too-long
 def chronicle_paginated_request(
     client: "ChronicleClient",
-    api_version: str,
     path: str,
     items_key: str,
     *,
+    api_version: str | None = None,
     page_size: int | None = None,
     page_token: str | None = None,
     extra_params: dict[str, Any] | None = None,
@@ -61,7 +61,7 @@ def chronicle_paginated_request(
 ) -> dict[str, Any] | list[Any]:
     """Helper to get items from endpoints that use pagination.
 
-    Function behaviour:
+    Function behavior:
       - If `page_size` OR `page_token` is provided: a single page is returned with the
         upstream JSON as-is, including all potential metadata.
         - If `as_list` is True, return only the list of items (drops metadata/tokens)
@@ -77,12 +77,13 @@ def chronicle_paginated_request(
 
     Args:
         client: ChronicleClient instance
-        api_version: The API version to use, as a string. options:
+        path: URL path after {base_url}/{instance_id}/
+        items_key: JSON key holding the array of items (e.g. 'curatedRules')
+        api_version: The API version to use, as a string. If not provided,
+            uses the client's default_api_version. Options:
             - v1 (secops.chronicle.models.APIVersion.V1)
             - v1alpha (secops.chronicle.models.APIVersion.V1ALPHA)
             - v1beta (secops.chronicle.models.APIVersion.V1BETA)
-        path: URL path after {base_url}/{instance_id}/
-        items_key: JSON key holding the array of items (e.g. 'curatedRules')
         page_size: Maximum number of rules to return per page.
         page_token: Token for the next page of results, if available.
         extra_params: extra query params to include on every request
@@ -192,7 +193,7 @@ def chronicle_request(
     method: str,
     endpoint_path: str,
     *,
-    api_version: str = APIVersion.V1,
+    api_version: str | None = None,
     params: dict[str, Any] | None = None,
     headers: dict[str, Any] | None = None,
     json: dict[str, Any] | None = None,
@@ -206,7 +207,8 @@ def chronicle_request(
         client: requests.Session (or compatible) instance
         method: HTTP method, e.g. 'GET', 'POST', 'PATCH'
         endpoint_path: URL path after {base_url}/{instance_id}/
-        api_version: The API version to use, as a string. options:
+        api_version: The API version to use, as a string. If not provided,
+            uses the client's default_api_version. Options:
             - v1 (secops.chronicle.models.APIVersion.V1)
             - v1alpha (secops.chronicle.models.APIVersion.V1ALPHA)
             - v1beta (secops.chronicle.models.APIVersion.V1BETA)
@@ -230,7 +232,10 @@ def chronicle_request(
     # - RPC-style methods e.g: ":validateQuery" -> .../{instance_id}:validateQuery
     # - Legacy paths e.g: "legacy:..." -> .../{instance_id}/legacy:...
     # - normal paths e.g: "curatedRules/..." -> .../{instance_id}/curatedRules/...
-    base = f"{client.base_url(api_version)}/{client.instance_id}"
+    if api_version:
+        base = f"{client.base_url(api_version)}/{client.instance_id}"
+    else:
+        base = f"{client.base_url}/{client.instance_id}"
 
     if endpoint_path.startswith(":"):
         url = f"{base}{endpoint_path}"

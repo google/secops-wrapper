@@ -17,6 +17,8 @@
 from datetime import datetime
 from typing import Any
 
+from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import chronicle_request
 from secops.exceptions import APIError
 
 
@@ -44,11 +46,6 @@ def list_iocs(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}"
-        "/legacy:legacySearchEnterpriseWideIoCs"
-    )
-
     params = {
         "timestampRange.startTime": start_time.strftime(
             "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -59,13 +56,15 @@ def list_iocs(
         "fetchPrioritizedIocsOnly": prioritized_only,
     }
 
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to list IoCs: {response.text}")
-
     try:
-        data = response.json()
+        data = chronicle_request(
+            client,
+            method="GET",
+            endpoint_path="legacy:legacySearchEnterpriseWideIoCs",
+            api_version=APIVersion.V1ALPHA,
+            params=params,
+            error_message="Failed to list IoCs",
+        )
 
         # Process each IoC match to ensure consistent field names
         if "matches" in data:

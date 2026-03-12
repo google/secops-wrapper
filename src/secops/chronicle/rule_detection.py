@@ -17,7 +17,8 @@
 from datetime import datetime
 from typing import Any, Literal
 
-from secops.exceptions import APIError
+from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import chronicle_request
 
 
 def list_detections(
@@ -61,11 +62,6 @@ def list_detections(
         APIError: If the API request fails
         ValueError: If an invalid alert_state is provided
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/legacy:legacySearchDetections"
-    )
-
-    # Define valid alert states
     valid_alert_states = ["UNSPECIFIED", "NOT_ALERTING", "ALERTING"]
     valid_list_basis = [
         "LIST_BASIS_UNSPECIFIED",
@@ -73,10 +69,7 @@ def list_detections(
         "DETECTION_TIME",
     ]
 
-    # Build request parameters
-    params = {
-        "rule_id": rule_id,
-    }
+    params = {"rule_id": rule_id}
 
     if alert_state:
         if alert_state not in valid_alert_states:
@@ -101,16 +94,17 @@ def list_detections(
 
     if page_size:
         params["pageSize"] = page_size
-
     if page_token:
         params["pageToken"] = page_token
 
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to list detections: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path="legacy:legacySearchDetections",
+        api_version=APIVersion.V1ALPHA,
+        params=params,
+        error_message="Failed to list detections",
+    )
 
 
 def list_errors(client, rule_id: str) -> dict[str, Any]:
@@ -129,18 +123,14 @@ def list_errors(client, rule_id: str) -> dict[str, Any]:
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/ruleExecutionErrors"
-
-    # Create the filter for the specific rule
     rule_filter = f'rule = "{client.instance_id}/rules/{rule_id}"'
+    params = {"filter": rule_filter}
 
-    params = {
-        "filter": rule_filter,
-    }
-
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to list rule errors: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path="ruleExecutionErrors",
+        api_version=APIVersion.V1ALPHA,
+        params=params,
+        error_message="Failed to list rule errors",
+    )

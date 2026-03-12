@@ -20,7 +20,8 @@ This module provides functions to execute and get dashboard query.
 import json
 from typing import Any
 
-from secops.chronicle.models import InputInterval
+from secops.chronicle.models import APIVersion, InputInterval
+from secops.chronicle.utils.request_utils import chronicle_request
 from secops.exceptions import APIError
 
 
@@ -43,8 +44,6 @@ def execute_query(
     Returns:
         Dictionary containing query results
     """
-    url = f"{client.base_url}/{client.instance_id}/dashboardQueries:execute"
-
     try:
         if isinstance(interval, str):
             interval = json.loads(interval)
@@ -67,15 +66,14 @@ def execute_query(
     if filters:
         payload["filters"] = filters
 
-    response = client.session.post(url, json=payload)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to execute query: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="dashboardQueries:execute",
+        api_version=APIVersion.V1ALPHA,
+        json=payload,
+        error_message="Failed to execute query",
+    )
 
 
 def get_execute_query(client, query_id: str) -> dict[str, Any]:
@@ -91,14 +89,10 @@ def get_execute_query(client, query_id: str) -> dict[str, Any]:
     if query_id.startswith("projects/"):
         query_id = query_id.split("/")[-1]
 
-    url = f"{client.base_url}/{client.instance_id}/dashboardQueries/{query_id}"
-
-    response = client.session.get(url)
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to get query: Status {response.status_code}, "
-            f"Response: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"dashboardQueries/{query_id}",
+        api_version=APIVersion.V1ALPHA,
+        error_message="Failed to get query",
+    )
