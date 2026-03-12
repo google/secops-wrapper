@@ -18,6 +18,7 @@ from __future__ import annotations
 import pytest
 
 from secops.chronicle.utils.format_utils import (
+    build_patch_body,
     format_resource_id,
     parse_json_list,
 )
@@ -98,3 +99,107 @@ def test_parse_json_list_handles_empty_json_array() -> None:
 def test_parse_json_list_handles_empty_list_input() -> None:
     result = parse_json_list([], "filters")
     assert result == []
+
+
+def test_build_patch_body_all_fields_set_builds_body_and_mask() -> None:
+    # All three fields provided — body and mask should include all of them
+    body, params = build_patch_body([
+        ("displayName", "display_name", "My Rule"),
+        ("enabled", "enabled", True),
+        ("severity", "severity", "HIGH"),
+    ])
+
+    assert body == {"displayName": "My Rule", "enabled": True, "severity": "HIGH"}
+    assert params == {"updateMask": "display_name,enabled,severity"}
+
+
+def test_build_patch_body_partial_fields_omits_none_values() -> None:
+    # Only non-None values should appear in body and mask
+    body, params = build_patch_body([
+        ("displayName", "display_name", "New Name"),
+        ("enabled", "enabled", None),
+        ("severity", "severity", None),
+    ])
+
+    assert body == {"displayName": "New Name"}
+    assert params == {"updateMask": "display_name"}
+
+
+def test_build_patch_body_no_fields_set_returns_empty_body_and_none_params() -> None:
+    # All values are None — body should be empty and params should be None
+    body, params = build_patch_body([
+        ("displayName", "display_name", None),
+        ("enabled", "enabled", None),
+    ])
+
+    assert body == {}
+    assert params is None
+
+
+def test_build_patch_body_empty_field_map_returns_empty_body_and_none_params() -> None:
+    # Empty field_map — nothing to build
+    body, params = build_patch_body([])
+
+    assert body == {}
+    assert params is None
+
+
+def test_build_patch_body_explicit_update_mask_overrides_auto_generated() -> None:
+    # An explicit update_mask should always win, even when fields are set
+    body, params = build_patch_body(
+        [
+            ("displayName", "display_name", "Name"),
+            ("enabled", "enabled", True),
+        ],
+        update_mask="display_name",
+    )
+
+    assert body == {"displayName": "Name", "enabled": True}
+    assert params == {"updateMask": "display_name"}
+
+
+def test_build_patch_body_explicit_update_mask_with_no_fields_set_still_applies() -> None:
+    # Explicit mask should appear even when all values are None (caller's intent)
+    body, params = build_patch_body(
+        [
+            ("displayName", "display_name", None),
+        ],
+        update_mask="display_name",
+    )
+
+    assert body == {}
+    assert params == {"updateMask": "display_name"}
+
+
+def test_build_patch_body_false_and_zero_are_not_treated_as_none() -> None:
+    # False-like but non-None values (False, 0, "") should be included in the body
+    body, params = build_patch_body([
+        ("enabled", "enabled", False),
+        ("count", "count", 0),
+        ("label", "label", ""),
+    ])
+
+    assert body == {"enabled": False, "count": 0, "label": ""}
+    assert params == {"updateMask": "enabled,count,label"}
+
+
+def test_build_patch_body_single_field_produces_single_entry_mask() -> None:
+    body, params = build_patch_body([
+        ("severity", "severity", "LOW"),
+    ])
+
+    assert body == {"severity": "LOW"}
+    assert params == {"updateMask": "severity"}
+
+
+def test_build_patch_body_mask_order_matches_field_map_order() -> None:
+    # The mask field order should mirror the order of field_map entries
+    body, params = build_patch_body([
+        ("z", "z_key", "z_val"),
+        ("a", "a_key", "a_val"),
+        ("m", "m_key", "m_val"),
+    ])
+
+    assert params == {"updateMask": "z_key,a_key,m_key"}
+    assert list(body.keys()) == ["z", "a", "m"]
+

@@ -745,6 +745,420 @@ Delete a watchlist:
 secops watchlist delete --watchlist-id "abc-123-def"
 ```
 
+### Integration Management
+
+#### Marketplace Integrations
+
+List marketplace integrations:
+
+```bash
+# List all marketplace integration (returns dict with pagination metadata)
+secops integration marketplace list
+
+# List marketplace integration as a direct list (fetches all pages automatically)
+secops integration marketplace list --as-list
+```
+
+Get marketplace integration details:
+
+```bash
+secops integration marketplace get --integration-name "AWSSecurityHub"
+```
+
+Get marketplace integration diff between installed version and latest version:
+
+```bash
+secops integration marketplace diff --integration-name "AWSSecurityHub"
+```
+
+Install or update a marketplace integration:
+
+```bash
+# Install with default settings
+secops integration marketplace install --integration-name "AWSSecurityHub"
+
+# Install to staging environment and override any existing ontology mappings
+secops integration marketplace install --integration-name "AWSSecurityHub" --staging --override-mapping
+
+# Installing a currently installed integration with no specified version 
+# number will update it to the latest version
+secops integration marketplace install --integration-name "AWSSecurityHub"
+
+# Or you can specify a specific version to install
+secops integration marketplace install --integration-name "AWSSecurityHub" --version "5.0"
+```
+
+Uninstall a marketplace integration:
+
+```bash
+secops integration marketplace uninstall --integration-name "AWSSecurityHub"
+```
+
+#### Integrations
+
+List integrations:
+
+```bash
+# List all integrations
+secops integration integrations list
+
+# List integrations as a direct list
+secops integration integrations list --as-list
+
+# List with pagination
+secops integration integrations list --page-size 50
+
+# List with filtering
+secops integration integrations list --filter-string "displayName = 'CrowdStrike'"
+
+# List with ordering
+secops integration integrations list --order-by "displayName"
+```
+
+Get integration details:
+
+```bash
+secops integration integrations get --integration-id "MyIntegration"
+```
+
+Create a new custom integration:
+
+```bash
+# Create a basic integration
+secops integration integrations create --display-name "My Custom Integration"
+
+# Create in staging mode
+secops integration integrations create \
+  --display-name "My Custom Integration" \
+  --staging
+
+# Create with all options
+secops integration integrations create \
+  --display-name "My Custom Integration" \
+  --description "Custom integration for internal tooling" \
+  --python-version "V3_11" \
+  --integration-type "RESPONSE" \
+  --staging
+```
+
+Update an integration:
+
+```bash
+# Update display name
+secops integration integrations update \
+  --integration-id "MyIntegration" \
+  --display-name "Updated Integration Name"
+
+# Update multiple fields
+secops integration integrations update \
+  --integration-id "MyIntegration" \
+  --display-name "Updated Name" \
+  --description "Updated description" \
+  --python-version "V3_11"
+
+# Update with explicit update mask
+secops integration integrations update \
+  --integration-id "MyIntegration" \
+  --display-name "New Name" \
+  --update-mask "displayName"
+
+# Remove dependencies during update
+secops integration integrations update \
+  --integration-id "MyIntegration" \
+  --dependencies-to-remove "old-package" "unused-lib"
+
+# Set integration to staging mode
+secops integration integrations update \
+  --integration-id "MyIntegration" \
+  --staging
+```
+
+Update a custom integration definition:
+
+```bash
+# Update a custom integration (supports parameters and dependencies)
+secops integration integrations update-custom \
+  --integration-id "MyIntegration" \
+  --display-name "Updated Custom Integration" \
+  --description "Updated custom integration"
+
+# Update with all options
+secops integration integrations update-custom \
+  --integration-id "MyIntegration" \
+  --display-name "Updated Custom Integration" \
+  --python-version "V3_11" \
+  --integration-type "EXTENSION" \
+  --dependencies-to-remove "old-dep" \
+  --staging
+```
+
+Delete an integration:
+
+```bash
+secops integration integrations delete --integration-id "MyIntegration"
+```
+
+Download an integration package:
+
+```bash
+# Download integration as a ZIP file
+secops integration integrations download \
+  --integration-id "MyIntegration" \
+  --output-file "/tmp/my-integration.zip"
+```
+
+Download a Python dependency for a custom integration:
+
+```bash
+# Download a specific dependency
+secops integration integrations download-dependency \
+  --integration-id "MyIntegration" \
+  --dependency-name "requests==2.31.0"
+```
+
+Export specific items from an integration:
+
+```bash
+# Export specific actions and connectors
+secops integration integrations export-items \
+  --integration-id "MyIntegration" \
+  --output-file "/tmp/export.zip" \
+  --actions "action1" "action2" \
+  --connectors "connector1"
+
+# Export jobs and managers
+secops integration integrations export-items \
+  --integration-id "MyIntegration" \
+  --output-file "/tmp/export.zip" \
+  --jobs "job1" "job2" \
+  --managers "manager1"
+
+# Export transformers and logical operators
+secops integration integrations export-items \
+  --integration-id "MyIntegration" \
+  --output-file "/tmp/export.zip" \
+  --transformers "t1" \
+  --logical-operators "lo1" "lo2"
+```
+
+Get items affected by changes to an integration:
+
+```bash
+secops integration integrations affected-items --integration-id "MyIntegration"
+```
+
+Get integrations installed on a specific agent:
+
+```bash
+secops integration integrations agent-integrations --agent-id "my-agent-id"
+```
+
+Get Python dependencies for a custom integration:
+
+```bash
+secops integration integrations dependencies --integration-id "MyIntegration"
+```
+
+Get agents restricted from running an updated integration:
+
+```bash
+# Check restricted agents for a Python version upgrade
+secops integration integrations restricted-agents \
+  --integration-id "MyIntegration" \
+  --required-python-version "V3_11"
+
+# Check restricted agents for a push request
+secops integration integrations restricted-agents \
+  --integration-id "MyIntegration" \
+  --required-python-version "V3_11" \
+  --push-request
+```
+
+Get the configuration diff for an integration:
+
+```bash
+# Get diff against marketplace version (default)
+secops integration integrations diff --integration-id "MyIntegration"
+
+# Get diff between staging and production
+secops integration integrations diff \
+  --integration-id "MyIntegration" \
+  --diff-type "Production"
+
+# Get diff between production and staging
+secops integration integrations diff \
+  --integration-id "MyIntegration" \
+  --diff-type "Staging"
+```
+
+Transition an integration between staging and production:
+
+```bash
+# Push integration to production
+secops integration integrations transition \
+  --integration-id "MyIntegration" \
+  --target-mode "Production"
+
+# Push integration to staging
+secops integration integrations transition \
+  --integration-id "MyIntegration" \
+  --target-mode "Staging"
+```
+
+Example workflow: Create, configure, test, and deploy a custom integration:
+
+```bash
+# 1. Create a new custom integration in staging
+secops integration integrations create \
+  --display-name "My Custom SIEM Connector" \
+  --description "Custom connector for internal SIEM" \
+  --python-version "V3_11" \
+  --integration-type "RESPONSE" \
+  --staging
+
+# 2. Check its dependencies
+secops integration integrations dependencies \
+  --integration-id "MyCustomSIEMConnector"
+
+# 3. View the diff before pushing to production
+secops integration integrations diff \
+  --integration-id "MyCustomSIEMConnector" \
+  --diff-type "Production"
+
+# 4. Check for restricted agents
+secops integration integrations restricted-agents \
+  --integration-id "MyCustomSIEMConnector" \
+  --required-python-version "V3_11" \
+  --push-request
+
+# 5. Push to production
+secops integration integrations transition \
+  --integration-id "MyCustomSIEMConnector" \
+  --target-mode "Production"
+
+# 6. Download a backup
+secops integration integrations download \
+  --integration-id "MyCustomSIEMConnector" \
+  --output-file "/tmp/my-siem-connector-backup.zip"
+
+# 7. Export specific items for sharing
+secops integration integrations export-items \
+  --integration-id "MyCustomSIEMConnector" \
+  --output-file "/tmp/siem-actions.zip" \
+  --actions "PingAction" "FetchEvents"
+```
+
+#### Integration Instances
+
+List integration instances:
+
+```bash
+# List all instances for an integration
+secops integration instances list --integration-name "MyIntegration"
+
+# List instances as a direct list (fetches all pages automatically)
+secops integration instances list --integration-name "MyIntegration" --as-list
+
+# List with pagination
+secops integration instances list --integration-name "MyIntegration" --page-size 50
+
+# List with filtering
+secops integration instances list --integration-name "MyIntegration" --filter-string "enabled = true"
+```
+
+Get integration instance details:
+
+```bash
+secops integration instances get \
+  --integration-name "MyIntegration" \
+  --instance-id "inst123"
+```
+
+Create a new integration instance:
+
+```bash
+# Create basic integration instance
+secops integration instances create \
+  --integration-name "MyIntegration" \
+  --display-name "Production Instance" \
+  --environment "production"
+
+# Create with description and custom ID
+secops integration instances create \
+  --integration-name "MyIntegration" \
+  --display-name "Test Instance" \
+  --environment "test" \
+  --description "Testing environment instance" \
+  --instance-id "test-inst-001"
+
+# Create with configuration
+secops integration instances create \
+  --integration-name "MyIntegration" \
+  --display-name "Configured Instance" \
+  --environment "production" \
+  --config '{"api_key":"secret123","region":"us-east1"}'
+```
+
+Update an integration instance:
+
+```bash
+# Update display name
+secops integration instances update \
+  --integration-name "MyIntegration" \
+  --instance-id "inst123" \
+  --display-name "Updated Instance Name"
+
+# Update configuration
+secops integration instances update \
+  --integration-name "MyIntegration" \
+  --instance-id "inst123" \
+  --config '{"api_key":"newsecret456","region":"us-west1"}'
+
+# Update multiple fields with update mask
+secops integration instances update \
+  --integration-name "MyIntegration" \
+  --instance-id "inst123" \
+  --display-name "New Name" \
+  --description "New description" \
+  --update-mask "displayName,description"
+```
+
+Delete an integration instance:
+
+```bash
+secops integration instances delete \
+  --integration-name "MyIntegration" \
+  --instance-id "inst123"
+```
+
+Test an integration instance:
+
+```bash
+# Test the instance configuration
+secops integration instances test \
+  --integration-name "MyIntegration" \
+  --instance-id "inst123"
+```
+
+Get affected items:
+
+```bash
+# Get items affected by this instance
+secops integration instances get-affected-items \
+  --integration-name "MyIntegration" \
+  --instance-id "inst123"
+```
+
+Get default instance:
+
+```bash
+# Get the default integration instance
+secops integration instances get-default \
+  --integration-name "MyIntegration"
+```
+
+
+
 ### Rule Management
 
 List detection rules:
@@ -896,7 +1310,6 @@ secops curated-rule search-detections \
   --end-time "2024-01-31T23:59:59Z" \
   --list-basis "DETECTION_TIME" \
   --page-size 50
-
 ```
 
 List all curated rule sets:
@@ -1612,39 +2025,7 @@ secops reference-list create \
 secops parser list
 
 # Get details of a specific parser
-secops parser get --log-type "WINDOWS" --id "pa_12345"
-
-# Create a custom parser for a new log format
-secops parser create \
-  --log-type "CUSTOM_APPLICATION" \
-  --parser-code-file "/path/to/custom_parser.conf" \
-  --validated-on-empty-logs
-
-# Copy an existing parser as a starting point
-secops parser copy --log-type "OKTA" --id "pa_okta_base"
-
-# Activate your custom parser
-secops parser activate --log-type "CUSTOM_APPLICATION" --id "pa_new_custom"
-
-# If needed, deactivate and delete old parser
-secops parser deactivate --log-type "CUSTOM_APPLICATION" --id "pa_old_custom"
-secops parser delete --log-type "CUSTOM_APPLICATION" --id "pa_old_custom"
-```
-
-### Complete Parser Workflow Example: Retrieve, Run, and Ingest
-
-This example demonstrates the complete workflow of retrieving an OKTA parser, running it against a sample log, and ingesting the parsed UDM event:
-
-```bash
-# Step 1: List OKTA parsers to find an active one
-secops parser list --log-type "OKTA" > okta_parsers.json
-
-# Extract the first parser ID (you can use jq or grep)
-PARSER_ID=$(cat okta_parsers.json | jq -r '.[0].name' | awk -F'/' '{print $NF}')
-echo "Using parser: $PARSER_ID"
-
-# Step 2: Get the parser details and save to a file
-secops parser get --log-type "OKTA" --id "$PARSER_ID" > parser_details.json
+secops parser get --log-type "WINDOWS" --id "$PARSER_ID" > parser_details.json
 
 # Extract and decode the parser code (base64 encoded in 'cbn' field)
 cat parser_details.json | jq -r '.cbn' | base64 -d > okta_parser.conf
@@ -1782,7 +2163,7 @@ secops feed update --id "feed-123" --display-name "Updated Feed Name"
 secops feed update --id "feed-123" --details '{"httpSettings":{"uri":"https://example.com/updated-feed","sourceType":"FILES"}}'
 
 # Update both display name and details
-secops feed update --id "feed-123" --display-name "Updated Name" --details '{"httpSettings":{"uri":"https://example.com/updated-feed"}}'
+secops feed update --id "feed-123" --display-name "New Name" --details '{"httpSettings":{"uri":"https://example.com/updated-feed"}}'
 ```
 
 Enable and disable feeds:
@@ -1924,3 +2305,4 @@ secops dashboard-query get --id query-id
 ## Conclusion
 
 The SecOps CLI provides a powerful way to interact with Google Security Operations products directly from your terminal. For more detailed information about the SDK capabilities, refer to the [main README](README.md).
+

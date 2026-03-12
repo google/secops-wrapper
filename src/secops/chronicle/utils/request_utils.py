@@ -14,7 +14,7 @@
 #
 """Helper functions for Chronicle."""
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import requests
 from google.auth.exceptions import GoogleAuthError
@@ -297,3 +297,66 @@ def chronicle_request(
         )
 
     return data
+
+
+def chronicle_request_bytes(
+    client: "ChronicleClient",
+    method: str,
+    endpoint_path: str,
+    *,
+    api_version: str = APIVersion.V1,
+    params: Optional[dict[str, Any]] = None,
+    headers: Optional[dict[str, Any]] = None,
+    expected_status: int | set[int] | tuple[int, ...] | list[int] = 200,
+    error_message: str | None = None,
+    timeout: int | None = None,
+) -> bytes:
+    base = f"{client.base_url(api_version)}/{client.instance_id}"
+
+    if endpoint_path.startswith(":"):
+        url = f"{base}{endpoint_path}"
+    else:
+        url = f'{base}/{endpoint_path.lstrip("/")}'
+
+    try:
+        response = client.session.request(
+            method=method,
+            url=url,
+            params=params,
+            headers=headers,
+            timeout=timeout,
+            stream=True,
+        )
+    except GoogleAuthError as exc:
+        base_msg = error_message or "Google authentication failed"
+        raise APIError(f"{base_msg}: authentication_error={exc}") from exc
+    except requests.RequestException as exc:
+        base_msg = error_message or "API request failed"
+        raise APIError(
+            f"{base_msg}: method={method}, url={url}, "
+            f"request_error={exc.__class__.__name__}, detail={exc}"
+        ) from exc
+
+    if isinstance(expected_status, (set, tuple, list)):
+        status_ok = response.status_code in expected_status
+    else:
+        status_ok = response.status_code == expected_status
+
+    if not status_ok:
+        # try json for detail, else preview text
+        try:
+            data = response.json()
+            raise APIError(
+                f"{error_message or 'API request failed'}: method={method}, url={url}, "
+                f"status={response.status_code}, response={data}"
+            ) from None
+        except ValueError:
+            preview = _safe_body_preview(
+                getattr(response, "text", ""), limit=MAX_BODY_CHARS
+            )
+            raise APIError(
+                f"{error_message or 'API request failed'}: method={method}, url={url}, "
+                f"status={response.status_code}, response_text={preview}"
+            ) from None
+
+    return response.content

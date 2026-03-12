@@ -1,3 +1,5 @@
+from tests.chronicle.test_rule_integration import chronicle
+
 # Google SecOps SDK for Python
 
 [![PyPI version](https://img.shields.io/pypi/v/secops.svg)](https://pypi.org/project/secops/)
@@ -2033,6 +2035,424 @@ for watchlist in watchlists.get("watchlists", []):
 watchlists = chronicle.list_watchlists(as_list=True)
 for watchlist in watchlists:
     print(f"Watchlist: {watchlist.get('displayName')}")
+```
+
+## Integration Management
+
+### Marketplace Integrations
+
+List available marketplace integrations:
+
+```python
+# Get all available marketplace integration
+integrations = chronicle.list_marketplace_integrations()
+for integration in integrations.get("marketplaceIntegrations", []):
+  integration_title = integration.get("title")
+  integration_id = integration.get("name", "").split("/")[-1]
+  integration_version = integration.get("version", "")
+  documentation_url = integration.get("documentationUri", "")
+
+# Get all integration as a list
+integrations = chronicle.list_marketplace_integrations(as_list=True)
+  
+# Get all currently installed integration
+integrations = chronicle.list_marketplace_integrations(filter_string="installed = true")
+
+# Get all installed integration with updates available
+integrations = chronicle.list_marketplace_integrations(filter_string="installed = true AND updateAvailable = true")
+
+# Specify use of V1 Alpha API version
+integrations = chronicle.list_marketplace_integrations(api_version=APIVersion.V1ALPHA)
+```
+
+Get a specific marketplace integration:
+
+```python
+integration = chronicle.get_marketplace_integration("AWSSecurityHub")
+```
+
+Get the diff between the currently installed version and the latest 
+available version of an integration:
+
+```python
+diff = chronicle.get_marketplace_integration_diff("AWSSecurityHub")
+```
+
+Install or update a marketplace integration:
+
+```python
+# Install an integration with the default settings
+integration_name = "AWSSecurityHub"
+integration = chronicle.install_marketplace_integration(integration_name)
+
+# Install to staging environment and override any existing ontology mappings
+integration = chronicle.install_marketplace_integration(
+    integration_name,
+    staging=True,
+    override_ontology_mappings=True
+)
+
+# Installing a currently installed integration with no specified version 
+# number will update it to the latest version
+integration = chronicle.install_marketplace_integration(integration_name)
+
+# Or you can specify a specific version to install
+integration = chronicle.install_marketplace_integration(
+    integration_name,
+    version="5.0"
+)
+```
+
+Uninstall a marketplace integration:
+
+```python
+chronicle.uninstall_marketplace_integration("AWSSecurityHub")
+```
+
+### Integrations
+List all installed integrations:
+
+```python
+# Get all integrations
+integrations = chronicle.list_integrations()
+for i in integrations.get("integrations", []):
+  integration_id = i["identifier"]
+  integration_display_name = i["displayName"]
+  integration_type = i["type"]
+
+# Get all integrations as a list
+integrations = chronicle.list_integrations(as_list=True)
+
+for i in integrations:
+  integration = chronicle.get_integration(i["identifier"])
+  if integration.get("parameters"):
+      print(json.dumps(integration, indent=2))
+
+
+# Get integrations ordered by display name
+integrations = chronicle.list_integrations(order_by="displayName", as_list=True)
+ ```
+
+Get details of a specific integration:
+
+```python
+integration = chronicle.get_integration("AWSSecurityHub")
+```
+
+Create an integration:
+
+```python
+from secops.chronicle.models (
+    IntegrationParam,
+    IntegrationParamType,
+    IntegrationType,
+    PythonVersion
+) 
+
+integration = chronicle.create_integration(
+    display_name="MyNewIntegration",
+    staging=True,
+    description="This is my integration",
+    python_version=PythonVersion.PYTHON_3_11,
+    parameters=[
+        IntegrationParam(
+            display_name="AWS Access Key",
+            property_name="aws_access_key",
+            type=IntegrationParamType.STRING,
+            description="AWS access key for authentication",
+            mandatory=True,
+        ),
+        IntegrationParam(
+            display_name="AWS Secret Key",
+            property_name="aws_secret_key",
+            type=IntegrationParamType.PASSWORD,
+            description="AWS secret key for authentication",
+            mandatory=False,
+        ),
+    ],
+    categories=[
+        "Cloud Security",
+        "Cloud",
+        "Security"
+      ],
+    integration_type=IntegrationType.RESPONSE,
+)
+```
+
+Update an integration:
+
+```python
+from secops.chronicle.models import IntegrationParam, IntegrationParamType
+
+updated_integration = chronicle.update_integration(
+    integration_name="MyNewIntegration",
+    display_name="Updated Integration Name",
+    description="Updated description",
+    parameters=[
+        IntegrationParam(
+            display_name="AWS Region",
+            property_name="aws_region",
+            type=IntegrationParamType.STRING,
+            description="AWS region to use",
+            mandatory=True,
+        ),
+    ],
+    categories=[
+        "Cloud Security",
+        "Cloud",
+        "Security"
+      ],
+)
+```
+
+Delete an integration:
+
+```python
+chronicle.delete_integration("MyNewIntegration")
+```
+
+Download an entire integration as a bytes object and save it as a .zip file
+This includes all the integration details, parameters, and actions in a format that can be re-uploaded to Chronicle or used for backup purposes.
+
+```python
+integration_bytes = chronicle.download_integration("MyIntegration")
+with open("MyIntegration.zip", "wb") as f:
+    f.write(integration_bytes)
+```
+
+Export selected items from an integration (e.g. only actions) as a .zip file:
+
+```python
+# Export only actions with IDs 1 and 2 from the integration
+
+export_bytes = chronicle.export_integration_items(
+        integration_name="AWSSecurityHub",
+        actions=["1", "2"] # IDs of the actions to export
+)
+with open("AWSSecurityHub_FullExport.zip", "wb") as f:
+  f.write(export_bytes)
+```
+
+Get dependencies for an integration:
+
+```python
+dependencies = chronicle.get_integration_dependencies("AWSSecurityHub")
+for dep in dependencies.get("dependencies", []):
+    parts = dep.split("-")
+    dependency_name = parts[0]
+    dependency_version = parts[1] if len(parts) > 1 else "latest"
+    print(f"Dependency: {dependency_name}, Version: {dependency_version}")
+```
+
+Force dependency update for an integration:
+
+```python
+# Defining a version:
+chronicle.download_integration_dependency(
+    "MyIntegration",
+    "boto3==1.42.44"
+)
+
+# Install the latest version of a dependency:
+chronicle.download_integration_dependency(
+    "MyIntegration",
+    "boto3"
+)
+```
+
+Get remote agents that would be restricted from running an updated version of the integration
+
+```python
+from secops.chronicle.models import PythonVersion
+
+agents = chronicle.get_integration_restricted_agents(
+    integration_name="AWSSecurityHub",
+    required_python_version=PythonVersion.PYTHON_3_11,
+)
+```
+    
+Get integration diff between two versions of an integration:
+
+```python
+from secops.chronicle.models import DiffType
+
+# Get the diff between the commercial version of the integration  and the current version in the environment.
+diff = chronicle.get_integration_diff(
+    integration_name="AWSSecurityHub",
+    diff_type=DiffType.COMMERCIAL
+)
+
+# Get the difference between the staging integration and its matching production version.
+diff = chronicle.get_integration_diff(
+    integration_name="AWSSecurityHub",
+    diff_type=DiffType.PRODUCTION
+)
+
+# Get the difference between the production integration  and its corresponding staging version.
+diff = chronicle.get_integration_diff(
+    integration_name="AWSSecurityHub",
+    diff_type=DiffType.STAGING
+)
+```
+
+Transition an integration to staging or production environment:
+
+```python
+from secops.chronicle.models import TargetMode
+
+# Transition to staging environment
+chronicle.transition_integration_environment(
+    integration_name="AWSSecurityHub",
+    target_mode=TargetMode.STAGING
+)
+
+# Transition to production environment
+chronicle.transition_integration_environment(
+    integration_name="AWSSecurityHub",
+    target_mode=TargetMode.PRODUCTION
+)
+```
+
+### Integration Instances
+
+List all instances for a specific integration:
+
+```python
+# Get all instances for an integration
+instances = chronicle.list_integration_instances("MyIntegration")
+for instance in instances.get("integrationInstances", []):
+    print(f"Instance: {instance.get('displayName')}, ID: {instance.get('name')}")
+    print(f"Environment: {instance.get('environment')}")
+
+# Get all instances as a list
+instances = chronicle.list_integration_instances("MyIntegration", as_list=True)
+
+# Get instances for a specific environment
+instances = chronicle.list_integration_instances(
+    "MyIntegration",
+    filter_string="environment = 'production'"
+)
+```
+
+Get details of a specific integration instance:
+
+```python
+instance = chronicle.get_integration_instance(
+    integration_name="MyIntegration",
+    integration_instance_id="ii1"
+)
+print(f"Display Name: {instance.get('displayName')}")
+print(f"Environment: {instance.get('environment')}")
+print(f"Agent: {instance.get('agent')}")
+```
+
+Create a new integration instance:
+
+```python
+from secops.chronicle.models import IntegrationInstanceParameter
+
+# Create instance with required fields only
+new_instance = chronicle.create_integration_instance(
+    integration_name="MyIntegration",
+    environment="production"
+)
+
+# Create instance with all fields
+new_instance = chronicle.create_integration_instance(
+    integration_name="MyIntegration",
+    environment="production",
+    display_name="Production Instance",
+    description="Main production integration instance",
+    parameters=[
+        IntegrationInstanceParameter(
+            value="api_key_value"
+        ),
+        IntegrationInstanceParameter(
+            value="https://api.example.com"
+        )
+    ],
+    agent="agent-123"
+)
+```
+
+Update an existing integration instance:
+
+```python
+from secops.chronicle.models import IntegrationInstanceParameter
+
+# Update instance display name
+updated_instance = chronicle.update_integration_instance(
+    integration_name="MyIntegration",
+    integration_instance_id="ii1",
+    display_name="Updated Production Instance"
+)
+
+# Update multiple fields including parameters
+updated_instance = chronicle.update_integration_instance(
+    integration_name="MyIntegration",
+    integration_instance_id="ii1",
+    display_name="Updated Instance",
+    description="Updated description",
+    environment="staging",
+    parameters=[
+        IntegrationInstanceParameter(
+            value="new_api_key"
+        )
+    ]
+)
+
+# Use custom update mask
+updated_instance = chronicle.update_integration_instance(
+    integration_name="MyIntegration",
+    integration_instance_id="ii1",
+    display_name="New Name",
+    update_mask="displayName"
+)
+```
+
+Delete an integration instance:
+
+```python
+chronicle.delete_integration_instance(
+    integration_name="MyIntegration",
+    integration_instance_id="ii1"
+)
+```
+
+Execute a connectivity test for an integration instance:
+
+```python
+# Test if the instance can connect to the third-party service
+test_result = chronicle.execute_integration_instance_test(
+    integration_name="MyIntegration",
+    integration_instance_id="ii1"
+)
+print(f"Test Successful: {test_result.get('successful')}")
+print(f"Message: {test_result.get('message')}")
+```
+
+Get affected items (playbooks) that depend on an integration instance:
+
+```python
+# Perform impact analysis before deleting or modifying an instance
+affected_items = chronicle.get_integration_instance_affected_items(
+    integration_name="MyIntegration",
+    integration_instance_id="ii1"
+)
+for playbook in affected_items.get("affectedPlaybooks", []):
+    print(f"Playbook: {playbook.get('displayName')}")
+    print(f"  ID: {playbook.get('name')}")
+```
+
+Get the default integration instance:
+
+```python
+# Get the system default configuration for a commercial product
+default_instance = chronicle.get_default_integration_instance(
+    integration_name="AWSSecurityHub"
+)
+print(f"Default Instance: {default_instance.get('displayName')}")
+print(f"Environment: {default_instance.get('environment')}")
 ```
 
 ## Rule Management
