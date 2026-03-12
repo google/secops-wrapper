@@ -260,7 +260,7 @@ jobs:
           retention-days: 1
           
       - name: Publish integration test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
+        uses: EnricoMi/publish-unit-test-result-action@v2.23.0
         if: always()
         with:
           files: junit/integration-test-results.xml
