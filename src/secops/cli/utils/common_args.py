@@ -19,62 +19,94 @@ import argparse
 from secops.cli.utils.config_utils import load_config
 
 
-def add_common_args(parser: argparse.ArgumentParser) -> None:
+def _add_argument_if_not_exists(
+    parser: argparse.ArgumentParser, *args: str, **kwargs
+) -> None:
+    """Add argument to parser only if it typically doesn't exist.
+
+    Args:
+        parser: Parser to add argument to
+        *args: Positional arguments (flags)
+        **kwargs: Keyword arguments
+    """
+    parser_actions = getattr(parser, "_option_string_actions", {})
+    for option_string in args:
+        if option_string in parser_actions:
+            return
+    parser.add_argument(*args, **kwargs)
+
+
+def add_common_args(
+    parser: argparse.ArgumentParser, suppress_defaults: bool = False
+) -> None:
     """Add common arguments to a parser.
 
     Args:
         parser: Parser to add arguments to
+        suppress_defaults: If True, do not set default values
+        (let parent parser handle it)
     """
     config = load_config()
+    default_base = argparse.SUPPRESS if suppress_defaults else None
 
-    parser.add_argument(
+    _add_argument_if_not_exists(
+        parser,
         "--service-account",
         "--service_account",
         dest="service_account",
-        default=config.get("service_account"),
+        default=default_base or config.get("service_account"),
         help="Path to service account JSON file",
     )
-    parser.add_argument(
+    _add_argument_if_not_exists(
+        parser,
         "--output",
         choices=["json", "text"],
-        default="json",
+        default=default_base or "json",
         help="Output format",
     )
 
 
-def add_chronicle_args(parser: argparse.ArgumentParser) -> None:
+def add_chronicle_args(
+    parser: argparse.ArgumentParser, suppress_defaults: bool = False
+) -> None:
     """Add Chronicle-specific arguments to a parser.
 
     Args:
         parser: Parser to add arguments to
+        suppress_defaults: If True, set default values to argparse.SUPPRESS
     """
     config = load_config()
+    default_base = argparse.SUPPRESS if suppress_defaults else None
 
-    parser.add_argument(
+    _add_argument_if_not_exists(
+        parser,
         "--customer-id",
         "--customer_id",
         dest="customer_id",
-        default=config.get("customer_id"),
+        default=default_base or config.get("customer_id"),
         help="Chronicle instance ID",
     )
-    parser.add_argument(
+    _add_argument_if_not_exists(
+        parser,
         "--project-id",
         "--project_id",
         dest="project_id",
-        default=config.get("project_id"),
+        default=default_base or config.get("project_id"),
         help="GCP project ID",
     )
-    parser.add_argument(
+    _add_argument_if_not_exists(
+        parser,
         "--region",
-        default=config.get("region", "us"),
+        default=default_base or config.get("region", "us"),
         help="Chronicle API region",
     )
-    parser.add_argument(
+    _add_argument_if_not_exists(
+        parser,
         "--api-version",
         "--api_version",
         dest="api_version",
         choices=["v1", "v1beta", "v1alpha"],
-        default=config.get("api_version", "v1alpha"),
+        default=default_base or config.get("api_version", "v1alpha"),
         help=(
             "Default API version for Chronicle requests " "(default: v1alpha)"
         ),
