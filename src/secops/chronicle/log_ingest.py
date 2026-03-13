@@ -25,7 +25,10 @@ from typing import Any
 
 from secops.chronicle.log_types import is_valid_log_type
 from secops.chronicle.models import APIVersion
-from secops.chronicle.utils.request_utils import chronicle_request
+from secops.chronicle.utils.request_utils import (
+    chronicle_request,
+    chronicle_paginated_request,
+)
 from secops.exceptions import APIError
 
 # Forward declaration for type hinting to avoid circular import
@@ -380,7 +383,6 @@ def create_forwarder(
         client,
         method="POST",
         endpoint_path="forwarders",
-        api_version=APIVersion.V1ALPHA,
         json=payload,
         error_message="Failed to create forwarder",
     )
@@ -390,48 +392,33 @@ def list_forwarders(
     client: "ChronicleClient",
     page_size: int | None = None,
     page_token: str | None = None,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[Any]:
     """List forwarders in Chronicle.
 
     Args:
         client: ChronicleClient instance
         page_size: Maximum number of forwarders to return (1-1000)
         page_token: Token for pagination
+        as_list: If True, return only the list of forwarders.
+            If False, return dict with metadata and pagination tokens.
 
     Returns:
-        Dictionary containing list of forwarders and next page token
+        If as_list is True: List of forwarders.
+        If as_list is False: Dict with forwarders list and pagination metadata.
 
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/forwarders"
 
-    # Add query parameters
-    params = {}
-    if page_size:
-        params["pageSize"] = min(1000, max(1, page_size))
-    if page_token:
-        params["pageToken"] = page_token
-
-    result = chronicle_request(
+    return chronicle_paginated_request(
         client,
-        method="GET",
-        endpoint_path="forwarders",
-        api_version=APIVersion.V1ALPHA,
-        params=params if params else None,
-        error_message="Failed to list forwarders",
+        path="forwarders",
+        items_key="forwarders",
+        page_size=min(1000, max(1, page_size)) if page_size else None,
+        page_token=page_token,
+        as_list=as_list,
     )
-
-    # If there's a next page token, fetch additional pages and combine results
-    if not page_size and "nextPageToken" in result and result["nextPageToken"]:
-        next_page = list_forwarders(client, page_size, result["nextPageToken"])
-        if "forwarders" in next_page and next_page["forwarders"]:
-            # Combine the forwarders from both pages
-            result["forwarders"].extend(next_page["forwarders"])
-        # Remove the nextPageToken since we've fetched all pages
-        result.pop("nextPageToken")
-
-    return result
 
 
 def get_forwarder(
@@ -453,7 +440,6 @@ def get_forwarder(
         client,
         method="GET",
         endpoint_path=f"forwarders/{forwarder_id}",
-        api_version=APIVersion.V1ALPHA,
         error_message="Failed to get forwarder",
     )
 
@@ -580,7 +566,6 @@ def update_forwarder(
         client,
         method="PATCH",
         endpoint_path=f"forwarders/{forwarder_id}",
-        api_version=APIVersion.V1ALPHA,
         params=params,
         json=payload,
         error_message="Failed to update forwarder",
@@ -607,7 +592,6 @@ def delete_forwarder(
         client,
         method="DELETE",
         endpoint_path=f"forwarders/{forwarder_id}",
-        api_version=APIVersion.V1ALPHA,
         error_message="Failed to delete forwarder",
     )
 
@@ -906,7 +890,6 @@ def ingest_log(
         client,
         method="POST",
         endpoint_path="logs:import",
-        api_version=APIVersion.V1ALPHA,
         json=payload,
         error_message="Failed to ingest log",
     )
@@ -1024,7 +1007,6 @@ def ingest_udm(
             client,
             method="POST",
             endpoint_path="events:import",
-            api_version=APIVersion.V1ALPHA,
             json=body,
             expected_status={200, 201},
             error_message="Failed to ingest UDM events",
@@ -1081,7 +1063,6 @@ def import_entities(
         client,
         method="POST",
         endpoint_path="entities:import",
-        api_version=APIVersion.V1ALPHA,
         json=body,
         expected_status={200, 201},
         error_message="Failed to import entities",

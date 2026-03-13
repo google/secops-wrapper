@@ -70,7 +70,6 @@ def execute_query(
         client,
         method="POST",
         endpoint_path="dashboardQueries:execute",
-        api_version=APIVersion.V1ALPHA,
         json=payload,
         error_message="Failed to execute query",
     )
@@ -93,6 +92,5 @@ def get_execute_query(client, query_id: str) -> dict[str, Any]:
         client,
         method="GET",
         endpoint_path=f"dashboardQueries/{query_id}",
-        api_version=APIVersion.V1ALPHA,
         error_message="Failed to get query",
     )

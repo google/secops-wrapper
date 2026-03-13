@@ -45,7 +45,6 @@ def get_alert(
         client,
         method="GET",
         endpoint_path="legacy:legacyGetAlert",
-        api_version=APIVersion.V1ALPHA,
         params=params,
         error_message="Failed to get alert",
     )
@@ -190,7 +189,6 @@ def update_alert(
         client,
         method="POST",
         endpoint_path="legacy:legacyUpdateAlert",
-        api_version=APIVersion.V1ALPHA,
         json=payload,
         error_message="Failed to update alert",
     )
@@ -335,7 +333,6 @@ def search_rule_alerts(
         client,
         method="GET",
         endpoint_path="legacy:legacySearchRulesAlerts",
-        api_version=APIVersion.V1ALPHA,
         params=params,
         error_message="Failed to search rule alerts",
     )

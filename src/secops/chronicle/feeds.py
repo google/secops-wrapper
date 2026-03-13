@@ -137,7 +137,8 @@ def list_feeds(
     page_size: int = 100,
     page_token: str = None,
     api_version: APIVersion | None = None,
-) -> list[Feed]:
+    as_list: bool = True,
+) -> dict[str, Any] | list[Feed]:
     """List feeds.
 
     Args:
@@ -145,9 +146,13 @@ def list_feeds(
         page_size: The maximum number of feeds to return
         page_token: A page token, received from a previous ListFeeds call
         api_version: (Optional) Preferred API version to use.
+        as_list: If True, return only the list of feeds.
+            If False, return dict with metadata and pagination tokens.
+            Defaults to True for backward compatibility.
 
     Returns:
-        List of feed dictionaries
+        If as_list is True: List of feed dictionaries.
+        If as_list is False: Dict with feeds list and pagination metadata.
 
     Raises:
         APIError: If the API request fails
@@ -159,7 +164,7 @@ def list_feeds(
         api_version=api_version,
         page_size=page_size,
         page_token=page_token,
-        as_list=True,
+        as_list=as_list,
     )
 
 

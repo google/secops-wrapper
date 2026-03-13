@@ -52,7 +52,6 @@ def activate_parser(
         client,
         method="POST",
         endpoint_path=f"logTypes/{log_type}/parsers/{id}:activate",
-        api_version=APIVersion.V1ALPHA,
         json={},
         error_message="Failed to activate parser",
     )
@@ -83,7 +82,6 @@ def activate_release_candidate_parser(
             f"logTypes/{log_type}/parsers/{id}"
             ":activateReleaseCandidateParser"
         ),
-        api_version=APIVersion.V1ALPHA,
         json={},
         error_message="Failed to activate parser",
     )
@@ -111,7 +109,6 @@ def copy_parser(
         client,
         method="POST",
         endpoint_path=f"logTypes/{log_type}/parsers/{id}:copy",
-        api_version=APIVersion.V1ALPHA,
         json={},
         error_message="Failed to copy parser",
     )
@@ -146,7 +143,6 @@ def create_parser(
         client,
         method="POST",
         endpoint_path=f"logTypes/{log_type}/parsers",
-        api_version=APIVersion.V1ALPHA,
         json=body,
         error_message="Failed to create parser",
     )
@@ -174,7 +170,6 @@ def deactivate_parser(
         client,
         method="POST",
         endpoint_path=f"logTypes/{log_type}/parsers/{id}:deactivate",
-        api_version=APIVersion.V1ALPHA,
         json={},
         error_message="Failed to deactivate parser",
     )
@@ -206,7 +201,6 @@ def delete_parser(
         client,
         method="DELETE",
         endpoint_path=f"logTypes/{log_type}/parsers/{id}",
-        api_version=APIVersion.V1ALPHA,
         params=params,
         error_message="Failed to delete parser",
     )
@@ -234,7 +228,6 @@ def get_parser(
         client,
         method="GET",
         endpoint_path=f"logTypes/{log_type}/parsers/{id}",
-        api_version=APIVersion.V1ALPHA,
         error_message="Failed to get parser",
     )
 
@@ -245,7 +238,8 @@ def list_parsers(
     page_size: int | None = None,
     page_token: str | None = None,
     filter: str = None,  # pylint: disable=redefined-builtin
-) -> list[Any] | dict[str, Any]:
+    as_list: bool = True,
+) -> dict[str, Any] | list[Any]:
     """List parsers.
 
     Args:
@@ -256,11 +250,14 @@ def list_parsers(
             If None (default), auto-paginates and returns all parsers.
         page_token: A page token, received from a previous ListParsers call.
         filter: Optional filter expression
+        as_list: If True, return only the list of parsers.
+            If False, return dict with metadata and pagination tokens.
+            Defaults to True. When page_size is None, this is automatically
+            set to True for backward compatibility.
 
     Returns:
-        If page_size is None: List of all parsers.
-        If page_size is provided: List of parsers with next page token if
-            available.
+        If as_list is True: List of parsers.
+        If as_list is False: Dict with parsers list and pagination metadata.
 
     Raises:
         APIError: If the API request fails
@@ -269,15 +266,17 @@ def list_parsers(
     if filter:
         extra_params["filter"] = filter
 
+    # For backward compatibility: if page_size is None, force as_list to True
+    effective_as_list = True if page_size is None else as_list
+
     return chronicle_paginated_request(
         client,
         path=f"logTypes/{log_type}/parsers",
         items_key="parsers",
-        api_version=APIVersion.V1ALPHA,
         page_size=page_size,
         page_token=page_token,
         extra_params=extra_params if extra_params else None,
-        as_list=(page_size is None),
+        as_list=effective_as_list,
     )
 
 
@@ -404,7 +403,6 @@ def run_parser(
         client,
         method="POST",
         endpoint_path=f"logTypes/{log_type}:runParser",
-        api_version=APIVersion.V1ALPHA,
         json=body,
         error_message=f"Failed to evaluate parser for log type '{log_type}'",
     )

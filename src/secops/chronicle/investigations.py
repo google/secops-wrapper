@@ -16,8 +16,11 @@
 
 from typing import Any
 
-from secops.chronicle.models import APIVersion, DetectionType
-from secops.chronicle.utils.request_utils import chronicle_request
+from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import (
+    chronicle_request,
+    chronicle_paginated_request,
+)
 
 
 def fetch_associated_investigations(
@@ -128,7 +131,8 @@ def list_investigations(
     page_token: str | None = None,
     filter_expr: str | None = None,
     order_by: str | None = None,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[Any]:
     """Lists investigations.
 
     Args:
@@ -143,33 +147,32 @@ def list_investigations(
         order_by: Configures ordering of investigations. Default is by
             create time descending. Supported fields: "startTime",
             "endTime", "displayName".
+        as_list: If True, return only the list of investigations.
+            If False, return dict with metadata and pagination tokens.
 
     Returns:
-        Dictionary containing:
-            - investigations: List of investigation objects
-            - nextPageToken: Token for next page (if more results exist)
-            - totalSize: Total number of investigations matching request
+        If as_list is True: List of investigations.
+        If as_list is False: Dict with investigations list, nextPageToken,
+            and totalSize.
 
     Raises:
         APIError: If the API request fails.
     """
-    params: dict[str, Any] = {}
-    if page_size is not None:
-        params["pageSize"] = page_size
-    if page_token:
-        params["pageToken"] = page_token
+    extra_params: dict[str, Any] = {}
     if filter_expr:
-        params["filter"] = filter_expr
+        extra_params["filter"] = filter_expr
     if order_by:
-        params["orderBy"] = order_by
+        extra_params["orderBy"] = order_by
 
-    return chronicle_request(
+    return chronicle_paginated_request(
         client,
-        method="GET",
-        endpoint_path="investigations",
+        path="investigations",
+        items_key="investigations",
         api_version=APIVersion.V1ALPHA,
-        params=params,
-        error_message="Failed to list investigations",
+        page_size=page_size,
+        page_token=page_token,
+        extra_params=extra_params if extra_params else None,
+        as_list=as_list,
     )
 
 

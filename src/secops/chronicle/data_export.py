@@ -22,8 +22,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from secops.chronicle.models import APIVersion
-from secops.chronicle.utils.request_utils import chronicle_request
+from secops.chronicle.utils.request_utils import (
+    chronicle_request,
+    chronicle_paginated_request,
+)
 
 
 @dataclass
@@ -96,7 +98,6 @@ def get_data_export(client, data_export_id: str) -> dict[str, Any]:
         client,
         method="GET",
         endpoint_path=f"dataExports/{data_export_id}",
-        api_version=APIVersion.V1ALPHA,
         error_message="Failed to get data export",
     )
 
@@ -211,7 +212,6 @@ def create_data_export(
         client,
         method="POST",
         endpoint_path="dataExports",
-        api_version=APIVersion.V1ALPHA,
         json=payload,
         error_message="Failed to create data export",
     )
@@ -240,7 +240,6 @@ def cancel_data_export(client, data_export_id: str) -> dict[str, Any]:
         client,
         method="POST",
         endpoint_path=f"dataExports/{data_export_id}:cancel",
-        api_version=APIVersion.V1ALPHA,
         error_message="Failed to cancel data export",
     )
 
@@ -312,7 +311,6 @@ def fetch_available_log_types(
         client,
         method="POST",
         endpoint_path="dataExports:fetchavailablelogtypes",
-        api_version=APIVersion.V1ALPHA,
         json=payload,
         error_message="Failed to fetch available log types",
     )
@@ -405,7 +403,6 @@ def update_data_export(
         client,
         method="PATCH",
         endpoint_path=f"dataExports/{data_export_id}",
-        api_version=APIVersion.V1ALPHA,
         params=params,
         json=payload,
         error_message="Failed to update data export",
@@ -417,7 +414,8 @@ def list_data_export(
     filters: str | None = None,
     page_size: int | None = None,
     page_token: str | None = None,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[Any]:
     """List data export jobs.
 
     Args:
@@ -425,9 +423,12 @@ def list_data_export(
         filters: Filter string
         page_size: Page size
         page_token: Page token
+        as_list: If True, return only the list of data exports.
+            If False, return dict with metadata and pagination tokens.
 
     Returns:
-        Dictionary containing data export list
+        If as_list is True: List of data exports.
+        If as_list is False: Dict with dataExports list and pagination metadata.
 
     Raises:
         APIError: If the API request fails
@@ -437,17 +438,16 @@ def list_data_export(
         export = chronicle.list_data_export()
         ```
     """
-    params = {
-        "pageSize": page_size,
-        "pageToken": page_token,
-        "filter": filters,
-    }
+    extra_params = {}
+    if filters:
+        extra_params["filter"] = filters
 
-    return chronicle_request(
+    return chronicle_paginated_request(
         client,
-        method="GET",
-        endpoint_path="dataExports",
-        api_version=APIVersion.V1ALPHA,
-        params=params,
-        error_message="Failed to get data export",
+        path="dataExports",
+        items_key="dataExports",
+        page_size=page_size,
+        page_token=page_token,
+        extra_params=extra_params if extra_params else None,
+        as_list=as_list,
     )

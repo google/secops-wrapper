@@ -181,20 +181,13 @@ def _summarize_entity_by_id(
     if page_token:
         params["pageToken"] = page_token
 
-    try:
-        return chronicle_request(
-            client,
-            method="GET",
-            endpoint_path=":summarizeEntity",
-            api_version=APIVersion.V1ALPHA,
-            params=params,
-            error_message=(f"Error getting entity summary by ID ({entity_id})"),
-        )
-    except Exception as e:
-        raise APIError(
-            "Error parsing entity summary response for "
-            f"ID {entity_id}: {str(e)}"
-        ) from e
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=":summarizeEntity",
+        params=params,
+        error_message=(f"Error getting entity summary by ID ({entity_id})"),
+    )
 
 
 def summarize_entity(
@@ -249,7 +242,6 @@ def summarize_entity(
             client,
             method="GET",
             endpoint_path=":summarizeEntitiesFromQuery",
-            api_version=APIVersion.V1ALPHA,
             params=query_params,
             error_message="Error querying entity summaries",
         )

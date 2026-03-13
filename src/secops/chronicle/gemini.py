@@ -335,7 +335,6 @@ def create_conversation(client, display_name: str = "New chat") -> str:
             client,
             method="POST",
             endpoint_path="users/me/conversations",
-            api_version=APIVersion.V1ALPHA,
             json=payload,
             error_message="Failed to create conversation",
         )
@@ -371,7 +370,6 @@ def opt_in_to_gemini(client) -> bool:
             client,
             method="PATCH",
             endpoint_path="users/me/preferenceSet",
-            api_version=APIVersion.V1ALPHA,
             params=params,
             json=payload,
             expected_status={200, 403, 401},
@@ -436,7 +434,6 @@ def query_gemini(
             endpoint_path=(
                 f"users/me/conversations/{conversation_id}/messages"
             ),
-            api_version=APIVersion.V1ALPHA,
             json=payload,
             error_message="Failed to query Gemini",
         )

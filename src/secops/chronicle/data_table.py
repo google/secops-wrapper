@@ -142,7 +142,6 @@ def create_data_table(
         client,
         method="POST",
         endpoint_path="dataTables",
-        api_version=APIVersion.V1ALPHA,
         params={"dataTableId": name},
         json=body_payload,
         error_message=f"Failed to create data table '{name}'",
@@ -234,7 +233,6 @@ def _create_data_table_rows(
         client,
         method="POST",
         endpoint_path=f"dataTables/{name}/dataTableRows:bulkCreate",
-        api_version=APIVersion.V1ALPHA,
         json={"requests": [{"data_table_row": {"values": x}} for x in rows]},
         error_message=f"Failed to create data table rows for '{name}'",
     )
@@ -265,7 +263,6 @@ def delete_data_table(
             client,
             method="DELETE",
             endpoint_path=f"dataTables/{name}",
-            api_version=APIVersion.V1ALPHA,
             params={"force": str(force).lower()},
             expected_status={200, 204},
             error_message=f"Failed to delete data table '{name}'",
@@ -321,14 +318,16 @@ def _delete_data_table_row(
             client,
             method="DELETE",
             endpoint_path=f"dataTables/{table_id}/dataTableRows/{row_guid}",
-            api_version=APIVersion.V1ALPHA,
             expected_status={200, 204},
             error_message=(
                 f"Failed to delete data table row '{row_guid}' from '{table_id}'"
             ),
         )
-    except APIError:
-        return {"status": "success"}
+    except APIError as ar:
+        # Return success if response is text
+        if "Expected JSON response" in str(ar):
+            return {"status": "success"}
+        raise
 
 
 def get_data_table(
@@ -351,7 +350,6 @@ def get_data_table(
         client,
         method="GET",
         endpoint_path=f"dataTables/{name}",
-        api_version=APIVersion.V1ALPHA,
         error_message=f"Failed to get data table '{name}'",
     )
 
@@ -359,16 +357,21 @@ def get_data_table(
 def list_data_tables(
     client: "Any",
     order_by: str | None = None,
-) -> list[dict[str, Any]]:
+    as_list: bool = True,
+) -> dict[str, Any] | list[dict[str, Any]]:
     """List data tables.
 
     Args:
         client: ChronicleClient instance
         order_by: Configures ordering of DataTables in the response.
                   Note: The API only supports "createTime asc".
+        as_list: If True, return only the list of data tables.
+            If False, return dict with metadata and pagination tokens.
+            Defaults to True for backward compatibility.
 
     Returns:
-        List of data tables
+        If as_list is True: List of data tables.
+        If as_list is False: Dict with dataTables list and pagination metadata.
 
     Raises:
         APIError: If the API request fails
@@ -381,7 +384,6 @@ def list_data_tables(
         client,
         path="dataTables",
         items_key="dataTables",
-        api_version=APIVersion.V1ALPHA,
         extra_params=extra_params if extra_params else None,
         as_list=True,
     )
@@ -391,7 +393,8 @@ def list_data_table_rows(
     client: "Any",
     name: str,
     order_by: str | None = None,
-) -> list[dict[str, Any]]:
+    as_list: bool = True,
+) -> dict[str, Any] | list[dict[str, Any]]:
     """List data table rows.
 
     Args:
@@ -399,9 +402,14 @@ def list_data_table_rows(
         name: The name of the data table to list rows from
         order_by: Configures ordering of DataTableRows in the response.
                   Note: The API only supports "createTime asc".
+        as_list: If True, return only the list of data table rows.
+            If False, return dict with metadata and pagination tokens.
+            Defaults to True for backward compatibility.
 
     Returns:
-        List of data table rows
+        If as_list is True: List of data table rows.
+        If as_list is False: Dict with dataTableRows list and
+            pagination metadata.
 
     Raises:
         APIError: If the API request fails
@@ -414,9 +422,8 @@ def list_data_table_rows(
         client,
         path=f"dataTables/{name}/dataTableRows",
         items_key="dataTableRows",
-        api_version=APIVersion.V1ALPHA,
         extra_params=extra_params if extra_params else None,
-        as_list=True,
+        as_list=as_list,
     )
 
 
@@ -469,7 +476,6 @@ def update_data_table(
         client,
         method="PATCH",
         endpoint_path=f"dataTables/{name}",
-        api_version=APIVersion.V1ALPHA,
         params=params if params else None,
         json=body_payload,
         error_message=f"Failed to update data table '{name}'",
@@ -579,7 +585,6 @@ def replace_data_table_rows(
             client,
             method="POST",
             endpoint_path=f"dataTables/{name}/dataTableRows:bulkReplace",
-            api_version=APIVersion.V1ALPHA,
             json={"requests": replace_requests},
             error_message=f"Failed to replace data table rows for '{name}'",
         )
@@ -712,7 +717,6 @@ def _update_data_table_rows(
         client,
         method="POST",
         endpoint_path=f"dataTables/{name}/dataTableRows:bulkUpdate",
-        api_version=APIVersion.V1ALPHA,
         json={"requests": requests},
         error_message=f"Failed to update data table rows for '{name}'",
     )

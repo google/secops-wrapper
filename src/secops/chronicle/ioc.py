@@ -61,7 +61,6 @@ def list_iocs(
             client,
             method="GET",
             endpoint_path="legacy:legacySearchEnterpriseWideIoCs",
-            api_version=APIVersion.V1ALPHA,
             params=params,
             error_message="Failed to list IoCs",
         )

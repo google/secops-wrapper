@@ -42,7 +42,6 @@ def translate_nl_to_udm(client, text: str) -> str:
         client,
         method="POST",
         endpoint_path=":translateUdmQuery",
-        api_version=APIVersion.V1ALPHA,
         json={"text": text},
         error_message="Chronicle API request failed",
     )

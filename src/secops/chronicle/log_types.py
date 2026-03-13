@@ -60,7 +60,6 @@ def _fetch_log_types_from_api(
         client,
         path="logTypes",
         items_key="logTypes",
-        api_version=APIVersion.V1ALPHA,
         page_size=page_size,
         page_token=page_token,
         as_list=True,
@@ -266,7 +265,6 @@ def classify_logs(
         client,
         method="POST",
         endpoint_path="logs:classify",
-        api_version=APIVersion.V1ALPHA,
         json=payload,
         error_message="Failed to classify log",
     )

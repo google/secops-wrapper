@@ -20,7 +20,6 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Annotated, Any
 
-from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.request_utils import (
     chronicle_paginated_request,
     chronicle_request,
@@ -83,17 +82,24 @@ class UpdateRuleDeployment:
 
 
 def list_rule_exclusions(
-    client, page_size: int | None = None, page_token: str | None = None
-) -> dict[str, Any]:
+    client,
+    page_size: int | None = None,
+    page_token: str | None = None,
+    as_list: bool = False,
+) -> dict[str, Any] | list[Any]:
     """List rule exclusions.
 
     Args:
         client: ChronicleClient instance
         page_size: Maximum number of rule exclusions to return per page
         page_token: Page token for pagination
+        as_list: If True, return only the list of rule exclusions.
+            If False, return dict with metadata and pagination tokens.
 
     Returns:
-        Dictionary containing the list of rule exclusions
+        If as_list is True: List of rule exclusions.
+        If as_list is False: Dict with findingsRefinements list and
+            pagination metadata.
 
     Raises:
         APIError: If the API request fails
@@ -102,9 +108,9 @@ def list_rule_exclusions(
         client,
         path="findingsRefinements",
         items_key="findingsRefinements",
-        api_version=APIVersion.V1ALPHA,
         page_size=page_size,
         page_token=page_token,
+        as_list=as_list,
     )
 
 
@@ -130,7 +136,6 @@ def get_rule_exclusion(client, exclusion_id: str) -> dict[str, Any]:
         client,
         method="GET",
         endpoint_path=endpoint_path,
-        api_version=APIVersion.V1ALPHA,
         error_message="Failed to get rule exclusion",
     )
 
@@ -165,7 +170,6 @@ def create_rule_exclusion(
         client,
         method="POST",
         endpoint_path="findingsRefinements",
-        api_version=APIVersion.V1ALPHA,
         json=body,
         error_message="Failed to create rule exclusion",
     )
@@ -219,7 +223,6 @@ def patch_rule_exclusion(
         client,
         method="PATCH",
         endpoint_path=endpoint_path,
-        api_version=APIVersion.V1ALPHA,
         params=params,
         json=body,
         error_message="Failed to update rule exclusion",
@@ -276,7 +279,6 @@ def compute_rule_exclusion_activity(
         client,
         method="POST",
         endpoint_path=endpoint_path,
-        api_version=APIVersion.V1ALPHA,
         json=body,
         error_message="Failed to compute rule exclusion activity",
     )
@@ -304,7 +306,6 @@ def get_rule_exclusion_deployment(client, exclusion_id: str) -> dict[str, Any]:
         client,
         method="GET",
         endpoint_path=endpoint_path,
-        api_version=APIVersion.V1ALPHA,
         error_message="Failed to get rule exclusion deployment",
     )
 
@@ -349,7 +350,6 @@ def update_rule_exclusion_deployment(
         client,
         method="PATCH",
         endpoint_path=endpoint_path,
-        api_version=APIVersion.V1ALPHA,
         params=params,
         json=deployment_details.to_dict(),
         error_message="Failed to update rule exclusion deployment",

@@ -48,7 +48,7 @@ def create_rule(
         client,
         method="POST",
         endpoint_path="rules",
-        api_version=api_version,
+        api_version=api_version if api_version else None,
         json={"text": rule_text},
         error_message="Failed to create rule",
     )
@@ -86,7 +86,8 @@ def list_rules(
     page_size: int | None = None,
     page_token: str | None = None,
     api_version: APIVersion | None = APIVersion.V1,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[Any]:
     """Gets a list of rules.
 
     Args:
@@ -101,9 +102,12 @@ def list_rules(
         page_size: Maximum number of rules to return per page.
         page_token: Token for the next page of results, if available.
         api_version: (Optional) Preferred API version to use.
+        as_list: If True, return only the list of rules.
+            If False, return dict with metadata and pagination tokens.
 
     Returns:
-        Dictionary containing information about rules
+        If as_list is True: List of rules.
+        If as_list is False: Dict with rules list and pagination metadata.
 
     Raises:
         APIError: If the API request fails
@@ -116,6 +120,7 @@ def list_rules(
         page_size=page_size,
         page_token=page_token,
         extra_params={"view": view} if view else {},
+        as_list=as_list,
     )
 
 
@@ -254,7 +259,8 @@ def list_rule_deployments(
     page_token: str | None = None,
     filter_query: str | None = None,
     api_version: APIVersion | None = APIVersion.V1,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[Any]:
     """Lists rule deployments for the instance.
 
     Args:
@@ -264,10 +270,14 @@ def list_rule_deployments(
         page_token: Token for the next page of results, if available.
         filter_query: Optional filter query to restrict results.
             Filters results based on expression matching specific fields.
+        api_version: (Optional) Preferred API version to use.
+        as_list: If True, return only the list of rule deployments.
+            If False, return dict with metadata and pagination tokens.
 
     Returns:
-        Dictionary containing rule deployment entries. If ``page_size`` is not
-        provided, returns an aggregated object with a ``deployments`` list.
+        If as_list is True: List of rule deployments.
+        If as_list is False: Dict with ruleDeployments list and
+            pagination metadata.
 
     Raises:
         APIError: If the API request fails.
@@ -285,6 +295,7 @@ def list_rule_deployments(
         page_size=page_size,
         page_token=page_token,
         extra_params=extra_params if extra_params else None,
+        as_list=as_list,
     )
 
 
@@ -382,7 +393,6 @@ def run_rule_test(
             client,
             method="POST",
             endpoint_path="legacy:legacyRunTestRule",
-            api_version=APIVersion.V1ALPHA,
             json=body,
             timeout=timeout,
             error_message="Failed to test rule",

@@ -17,7 +17,10 @@
 from typing import Any
 
 from secops.chronicle.models import APIVersion
-from secops.chronicle.utils.request_utils import chronicle_request
+from secops.chronicle.utils.request_utils import (
+    chronicle_request,
+    chronicle_paginated_request,
+)
 
 
 def list_log_processing_pipelines(
@@ -25,7 +28,8 @@ def list_log_processing_pipelines(
     page_size: int | None = None,
     page_token: str | None = None,
     filter_expr: str | None = None,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[Any]:
     """Lists log processing pipelines.
 
     Args:
@@ -35,30 +39,29 @@ def list_log_processing_pipelines(
         page_token: Page token from a previous list call to retrieve
             the next page.
         filter_expr: Filter expression (AIP-160) to restrict results.
+        as_list: If True, return only the list of pipelines.
+            If False, return dict with metadata and pagination tokens.
 
     Returns:
-        Dictionary containing:
-            - logProcessingPipelines: List of pipeline dicts
-            - nextPageToken: Token for next page (if more results exist)
+        If as_list is True: List of log processing pipelines.
+        If as_list is False: Dict with logProcessingPipelines list and
+            pagination metadata.
 
     Raises:
         APIError: If the API request fails.
     """
-    params: dict[str, Any] = {}
-    if page_size is not None:
-        params["pageSize"] = page_size
-    if page_token:
-        params["pageToken"] = page_token
+    extra_params = {}
     if filter_expr:
-        params["filter"] = filter_expr
+        extra_params["filter"] = filter_expr
 
-    return chronicle_request(
+    return chronicle_paginated_request(
         client,
-        method="GET",
-        endpoint_path="logProcessingPipelines",
-        api_version=APIVersion.V1ALPHA,
-        params=params if params else None,
-        error_message="Failed to list log processing pipelines",
+        path="logProcessingPipelines",
+        items_key="logProcessingPipelines",
+        page_size=page_size,
+        page_token=page_token,
+        extra_params=extra_params if extra_params else None,
+        as_list=as_list,
     )
 
 
@@ -86,7 +89,6 @@ def get_log_processing_pipeline(
         client,
         method="GET",
         endpoint_path=endpoint_path,
-        api_version=APIVersion.V1ALPHA,
         error_message="Failed to get log processing pipeline",
     )
 
@@ -122,7 +124,6 @@ def create_log_processing_pipeline(
         client,
         method="POST",
         endpoint_path="logProcessingPipelines",
-        api_version=APIVersion.V1ALPHA,
         params=params if params else None,
         json=pipeline,
         error_message="Failed to create log processing pipeline",
@@ -165,7 +166,6 @@ def update_log_processing_pipeline(
         client,
         method="PATCH",
         endpoint_path=endpoint_path,
-        api_version=APIVersion.V1ALPHA,
         params=params if params else None,
         json=pipeline,
         error_message="Failed to patch log processing pipeline",
@@ -202,7 +202,6 @@ def delete_log_processing_pipeline(
         client,
         method="DELETE",
         endpoint_path=endpoint_path,
-        api_version=APIVersion.V1ALPHA,
         params=params if params else None,
         error_message="Failed to delete log processing pipeline",
     )
@@ -235,7 +234,6 @@ def associate_streams(
         client,
         method="POST",
         endpoint_path=endpoint_path,
-        api_version=APIVersion.V1ALPHA,
         json={"streams": streams},
         error_message="Failed to associate streams",
     )
@@ -270,7 +268,6 @@ def dissociate_streams(
         client,
         method="POST",
         endpoint_path=endpoint_path,
-        api_version=APIVersion.V1ALPHA,
         json={"streams": streams},
         error_message="Failed to dissociate streams",
     )
@@ -301,7 +298,6 @@ def fetch_associated_pipeline(
         client,
         method="GET",
         endpoint_path="logProcessingPipelines:fetchAssociatedPipeline",
-        api_version=APIVersion.V1ALPHA,
         params=params,
         error_message="Failed to fetch associated pipeline",
     )
@@ -338,7 +334,6 @@ def fetch_sample_logs_by_streams(
         client,
         method="POST",
         endpoint_path="logProcessingPipelines:fetchSampleLogsByStreams",
-        api_version=APIVersion.V1ALPHA,
         json=body,
         error_message="Failed to fetch sample logs by streams",
     )
@@ -369,7 +364,6 @@ def test_pipeline(
         client,
         method="POST",
         endpoint_path="logProcessingPipelines:testPipeline",
-        api_version=APIVersion.V1ALPHA,
         json=body,
         error_message="Failed to test pipeline",
     )

@@ -160,7 +160,8 @@ def list_reference_lists(
     client: "Any",
     view: ReferenceListView = ReferenceListView.BASIC,
     api_version: APIVersion | None = APIVersion.V1,
-) -> list[dict[str, Any]]:
+    as_list: bool = True,
+) -> dict[str, Any] | list[Any]:
     """List reference lists.
 
     Args:
@@ -168,9 +169,15 @@ def list_reference_lists(
         view: How much of each ReferenceList to view. Defaults to
             REFERENCE_LIST_VIEW_BASIC.
         api_version: Preferred API version to use. Defaults to V1
+        as_list: If True, return only the list of reference lists.
+            If False, return dict with metadata and pagination tokens.
+            Defaults to True for backward compatibility.
 
     Returns:
-        List of reference lists, ordered in ascending alphabetical order by name
+        If as_list is True: List of reference lists, ordered in ascending
+            alphabetical order by name.
+        If as_list is False: Dict with referenceLists list and
+            pagination metadata.
 
     Raises:
         APIError: If the API request fails
@@ -185,7 +192,7 @@ def list_reference_lists(
         items_key="referenceLists",
         api_version=api_version,
         extra_params=extra_params if extra_params else None,
-        as_list=True,
+        as_list=as_list,
     )
 
 
