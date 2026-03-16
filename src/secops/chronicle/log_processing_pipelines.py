@@ -16,7 +16,7 @@
 
 from typing import Any
 
-from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.format_utils import format_resource_id
 from secops.chronicle.utils.request_utils import (
     chronicle_request,
     chronicle_paginated_request,
@@ -80,10 +80,9 @@ def get_log_processing_pipeline(
     Raises:
         APIError: If the API request fails.
     """
-    if not pipeline_id.startswith("projects/"):
-        endpoint_path = f"logProcessingPipelines/{pipeline_id}"
-    else:
-        endpoint_path = pipeline_id
+
+    extracted_pipeline_id = format_resource_id(pipeline_id)
+    endpoint_path = f"logProcessingPipelines/{extracted_pipeline_id}"
 
     return chronicle_request(
         client,
@@ -153,10 +152,8 @@ def update_log_processing_pipeline(
     Raises:
         APIError: If the API request fails.
     """
-    if not pipeline_id.startswith("projects/"):
-        endpoint_path = f"logProcessingPipelines/{pipeline_id}"
-    else:
-        endpoint_path = pipeline_id
+    extracted_pipeline_id = format_resource_id(pipeline_id)
+    endpoint_path = f"logProcessingPipelines/{extracted_pipeline_id}"
 
     params: dict[str, Any] = {}
     if update_mask:
@@ -189,10 +186,9 @@ def delete_log_processing_pipeline(
     Raises:
         APIError: If the API request fails.
     """
-    if not pipeline_id.startswith("projects/"):
-        endpoint_path = f"logProcessingPipelines/{pipeline_id}"
-    else:
-        endpoint_path = pipeline_id
+
+    extracted_pipeline_id = format_resource_id(pipeline_id)
+    endpoint_path = f"logProcessingPipelines/{extracted_pipeline_id}"
 
     params: dict[str, Any] = {}
     if etag:
@@ -225,10 +221,10 @@ def associate_streams(
     Raises:
         APIError: If the API request fails.
     """
-    if not pipeline_id.startswith("projects/"):
-        endpoint_path = f"logProcessingPipelines/{pipeline_id}:associateStreams"
-    else:
-        endpoint_path = f"{pipeline_id}:associateStreams"
+    extracted_pipeline_id = format_resource_id(pipeline_id)
+    endpoint_path = (
+        f"logProcessingPipelines/{extracted_pipeline_id}:associateStreams"
+    )
 
     return chronicle_request(
         client,
@@ -257,12 +253,11 @@ def dissociate_streams(
     Raises:
         APIError: If the API request fails.
     """
-    if not pipeline_id.startswith("projects/"):
-        endpoint_path = (
-            f"logProcessingPipelines/{pipeline_id}:dissociateStreams"
-        )
-    else:
-        endpoint_path = f"{pipeline_id}:dissociateStreams"
+
+    extracted_pipeline_id = format_resource_id(pipeline_id)
+    endpoint_path = (
+        f"logProcessingPipelines/{extracted_pipeline_id}:dissociateStreams"
+    )
 
     return chronicle_request(
         client,

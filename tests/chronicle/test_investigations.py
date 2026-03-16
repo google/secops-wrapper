@@ -439,7 +439,7 @@ def test_list_investigations_error(chronicle_client, mock_error_response):
         with pytest.raises(APIError) as exc_info:
             list_investigations(chronicle_client)
 
-        assert "Failed to list investigations" in str(exc_info.value)
+        assert "API request failed" in str(exc_info.value)
 
 
 def test_trigger_investigation_success(chronicle_client, mock_response):
@@ -566,7 +566,10 @@ def test_list_investigations_no_optional_params(
         mock_request.assert_called_once()
         call_args = mock_request.call_args
         params = call_args[1]["params"]
-        assert "pageSize" not in params or params.get("pageSize") is None
+        assert (
+            params.get("pageSize")
+            == 1000  # Default Page Size (auto-pagination)
+        )
         assert "pageToken" not in params or params.get("pageToken") is None
         assert "filter" not in params
         assert "orderBy" not in params

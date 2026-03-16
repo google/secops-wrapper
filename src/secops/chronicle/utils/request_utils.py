@@ -53,7 +53,7 @@ def chronicle_paginated_request(
     path: str,
     items_key: str,
     *,
-    api_version: str | None = None,
+    api_version: APIVersion | str | None = None,
     page_size: int | None = None,
     page_token: str | None = None,
     extra_params: dict[str, Any] | None = None,
@@ -193,7 +193,7 @@ def chronicle_request(
     method: str,
     endpoint_path: str,
     *,
-    api_version: str | None = None,
+    api_version: APIVersion | str | None = None,
     params: dict[str, Any] | None = None,
     headers: dict[str, Any] | None = None,
     json: dict[str, Any] | None = None,
@@ -242,6 +242,9 @@ def chronicle_request(
     else:
         url = f'{base}/{endpoint_path.lstrip("/")}'
 
+    # init request response
+    response = None
+
     try:
         response = client.session.request(
             method=method,
@@ -258,7 +261,9 @@ def chronicle_request(
         base_msg = error_message or "API request failed"
         raise APIError(
             f"{base_msg}: method={method}, url={url}, "
-            f"request_error={exc.__class__.__name__}, detail={exc}"
+            f"request_error={exc.__class__.__name__}, detail={exc}, "
+            f"status_code={exc.response.status_code if exc.response else None}"
+            f"response_message={exc.response.text if exc.response else None}"
         ) from exc
 
     # Try to parse JSON even on error, so we can get more details

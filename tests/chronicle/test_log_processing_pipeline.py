@@ -78,13 +78,17 @@ def test_list_log_processing_pipelines(chronicle_client, mock_response):
     }
 
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         result = list_log_processing_pipelines(chronicle_client)
 
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines",
-            params={},
+            method="GET",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines",
+            params={"pageSize": 1000},
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -99,7 +103,7 @@ def test_list_log_processing_pipelines_with_params(
     }
 
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         result = list_log_processing_pipelines(
             chronicle_client,
@@ -109,12 +113,16 @@ def test_list_log_processing_pipelines_with_params(
         )
 
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines",
+            method="GET",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines",
             params={
                 "pageSize": 50,
                 "pageToken": "prev_token",
                 "filter": 'displayName="Test"',
             },
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -124,12 +132,12 @@ def test_list_log_processing_pipelines_error(
 ):
     """Test list_log_processing_pipelines with error response."""
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         with pytest.raises(APIError) as exc_info:
             list_log_processing_pipelines(chronicle_client)
 
-        assert "Failed to list log processing pipelines" in str(exc_info.value)
+        assert "API request failed" in str(exc_info.value)
 
 
 def test_get_log_processing_pipeline(chronicle_client, mock_response):
@@ -137,12 +145,17 @@ def test_get_log_processing_pipeline(chronicle_client, mock_response):
     pipeline_id = "pipeline_12345"
 
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         result = get_log_processing_pipeline(chronicle_client, pipeline_id)
 
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}"
+            method="GET",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}",
+            params=None,
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -154,7 +167,7 @@ def test_get_log_processing_pipeline_error(
     pipeline_id = "pipeline_12345"
 
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         with pytest.raises(APIError) as exc_info:
             get_log_processing_pipeline(chronicle_client, pipeline_id)
@@ -171,16 +184,19 @@ def test_create_log_processing_pipeline(chronicle_client, mock_response):
     }
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         result = create_log_processing_pipeline(
             chronicle_client, pipeline_config
         )
 
         mock_post.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines",
+            method="POST",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines",
+            params=None,
             json=pipeline_config,
-            params={},
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -196,16 +212,19 @@ def test_create_log_processing_pipeline_with_id(
     pipeline_id = "custom_pipeline_id"
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         result = create_log_processing_pipeline(
             chronicle_client, pipeline_config, pipeline_id=pipeline_id
         )
 
         mock_post.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines",
-            json=pipeline_config,
+            method="POST",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines",
             params={"logProcessingPipelineId": pipeline_id},
+            json=pipeline_config,
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -217,7 +236,7 @@ def test_create_log_processing_pipeline_error(
     pipeline_config = {"displayName": "Test Pipeline"}
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         with pytest.raises(APIError) as exc_info:
             create_log_processing_pipeline(chronicle_client, pipeline_config)
@@ -235,16 +254,19 @@ def test_update_log_processing_pipeline(chronicle_client, mock_response):
     }
 
     with patch.object(
-        chronicle_client.session, "patch", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_patch:
         result = update_log_processing_pipeline(
             chronicle_client, pipeline_id, pipeline_config
         )
 
         mock_patch.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}",
+            method="PATCH",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}",
+            params=None,
             json=pipeline_config,
-            params={},
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -261,7 +283,7 @@ def test_update_log_processing_pipeline_with_update_mask(
     update_mask = "displayName,description"
 
     with patch.object(
-        chronicle_client.session, "patch", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_patch:
         result = update_log_processing_pipeline(
             chronicle_client,
@@ -271,9 +293,12 @@ def test_update_log_processing_pipeline_with_update_mask(
         )
 
         mock_patch.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}",
-            json=pipeline_config,
+            method="PATCH",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}",
             params={"updateMask": update_mask},
+            json=pipeline_config,
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -289,16 +314,19 @@ def test_update_log_processing_pipeline_with_full_name(
     }
 
     with patch.object(
-        chronicle_client.session, "patch", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_patch:
         result = update_log_processing_pipeline(
             chronicle_client, full_name, pipeline_config
         )
 
         mock_patch.assert_called_once_with(
-            f"{chronicle_client.base_url}/{full_name}",
+            method="PATCH",
+            url=f"{chronicle_client.base_url()}/{full_name}",
+            params=None,
             json=pipeline_config,
-            params={},
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -311,7 +339,7 @@ def test_update_log_processing_pipeline_error(
     pipeline_config = {"displayName": "Updated Pipeline"}
 
     with patch.object(
-        chronicle_client.session, "patch", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         with pytest.raises(APIError) as exc_info:
             update_log_processing_pipeline(
@@ -327,13 +355,17 @@ def test_delete_log_processing_pipeline(chronicle_client, mock_response):
     mock_response.json.return_value = {}
 
     with patch.object(
-        chronicle_client.session, "delete", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_delete:
         result = delete_log_processing_pipeline(chronicle_client, pipeline_id)
 
         mock_delete.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}",
-            params={},
+            method="DELETE",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}",
+            params=None,
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == {}
 
@@ -347,15 +379,19 @@ def test_delete_log_processing_pipeline_with_etag(
     mock_response.json.return_value = {}
 
     with patch.object(
-        chronicle_client.session, "delete", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_delete:
         result = delete_log_processing_pipeline(
             chronicle_client, pipeline_id, etag=etag
         )
 
         mock_delete.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}",
+            method="DELETE",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}",
             params={"etag": etag},
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == {}
 
@@ -367,7 +403,7 @@ def test_delete_log_processing_pipeline_error(
     pipeline_id = "pipeline_12345"
 
     with patch.object(
-        chronicle_client.session, "delete", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         with pytest.raises(APIError) as exc_info:
             delete_log_processing_pipeline(chronicle_client, pipeline_id)
@@ -382,13 +418,17 @@ def test_associate_streams(chronicle_client, mock_response):
     mock_response.json.return_value = {}
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         result = associate_streams(chronicle_client, pipeline_id, streams)
 
         mock_post.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}:associateStreams",
+            method="POST",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}:associateStreams",
+            params=None,
             json={"streams": streams},
+            headers=None,
+            timeout=None,
         )
         assert result == {}
 
@@ -399,7 +439,7 @@ def test_associate_streams_error(chronicle_client, mock_error_response):
     streams = [{"logType": "WINEVTLOG"}]
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         with pytest.raises(APIError) as exc_info:
             associate_streams(chronicle_client, pipeline_id, streams)
@@ -414,13 +454,17 @@ def test_associate_streams_empty_list(chronicle_client, mock_response):
     mock_response.json.return_value = {}
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         result = associate_streams(chronicle_client, pipeline_id, streams)
 
         mock_post.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}:associateStreams",
+            method="POST",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}:associateStreams",
+            params=None,
             json={"streams": []},
+            headers=None,
+            timeout=None,
         )
         assert result == {}
 
@@ -432,13 +476,17 @@ def test_dissociate_streams(chronicle_client, mock_response):
     mock_response.json.return_value = {}
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         result = dissociate_streams(chronicle_client, pipeline_id, streams)
 
         mock_post.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}:dissociateStreams",
+            method="POST",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}:dissociateStreams",
+            params=None,
             json={"streams": streams},
+            headers=None,
+            timeout=None,
         )
         assert result == {}
 
@@ -449,7 +497,7 @@ def test_dissociate_streams_error(chronicle_client, mock_error_response):
     streams = [{"logType": "WINEVTLOG"}]
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         with pytest.raises(APIError) as exc_info:
             dissociate_streams(chronicle_client, pipeline_id, streams)
@@ -464,13 +512,17 @@ def test_fetch_associated_pipeline_with_log_type(
     stream = {"logType": "WINEVTLOG"}
 
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         result = fetch_associated_pipeline(chronicle_client, stream)
 
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines:fetchAssociatedPipeline",
+            method="GET",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines:fetchAssociatedPipeline",
             params={"stream.logType": "WINEVTLOG"},
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -482,13 +534,17 @@ def test_fetch_associated_pipeline_with_feed_id(
     stream = {"feedId": "feed_123"}
 
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         result = fetch_associated_pipeline(chronicle_client, stream)
 
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines:fetchAssociatedPipeline",
+            method="GET",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines:fetchAssociatedPipeline",
             params={"stream.feedId": "feed_123"},
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -500,7 +556,7 @@ def test_fetch_associated_pipeline_with_multiple_fields(
     stream = {"logType": "WINEVTLOG", "namespace": "test"}
 
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         result = fetch_associated_pipeline(chronicle_client, stream)
 
@@ -516,7 +572,7 @@ def test_fetch_associated_pipeline_error(chronicle_client, mock_error_response):
     stream = {"logType": "WINEVTLOG"}
 
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         with pytest.raises(APIError) as exc_info:
             fetch_associated_pipeline(chronicle_client, stream)
@@ -532,13 +588,17 @@ def test_fetch_sample_logs_by_streams(chronicle_client, mock_response):
     }
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         result = fetch_sample_logs_by_streams(chronicle_client, streams)
 
         mock_post.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines:fetchSampleLogsByStreams",
+            method="POST",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines:fetchSampleLogsByStreams",
+            params=None,
             json={"streams": streams},
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -552,15 +612,19 @@ def test_fetch_sample_logs_by_streams_with_count(
     mock_response.json.return_value = {"logs": []}
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         result = fetch_sample_logs_by_streams(
             chronicle_client, streams, sample_logs_count=sample_logs_count
         )
 
         mock_post.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines:fetchSampleLogsByStreams",
+            method="POST",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines:fetchSampleLogsByStreams",
+            params=None,
             json={"streams": streams, "sampleLogsCount": sample_logs_count},
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -572,7 +636,7 @@ def test_fetch_sample_logs_by_streams_error(
     streams = [{"logType": "WINEVTLOG"}]
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         with pytest.raises(APIError) as exc_info:
             fetch_sample_logs_by_streams(chronicle_client, streams)
@@ -588,13 +652,17 @@ def test_fetch_sample_logs_by_streams_empty_streams(
     mock_response.json.return_value = {"logs": []}
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         result = fetch_sample_logs_by_streams(chronicle_client, streams)
 
         mock_post.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines:fetchSampleLogsByStreams",
+            method="POST",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines:fetchSampleLogsByStreams",
+            params=None,
             json={"streams": []},
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -612,18 +680,22 @@ def test_test_pipeline(chronicle_client, mock_response):
     mock_response.json.return_value = {"logs": input_logs}
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         result = pipeline_test_function(
             chronicle_client, pipeline_config, input_logs
         )
 
         mock_post.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines:testPipeline",
+            method="POST",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines:testPipeline",
+            params=None,
             json={
                 "logProcessingPipeline": pipeline_config,
                 "inputLogs": input_logs,
             },
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -634,7 +706,7 @@ def test_test_pipeline_error(chronicle_client, mock_error_response):
     input_logs = [{"data": "bG9nMQ=="}]
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         with pytest.raises(APIError) as exc_info:
             pipeline_test_function(
@@ -654,18 +726,22 @@ def test_test_pipeline_empty_logs(chronicle_client, mock_response):
     mock_response.json.return_value = {"logs": []}
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         result = pipeline_test_function(
             chronicle_client, pipeline_config, input_logs
         )
 
         mock_post.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/logProcessingPipelines:testPipeline",
+            method="POST",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines:testPipeline",
+            params=None,
             json={
                 "logProcessingPipeline": pipeline_config,
                 "inputLogs": [],
             },
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -694,7 +770,7 @@ def test_test_pipeline_with_complex_processors(chronicle_client, mock_response):
     mock_response.json.return_value = {"logs": input_logs}
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         result = pipeline_test_function(
             chronicle_client, pipeline_config, input_logs

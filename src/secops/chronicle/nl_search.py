@@ -18,7 +18,6 @@ import time
 from datetime import datetime
 from typing import Any
 
-from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.request_utils import chronicle_request
 from secops.exceptions import APIError
 

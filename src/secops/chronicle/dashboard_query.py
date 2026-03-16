@@ -20,7 +20,7 @@ This module provides functions to execute and get dashboard query.
 import json
 from typing import Any
 
-from secops.chronicle.models import APIVersion, InputInterval
+from secops.chronicle.models import InputInterval
 from secops.chronicle.utils.request_utils import chronicle_request
 from secops.exceptions import APIError
 

@@ -73,25 +73,32 @@ def response_mock():
 
 def test_list_detections_minimal(chronicle_client, response_mock):
     """Test list_detections with minimal required parameters."""
-    chronicle_client.session.get.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     result = rule_detection.list_detections(
-        chronicle_client, rule_id="ru_12345678-1234-1234-1234-1234567890ab"
+        chronicle_client, 
+        rule_id="ru_12345678-1234-1234-1234-1234567890ab",
+        page_size=2
     )
 
-    chronicle_client.session.get.assert_called_once_with(
-        f"{chronicle_client.base_url}/{chronicle_client.instance_id}/legacy:legacySearchDetections",
+    chronicle_client.session.request.assert_called_once_with(
+        method="GET",
+        url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/legacy:legacySearchDetections",
         params={
+            "pageSize": 2,
             "rule_id": "ru_12345678-1234-1234-1234-1234567890ab",
             "listBasis": "LIST_BASIS_UNSPECIFIED",
         },
+        json=None,
+        headers=None,
+        timeout=None,
     )
     assert result == response_mock.json()
 
 
 def test_list_detections_all_params(chronicle_client, response_mock):
     """Test list_detections with all optional parameters set."""
-    chronicle_client.session.get.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     start_time = datetime(2025, 1, 1, 12, 0, 0)
     end_time = datetime(2025, 1, 2, 13, 30, 15)
@@ -107,8 +114,9 @@ def test_list_detections_all_params(chronicle_client, response_mock):
         page_token="next-1",
     )
 
-    chronicle_client.session.get.assert_called_once_with(
-        f"{chronicle_client.base_url}/{chronicle_client.instance_id}/legacy:legacySearchDetections",
+    chronicle_client.session.request.assert_called_once_with(
+        method="GET",
+        url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/legacy:legacySearchDetections",
         params={
             "rule_id": "ru_12345678-1234-1234-1234-1234567890ab",
             "alertState": "ALERTING",
@@ -118,13 +126,16 @@ def test_list_detections_all_params(chronicle_client, response_mock):
             "pageSize": 25,
             "pageToken": "next-1",
         },
+        json=None,
+        headers=None,
+        timeout=None,
     )
     assert result == response_mock.json()
 
 
 def test_list_detections_invalid_alert_state(chronicle_client, response_mock):
     """Test list_detections raises on invalid alert_state value."""
-    chronicle_client.session.get.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     with pytest.raises(ValueError, match="alert_state must be one of"):
         rule_detection.list_detections(
@@ -134,7 +145,7 @@ def test_list_detections_invalid_alert_state(chronicle_client, response_mock):
 
 def test_list_detections_invalid_list_basis(chronicle_client, response_mock):
     """Test list_detections raises on invalid list_basis value."""
-    chronicle_client.session.get.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     with pytest.raises(ValueError, match="list_basis must be one of"):
         rule_detection.list_detections(
@@ -146,9 +157,9 @@ def test_list_detections_api_error(chronicle_client, response_mock):
     """Test list_detections raises APIError on non-200 response."""
     response_mock.status_code = 500
     response_mock.text = "Internal Error"
-    chronicle_client.session.get.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
-    with pytest.raises(APIError, match="Failed to list detections"):
+    with pytest.raises(APIError, match="API request failed"):
         rule_detection.list_detections(chronicle_client, rule_id="ru_123")
 
 
@@ -157,16 +168,20 @@ def test_list_detections_api_error(chronicle_client, response_mock):
 
 def test_list_errors_minimal(chronicle_client, response_mock):
     """Test list_errors with minimal required parameters."""
-    chronicle_client.session.get.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     result = rule_detection.list_errors(
         chronicle_client, rule_id="ru_12345678-1234-1234-1234-1234567890ab"
     )
 
     expected_filter = f'rule = "{chronicle_client.instance_id}/rules/ru_12345678-1234-1234-1234-1234567890ab"'
-    chronicle_client.session.get.assert_called_once_with(
-        f"{chronicle_client.base_url}/{chronicle_client.instance_id}/ruleExecutionErrors",
+    chronicle_client.session.request.assert_called_once_with(
+        method="GET",
+        url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/ruleExecutionErrors",
         params={"filter": expected_filter},
+        json=None,
+        headers=None,
+        timeout=None,
     )
     assert result == response_mock.json()
 
@@ -175,7 +190,7 @@ def test_list_errors_api_error(chronicle_client, response_mock):
     """Test list_errors raises APIError on non-200 response."""
     response_mock.status_code = 404
     response_mock.text = "Not Found"
-    chronicle_client.session.get.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     with pytest.raises(APIError, match="Failed to list rule errors"):
         rule_detection.list_errors(chronicle_client, rule_id="ru_missing")

@@ -34,7 +34,9 @@ def chronicle_client():
         mock_session = Mock()
         mock_session.headers = {}
         mock_auth.return_value.session = mock_session
-        return ChronicleClient(customer_id="test-customer", project_id="test-project")
+        return ChronicleClient(
+            customer_id="test-customer", project_id="test-project"
+        )
 
 
 @pytest.fixture
@@ -52,22 +54,27 @@ def _deployment_url(client: ChronicleClient, rule_id: str) -> str:
 
 def test_update_rule_deployment_enabled(chronicle_client, response_mock):
     """Update only enabled flag."""
-    chronicle_client.session.patch.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     rule_id = "ru_123"
     res = update_rule_deployment(chronicle_client, rule_id, enabled=True)
 
-    chronicle_client.session.patch.assert_called_once_with(
-        _deployment_url(chronicle_client, rule_id),
+    chronicle_client.session.request.assert_called_once_with(
+        method="PATCH",
+        url=_deployment_url(chronicle_client, rule_id),
         params={"update_mask": "enabled"},
         json={"enabled": True},
+        headers=None,
+        timeout=None,
     )
     assert res == {"ok": True}
 
 
-def test_update_rule_deployment_multiple_fields(chronicle_client, response_mock):
+def test_update_rule_deployment_multiple_fields(
+    chronicle_client, response_mock
+):
     """Update enabled, alerting and runFrequency in one PATCH."""
-    chronicle_client.session.patch.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     rule_id = "ru_abc"
     res = update_rule_deployment(
@@ -78,30 +85,38 @@ def test_update_rule_deployment_multiple_fields(chronicle_client, response_mock)
         run_frequency="LIVE",
     )
 
-    chronicle_client.session.patch.assert_called_once_with(
-        _deployment_url(chronicle_client, rule_id),
+    chronicle_client.session.request.assert_called_once_with(
+        method="PATCH",
+        url=_deployment_url(chronicle_client, rule_id),
         params={"update_mask": "enabled,alerting,runFrequency"},
         json={"enabled": True, "alerting": False, "runFrequency": "LIVE"},
+        headers=None,
+        timeout=None,
     )
     assert res == {"ok": True}
 
 
 def test_update_rule_deployment_archived_only(chronicle_client, response_mock):
     """Update only archived flag."""
-    chronicle_client.session.patch.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     rule_id = "ru_arch"
     res = update_rule_deployment(chronicle_client, rule_id, archived=True)
 
-    chronicle_client.session.patch.assert_called_once_with(
-        _deployment_url(chronicle_client, rule_id),
+    chronicle_client.session.request.assert_called_once_with(
+        method="PATCH",
+        url=_deployment_url(chronicle_client, rule_id),
         params={"update_mask": "archived"},
         json={"archived": True},
+        headers=None,
+        timeout=None,
     )
     assert res == {"ok": True}
 
 
-def test_update_rule_deployment_no_fields_error(chronicle_client, response_mock):
+def test_update_rule_deployment_no_fields_error(
+    chronicle_client, response_mock
+):
     """No fields provided should raise APIError."""
     with pytest.raises(SecOpsError, match="No deployment fields provided"):
         update_rule_deployment(chronicle_client, "ru_none")
@@ -111,7 +126,7 @@ def test_update_rule_deployment_api_error(chronicle_client, response_mock):
     """Non-200 response should raise APIError."""
     response_mock.status_code = 400
     response_mock.text = "Bad Request"
-    chronicle_client.session.patch.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     with pytest.raises(APIError, match="Failed to update rule deployment"):
         update_rule_deployment(chronicle_client, "ru_err", enabled=True)
@@ -119,29 +134,35 @@ def test_update_rule_deployment_api_error(chronicle_client, response_mock):
 
 def test_enable_rule_wrapper(chronicle_client, response_mock):
     """enable_rule delegates to update_rule_deployment."""
-    chronicle_client.session.patch.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
     rule_id = "ru_wrap"
 
     res = enable_rule(chronicle_client, rule_id, enabled=False)
 
-    chronicle_client.session.patch.assert_called_once_with(
-        _deployment_url(chronicle_client, rule_id),
+    chronicle_client.session.request.assert_called_once_with(
+        method="PATCH",
+        url=_deployment_url(chronicle_client, rule_id),
         params={"update_mask": "enabled"},
         json={"enabled": False},
+        headers=None,
+        timeout=None
     )
     assert res == {"ok": True}
 
 
 def test_set_rule_alerting_wrapper(chronicle_client, response_mock):
     """set_rule_alerting delegates to update_rule_deployment."""
-    chronicle_client.session.patch.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
     rule_id = "ru_alert"
 
     res = set_rule_alerting(chronicle_client, rule_id, alerting_enabled=True)
 
-    chronicle_client.session.patch.assert_called_once_with(
-        _deployment_url(chronicle_client, rule_id),
+    chronicle_client.session.request.assert_called_once_with(
+        method="PATCH",
+        url=_deployment_url(chronicle_client, rule_id),
         params={"update_mask": "alerting"},
         json={"alerting": True},
+        headers=None,
+        timeout=None,
     )
-    assert res == {"ok": True} 
+    assert res == {"ok": True}

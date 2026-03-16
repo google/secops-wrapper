@@ -23,7 +23,6 @@ product or vendor.
 import base64
 from typing import TYPE_CHECKING, Any
 
-from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.request_utils import (
     chronicle_paginated_request,
     chronicle_request,

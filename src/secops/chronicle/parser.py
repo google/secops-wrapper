@@ -18,7 +18,6 @@ import base64
 import json
 from typing import Any
 
-from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.request_utils import (
     chronicle_paginated_request,
     chronicle_request,
@@ -370,12 +369,6 @@ def run_parser(
             "parser_extension_code must be a string or None, got "
             f"{type(parser_extension_code).__name__}"
         )
-
-    # Build request
-    url = (
-        f"{client.base_url}/{client.instance_id}"
-        f"/logTypes/{log_type}:runParser"
-    )
 
     parser = {
         "cbn": base64.b64encode(parser_code.encode("utf-8")).decode("utf-8")

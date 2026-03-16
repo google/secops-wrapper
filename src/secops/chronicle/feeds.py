@@ -279,7 +279,7 @@ def delete_feed(
     Raises:
         APIError: If the API request fails
     """
-    return chronicle_request(
+    chronicle_request(
         client,
         method="DELETE",
         endpoint_path=f"feeds/{feed_id}",

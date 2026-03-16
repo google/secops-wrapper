@@ -6,7 +6,6 @@ import sys
 from itertools import islice
 from typing import Any
 
-from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.request_utils import (
     chronicle_paginated_request,
     chronicle_request,
@@ -320,7 +319,8 @@ def _delete_data_table_row(
             endpoint_path=f"dataTables/{table_id}/dataTableRows/{row_guid}",
             expected_status={200, 204},
             error_message=(
-                f"Failed to delete data table row '{row_guid}' from '{table_id}'"
+                f"Failed to delete data table row '{row_guid}' "
+                f"from '{table_id}'"
             ),
         )
     except APIError as ar:
@@ -385,7 +385,7 @@ def list_data_tables(
         path="dataTables",
         items_key="dataTables",
         extra_params=extra_params if extra_params else None,
-        as_list=True,
+        as_list=as_list,
     )
 
 
@@ -520,11 +520,6 @@ def replace_data_table_rows(
         APIError: If any API request fails
         SecOpsError: If a row is too large to process
     """
-
-    url = (
-        f"{client.base_url}/{client.instance_id}/dataTables/{name}"
-        "/dataTableRows:bulkReplace"
-    )
 
     # Check for empty input
     if not rows:
@@ -687,11 +682,6 @@ def _update_data_table_rows(
         APIError: If the API request fails
         SecOpsError: If validation fails
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/dataTables/{name}"
-        "/dataTableRows:bulkUpdate"
-    )
-
     # Build request payload
     requests = []
     for row_update in row_updates:

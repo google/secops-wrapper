@@ -24,7 +24,6 @@ from datetime import datetime
 from typing import Any
 
 from secops.chronicle.log_types import is_valid_log_type
-from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.request_utils import (
     chronicle_request,
     chronicle_paginated_request,
@@ -348,7 +347,6 @@ def create_forwarder(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/forwarders"
 
     # Create request payload
     payload = {
@@ -479,7 +477,6 @@ def update_forwarder(
     Raises:
         APIError: If the API returns an error response.
     """
-    url = f"{client.base_url}/{client.instance_id}/forwarders/{forwarder_id}"
 
     auto_mask = []  # Update mask if not provided in argument
     payload = {}
@@ -840,12 +837,6 @@ def ingest_log(
     else:
         forwarder_resource = forwarder_id
 
-    # Construct the import URL
-    url = (
-        f"{client.base_url}/{client.instance_id}/logTypes"
-        f"/{log_type}/logs:import"
-    )
-
     if isinstance(log_message, str):
         initialize_multi_line_formats()
         # Split string into individual log entries based on log type
@@ -992,11 +983,6 @@ def ingest_udm(
         if add_missing_ids and "id" not in event["metadata"]:
             event["metadata"]["id"] = str(uuid.uuid4())
 
-    url = (
-        f"{client.base_url(APIVersion.V1ALPHA)}/{client.instance_id}"
-        f"/events:import"
-    )
-
     # Format the request body
     body = {
         "inline_source": {"events": [{"udm": event} for event in events_copy]}
@@ -1013,19 +999,7 @@ def ingest_udm(
         )
     except APIError as e:
         error_message = f"Failed to ingest UDM events: {str(e)}"
-        raise APIError(error_message)
-
-    response_data = {}
-
-    # Parse response if it has content
-    if response.text.strip():
-        try:
-            response_data = response.json()
-        except ValueError:
-            # If JSON parsing fails, provide the raw text in the return value
-            response_data = {"raw_response": response.text}
-
-    return response_data
+        raise APIError(error_message) from e
 
 
 def import_entities(

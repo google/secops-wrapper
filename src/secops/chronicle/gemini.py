@@ -16,9 +16,9 @@
 
 Provides access to Chronicle's Gemini conversational AI interface.
 """
+import re
 from typing import Any
 
-from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.request_utils import chronicle_request
 from secops.exceptions import APIError
 
@@ -378,7 +378,7 @@ def opt_in_to_gemini(client) -> bool:
         return True
     except APIError as e:
         if "403" in str(e) or "401" in str(e):
-            print(f"Warning: Unable to opt in to Gemini due to permissions")
+            print("Warning: Unable to opt in to Gemini due to permissions")
             return False
         raise
 

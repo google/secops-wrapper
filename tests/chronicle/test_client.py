@@ -154,7 +154,7 @@ def test_summarize_entity_ip(mock_summarize_by_id, mock_detect, chronicle_client
     mock_summarize_by_id.side_effect = [mock_details_response, mock_prevalence_response]
 
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_query_response
+        chronicle_client.session, "request", return_value=mock_query_response
     ) as mock_session_get:
         result = chronicle_client.summarize_entity(
             value="8.8.8.8",
@@ -167,7 +167,7 @@ def test_summarize_entity_ip(mock_summarize_by_id, mock_detect, chronicle_client
     # Check the query call was made
     mock_session_get.assert_called_once()
     query_call_args = mock_session_get.call_args
-    assert "summarizeEntitiesFromQuery" in query_call_args[0][0]
+    assert "summarizeEntitiesFromQuery" in query_call_args[1]["url"]
     assert query_call_args[1]["params"]["query"] == 'ip = "8.8.8.8"'
 
     # Check the _summarize_entity_by_id calls
@@ -248,7 +248,7 @@ def test_list_iocs(chronicle_client):
         ]
     }
 
-    with patch.object(chronicle_client.session, "get", return_value=mock_response):
+    with patch.object(chronicle_client.session, "request", return_value=mock_response):
         result = chronicle_client.list_iocs(
             start_time=datetime(2024, 1, 1, tzinfo=timezone.utc),
             end_time=datetime(2024, 1, 2, tzinfo=timezone.utc),

@@ -20,6 +20,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Annotated, Any
 
+from secops.chronicle.utils.format_utils import format_resource_id
 from secops.chronicle.utils.request_utils import (
     chronicle_paginated_request,
     chronicle_request,
@@ -127,10 +128,8 @@ def get_rule_exclusion(client, exclusion_id: str) -> dict[str, Any]:
     Raises:
         APIError: If the API request fails
     """
-    if not exclusion_id.startswith("projects/"):
-        endpoint_path = f"findingsRefinements/{exclusion_id}"
-    else:
-        endpoint_path = exclusion_id
+    exclusion_id = format_resource_id(exclusion_id)
+    endpoint_path = f"findingsRefinements/{exclusion_id}"
 
     return chronicle_request(
         client,
@@ -202,10 +201,8 @@ def patch_rule_exclusion(
     Raises:
         APIError: If the API request fails
     """
-    if not exclusion_id.startswith("projects/"):
-        endpoint_path = f"findingsRefinements/{exclusion_id}"
-    else:
-        endpoint_path = exclusion_id
+    exclusion_id = format_resource_id(exclusion_id)
+    endpoint_path = f"findingsRefinements/{exclusion_id}"
 
     body = {}
     if display_name:
@@ -249,13 +246,11 @@ def compute_rule_exclusion_activity(
     Raises:
         APIError: If the API request fails
     """
-    if not exclusion_id.startswith("projects/"):
-        endpoint_path = (
-            f"findingsRefinements/{exclusion_id}"
-            ":computeFindingsRefinementActivity"
-        )
-    else:
-        endpoint_path = f"{exclusion_id}:computeFindingsRefinementActivity"
+    exclusion_id = format_resource_id(exclusion_id)
+
+    endpoint_path = (
+        f"findingsRefinements/{exclusion_id}:computeFindingsRefinementActivity"
+    )
 
     body = {}
     if start_time or end_time:
@@ -297,10 +292,8 @@ def get_rule_exclusion_deployment(client, exclusion_id: str) -> dict[str, Any]:
     Raises:
         APIError: If the API request fails
     """
-    if not exclusion_id.startswith("projects/"):
-        endpoint_path = f"findingsRefinements/{exclusion_id}/deployment"
-    else:
-        endpoint_path = f"{exclusion_id}/deployment"
+    exclusion_id = format_resource_id(exclusion_id)
+    endpoint_path = f"findingsRefinements/{exclusion_id}/deployment"
 
     return chronicle_request(
         client,
@@ -331,10 +324,8 @@ def update_rule_exclusion_deployment(
     Raises:
         APIError: If the API request fails
     """
-    if not exclusion_id.startswith("projects/"):
-        endpoint_path = f"findingsRefinements/{exclusion_id}/deployment"
-    else:
-        endpoint_path = f"{exclusion_id}/deployment"
+    exclusion_id = format_resource_id(exclusion_id)
+    endpoint_path = f"findingsRefinements/{exclusion_id}/deployment"
 
     params = {}
     if update_mask:

@@ -16,10 +16,10 @@
 
 from typing import Any
 
-from secops.chronicle.models import APIVersion
+from secops.chronicle.models import APIVersion, DetectionType
 from secops.chronicle.utils.request_utils import (
-    chronicle_request,
     chronicle_paginated_request,
+    chronicle_request,
 )
 
 

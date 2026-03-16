@@ -49,15 +49,19 @@ def response_mock():
 
 def test_list_rule_exclusions(chronicle_client, response_mock):
     """Test list_rule_exclusions function."""
-    chronicle_client.session.get.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     result = rule_exclusion.list_rule_exclusions(
         chronicle_client, page_size=50, page_token="test-token"
     )
 
-    chronicle_client.session.get.assert_called_once_with(
-        f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements",
+    chronicle_client.session.request.assert_called_once_with(
+        method="GET",
+        url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements",
         params={"pageSize": 50, "pageToken": "test-token"},
+        json=None,
+        headers=None,
+        timeout=None,
     )
 
     assert result == {"testKey": "testValue"}
@@ -67,9 +71,9 @@ def test_list_rule_exclusions_error(chronicle_client, response_mock):
     """Test list_rule_exclusions function with error response."""
     response_mock.status_code = 400
     response_mock.text = "Bad Request"
-    chronicle_client.session.get.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
-    with pytest.raises(APIError, match="Failed to list rule exclusions"):
+    with pytest.raises(APIError, match="API request failed"):
         rule_exclusion.list_rule_exclusions(chronicle_client)
 
 
@@ -78,12 +82,17 @@ def test_list_rule_exclusions_error(chronicle_client, response_mock):
 
 def test_get_rule_exclusion_with_id(chronicle_client, response_mock):
     """Test get_rule_exclusion function with ID only."""
-    chronicle_client.session.get.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     result = rule_exclusion.get_rule_exclusion(chronicle_client, "exclusion-id")
 
-    chronicle_client.session.get.assert_called_once_with(
-        f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id"
+    chronicle_client.session.request.assert_called_once_with(
+        method="GET",
+        url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id",
+        params=None,
+        json=None,
+        headers=None,
+        timeout=None,
     )
 
     assert result == {"testKey": "testValue"}
@@ -93,15 +102,20 @@ def test_get_rule_exclusion_with_full_resource_name(
     chronicle_client, response_mock
 ):
     """Test get_rule_exclusion function with full resource name."""
-    chronicle_client.session.get.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     full_name = (
         f"{chronicle_client.instance_id}/findingsRefinements/exclusion-id"
     )
     result = rule_exclusion.get_rule_exclusion(chronicle_client, full_name)
 
-    chronicle_client.session.get.assert_called_once_with(
-        f"{chronicle_client.base_url}/{full_name}"
+    chronicle_client.session.request.assert_called_once_with(
+        method="GET",
+        url=f"{chronicle_client.base_url}/{full_name}",
+        params=None,
+        json=None,
+        headers=None,
+        timeout=None,
     )
 
     assert result == {"testKey": "testValue"}
@@ -111,7 +125,7 @@ def test_get_rule_exclusion_error(chronicle_client, response_mock):
     """Test get_rule_exclusion function with error response."""
     response_mock.status_code = 404
     response_mock.text = "Not Found"
-    chronicle_client.session.get.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     with pytest.raises(APIError, match="Failed to get rule exclusion"):
         rule_exclusion.get_rule_exclusion(chronicle_client, "exclusion-id")
@@ -122,7 +136,7 @@ def test_get_rule_exclusion_error(chronicle_client, response_mock):
 
 def test_create_rule_exclusion(chronicle_client, response_mock):
     """Test create_rule_exclusion function with all parameters."""
-    chronicle_client.session.post.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     result = rule_exclusion.create_rule_exclusion(
         client=chronicle_client,
@@ -137,9 +151,13 @@ def test_create_rule_exclusion(chronicle_client, response_mock):
         "query": "rule_id = 'rule-123'",
     }
 
-    chronicle_client.session.post.assert_called_once_with(
-        f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements",
+    chronicle_client.session.request.assert_called_once_with(
+        method="POST",
+        url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements",
+        params=None,
         json=expected_body,
+        headers=None,
+        timeout=None,
     )
 
     assert result == {"testKey": "testValue"}
@@ -147,7 +165,7 @@ def test_create_rule_exclusion(chronicle_client, response_mock):
 
 def test_create_rule_exclusion_minimal(chronicle_client, response_mock):
     """Test create_rule_exclusion function with missing parameters."""
-    chronicle_client.session.post.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     # The actual implementation requires display_name, refinement_type, and query
     # This test should verify a TypeError is raised when parameters are missing
@@ -160,7 +178,7 @@ def test_create_rule_exclusion_with_display_name(
     chronicle_client, response_mock
 ):
     """Test create_rule_exclusion function with display name and minimal parameters."""
-    chronicle_client.session.post.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     result = rule_exclusion.create_rule_exclusion(
         client=chronicle_client,
@@ -175,9 +193,13 @@ def test_create_rule_exclusion_with_display_name(
         "query": "simple query",
     }
 
-    chronicle_client.session.post.assert_called_once_with(
-        f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements",
+    chronicle_client.session.request.assert_called_once_with(
+        method="POST",
+        url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements",
+        params=None,
         json=expected_body,
+        headers=None,
+        timeout=None,
     )
 
     assert result == {"testKey": "testValue"}
@@ -187,7 +209,7 @@ def test_create_rule_exclusion_with_complex_query(
     chronicle_client, response_mock
 ):
     """Test create_rule_exclusion with complex query condition."""
-    chronicle_client.session.post.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     # Test with complex query
     complex_query = (
@@ -208,9 +230,13 @@ def test_create_rule_exclusion_with_complex_query(
         "query": complex_query,
     }
 
-    chronicle_client.session.post.assert_called_once_with(
-        f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements",
+    chronicle_client.session.request.assert_called_once_with(
+        method="POST",
+        url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements",
+        params=None,
         json=expected_body,
+        headers=None,
+        timeout=None,
     )
 
     assert result == {"testKey": "testValue"}
@@ -220,7 +246,7 @@ def test_create_rule_exclusion_error(chronicle_client, response_mock):
     """Test create_rule_exclusion function with error response."""
     response_mock.status_code = 400
     response_mock.text = "Bad Request"
-    chronicle_client.session.post.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     with pytest.raises(APIError, match="Failed to create rule exclusion"):
         rule_exclusion.create_rule_exclusion(
@@ -236,7 +262,7 @@ def test_create_rule_exclusion_error(chronicle_client, response_mock):
 
 def test_patch_rule_exclusion(chronicle_client, response_mock):
     """Test patch_rule_exclusion function."""
-    chronicle_client.session.patch.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     # Test with all parameters
     result = rule_exclusion.patch_rule_exclusion(
@@ -254,10 +280,13 @@ def test_patch_rule_exclusion(chronicle_client, response_mock):
         "query": "updated_rule_id = 'rule-456'",
     }
 
-    chronicle_client.session.patch.assert_called_once_with(
-        f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id",
+    chronicle_client.session.request.assert_called_once_with(
+        method="PATCH",
+        url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id",
         params={"updateMask": "display_name,type,query"},
         json=expected_body,
+        headers=None,
+        timeout=None,
     )
 
     assert result == {"testKey": "testValue"}
@@ -267,7 +296,7 @@ def test_patch_rule_exclusion_with_partial_update(
     chronicle_client, response_mock
 ):
     """Test patch_rule_exclusion function with partial update."""
-    chronicle_client.session.patch.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     # Test with only display_name update
     result = rule_exclusion.patch_rule_exclusion(
@@ -279,10 +308,13 @@ def test_patch_rule_exclusion_with_partial_update(
 
     expected_body = {"display_name": "Only display name updated"}
 
-    chronicle_client.session.patch.assert_called_once_with(
-        f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id",
+    chronicle_client.session.request.assert_called_once_with(
+        method="PATCH",
+        url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id",
         params={"updateMask": "display_name"},
         json=expected_body,
+        headers=None,
+        timeout=None,
     )
 
     assert result == {"testKey": "testValue"}
@@ -292,7 +324,7 @@ def test_patch_rule_exclusion_with_full_resource_name(
     chronicle_client, response_mock
 ):
     """Test patch_rule_exclusion with full resource name."""
-    chronicle_client.session.patch.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     # Test with full resource name
     full_name = (
@@ -307,10 +339,13 @@ def test_patch_rule_exclusion_with_full_resource_name(
 
     expected_body = {"query": "Updated query with full resource name"}
 
-    chronicle_client.session.patch.assert_called_once_with(
-        f"{chronicle_client.base_url}/{full_name}",
+    chronicle_client.session.request.assert_called_once_with(
+        method="PATCH",
+        url=f"{chronicle_client.base_url}/{full_name}",
         params={"updateMask": "query"},
         json=expected_body,
+        headers=None,
+        timeout=None,
     )
 
     assert result == {"testKey": "testValue"}
@@ -320,7 +355,7 @@ def test_patch_rule_exclusion_with_no_update_mask(
     chronicle_client, response_mock
 ):
     """Test patch_rule_exclusion with no update mask."""
-    chronicle_client.session.patch.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     # Test with no update mask (should default to all fields)
     result = rule_exclusion.patch_rule_exclusion(
@@ -331,10 +366,13 @@ def test_patch_rule_exclusion_with_no_update_mask(
 
     expected_body = {"type": "FINDINGS_REFINEMENT_TYPE_UNSPECIFIED"}
 
-    chronicle_client.session.patch.assert_called_once_with(
-        f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id",
-        params={},  # No update_mask specified
+    chronicle_client.session.request.assert_called_once_with(
+        method="PATCH",
+        url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id",
+        params={},
         json=expected_body,
+        headers=None,
+        timeout=None,
     )
 
     assert result == {"testKey": "testValue"}
@@ -344,7 +382,7 @@ def test_patch_rule_exclusion_error(chronicle_client, response_mock):
     """Test patch_rule_exclusion function with error response."""
     response_mock.status_code = 404
     response_mock.text = "Not Found"
-    chronicle_client.session.patch.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     with pytest.raises(APIError, match="Failed to update rule exclusion"):
         rule_exclusion.patch_rule_exclusion(
@@ -361,7 +399,7 @@ def test_compute_rule_exclusion_activity_specific(
     chronicle_client, response_mock
 ):
     """Test compute_rule_exclusion_activity function with specific exclusion."""
-    chronicle_client.session.post.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
     start_time = datetime(2025, 1, 1)
     end_time = datetime(2025, 1, 2)
 
@@ -380,10 +418,14 @@ def test_compute_rule_exclusion_activity_specific(
         }
     }
 
-    chronicle_client.session.post.assert_called_once_with(
-        f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id"
+    chronicle_client.session.request.assert_called_once_with(
+        method="POST",
+        url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id"
         ":computeFindingsRefinementActivity",
+        params=None,
         json=expected_body,
+        headers=None,
+        timeout=None,
     )
 
     assert result == {"testKey": "testValue"}
@@ -394,15 +436,20 @@ def test_compute_rule_exclusion_activity_specific(
 
 def test_get_rule_exclusion_deployment(chronicle_client, response_mock):
     """Test get_rule_exclusion_deployment function."""
-    chronicle_client.session.get.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     result = rule_exclusion.get_rule_exclusion_deployment(
         chronicle_client, "exclusion-id"
     )
 
-    chronicle_client.session.get.assert_called_once_with(
-        f"{chronicle_client.base_url}/{chronicle_client.instance_id}/"
-        "findingsRefinements/exclusion-id/deployment"
+    chronicle_client.session.request.assert_called_once_with(
+        method="GET",
+        url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/"
+        "findingsRefinements/exclusion-id/deployment",
+        params=None,
+        json=None,
+        headers=None,
+        timeout=None,
     )
 
     assert result == {"testKey": "testValue"}
@@ -413,7 +460,7 @@ def test_get_rule_exclusion_deployment(chronicle_client, response_mock):
 
 def test_update_rule_exclusion_deployment(chronicle_client, response_mock):
     """Test update_rule_exclusion_deployment function."""
-    chronicle_client.session.patch.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     # Create deployment details with all parameters
     deployment_details = rule_exclusion.UpdateRuleDeployment(
@@ -436,12 +483,15 @@ def test_update_rule_exclusion_deployment(chronicle_client, response_mock):
         "detection_exclusion_application": {"scope": "global"},
     }
 
-    chronicle_client.session.patch.assert_called_once_with(
-        f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id/deployment",
+    chronicle_client.session.request.assert_called_once_with(
+        method="PATCH",
+        url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id/deployment",
         params={
             "updateMask": "enabled,archived,detection_exclusion_application"
         },
         json=expected_body,
+        headers=None,
+        timeout=None,
     )
 
     assert result == {"testKey": "testValue"}
@@ -451,7 +501,7 @@ def test_update_rule_exclusion_deployment_disable(
     chronicle_client, response_mock
 ):
     """Test update_rule_exclusion_deployment to disable a rule exclusion."""
-    chronicle_client.session.patch.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     # Create deployment details with disabled flag
     deployment_details = rule_exclusion.UpdateRuleDeployment(enabled=False)
@@ -469,10 +519,13 @@ def test_update_rule_exclusion_deployment_disable(
         "detection_exclusion_application": None,
     }
 
-    chronicle_client.session.patch.assert_called_once_with(
-        f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id/deployment",
+    chronicle_client.session.request.assert_called_once_with(
+        method="PATCH",
+        url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id/deployment",
         params={"updateMask": "enabled"},
         json=expected_body,
+        headers=None,
+        timeout=None,
     )
 
     assert result == {"testKey": "testValue"}
@@ -482,7 +535,7 @@ def test_update_rule_exclusion_deployment_with_archived(
     chronicle_client, response_mock
 ):
     """Test update_rule_exclusion_deployment with archived flag."""
-    chronicle_client.session.patch.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     # Create deployment details with archived flag
     deployment_details = rule_exclusion.UpdateRuleDeployment(archived=True)
@@ -499,10 +552,13 @@ def test_update_rule_exclusion_deployment_with_archived(
         "detection_exclusion_application": None,
     }
 
-    chronicle_client.session.patch.assert_called_once_with(
-        f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id/deployment",
+    chronicle_client.session.request.assert_called_once_with(
+        method="PATCH",
+        url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id/deployment",
         params={"updateMask": "archived"},
         json=expected_body,
+        headers=None,
+        timeout=None,
     )
 
     assert result == {"testKey": "testValue"}
@@ -512,7 +568,7 @@ def test_update_rule_exclusion_deployment_with_full_resource_name(
     chronicle_client, response_mock
 ):
     """Test update_rule_exclusion_deployment with full resource name."""
-    chronicle_client.session.patch.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     # Test with full resource name
     full_name = (
@@ -536,10 +592,13 @@ def test_update_rule_exclusion_deployment_with_full_resource_name(
         "detection_exclusion_application": None,
     }
 
-    chronicle_client.session.patch.assert_called_once_with(
-        f"{chronicle_client.base_url}/{full_name}/deployment",
+    chronicle_client.session.request.assert_called_once_with(
+        method="PATCH",
+        url=f"{chronicle_client.base_url}/{full_name}/deployment",
         params={"updateMask": "enabled"},
         json=expected_body,
+        headers=None,
+        timeout=None,
     )
 
     assert result == {"testKey": "testValue"}
@@ -551,7 +610,7 @@ def test_update_rule_exclusion_deployment_error(
     """Test update_rule_exclusion_deployment with error response."""
     response_mock.status_code = 404
     response_mock.text = "Not Found"
-    chronicle_client.session.patch.return_value = response_mock
+    chronicle_client.session.request.return_value = response_mock
 
     # Create deployment details
     deployment_details = rule_exclusion.UpdateRuleDeployment(
