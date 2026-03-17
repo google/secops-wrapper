@@ -17,6 +17,7 @@
 from typing import Any
 
 from secops.chronicle.models import APIVersion, DetectionType
+from secops.chronicle.utils.format_utils import format_resource_id
 from secops.chronicle.utils.request_utils import (
     chronicle_paginated_request,
     chronicle_request,
@@ -71,26 +72,21 @@ def fetch_associated_investigations(
                     f'Valid values: {", ".join(valid)}'
                 ) from ke
 
-    params: dict[str, Any] = {"detectionType": detection_type}
-
-    if alert_ids is not None:
-        params["alertIds"] = alert_ids
-
-    if case_ids is not None:
-        params["caseIds"] = case_ids
-
-    if association_limit_per_detection is not None:
-        params["associationLimitPerDetection"] = association_limit_per_detection
-
-    if order_by:
-        params["orderBy"] = order_by
+    params = {
+        "detectionType": detection_type,
+        "alertIds": alert_ids,
+        "caseIds": case_ids,
+        "associationLimitPerDetection": association_limit_per_detection,
+        "orderBy": order_by,
+    }
+    params = {k: v for k, v in params.items() if v is not None}
 
     return chronicle_request(
         client,
         method="GET",
         endpoint_path="investigations:fetchAssociated",
         api_version=APIVersion.V1ALPHA,
-        params=params,
+        params=params or None,
         error_message="Failed to fetch associated investigations",
     )
 
@@ -111,15 +107,12 @@ def get_investigation(
     Raises:
         APIError: If the API request fails.
     """
-    if not investigation_id.startswith("projects/"):
-        endpoint_path = f"investigations/{investigation_id}"
-    else:
-        endpoint_path = investigation_id
+    inv_id = format_resource_id(investigation_id)
 
     return chronicle_request(
         client,
         method="GET",
-        endpoint_path=endpoint_path,
+        endpoint_path=f"investigations/{inv_id}",
         api_version=APIVersion.V1ALPHA,
         error_message="Failed to get investigation",
     )
@@ -158,11 +151,11 @@ def list_investigations(
     Raises:
         APIError: If the API request fails.
     """
-    extra_params: dict[str, Any] = {}
-    if filter_expr:
-        extra_params["filter"] = filter_expr
-    if order_by:
-        extra_params["orderBy"] = order_by
+    extra_params = {
+        "filter": filter_expr,
+        "orderBy": order_by,
+    }
+    extra_params = {k: v for k, v in extra_params.items() if v is not None}
 
     return chronicle_paginated_request(
         client,
@@ -171,7 +164,7 @@ def list_investigations(
         api_version=APIVersion.V1ALPHA,
         page_size=page_size,
         page_token=page_token,
-        extra_params=extra_params if extra_params else None,
+        extra_params=extra_params or None,
         as_list=as_list,
     )
 

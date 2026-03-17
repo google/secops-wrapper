@@ -376,15 +376,17 @@ def list_data_tables(
     Raises:
         APIError: If the API request fails
     """
-    extra_params = {}
-    if order_by:
-        extra_params["orderBy"] = order_by
+    extra_params = {
+        "orderBy": order_by,
+    }
+
+    extra_params = {k: v for k, v in extra_params.items() if v is not None}
 
     return chronicle_paginated_request(
         client,
         path="dataTables",
         items_key="dataTables",
-        extra_params=extra_params if extra_params else None,
+        extra_params=extra_params or None,
         as_list=as_list,
     )
 
@@ -414,15 +416,17 @@ def list_data_table_rows(
     Raises:
         APIError: If the API request fails
     """
-    extra_params = {}
-    if order_by:
-        extra_params["orderBy"] = order_by
+    extra_params = {
+        "orderBy": order_by,
+    }
+
+    extra_params = {k: v for k, v in extra_params.items() if v is not None}
 
     return chronicle_paginated_request(
         client,
         path=f"dataTables/{name}/dataTableRows",
         items_key="dataTableRows",
-        extra_params=extra_params if extra_params else None,
+        extra_params=extra_params or None,
         as_list=as_list,
     )
 
@@ -460,24 +464,23 @@ def update_data_table(
             "numbers, and underscores, and has length < 256 characters."
         )
 
-    # Prepare request body
-    body_payload = {}
-    if description is not None:
-        body_payload["description"] = description
-    if row_time_to_live is not None:
-        body_payload["row_time_to_live"] = row_time_to_live
+    body_payload = {
+        "description": description,
+        "row_time_to_live": row_time_to_live,
+    }
+    body_payload = {k: v for k, v in body_payload.items() if v is not None}
 
-    # Prepare query parameters
-    params = {}
-    if update_mask:
-        params["updateMask"] = ",".join(update_mask)
+    params = {
+        "updateMask": ",".join(update_mask) if update_mask else None,
+    }
+    params = {k: v for k, v in params.items() if v is not None}
 
     return chronicle_request(
         client,
         method="PATCH",
         endpoint_path=f"dataTables/{name}",
-        params=params if params else None,
-        json=body_payload,
+        params=params or None,
+        json=body_payload or None,
         error_message=f"Failed to update data table '{name}'",
     )
 

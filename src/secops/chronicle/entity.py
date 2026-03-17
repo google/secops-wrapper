@@ -177,9 +177,10 @@ def _summarize_entity_by_id(
         "returnPrevalence": return_prevalence,
         "includeAllUdmEventTypesForFirstLastSeen": include_all_udm_types,
         "pageSize": page_size,
+        "pageToken": page_token,
     }
-    if page_token:
-        params["pageToken"] = page_token
+
+    params = {k: v for k, v in params.items() if v is not None}
 
     return chronicle_request(
         client,

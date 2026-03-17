@@ -50,9 +50,10 @@ def list_log_processing_pipelines(
     Raises:
         APIError: If the API request fails.
     """
-    extra_params = {}
-    if filter_expr:
-        extra_params["filter"] = filter_expr
+    extra_params = {
+        "filter": filter_expr
+    }
+    extra_params = {k: v for k, v in extra_params.items() if v is not None}
 
     return chronicle_paginated_request(
         client,
@@ -60,7 +61,7 @@ def list_log_processing_pipelines(
         items_key="logProcessingPipelines",
         page_size=page_size,
         page_token=page_token,
-        extra_params=extra_params if extra_params else None,
+        extra_params=extra_params or None,
         as_list=as_list,
     )
 
@@ -115,15 +116,16 @@ def create_log_processing_pipeline(
     Raises:
         APIError: If the API request fails.
     """
-    params: dict[str, Any] = {}
-    if pipeline_id:
-        params["logProcessingPipelineId"] = pipeline_id
+    params = {
+        "logProcessingPipelineId": pipeline_id,
+    }
+    params = {k: v for k, v in params.items() if v is not None}
 
     return chronicle_request(
         client,
         method="POST",
         endpoint_path="logProcessingPipelines",
-        params=params if params else None,
+        params=params or None,
         json=pipeline,
         error_message="Failed to create log processing pipeline",
     )
@@ -153,17 +155,17 @@ def update_log_processing_pipeline(
         APIError: If the API request fails.
     """
     extracted_pipeline_id = format_resource_id(pipeline_id)
-    endpoint_path = f"logProcessingPipelines/{extracted_pipeline_id}"
 
-    params: dict[str, Any] = {}
-    if update_mask:
-        params["updateMask"] = update_mask
+    params = {
+        "updateMask": update_mask,
+    }
+    params = {k: v for k, v in params.items() if v is not None}
 
     return chronicle_request(
         client,
         method="PATCH",
-        endpoint_path=endpoint_path,
-        params=params if params else None,
+        endpoint_path=f"logProcessingPipelines/{extracted_pipeline_id}",
+        params=params or None,
         json=pipeline,
         error_message="Failed to patch log processing pipeline",
     )
@@ -188,16 +190,16 @@ def delete_log_processing_pipeline(
     """
 
     extracted_pipeline_id = format_resource_id(pipeline_id)
-    endpoint_path = f"logProcessingPipelines/{extracted_pipeline_id}"
 
-    params: dict[str, Any] = {}
-    if etag:
-        params["etag"] = etag
+    params = {
+        "etag": etag,
+    }
+    params = {k: v for k, v in params.items() if v is not None}
 
     return chronicle_request(
         client,
         method="DELETE",
-        endpoint_path=endpoint_path,
+        endpoint_path=f"logProcessingPipelines/{extracted_pipeline_id}",
         params=params if params else None,
         error_message="Failed to delete log processing pipeline",
     )
@@ -321,9 +323,11 @@ def fetch_sample_logs_by_streams(
     Raises:
         APIError: If the API request fails.
     """
-    body = {"streams": streams}
-    if sample_logs_count is not None:
-        body["sampleLogsCount"] = sample_logs_count
+    body = {
+        "streams": streams,
+        "sampleLogsCount": sample_logs_count,
+    }
+    body = {k: v for k, v in body.items() if v is not None}
 
     return chronicle_request(
         client,

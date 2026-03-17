@@ -105,21 +105,20 @@ def create_dashboard(
     if charts is not None:
         charts = parse_json_list(charts, "charts")
 
-    definition = {}
-    if filters is not None:
-        definition["filters"] = filters
-    if charts is not None:
-        definition["charts"] = charts
+    definition = {
+        "filters": filters,
+        "charts": charts,
+    }
+    definition = {k: v for k, v in definition.items() if v is not None}
 
     payload = {
         "displayName": display_name,
         "definition": definition,
         "access": access_type.value,
         "type": "CUSTOM",
+        "description": description,
     }
-
-    if description is not None:
-        payload["description"] = description
+    payload = {k: v for k, v in payload.items() if v is not None}
 
     return chronicle_request(
         client,

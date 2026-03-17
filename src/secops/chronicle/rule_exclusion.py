@@ -129,12 +129,11 @@ def get_rule_exclusion(client, exclusion_id: str) -> dict[str, Any]:
         APIError: If the API request fails
     """
     exclusion_id = format_resource_id(exclusion_id)
-    endpoint_path = f"findingsRefinements/{exclusion_id}"
 
     return chronicle_request(
         client,
         method="GET",
-        endpoint_path=endpoint_path,
+        endpoint_path=f"findingsRefinements/{exclusion_id}",
         error_message="Failed to get rule exclusion",
     )
 
@@ -202,24 +201,23 @@ def patch_rule_exclusion(
         APIError: If the API request fails
     """
     exclusion_id = format_resource_id(exclusion_id)
-    endpoint_path = f"findingsRefinements/{exclusion_id}"
 
-    body = {}
-    if display_name:
-        body["display_name"] = display_name
-    if refinement_type:
-        body["type"] = refinement_type
-    if query:
-        body["query"] = query
+    body = {
+        "display_name": display_name,
+        "type": refinement_type,
+        "query": query,
+    }
+    body = {k: v for k, v in body.items() if v is not None}
 
-    params = {}
-    if update_mask:
-        params["updateMask"] = update_mask
+    params = {
+        "updateMask": update_mask,
+    }
+    params = {k: v for k, v in params.items() if v is not None}
 
     return chronicle_request(
         client,
         method="PATCH",
-        endpoint_path=endpoint_path,
+        endpoint_path=f"findingsRefinements/{exclusion_id}",
         params=params,
         json=body,
         error_message="Failed to update rule exclusion",
@@ -293,12 +291,11 @@ def get_rule_exclusion_deployment(client, exclusion_id: str) -> dict[str, Any]:
         APIError: If the API request fails
     """
     exclusion_id = format_resource_id(exclusion_id)
-    endpoint_path = f"findingsRefinements/{exclusion_id}/deployment"
 
     return chronicle_request(
         client,
         method="GET",
-        endpoint_path=endpoint_path,
+        endpoint_path=f"findingsRefinements/{exclusion_id}/deployment",
         error_message="Failed to get rule exclusion deployment",
     )
 

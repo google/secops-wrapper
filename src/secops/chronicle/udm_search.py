@@ -92,9 +92,11 @@ def find_udm_field_values(
     Raises:
         APIError: If the API request fails
     """
-    params = {"query": query}
-    if page_size is not None:
-        params["pageSize"] = page_size
+    params = {
+        "query": query,
+        "pageSize": page_size,
+    }
+    params = {k: v for k, v in params.items() if v is not None}
 
     return chronicle_request(
         client,

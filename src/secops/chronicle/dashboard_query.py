@@ -20,9 +20,13 @@ This module provides functions to execute and get dashboard query.
 import json
 from typing import Any
 
+from secops.exceptions import APIError
 from secops.chronicle.models import InputInterval
 from secops.chronicle.utils.request_utils import chronicle_request
-from secops.exceptions import APIError
+from secops.chronicle.utils.format_utils import (
+    format_resource_id,
+    parse_json_list,
+)
 
 
 def execute_query(
@@ -47,10 +51,6 @@ def execute_query(
     try:
         if isinstance(interval, str):
             interval = json.loads(interval)
-        if filters and isinstance(filters, str):
-            filters = json.loads(filters)
-            if not isinstance(filters, list):
-                filters = [filters]
     except ValueError as e:
         raise APIError(
             f"Failed to parse JSON. Must be a valid JSON string: {e}"
@@ -59,12 +59,17 @@ def execute_query(
     if isinstance(interval, dict):
         interval = InputInterval.from_dict(interval)
 
-    payload = {"query": {"query": query, "input": interval.to_dict()}}
-
-    if clear_cache is not None:
-        payload["clearCache"] = clear_cache
     if filters:
-        payload["filters"] = filters
+        filters = parse_json_list(filters, "filters")
+
+    payload = {
+        "query": {"query": query, "input": interval.to_dict()},
+        "clearCache": clear_cache,
+        "filters": filters if filters else None,
+    }
+
+    # Remove keys with None values
+    payload = {k: v for k, v in payload.items() if v is not None}
 
     return chronicle_request(
         client,
@@ -85,12 +90,9 @@ def get_execute_query(client, query_id: str) -> dict[str, Any]:
     Returns:
         Dictionary containing query details
     """
-    if query_id.startswith("projects/"):
-        query_id = query_id.split("/")[-1]
-
     return chronicle_request(
         client,
         method="GET",
-        endpoint_path=f"dashboardQueries/{query_id}",
+        endpoint_path=f"dashboardQueries/{format_resource_id(query_id)}",
         error_message="Failed to get query",
     )

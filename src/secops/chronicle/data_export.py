@@ -438,9 +438,11 @@ def list_data_export(
         export = chronicle.list_data_export()
         ```
     """
-    extra_params = {}
-    if filters:
-        extra_params["filter"] = filters
+    extra_params = {
+        "filter": filters,
+    }
+
+    extra_params = {k: v for k, v in extra_params.items() if v is not None}
 
     return chronicle_paginated_request(
         client,
@@ -448,6 +450,6 @@ def list_data_export(
         items_key="dataExports",
         page_size=page_size,
         page_token=page_token,
-        extra_params=extra_params if extra_params else None,
+        extra_params=extra_params or None,
         as_list=as_list,
     )

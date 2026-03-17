@@ -261,9 +261,10 @@ def list_parsers(
     Raises:
         APIError: If the API request fails
     """
-    extra_params = {}
-    if filter:
-        extra_params["filter"] = filter
+    extra_params = {
+        "filter": filter,
+    }
+    extra_params = {k: v for k, v in extra_params.items() if v is not None}
 
     # For backward compatibility: if page_size is None, force as_list to True
     effective_as_list = True if page_size is None else as_list

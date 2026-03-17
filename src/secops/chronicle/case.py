@@ -24,6 +24,7 @@ from secops.chronicle.models import (
     CaseList,
     CasePriority,
 )
+from secops.chronicle.utils.format_utils import format_resource_id
 from secops.chronicle.utils.request_utils import (
     chronicle_paginated_request,
     chronicle_request,
@@ -58,31 +59,27 @@ def get_cases(
     Raises:
         APIError: If the API request fails
     """
-    params: dict[str, Any] = {"pageSize": str(page_size)}
-
-    if page_token:
-        params["pageToken"] = page_token
+    params = {
+        "pageSize": str(page_size),
+        "pageToken": page_token,
+        "tenantId": tenant_id,
+    }
+    params = {k: v for k, v in params.items() if v is not None}
 
     if start_time:
         params["createTime.startTime"] = start_time.strftime(
             "%Y-%m-%dT%H:%M:%S.%fZ"
         )
-
     if end_time:
         params["createTime.endTime"] = end_time.strftime(
             "%Y-%m-%dT%H:%M:%S.%fZ"
         )
-
     if case_ids:
         for case_id in case_ids:
             params["caseId"] = case_id
-
     if asset_identifiers:
         for asset in asset_identifiers:
             params["assetId"] = asset
-
-    if tenant_id:
-        params["tenantId"] = tenant_id
 
     return chronicle_request(
         client,
@@ -296,17 +293,14 @@ def execute_bulk_close(
                     f"Valid values: {valid_values}"
                 ) from ve
 
-    body: dict[str, Any] = {
+    body = {
         "casesIds": case_ids,
         "closeReason": close_reason,
+        "rootCause": root_cause,
+        "closeComment": close_comment,
+        "dynamicParameters": dynamic_parameters,
     }
-
-    if root_cause is not None:
-        body["rootCause"] = root_cause
-    if close_comment is not None:
-        body["closeComment"] = close_comment
-    if dynamic_parameters is not None:
-        body["dynamicParameters"] = dynamic_parameters
+    body = {k: v for k, v in body.items() if v is not None}
 
     return chronicle_request(
         client,
@@ -363,21 +357,19 @@ def get_case(client, case_name: str, expand: str | None = None) -> Case:
     Raises:
         APIError: If the API request fails
     """
-    if not case_name.startswith("projects/"):
-        endpoint_path = f"cases/{case_name}"
-    else:
-        endpoint_path = case_name
+    endpoint_path = format_resource_id(case_name)
 
-    params: dict[str, Any] = {}
-    if expand:
-        params["expand"] = expand
+    params = {
+        "expand": expand,
+    }
+    params = {k: v for k, v in params.items() if v is not None}
 
     data = chronicle_request(
         client,
         method="GET",
-        endpoint_path=endpoint_path,
+        endpoint_path=f"cases/{endpoint_path}",
         api_version=APIVersion.V1BETA,
-        params=params,
+        params=params or None,
         error_message="Failed to get case",
     )
 
@@ -418,15 +410,13 @@ def list_cases(
     Raises:
         APIError: If the API request fails
     """
-    extra_params: dict[str, Any] = {}
-    if filter_query:
-        extra_params["filter"] = filter_query
-    if order_by:
-        extra_params["orderBy"] = order_by
-    if expand:
-        extra_params["expand"] = expand
-    if distinct_by:
-        extra_params["distinctBy"] = distinct_by
+    extra_params = {
+        "filter": filter_query,
+        "orderBy": order_by,
+        "expand": expand,
+        "distinctBy": distinct_by,
+    }
+    extra_params = {k: v for k, v in extra_params.items() if v is not None}
 
     return chronicle_paginated_request(
         client,
@@ -435,7 +425,7 @@ def list_cases(
         items_key="cases",
         page_size=page_size,
         page_token=page_token,
-        extra_params=extra_params if extra_params else None,
+        extra_params=extra_params or None,
         as_list=as_list,
     )
 
@@ -500,10 +490,7 @@ def patch_case(
         APIError: If the API request fails
         ValueError: If an invalid priority value is provided
     """
-    if not case_name.startswith("projects/"):
-        endpoint_path = f"cases/{case_name}"
-    else:
-        endpoint_path = case_name
+    endpoint_path = format_resource_id(case_name)
 
     if "priority" in case_data and isinstance(case_data["priority"], str):
         case_priority = case_data["priority"]
@@ -519,17 +506,18 @@ def patch_case(
                     f"Valid values: {valid_values}"
                 ) from ve
 
-    params: dict[str, Any] = {}
-    if update_mask:
-        params["updateMask"] = update_mask
+    params = {
+        "updateMask": update_mask,
+    }
+    params = {k: v for k, v in params.items() if v is not None}
 
     data = chronicle_request(
         client,
         method="PATCH",
-        endpoint_path=endpoint_path,
+        endpoint_path=f"cases/{endpoint_path}",
         api_version=APIVersion.V1BETA,
         json=case_data,
-        params=params if params else None,
+        params=params or None,
         error_message="Failed to patch case",
     )
 

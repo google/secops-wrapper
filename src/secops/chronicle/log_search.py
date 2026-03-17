@@ -62,20 +62,15 @@ def search_raw_logs(
             "endTime": end_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
         },
         "caseSensitive": case_sensitive,
+        "snapshotQuery": snapshot_query,
+        "maxAggregationsPerField": max_aggregations_per_field,
+        "pageSize": page_size,
     }
-
-    if snapshot_query:
-        search_query["snapshotQuery"] = snapshot_query
+    search_query = {k: v for k, v in search_query.items() if v is not None}
 
     if log_types:
         # The API expects a list of LogType objects, filtering by displayName
         search_query["logTypes"] = [{"displayName": lt} for lt in log_types]
-
-    if max_aggregations_per_field is not None:
-        search_query["maxAggregationsPerField"] = max_aggregations_per_field
-
-    if page_size is not None:
-        search_query["pageSize"] = page_size
 
     return chronicle_request(
         client,

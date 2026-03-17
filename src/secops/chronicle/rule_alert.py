@@ -149,29 +149,20 @@ def update_alert(
         raise ValueError("severity must be between 0 and 100")
 
     # Build feedback dictionary with only provided values
-    feedback = {}
-    if confidence_score is not None:
-        feedback["confidence_score"] = confidence_score
-    if reason:
-        feedback["reason"] = reason
-    if reputation:
-        feedback["reputation"] = reputation
-    if priority:
-        feedback["priority"] = priority
-    if status:
-        feedback["status"] = status
-    if verdict:
-        feedback["verdict"] = verdict
-    if risk_score is not None:
-        feedback["risk_score"] = risk_score
-    if disregarded is not None:
-        feedback["disregarded"] = disregarded
-    if severity is not None:
-        feedback["severity"] = severity
-    if comment is not None:  # Accept empty string
-        feedback["comment"] = comment
-    if root_cause is not None:  # Accept empty string
-        feedback["root_cause"] = root_cause
+    feedback = {
+        "confidence_score": confidence_score,
+        "reason": reason,
+        "reputation": reputation,
+        "priority": priority,
+        "status": status,
+        "verdict": verdict,
+        "risk_score": risk_score,
+        "disregarded": disregarded,
+        "severity": severity,
+        "comment": comment,
+        "root_cause": root_cause,
+    }
+    feedback = {k: v for k, v in feedback.items() if v is not None}
 
     # Check if at least one property is provided
     if not feedback:
@@ -324,9 +315,9 @@ def search_rule_alerts(
     params = {
         "timeRange.start_time": start_time.isoformat(),
         "timeRange.end_time": end_time.isoformat(),
+        "maxNumAlertsToReturn": page_size,
     }
-    if page_size:
-        params["maxNumAlertsToReturn"] = page_size
+    params = {k: v for k, v in params.items() if v is not None}
 
     return chronicle_request(
         client,
