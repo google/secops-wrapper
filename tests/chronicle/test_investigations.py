@@ -253,7 +253,8 @@ def test_get_investigation_with_full_resource_name(
 ):
     """Test get_investigation with full resource name."""
     full_name = (
-        "projects/123/locations/us/instances/456/investigations/"
+        "projects/test-project/locations/us/instances/"
+        "test-customer/investigations/"
         "82fb18cb-bfc0-4d7f-acf2-80508e145da2"
     )
     mock_response.json.return_value = {

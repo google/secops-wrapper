@@ -447,7 +447,7 @@ def test_get_case_with_full_name(chronicle_client, mock_case_data):
 
         mock_request.assert_called_once()
         call_args = mock_request.call_args
-        assert call_args[1]["endpoint_path"] == full_name
+        assert call_args[1]["endpoint_path"] == "cases/12345"
 
         assert isinstance(result, Case)
         assert result.id == "12345"
@@ -742,7 +742,7 @@ def test_patch_case_with_full_name(chronicle_client, mock_case_data):
 
         mock_request.assert_called_once()
         call_args = mock_request.call_args
-        assert call_args[1]["endpoint_path"] == full_name
+        assert call_args[1]["endpoint_path"] == "cases/12345"
         assert isinstance(result, Case)
 
 
