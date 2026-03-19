@@ -6,6 +6,7 @@ import sys
 from itertools import islice
 from typing import Any
 
+from secops.chronicle.utils.format_utils import remove_none_values
 from secops.chronicle.utils.request_utils import (
     chronicle_paginated_request,
     chronicle_request,
@@ -376,11 +377,11 @@ def list_data_tables(
     Raises:
         APIError: If the API request fails
     """
-    extra_params = {
-        "orderBy": order_by,
-    }
-
-    extra_params = {k: v for k, v in extra_params.items() if v is not None}
+    extra_params = remove_none_values(
+        {
+            "orderBy": order_by,
+        }
+    )
 
     return chronicle_paginated_request(
         client,
@@ -416,11 +417,11 @@ def list_data_table_rows(
     Raises:
         APIError: If the API request fails
     """
-    extra_params = {
-        "orderBy": order_by,
-    }
-
-    extra_params = {k: v for k, v in extra_params.items() if v is not None}
+    extra_params = remove_none_values(
+        {
+            "orderBy": order_by,
+        }
+    )
 
     return chronicle_paginated_request(
         client,
@@ -464,16 +465,18 @@ def update_data_table(
             "numbers, and underscores, and has length < 256 characters."
         )
 
-    body_payload = {
-        "description": description,
-        "row_time_to_live": row_time_to_live,
-    }
-    body_payload = {k: v for k, v in body_payload.items() if v is not None}
+    body_payload = remove_none_values(
+        {
+            "description": description,
+            "row_time_to_live": row_time_to_live,
+        }
+    )
 
-    params = {
-        "updateMask": ",".join(update_mask) if update_mask else None,
-    }
-    params = {k: v for k, v in params.items() if v is not None}
+    params = remove_none_values(
+        {
+            "updateMask": ",".join(update_mask) if update_mask else None,
+        }
+    )
 
     return chronicle_request(
         client,

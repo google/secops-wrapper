@@ -16,6 +16,7 @@
 
 Provides access to Chronicle's Gemini conversational AI interface.
 """
+
 import re
 from typing import Any
 

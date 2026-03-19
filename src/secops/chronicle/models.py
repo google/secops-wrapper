@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 """Data models for Chronicle API responses."""
+
 import json
 import sys
 from dataclasses import asdict, dataclass, field

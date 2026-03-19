@@ -16,7 +16,10 @@
 
 from typing import Any
 
-from secops.chronicle.utils.format_utils import format_resource_id
+from secops.chronicle.utils.format_utils import (
+    format_resource_id,
+    remove_none_values,
+)
 from secops.chronicle.utils.request_utils import (
     chronicle_request,
     chronicle_paginated_request,
@@ -50,10 +53,7 @@ def list_log_processing_pipelines(
     Raises:
         APIError: If the API request fails.
     """
-    extra_params = {
-        "filter": filter_expr
-    }
-    extra_params = {k: v for k, v in extra_params.items() if v is not None}
+    extra_params = remove_none_values({"filter": filter_expr})
 
     return chronicle_paginated_request(
         client,
@@ -116,10 +116,11 @@ def create_log_processing_pipeline(
     Raises:
         APIError: If the API request fails.
     """
-    params = {
-        "logProcessingPipelineId": pipeline_id,
-    }
-    params = {k: v for k, v in params.items() if v is not None}
+    params = remove_none_values(
+        {
+            "logProcessingPipelineId": pipeline_id,
+        }
+    )
 
     return chronicle_request(
         client,
@@ -156,10 +157,11 @@ def update_log_processing_pipeline(
     """
     extracted_pipeline_id = format_resource_id(pipeline_id)
 
-    params = {
-        "updateMask": update_mask,
-    }
-    params = {k: v for k, v in params.items() if v is not None}
+    params = remove_none_values(
+        {
+            "updateMask": update_mask,
+        }
+    )
 
     return chronicle_request(
         client,
@@ -191,10 +193,11 @@ def delete_log_processing_pipeline(
 
     extracted_pipeline_id = format_resource_id(pipeline_id)
 
-    params = {
-        "etag": etag,
-    }
-    params = {k: v for k, v in params.items() if v is not None}
+    params = remove_none_values(
+        {
+            "etag": etag,
+        }
+    )
 
     return chronicle_request(
         client,
@@ -323,11 +326,12 @@ def fetch_sample_logs_by_streams(
     Raises:
         APIError: If the API request fails.
     """
-    body = {
-        "streams": streams,
-        "sampleLogsCount": sample_logs_count,
-    }
-    body = {k: v for k, v in body.items() if v is not None}
+    body = remove_none_values(
+        {
+            "streams": streams,
+            "sampleLogsCount": sample_logs_count,
+        }
+    )
 
     return chronicle_request(
         client,

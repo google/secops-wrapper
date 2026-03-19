@@ -20,7 +20,10 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Annotated, Any
 
-from secops.chronicle.utils.format_utils import format_resource_id
+from secops.chronicle.utils.format_utils import (
+    format_resource_id,
+    remove_none_values,
+)
 from secops.chronicle.utils.request_utils import (
     chronicle_paginated_request,
     chronicle_request,
@@ -202,17 +205,19 @@ def patch_rule_exclusion(
     """
     exclusion_id = format_resource_id(exclusion_id)
 
-    body = {
-        "display_name": display_name,
-        "type": refinement_type,
-        "query": query,
-    }
-    body = {k: v for k, v in body.items() if v is not None}
+    body = remove_none_values(
+        {
+            "display_name": display_name,
+            "type": refinement_type,
+            "query": query,
+        }
+    )
 
-    params = {
-        "updateMask": update_mask,
-    }
-    params = {k: v for k, v in params.items() if v is not None}
+    params = remove_none_values(
+        {
+            "updateMask": update_mask,
+        }
+    )
 
     return chronicle_request(
         client,

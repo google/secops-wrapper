@@ -18,6 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.format_utils import remove_none_values
 from secops.chronicle.utils.request_utils import chronicle_request
 
 if TYPE_CHECKING:
@@ -55,18 +56,19 @@ def search_raw_logs(
     Raises:
         APIError: If the API request fails.
     """
-    search_query: dict[str, Any] = {
-        "baselineQuery": query,
-        "baselineTimeRange": {
-            "startTime": start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-            "endTime": end_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-        },
-        "caseSensitive": case_sensitive,
-        "snapshotQuery": snapshot_query,
-        "maxAggregationsPerField": max_aggregations_per_field,
-        "pageSize": page_size,
-    }
-    search_query = {k: v for k, v in search_query.items() if v is not None}
+    search_query: dict[str, Any] = remove_none_values(
+        {
+            "baselineQuery": query,
+            "baselineTimeRange": {
+                "startTime": start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                "endTime": end_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            },
+            "caseSensitive": case_sensitive,
+            "snapshotQuery": snapshot_query,
+            "maxAggregationsPerField": max_aggregations_per_field,
+            "pageSize": page_size,
+        }
+    )
 
     if log_types:
         # The API expects a list of LogType objects, filtering by displayName

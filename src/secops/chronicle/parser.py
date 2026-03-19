@@ -18,6 +18,7 @@ import base64
 import json
 from typing import Any
 
+from secops.chronicle.utils.format_utils import remove_none_values
 from secops.chronicle.utils.request_utils import (
     chronicle_paginated_request,
     chronicle_request,
@@ -261,10 +262,11 @@ def list_parsers(
     Raises:
         APIError: If the API request fails
     """
-    extra_params = {
-        "filter": filter,
-    }
-    extra_params = {k: v for k, v in extra_params.items() if v is not None}
+    extra_params = remove_none_values(
+        {
+            "filter": filter,
+        }
+    )
 
     # For backward compatibility: if page_size is None, force as_list to True
     effective_as_list = True if page_size is None else as_list

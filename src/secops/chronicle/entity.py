@@ -15,6 +15,7 @@
 """
 Provides entity search, analysis and summarization functionality for Chronicle.
 """
+
 import ipaddress
 import re
 from datetime import datetime
@@ -35,6 +36,7 @@ from secops.chronicle.models import (
     TimelineBucket,
     WidgetMetadata,
 )
+from secops.chronicle.utils.format_utils import remove_none_values
 from secops.chronicle.utils.request_utils import chronicle_request
 from secops.exceptions import APIError
 
@@ -169,18 +171,18 @@ def _summarize_entity_by_id(
     Raises:
         APIError: If API request fails.
     """
-    params = {
-        "entityId": entity_id,
-        "timeRange.startTime": start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-        "timeRange.endTime": end_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-        "returnAlerts": return_alerts,
-        "returnPrevalence": return_prevalence,
-        "includeAllUdmEventTypesForFirstLastSeen": include_all_udm_types,
-        "pageSize": page_size,
-        "pageToken": page_token,
-    }
-
-    params = {k: v for k, v in params.items() if v is not None}
+    params = remove_none_values(
+        {
+            "entityId": entity_id,
+            "timeRange.startTime": start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            "timeRange.endTime": end_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            "returnAlerts": return_alerts,
+            "returnPrevalence": return_prevalence,
+            "includeAllUdmEventTypesForFirstLastSeen": include_all_udm_types,
+            "pageSize": page_size,
+            "pageToken": page_token,
+        }
+    )
 
     return chronicle_request(
         client,

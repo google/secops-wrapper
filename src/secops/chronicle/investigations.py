@@ -17,7 +17,10 @@
 from typing import Any
 
 from secops.chronicle.models import APIVersion, DetectionType
-from secops.chronicle.utils.format_utils import format_resource_id
+from secops.chronicle.utils.format_utils import (
+    format_resource_id,
+    remove_none_values,
+)
 from secops.chronicle.utils.request_utils import (
     chronicle_paginated_request,
     chronicle_request,
@@ -72,14 +75,15 @@ def fetch_associated_investigations(
                     f'Valid values: {", ".join(valid)}'
                 ) from ke
 
-    params = {
-        "detectionType": detection_type,
-        "alertIds": alert_ids,
-        "caseIds": case_ids,
-        "associationLimitPerDetection": association_limit_per_detection,
-        "orderBy": order_by,
-    }
-    params = {k: v for k, v in params.items() if v is not None}
+    params = remove_none_values(
+        {
+            "detectionType": detection_type,
+            "alertIds": alert_ids,
+            "caseIds": case_ids,
+            "associationLimitPerDetection": association_limit_per_detection,
+            "orderBy": order_by,
+        }
+    )
 
     return chronicle_request(
         client,
@@ -151,11 +155,12 @@ def list_investigations(
     Raises:
         APIError: If the API request fails.
     """
-    extra_params = {
-        "filter": filter_expr,
-        "orderBy": order_by,
-    }
-    extra_params = {k: v for k, v in extra_params.items() if v is not None}
+    extra_params = remove_none_values(
+        {
+            "filter": filter_expr,
+            "orderBy": order_by,
+        }
+    )
 
     return chronicle_paginated_request(
         client,

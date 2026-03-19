@@ -17,6 +17,7 @@
 from datetime import datetime
 from typing import Any, Literal
 
+from secops.chronicle.utils.format_utils import remove_none_values
 from secops.chronicle.utils.request_utils import chronicle_request
 
 
@@ -149,20 +150,21 @@ def update_alert(
         raise ValueError("severity must be between 0 and 100")
 
     # Build feedback dictionary with only provided values
-    feedback = {
-        "confidence_score": confidence_score,
-        "reason": reason,
-        "reputation": reputation,
-        "priority": priority,
-        "status": status,
-        "verdict": verdict,
-        "risk_score": risk_score,
-        "disregarded": disregarded,
-        "severity": severity,
-        "comment": comment,
-        "root_cause": root_cause,
-    }
-    feedback = {k: v for k, v in feedback.items() if v is not None}
+    feedback = remove_none_values(
+        {
+            "confidence_score": confidence_score,
+            "reason": reason,
+            "reputation": reputation,
+            "priority": priority,
+            "status": status,
+            "verdict": verdict,
+            "risk_score": risk_score,
+            "disregarded": disregarded,
+            "severity": severity,
+            "comment": comment,
+            "root_cause": root_cause,
+        }
+    )
 
     # Check if at least one property is provided
     if not feedback:
@@ -312,12 +314,13 @@ def search_rule_alerts(
     """
     _ = (rule_status,)
 
-    params = {
-        "timeRange.start_time": start_time.isoformat(),
-        "timeRange.end_time": end_time.isoformat(),
-        "maxNumAlertsToReturn": page_size,
-    }
-    params = {k: v for k, v in params.items() if v is not None}
+    params = remove_none_values(
+        {
+            "timeRange.start_time": start_time.isoformat(),
+            "timeRange.end_time": end_time.isoformat(),
+            "maxNumAlertsToReturn": page_size,
+        }
+    )
 
     return chronicle_request(
         client,

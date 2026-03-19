@@ -26,6 +26,7 @@ from secops.chronicle.utils.request_utils import chronicle_request
 from secops.chronicle.utils.format_utils import (
     format_resource_id,
     parse_json_list,
+    remove_none_values,
 )
 
 
@@ -62,14 +63,13 @@ def execute_query(
     if filters:
         filters = parse_json_list(filters, "filters")
 
-    payload = {
-        "query": {"query": query, "input": interval.to_dict()},
-        "clearCache": clear_cache,
-        "filters": filters if filters else None,
-    }
-
-    # Remove keys with None values
-    payload = {k: v for k, v in payload.items() if v is not None}
+    payload = remove_none_values(
+        {
+            "query": {"query": query, "input": interval.to_dict()},
+            "clearCache": clear_cache,
+            "filters": filters if filters else None,
+        }
+    )
 
     return chronicle_request(
         client,

@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+from secops.chronicle.utils.format_utils import remove_none_values
 from secops.chronicle.utils.request_utils import (
     chronicle_request,
     chronicle_paginated_request,
@@ -438,11 +439,11 @@ def list_data_export(
         export = chronicle.list_data_export()
         ```
     """
-    extra_params = {
-        "filter": filters,
-    }
-
-    extra_params = {k: v for k, v in extra_params.items() if v is not None}
+    extra_params = remove_none_values(
+        {
+            "filter": filters,
+        }
+    )
 
     return chronicle_paginated_request(
         client,

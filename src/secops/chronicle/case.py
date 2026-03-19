@@ -24,7 +24,10 @@ from secops.chronicle.models import (
     CaseList,
     CasePriority,
 )
-from secops.chronicle.utils.format_utils import format_resource_id
+from secops.chronicle.utils.format_utils import (
+    format_resource_id,
+    remove_none_values,
+)
 from secops.chronicle.utils.request_utils import (
     chronicle_paginated_request,
     chronicle_request,
@@ -59,12 +62,13 @@ def get_cases(
     Raises:
         APIError: If the API request fails
     """
-    params = {
-        "pageSize": str(page_size),
-        "pageToken": page_token,
-        "tenantId": tenant_id,
-    }
-    params = {k: v for k, v in params.items() if v is not None}
+    params = remove_none_values(
+        {
+            "pageSize": str(page_size),
+            "pageToken": page_token,
+            "tenantId": tenant_id,
+        }
+    )
 
     if start_time:
         params["createTime.startTime"] = start_time.strftime(
@@ -293,14 +297,15 @@ def execute_bulk_close(
                     f"Valid values: {valid_values}"
                 ) from ve
 
-    body = {
-        "casesIds": case_ids,
-        "closeReason": close_reason,
-        "rootCause": root_cause,
-        "closeComment": close_comment,
-        "dynamicParameters": dynamic_parameters,
-    }
-    body = {k: v for k, v in body.items() if v is not None}
+    body = remove_none_values(
+        {
+            "casesIds": case_ids,
+            "closeReason": close_reason,
+            "rootCause": root_cause,
+            "closeComment": close_comment,
+            "dynamicParameters": dynamic_parameters,
+        }
+    )
 
     return chronicle_request(
         client,
@@ -359,10 +364,11 @@ def get_case(client, case_name: str, expand: str | None = None) -> Case:
     """
     endpoint_path = format_resource_id(case_name)
 
-    params = {
-        "expand": expand,
-    }
-    params = {k: v for k, v in params.items() if v is not None}
+    params = remove_none_values(
+        {
+            "expand": expand,
+        }
+    )
 
     data = chronicle_request(
         client,
@@ -410,13 +416,14 @@ def list_cases(
     Raises:
         APIError: If the API request fails
     """
-    extra_params = {
-        "filter": filter_query,
-        "orderBy": order_by,
-        "expand": expand,
-        "distinctBy": distinct_by,
-    }
-    extra_params = {k: v for k, v in extra_params.items() if v is not None}
+    extra_params = remove_none_values(
+        {
+            "filter": filter_query,
+            "orderBy": order_by,
+            "expand": expand,
+            "distinctBy": distinct_by,
+        }
+    )
 
     return chronicle_paginated_request(
         client,
@@ -506,10 +513,11 @@ def patch_case(
                     f"Valid values: {valid_values}"
                 ) from ve
 
-    params = {
-        "updateMask": update_mask,
-    }
-    params = {k: v for k, v in params.items() if v is not None}
+    params = remove_none_values(
+        {
+            "updateMask": update_mask,
+        }
+    )
 
     data = chronicle_request(
         client,
