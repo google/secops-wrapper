@@ -177,7 +177,7 @@ def setup_manager_revisions_command(subparsers):
 def handle_manager_revisions_list_command(args, chronicle):
     """Handle integration manager revisions list command"""
     try:
-        out = chronicle.list_integration_manager_revisions(
+        out = chronicle.soar.list_integration_manager_revisions(
             integration_name=args.integration_name,
             manager_id=args.manager_id,
             page_size=args.page_size,
@@ -195,7 +195,7 @@ def handle_manager_revisions_list_command(args, chronicle):
 def handle_manager_revisions_get_command(args, chronicle):
     """Handle integration manager revision get command"""
     try:
-        out = chronicle.get_integration_manager_revision(
+        out = chronicle.soar.get_integration_manager_revision(
             integration_name=args.integration_name,
             manager_id=args.manager_id,
             revision_id=args.revision_id,
@@ -228,7 +228,7 @@ def handle_manager_revisions_create_command(args, chronicle):
             integration_name=args.integration_name,
             manager_id=args.manager_id,
         )
-        out = chronicle.create_integration_manager_revision(
+        out = chronicle.soar.create_integration_manager_revision(
             integration_name=args.integration_name,
             manager_id=args.manager_id,
             manager=manager,
@@ -243,7 +243,7 @@ def handle_manager_revisions_create_command(args, chronicle):
 def handle_manager_revisions_rollback_command(args, chronicle):
     """Handle integration manager revision rollback command"""
     try:
-        out = chronicle.rollback_integration_manager_revision(
+        out = chronicle.soar.rollback_integration_manager_revision(
             integration_name=args.integration_name,
             manager_id=args.manager_id,
             revision_id=args.revision_id,

@@ -258,7 +258,7 @@ def setup_actions_command(subparsers):
 def handle_actions_list_command(args, chronicle):
     """Handle integration actions list command"""
     try:
-        out = chronicle.list_integration_actions(
+        out = chronicle.soar.list_integration_actions(
             integration_name=args.integration_name,
             page_size=args.page_size,
             page_token=args.page_token,
@@ -275,7 +275,7 @@ def handle_actions_list_command(args, chronicle):
 def handle_actions_get_command(args, chronicle):
     """Handle integration action get command"""
     try:
-        out = chronicle.get_integration_action(
+        out = chronicle.soar.get_integration_action(
             integration_name=args.integration_name,
             action_id=args.action_id,
         )
@@ -301,7 +301,7 @@ def handle_actions_delete_command(args, chronicle):
 def handle_actions_create_command(args, chronicle):
     """Handle integration action create command"""
     try:
-        out = chronicle.create_integration_action(
+        out = chronicle.soar.create_integration_action(
             integration_name=args.integration_name,
             display_name=args.display_name,
             script=args.code,  # CLI uses --code flag but API expects script
@@ -320,7 +320,7 @@ def handle_actions_create_command(args, chronicle):
 def handle_actions_update_command(args, chronicle):
     """Handle integration action update command"""
     try:
-        out = chronicle.update_integration_action(
+        out = chronicle.soar.update_integration_action(
             integration_name=args.integration_name,
             action_id=args.action_id,
             display_name=args.display_name,
@@ -344,7 +344,7 @@ def handle_actions_test_command(args, chronicle):
             integration_name=args.integration_name,
             action_id=args.action_id,
         )
-        out = chronicle.execute_integration_action_test(
+        out = chronicle.soar.execute_integration_action_test(
             integration_name=args.integration_name,
             action_id=args.action_id,
             action=action,
@@ -358,7 +358,7 @@ def handle_actions_test_command(args, chronicle):
 def handle_actions_by_environment_command(args, chronicle):
     """Handle get actions by environment command"""
     try:
-        out = chronicle.get_integration_actions_by_environment(
+        out = chronicle.soar.get_integration_actions_by_environment(
             integration_name=args.integration_name,
             environments=args.environments,
             include_widgets=args.include_widgets,
@@ -372,7 +372,7 @@ def handle_actions_by_environment_command(args, chronicle):
 def handle_actions_template_command(args, chronicle):
     """Handle get action template command"""
     try:
-        out = chronicle.get_integration_action_template(
+        out = chronicle.soar.get_integration_action_template(
             integration_name=args.integration_name,
             is_async=args.is_async,
         )

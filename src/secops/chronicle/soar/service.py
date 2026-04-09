@@ -1159,7 +1159,7 @@ class SOARService:
             APIError: If the API request fails
         """
         return _list_integration_actions(
-            self,
+            self._client,
             integration_name,
             page_size=page_size,
             page_token=page_token,
@@ -1190,7 +1190,7 @@ class SOARService:
             APIError: If the API request fails
         """
         return _get_integration_action(
-            self,
+            self._client,
             integration_name,
             action_id,
             api_version=api_version,
@@ -1216,7 +1216,7 @@ class SOARService:
             APIError: If the API request fails
         """
         return _delete_integration_action(
-            self,
+            self._client,
             integration_name,
             action_id,
             api_version=api_version,
@@ -1274,7 +1274,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _create_integration_action(
-            self,
+            self._client,
             integration_name,
             display_name,
             script,
@@ -1349,7 +1349,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _update_integration_action(
-            self,
+            self._client,
             integration_name,
             action_id,
             display_name=display_name,
@@ -1403,7 +1403,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _execute_integration_action_test(
-            self,
+            self._client,
             integration_name,
             test_case_id,
             action,
@@ -1439,7 +1439,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _get_integration_actions_by_environment(
-            self,
+            self._client,
             integration_name,
             environments,
             include_widgets,
@@ -1472,7 +1472,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _get_integration_action_template(
-            self,
+            self._client,
             integration_name,
             is_async=is_async,
             api_version=api_version,
@@ -1522,7 +1522,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _list_integration_action_revisions(
-            self,
+            self._client,
             integration_name,
             action_id,
             page_size=page_size,
@@ -1560,7 +1560,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _delete_integration_action_revision(
-            self,
+            self._client,
             integration_name,
             action_id,
             revision_id,
@@ -1597,7 +1597,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _create_integration_action_revision(
-            self,
+            self._client,
             integration_name,
             action_id,
             action,
@@ -1632,7 +1632,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _rollback_integration_action_revision(
-            self,
+            self._client,
             integration_name,
             action_id,
             revision_id,
@@ -1681,7 +1681,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _list_integration_managers(
-            self,
+            self._client,
             integration_name,
             page_size=page_size,
             page_token=page_token,
@@ -1716,7 +1716,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _get_integration_manager(
-            self,
+            self._client,
             integration_name,
             manager_id,
             api_version=api_version,
@@ -1747,7 +1747,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _delete_integration_manager(
-            self,
+            self._client,
             integration_name,
             manager_id,
             api_version=api_version,
@@ -1786,7 +1786,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _create_integration_manager(
-            self,
+            self._client,
             integration_name,
             display_name,
             script,
@@ -1831,7 +1831,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _update_integration_manager(
-            self,
+            self._client,
             integration_name,
             manager_id,
             display_name=display_name,
@@ -1864,7 +1864,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _get_integration_manager_template(
-            self,
+            self._client,
             integration_name,
             api_version=api_version,
         )
@@ -1912,7 +1912,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _list_integration_manager_revisions(
-            self,
+            self._client,
             integration_name,
             manager_id,
             page_size=page_size,
@@ -1951,7 +1951,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _get_integration_manager_revision(
-            self,
+            self._client,
             integration_name,
             manager_id,
             revision_id,
@@ -1985,7 +1985,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _delete_integration_manager_revision(
-            self,
+            self._client,
             integration_name,
             manager_id,
             revision_id,
@@ -2024,7 +2024,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _create_integration_manager_revision(
-            self,
+            self._client,
             integration_name,
             manager_id,
             manager,
@@ -2062,7 +2062,7 @@ class SOARService:
             APIError: If the API request fails.
         """
         return _rollback_integration_manager_revision(
-            self,
+            self._client,
             integration_name,
             manager_id,
             revision_id,

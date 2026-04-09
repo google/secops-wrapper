@@ -152,7 +152,7 @@ def setup_action_revisions_command(subparsers):
 def handle_action_revisions_list_command(args, chronicle):
     """Handle integration action revisions list command"""
     try:
-        out = chronicle.list_integration_action_revisions(
+        out = chronicle.soar.list_integration_action_revisions(
             integration_name=args.integration_name,
             action_id=args.action_id,
             page_size=args.page_size,
@@ -189,7 +189,7 @@ def handle_action_revisions_create_command(args, chronicle):
             integration_name=args.integration_name,
             action_id=args.action_id,
         )
-        out = chronicle.create_integration_action_revision(
+        out = chronicle.soar.create_integration_action_revision(
             integration_name=args.integration_name,
             action_id=args.action_id,
             action=action,
@@ -204,7 +204,7 @@ def handle_action_revisions_create_command(args, chronicle):
 def handle_action_revisions_rollback_command(args, chronicle):
     """Handle integration action revision rollback command"""
     try:
-        out = chronicle.rollback_integration_action_revision(
+        out = chronicle.soar.rollback_integration_action_revision(
             integration_name=args.integration_name,
             action_id=args.action_id,
             revision_id=args.revision_id,

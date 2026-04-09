@@ -198,7 +198,7 @@ def setup_managers_command(subparsers):
 def handle_managers_list_command(args, chronicle):
     """Handle integration managers list command"""
     try:
-        out = chronicle.list_integration_managers(
+        out = chronicle.soar.list_integration_managers(
             integration_name=args.integration_name,
             page_size=args.page_size,
             page_token=args.page_token,
@@ -215,7 +215,7 @@ def handle_managers_list_command(args, chronicle):
 def handle_managers_get_command(args, chronicle):
     """Handle integration manager get command"""
     try:
-        out = chronicle.get_integration_manager(
+        out = chronicle.soar.get_integration_manager(
             integration_name=args.integration_name,
             manager_id=args.manager_id,
         )
@@ -241,7 +241,7 @@ def handle_managers_delete_command(args, chronicle):
 def handle_managers_create_command(args, chronicle):
     """Handle integration manager create command"""
     try:
-        out = chronicle.create_integration_manager(
+        out = chronicle.soar.create_integration_manager(
             integration_name=args.integration_name,
             display_name=args.display_name,
             code=args.code,
@@ -257,7 +257,7 @@ def handle_managers_create_command(args, chronicle):
 def handle_managers_update_command(args, chronicle):
     """Handle integration manager update command"""
     try:
-        out = chronicle.update_integration_manager(
+        out = chronicle.soar.update_integration_manager(
             integration_name=args.integration_name,
             manager_id=args.manager_id,
             display_name=args.display_name,
@@ -274,7 +274,7 @@ def handle_managers_update_command(args, chronicle):
 def handle_managers_template_command(args, chronicle):
     """Handle get manager template command"""
     try:
-        out = chronicle.get_integration_manager_template(
+        out = chronicle.soar.get_integration_manager_template(
             integration_name=args.integration_name,
         )
         output_formatter(out, getattr(args, "output", "json"))
