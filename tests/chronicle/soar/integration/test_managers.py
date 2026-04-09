@@ -20,7 +20,7 @@ import pytest
 
 from secops.chronicle.client import ChronicleClient
 from secops.chronicle.models import APIVersion
-from secops.chronicle.integration.managers import (
+from secops.chronicle.soar.integration.managers import (
     list_integration_managers,
     get_integration_manager,
     delete_integration_manager,
@@ -53,10 +53,10 @@ def test_list_integration_managers_success(chronicle_client):
     expected = {"managers": [{"name": "m1"}, {"name": "m2"}], "nextPageToken": "t"}
 
     with patch(
-        "secops.chronicle.integration.managers.chronicle_paginated_request",
+        "secops.chronicle.soar.integration.managers.chronicle_paginated_request",
         return_value=expected,
     ) as mock_paginated, patch(
-        "secops.chronicle.integration.managers.format_resource_id",
+        "secops.chronicle.soar.integration.managers.format_resource_id",
         return_value="My Integration",
     ):
         result = list_integration_managers(
@@ -85,7 +85,7 @@ def test_list_integration_managers_default_args(chronicle_client):
     expected = {"managers": []}
 
     with patch(
-        "secops.chronicle.integration.managers.chronicle_paginated_request",
+        "secops.chronicle.soar.integration.managers.chronicle_paginated_request",
         return_value=expected,
     ) as mock_paginated:
         result = list_integration_managers(
@@ -101,7 +101,7 @@ def test_list_integration_managers_with_filters(chronicle_client):
     expected = {"managers": [{"name": "m1"}]}
 
     with patch(
-        "secops.chronicle.integration.managers.chronicle_paginated_request",
+        "secops.chronicle.soar.integration.managers.chronicle_paginated_request",
         return_value=expected,
     ) as mock_paginated:
         result = list_integration_managers(
@@ -125,7 +125,7 @@ def test_list_integration_managers_as_list(chronicle_client):
     expected = [{"name": "m1"}, {"name": "m2"}]
 
     with patch(
-        "secops.chronicle.integration.managers.chronicle_paginated_request",
+        "secops.chronicle.soar.integration.managers.chronicle_paginated_request",
         return_value=expected,
     ) as mock_paginated:
         result = list_integration_managers(
@@ -143,7 +143,7 @@ def test_list_integration_managers_as_list(chronicle_client):
 def test_list_integration_managers_error(chronicle_client):
     """Test list_integration_managers raises APIError on failure."""
     with patch(
-        "secops.chronicle.integration.managers.chronicle_paginated_request",
+        "secops.chronicle.soar.integration.managers.chronicle_paginated_request",
         side_effect=APIError("Failed to list integration managers"),
     ):
         with pytest.raises(APIError) as exc_info:
@@ -166,7 +166,7 @@ def test_get_integration_manager_success(chronicle_client):
     }
 
     with patch(
-        "secops.chronicle.integration.managers.chronicle_request",
+        "secops.chronicle.soar.integration.managers.chronicle_request",
         return_value=expected,
     ) as mock_request:
         result = get_integration_manager(
@@ -188,7 +188,7 @@ def test_get_integration_manager_success(chronicle_client):
 def test_get_integration_manager_error(chronicle_client):
     """Test get_integration_manager raises APIError on failure."""
     with patch(
-        "secops.chronicle.integration.managers.chronicle_request",
+        "secops.chronicle.soar.integration.managers.chronicle_request",
         side_effect=APIError("Failed to get integration manager"),
     ):
         with pytest.raises(APIError) as exc_info:
@@ -206,7 +206,7 @@ def test_get_integration_manager_error(chronicle_client):
 def test_delete_integration_manager_success(chronicle_client):
     """Test delete_integration_manager issues DELETE request."""
     with patch(
-        "secops.chronicle.integration.managers.chronicle_request",
+        "secops.chronicle.soar.integration.managers.chronicle_request",
         return_value=None,
     ) as mock_request:
         delete_integration_manager(
@@ -226,7 +226,7 @@ def test_delete_integration_manager_success(chronicle_client):
 def test_delete_integration_manager_error(chronicle_client):
     """Test delete_integration_manager raises APIError on failure."""
     with patch(
-        "secops.chronicle.integration.managers.chronicle_request",
+        "secops.chronicle.soar.integration.managers.chronicle_request",
         side_effect=APIError("Failed to delete integration manager"),
     ):
         with pytest.raises(APIError) as exc_info:
@@ -246,7 +246,7 @@ def test_create_integration_manager_required_fields_only(chronicle_client):
     expected = {"name": "managers/new", "displayName": "My Manager"}
 
     with patch(
-        "secops.chronicle.integration.managers.chronicle_request",
+        "secops.chronicle.soar.integration.managers.chronicle_request",
         return_value=expected,
     ) as mock_request:
         result = create_integration_manager(
@@ -275,7 +275,7 @@ def test_create_integration_manager_with_description(chronicle_client):
     expected = {"name": "managers/new", "displayName": "My Manager"}
 
     with patch(
-        "secops.chronicle.integration.managers.chronicle_request",
+        "secops.chronicle.soar.integration.managers.chronicle_request",
         return_value=expected,
     ) as mock_request:
         result = create_integration_manager(
@@ -295,7 +295,7 @@ def test_create_integration_manager_with_description(chronicle_client):
 def test_create_integration_manager_error(chronicle_client):
     """Test create_integration_manager raises APIError on failure."""
     with patch(
-        "secops.chronicle.integration.managers.chronicle_request",
+        "secops.chronicle.soar.integration.managers.chronicle_request",
         side_effect=APIError("Failed to create integration manager"),
     ):
         with pytest.raises(APIError) as exc_info:
@@ -316,10 +316,10 @@ def test_update_integration_manager_single_field(chronicle_client):
     expected = {"name": "managers/m1", "displayName": "Updated Manager"}
 
     with patch(
-        "secops.chronicle.integration.managers.chronicle_request",
+        "secops.chronicle.soar.integration.managers.chronicle_request",
         return_value=expected,
     ) as mock_request, patch(
-        "secops.chronicle.integration.managers.build_patch_body",
+        "secops.chronicle.soar.integration.managers.build_patch_body",
         return_value=({"displayName": "Updated Manager"}, {"updateMask": "displayName"}),
     ) as mock_build_patch:
         result = update_integration_manager(
@@ -347,10 +347,10 @@ def test_update_integration_manager_multiple_fields(chronicle_client):
     expected = {"name": "managers/m1", "displayName": "Updated Manager"}
 
     with patch(
-        "secops.chronicle.integration.managers.chronicle_request",
+        "secops.chronicle.soar.integration.managers.chronicle_request",
         return_value=expected,
     ) as mock_request, patch(
-        "secops.chronicle.integration.managers.build_patch_body",
+        "secops.chronicle.soar.integration.managers.build_patch_body",
         return_value=(
             {
                 "displayName": "Updated Manager",
@@ -377,10 +377,10 @@ def test_update_integration_manager_with_update_mask(chronicle_client):
     expected = {"name": "managers/m1", "displayName": "Updated Manager"}
 
     with patch(
-        "secops.chronicle.integration.managers.chronicle_request",
+        "secops.chronicle.soar.integration.managers.chronicle_request",
         return_value=expected,
     ) as mock_request, patch(
-        "secops.chronicle.integration.managers.build_patch_body",
+        "secops.chronicle.soar.integration.managers.build_patch_body",
         return_value=(
             {"displayName": "Updated Manager"},
             {"updateMask": "displayName"},
@@ -400,10 +400,10 @@ def test_update_integration_manager_with_update_mask(chronicle_client):
 def test_update_integration_manager_error(chronicle_client):
     """Test update_integration_manager raises APIError on failure."""
     with patch(
-        "secops.chronicle.integration.managers.chronicle_request",
+        "secops.chronicle.soar.integration.managers.chronicle_request",
         side_effect=APIError("Failed to update integration manager"),
     ), patch(
-        "secops.chronicle.integration.managers.build_patch_body",
+        "secops.chronicle.soar.integration.managers.build_patch_body",
         return_value=({"displayName": "Updated"}, {"updateMask": "displayName"}),
     ):
         with pytest.raises(APIError) as exc_info:
@@ -427,7 +427,7 @@ def test_get_integration_manager_template_success(chronicle_client):
     }
 
     with patch(
-        "secops.chronicle.integration.managers.chronicle_request",
+        "secops.chronicle.soar.integration.managers.chronicle_request",
         return_value=expected,
     ) as mock_request:
         result = get_integration_manager_template(
@@ -448,7 +448,7 @@ def test_get_integration_manager_template_success(chronicle_client):
 def test_get_integration_manager_template_error(chronicle_client):
     """Test get_integration_manager_template raises APIError on failure."""
     with patch(
-        "secops.chronicle.integration.managers.chronicle_request",
+        "secops.chronicle.soar.integration.managers.chronicle_request",
         side_effect=APIError("Failed to get integration manager template"),
     ):
         with pytest.raises(APIError) as exc_info:

@@ -20,7 +20,7 @@ import pytest
 
 from secops.chronicle.client import ChronicleClient
 from secops.chronicle.models import APIVersion
-from secops.chronicle.integration.manager_revisions import (
+from secops.chronicle.soar.integration.manager_revisions import (
     list_integration_manager_revisions,
     get_integration_manager_revision,
     delete_integration_manager_revision,
@@ -55,10 +55,10 @@ def test_list_integration_manager_revisions_success(chronicle_client):
     }
 
     with patch(
-        "secops.chronicle.integration.manager_revisions.chronicle_paginated_request",
+        "secops.chronicle.soar.integration.manager_revisions.chronicle_paginated_request",
         return_value=expected,
     ) as mock_paginated, patch(
-        "secops.chronicle.integration.manager_revisions.format_resource_id",
+        "secops.chronicle.soar.integration.manager_revisions.format_resource_id",
         return_value="My Integration",
     ):
         result = list_integration_manager_revisions(
@@ -83,7 +83,7 @@ def test_list_integration_manager_revisions_default_args(chronicle_client):
     expected = {"revisions": []}
 
     with patch(
-        "secops.chronicle.integration.manager_revisions.chronicle_paginated_request",
+        "secops.chronicle.soar.integration.manager_revisions.chronicle_paginated_request",
         return_value=expected,
     ) as mock_paginated:
         result = list_integration_manager_revisions(
@@ -100,7 +100,7 @@ def test_list_integration_manager_revisions_with_filters(chronicle_client):
     expected = {"revisions": [{"name": "r1"}]}
 
     with patch(
-        "secops.chronicle.integration.manager_revisions.chronicle_paginated_request",
+        "secops.chronicle.soar.integration.manager_revisions.chronicle_paginated_request",
         return_value=expected,
     ) as mock_paginated:
         result = list_integration_manager_revisions(
@@ -125,7 +125,7 @@ def test_list_integration_manager_revisions_as_list(chronicle_client):
     expected = [{"name": "r1"}, {"name": "r2"}]
 
     with patch(
-        "secops.chronicle.integration.manager_revisions.chronicle_paginated_request",
+        "secops.chronicle.soar.integration.manager_revisions.chronicle_paginated_request",
         return_value=expected,
     ) as mock_paginated:
         result = list_integration_manager_revisions(
@@ -144,7 +144,7 @@ def test_list_integration_manager_revisions_as_list(chronicle_client):
 def test_list_integration_manager_revisions_error(chronicle_client):
     """Test list_integration_manager_revisions raises APIError on failure."""
     with patch(
-        "secops.chronicle.integration.manager_revisions.chronicle_paginated_request",
+        "secops.chronicle.soar.integration.manager_revisions.chronicle_paginated_request",
         side_effect=APIError("Failed to list manager revisions"),
     ):
         with pytest.raises(APIError) as exc_info:
@@ -171,7 +171,7 @@ def test_get_integration_manager_revision_success(chronicle_client):
     }
 
     with patch(
-        "secops.chronicle.integration.manager_revisions.chronicle_request",
+        "secops.chronicle.soar.integration.manager_revisions.chronicle_request",
         return_value=expected,
     ) as mock_request:
         result = get_integration_manager_revision(
@@ -192,7 +192,7 @@ def test_get_integration_manager_revision_success(chronicle_client):
 def test_get_integration_manager_revision_error(chronicle_client):
     """Test get_integration_manager_revision raises APIError on failure."""
     with patch(
-        "secops.chronicle.integration.manager_revisions.chronicle_request",
+        "secops.chronicle.soar.integration.manager_revisions.chronicle_request",
         side_effect=APIError("Failed to get manager revision"),
     ):
         with pytest.raises(APIError) as exc_info:
@@ -211,7 +211,7 @@ def test_get_integration_manager_revision_error(chronicle_client):
 def test_delete_integration_manager_revision_success(chronicle_client):
     """Test delete_integration_manager_revision issues DELETE request."""
     with patch(
-        "secops.chronicle.integration.manager_revisions.chronicle_request",
+        "secops.chronicle.soar.integration.manager_revisions.chronicle_request",
         return_value=None,
     ) as mock_request:
         delete_integration_manager_revision(
@@ -230,7 +230,7 @@ def test_delete_integration_manager_revision_success(chronicle_client):
 def test_delete_integration_manager_revision_error(chronicle_client):
     """Test delete_integration_manager_revision raises APIError on failure."""
     with patch(
-        "secops.chronicle.integration.manager_revisions.chronicle_request",
+        "secops.chronicle.soar.integration.manager_revisions.chronicle_request",
         side_effect=APIError("Failed to delete manager revision"),
     ):
         with pytest.raises(APIError) as exc_info:
@@ -257,7 +257,7 @@ def test_create_integration_manager_revision_required_fields_only(
     }
 
     with patch(
-        "secops.chronicle.integration.manager_revisions.chronicle_request",
+        "secops.chronicle.soar.integration.manager_revisions.chronicle_request",
         return_value=expected,
     ) as mock_request:
         result = create_integration_manager_revision(
@@ -286,7 +286,7 @@ def test_create_integration_manager_revision_with_comment(chronicle_client):
     manager_dict = {"displayName": "My Manager", "script": "def helper(): pass"}
 
     with patch(
-        "secops.chronicle.integration.manager_revisions.chronicle_request",
+        "secops.chronicle.soar.integration.manager_revisions.chronicle_request",
         return_value=expected,
     ) as mock_request:
         result = create_integration_manager_revision(
@@ -309,7 +309,7 @@ def test_create_integration_manager_revision_error(chronicle_client):
     manager_dict = {"displayName": "My Manager", "script": "def helper(): pass"}
 
     with patch(
-        "secops.chronicle.integration.manager_revisions.chronicle_request",
+        "secops.chronicle.soar.integration.manager_revisions.chronicle_request",
         side_effect=APIError("Failed to create manager revision"),
     ):
         with pytest.raises(APIError) as exc_info:
@@ -336,7 +336,7 @@ def test_rollback_integration_manager_revision_success(chronicle_client):
     }
 
     with patch(
-        "secops.chronicle.integration.manager_revisions.chronicle_request",
+        "secops.chronicle.soar.integration.manager_revisions.chronicle_request",
         return_value=expected,
     ) as mock_request:
         result = rollback_integration_manager_revision(
@@ -357,7 +357,7 @@ def test_rollback_integration_manager_revision_success(chronicle_client):
 def test_rollback_integration_manager_revision_error(chronicle_client):
     """Test rollback_integration_manager_revision raises APIError on failure."""
     with patch(
-        "secops.chronicle.integration.manager_revisions.chronicle_request",
+        "secops.chronicle.soar.integration.manager_revisions.chronicle_request",
         side_effect=APIError("Failed to rollback manager revision"),
     ):
         with pytest.raises(APIError) as exc_info:
@@ -378,7 +378,7 @@ def test_list_integration_manager_revisions_custom_api_version(chronicle_client)
     expected = {"revisions": []}
 
     with patch(
-        "secops.chronicle.integration.manager_revisions.chronicle_paginated_request",
+        "secops.chronicle.soar.integration.manager_revisions.chronicle_paginated_request",
         return_value=expected,
     ) as mock_paginated:
         result = list_integration_manager_revisions(
@@ -399,7 +399,7 @@ def test_get_integration_manager_revision_custom_api_version(chronicle_client):
     expected = {"name": "revisions/r1"}
 
     with patch(
-        "secops.chronicle.integration.manager_revisions.chronicle_request",
+        "secops.chronicle.soar.integration.manager_revisions.chronicle_request",
         return_value=expected,
     ) as mock_request:
         result = get_integration_manager_revision(

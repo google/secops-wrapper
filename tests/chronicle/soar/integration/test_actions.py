@@ -20,7 +20,7 @@ import pytest
 
 from secops.chronicle.client import ChronicleClient
 from secops.chronicle.models import APIVersion
-from secops.chronicle.integration.actions import (
+from secops.chronicle.soar.integration.actions import (
     list_integration_actions,
     get_integration_action,
     delete_integration_action,
@@ -55,11 +55,11 @@ def test_list_integration_actions_success(chronicle_client):
     expected = {"actions": [{"name": "a1"}, {"name": "a2"}], "nextPageToken": "t"}
 
     with patch(
-        "secops.chronicle.integration.actions.chronicle_paginated_request",
+        "secops.chronicle.soar.integration.actions.chronicle_paginated_request",
         return_value=expected,
     ) as mock_paginated, patch(
         # Avoid assuming how format_resource_id encodes/cases values
-        "secops.chronicle.integration.actions.format_resource_id",
+        "secops.chronicle.soar.integration.actions.format_resource_id",
         return_value="My Integration",
     ):
         result = list_integration_actions(
@@ -88,7 +88,7 @@ def test_list_integration_actions_default_args(chronicle_client):
     expected = {"actions": []}
 
     with patch(
-        "secops.chronicle.integration.actions.chronicle_paginated_request",
+        "secops.chronicle.soar.integration.actions.chronicle_paginated_request",
         return_value=expected,
     ) as mock_paginated:
         result = list_integration_actions(
@@ -115,7 +115,7 @@ def test_list_integration_actions_with_filter_order_expand(chronicle_client):
     expected = {"actions": [{"name": "a1"}]}
 
     with patch(
-        "secops.chronicle.integration.actions.chronicle_paginated_request",
+        "secops.chronicle.soar.integration.actions.chronicle_paginated_request",
         return_value=expected,
     ) as mock_paginated:
         result = list_integration_actions(
@@ -149,7 +149,7 @@ def test_list_integration_actions_as_list(chronicle_client):
     expected = [{"name": "a1"}, {"name": "a2"}]
 
     with patch(
-        "secops.chronicle.integration.actions.chronicle_paginated_request",
+        "secops.chronicle.soar.integration.actions.chronicle_paginated_request",
         return_value=expected,
     ) as mock_paginated:
         result = list_integration_actions(
@@ -175,7 +175,7 @@ def test_list_integration_actions_as_list(chronicle_client):
 def test_list_integration_actions_error(chronicle_client):
     """Test list_integration_actions propagates APIError from helper."""
     with patch(
-        "secops.chronicle.integration.actions.chronicle_paginated_request",
+        "secops.chronicle.soar.integration.actions.chronicle_paginated_request",
         side_effect=APIError("Failed to list integration actions"),
     ):
         with pytest.raises(APIError) as exc_info:
@@ -195,7 +195,7 @@ def test_get_integration_action_success(chronicle_client):
     expected = {"name": "actions/a1", "displayName": "Action 1"}
 
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         return_value=expected,
     ) as mock_request:
         result = get_integration_action(
@@ -217,7 +217,7 @@ def test_get_integration_action_success(chronicle_client):
 def test_get_integration_action_error(chronicle_client):
     """Test get_integration_action raises APIError on failure."""
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         side_effect=APIError("Failed to get integration action"),
     ):
         with pytest.raises(APIError) as exc_info:
@@ -235,7 +235,7 @@ def test_get_integration_action_error(chronicle_client):
 def test_delete_integration_action_success(chronicle_client):
     """Test delete_integration_action issues DELETE request."""
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         return_value=None,
     ) as mock_request:
         delete_integration_action(
@@ -255,7 +255,7 @@ def test_delete_integration_action_success(chronicle_client):
 def test_delete_integration_action_error(chronicle_client):
     """Test delete_integration_action raises APIError on failure."""
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         side_effect=APIError("Failed to delete integration action"),
     ):
         with pytest.raises(APIError) as exc_info:
@@ -275,7 +275,7 @@ def test_create_integration_action_required_fields_only(chronicle_client):
     expected = {"name": "actions/new", "displayName": "My Action"}
 
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         return_value=expected,
     ) as mock_request:
         result = create_integration_action(
@@ -312,7 +312,7 @@ def test_create_integration_action_all_fields(chronicle_client):
     expected = {"name": "actions/new"}
 
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         return_value=expected,
     ) as mock_request:
         result = create_integration_action(
@@ -361,7 +361,7 @@ def test_create_integration_action_all_fields(chronicle_client):
 def test_create_integration_action_none_fields_excluded(chronicle_client):
     """Test that None optional fields are not included in request body."""
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         return_value={"name": "actions/new"},
     ) as mock_request:
         create_integration_action(
@@ -401,7 +401,7 @@ def test_create_integration_action_none_fields_excluded(chronicle_client):
 def test_create_integration_action_error(chronicle_client):
     """Test create_integration_action raises APIError on failure."""
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         side_effect=APIError("Failed to create integration action"),
     ):
         with pytest.raises(APIError) as exc_info:
@@ -426,7 +426,7 @@ def test_update_integration_action_with_explicit_update_mask(chronicle_client):
     expected = {"name": "actions/a1", "displayName": "New Name"}
 
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         return_value=expected,
     ) as mock_request:
         result = update_integration_action(
@@ -457,7 +457,7 @@ def test_update_integration_action_auto_update_mask(chronicle_client):
     expected = {"name": "actions/a1"}
 
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         return_value=expected,
     ) as mock_request:
         result = update_integration_action(
@@ -487,7 +487,7 @@ def test_update_integration_action_auto_update_mask(chronicle_client):
 def test_update_integration_action_error(chronicle_client):
     """Test update_integration_action raises APIError on failure."""
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         side_effect=APIError("Failed to update integration action"),
     ):
         with pytest.raises(APIError) as exc_info:
@@ -508,7 +508,7 @@ def test_execute_test_integration_action_success(chronicle_client):
     expected = {"output": "ok", "debugOutput": ""}
 
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         return_value=expected,
     ) as mock_request:
         action = {"displayName": "My Action", "script": "print('hi')"}
@@ -540,7 +540,7 @@ def test_execute_test_integration_action_success(chronicle_client):
 def test_execute_test_integration_action_error(chronicle_client):
     """Test test_integration_action raises APIError on failure."""
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         side_effect=APIError("Failed to test integration action"),
     ):
         with pytest.raises(APIError) as exc_info:
@@ -563,7 +563,7 @@ def test_get_integration_actions_by_environment_success(chronicle_client):
     expected = {"actions": [{"name": "a1"}]}
 
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         return_value=expected,
     ) as mock_request:
         result = get_integration_actions_by_environment(
@@ -587,7 +587,7 @@ def test_get_integration_actions_by_environment_success(chronicle_client):
 def test_get_integration_actions_by_environment_error(chronicle_client):
     """Test get_integration_actions_by_environment raises APIError on failure."""
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         side_effect=APIError("Failed to fetch actions by environment"),
     ):
         with pytest.raises(APIError) as exc_info:
@@ -608,7 +608,7 @@ def test_get_integration_action_template_default_async_false(chronicle_client):
     expected = {"script": "# template"}
 
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         return_value=expected,
     ) as mock_request:
         result = get_integration_action_template(
@@ -632,7 +632,7 @@ def test_get_integration_action_template_async_true(chronicle_client):
     expected = {"script": "# async template"}
 
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         return_value=expected,
     ) as mock_request:
         result = get_integration_action_template(
@@ -655,7 +655,7 @@ def test_get_integration_action_template_async_true(chronicle_client):
 def test_get_integration_action_template_error(chronicle_client):
     """Test get_integration_action_template raises APIError on failure."""
     with patch(
-        "secops.chronicle.integration.actions.chronicle_request",
+        "secops.chronicle.soar.integration.actions.chronicle_request",
         side_effect=APIError("Failed to fetch action template"),
     ):
         with pytest.raises(APIError) as exc_info:

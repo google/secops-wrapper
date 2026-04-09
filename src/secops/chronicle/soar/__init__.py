@@ -43,6 +43,37 @@ from secops.chronicle.soar.integration.marketplace_integrations import (
     install_marketplace_integration,
     uninstall_marketplace_integration,
 )
+from secops.chronicle.soar.integration.actions import (
+    create_integration_action,
+    delete_integration_action,
+    execute_integration_action_test,
+    get_integration_action,
+    get_integration_action_template,
+    get_integration_actions_by_environment,
+    list_integration_actions,
+    update_integration_action,
+)
+from secops.chronicle.soar.integration.action_revisions import (
+    create_integration_action_revision,
+    delete_integration_action_revision,
+    list_integration_action_revisions,
+    rollback_integration_action_revision,
+)
+from secops.chronicle.soar.integration.managers import (
+    create_integration_manager,
+    delete_integration_manager,
+    get_integration_manager,
+    get_integration_manager_template,
+    list_integration_managers,
+    update_integration_manager,
+)
+from secops.chronicle.soar.integration.manager_revisions import (
+    create_integration_manager_revision,
+    delete_integration_manager_revision,
+    get_integration_manager_revision,
+    list_integration_manager_revisions,
+    rollback_integration_manager_revision,
+)
 
 __all__ = [
     # client
@@ -71,4 +102,31 @@ __all__ = [
     "delete_integration_instance",
     "create_integration_instance",
     "update_integration_instance",
+    # Integration Actions
+    "create_integration_action",
+    "delete_integration_action",
+    "execute_integration_action_test",
+    "get_integration_action",
+    "get_integration_action_template",
+    "get_integration_actions_by_environment",
+    "list_integration_actions",
+    "update_integration_action",
+    # Integration Action Revisions
+    "create_integration_action_revision",
+    "delete_integration_action_revision",
+    "list_integration_action_revisions",
+    "rollback_integration_action_revision",
+    # Integration Managers
+    "create_integration_manager",
+    "delete_integration_manager",
+    "get_integration_manager",
+    "get_integration_manager_template",
+    "list_integration_managers",
+    "update_integration_manager",
+    # Integration Manager Revisions
+    "create_integration_manager_revision",
+    "delete_integration_manager_revision",
+    "get_integration_manager_revision",
+    "list_integration_manager_revisions",
+    "rollback_integration_manager_revision",
 ]
