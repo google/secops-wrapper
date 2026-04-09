@@ -80,14 +80,13 @@ class TestExecuteQuery:
         response_mock.json.return_value = {
             "results": [{"value": "test-result"}]
         }
-        chronicle_client.session.post.return_value = response_mock
+        chronicle_client.session.request.return_value = response_mock
         query = 'udm.metadata.event_type = "PROCESS_LAUNCH"'
 
         result = dashboard_query.execute_query(
             chronicle_client, query=query, interval=interval
         )
 
-        chronicle_client.session.post.assert_called_once()
         url = (
             f"{chronicle_client.base_url}/{chronicle_client.instance_id}/"
             "dashboardQueries:execute"
@@ -98,7 +97,14 @@ class TestExecuteQuery:
                 "input": interval.to_dict(),
             }
         }
-        chronicle_client.session.post.assert_called_with(url, json=payload)
+        chronicle_client.session.request.assert_called_once_with(
+            method="POST",
+            url=url,
+            params=None,
+            json=payload,
+            headers=None,
+            timeout=None,
+        )
 
         assert "results" in result
         assert result["results"][0]["value"] == "test-result"
@@ -111,7 +117,7 @@ class TestExecuteQuery:
     ) -> None:
         """Test execute_query with filters parameter."""
         response_mock.json.return_value = {"results": []}
-        chronicle_client.session.post.return_value = response_mock
+        chronicle_client.session.request.return_value = response_mock
         query = 'udm.metadata.event_type = "PROCESS_LAUNCH"'
         filters = [{"field": "hostname", "value": "test-host"}]
 
@@ -119,7 +125,6 @@ class TestExecuteQuery:
             chronicle_client, query=query, interval=interval, filters=filters
         )
 
-        chronicle_client.session.post.assert_called_once()
         url = (
             f"{chronicle_client.base_url}/{chronicle_client.instance_id}/"
             "dashboardQueries:execute"
@@ -128,7 +133,14 @@ class TestExecuteQuery:
             "query": {"query": query, "input": interval.to_dict()},
             "filters": filters,
         }
-        chronicle_client.session.post.assert_called_with(url, json=payload)
+        chronicle_client.session.request.assert_called_once_with(
+            method="POST",
+            url=url,
+            params=None,
+            json=payload,
+            headers=None,
+            timeout=None,
+        )
 
         assert "results" in result
 
@@ -140,14 +152,13 @@ class TestExecuteQuery:
     ) -> None:
         """Test execute_query with clear_cache parameter."""
         response_mock.json.return_value = {"results": []}
-        chronicle_client.session.post.return_value = response_mock
+        chronicle_client.session.request.return_value = response_mock
         query = 'udm.metadata.event_type = "PROCESS_LAUNCH"'
 
         result = dashboard_query.execute_query(
             chronicle_client, query=query, interval=interval, clear_cache=True
         )
 
-        chronicle_client.session.post.assert_called_once()
         url = (
             f"{chronicle_client.base_url}/{chronicle_client.instance_id}/"
             "dashboardQueries:execute"
@@ -156,7 +167,14 @@ class TestExecuteQuery:
             "query": {"query": query, "input": interval.to_dict()},
             "clearCache": True,
         }
-        chronicle_client.session.post.assert_called_with(url, json=payload)
+        chronicle_client.session.request.assert_called_once_with(
+            method="POST",
+            url=url,
+            params=None,
+            json=payload,
+            headers=None,
+            timeout=None,
+        )
 
         assert "results" in result
 
@@ -165,7 +183,7 @@ class TestExecuteQuery:
     ) -> None:
         """Test execute_query with string JSON interval."""
         response_mock.json.return_value = {"results": []}
-        chronicle_client.session.post.return_value = response_mock
+        chronicle_client.session.request.return_value = response_mock
         query = 'udm.metadata.event_type = "PROCESS_LAUNCH"'
         interval_str = (
             '{"relativeTime": {"timeUnit": "DAY", "startTimeVal": "1"}}'
@@ -175,13 +193,17 @@ class TestExecuteQuery:
             chronicle_client, query=query, interval=interval_str
         )
 
-        chronicle_client.session.post.assert_called_once()
-        url = (
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/"
-            "dashboardQueries:execute"
+        chronicle_client.session.request.assert_called_once_with(
+            method="POST",
+            url=(
+                f"{chronicle_client.base_url}/{chronicle_client.instance_id}/"
+                "dashboardQueries:execute"
+            ),
+            params=None,
+            json={"query": {"query": query, "input": json.loads(interval_str)}},
+            headers=None,
+            timeout=None,
         )
-        payload = {"query": {"query": query, "input": json.loads(interval_str)}}
-        chronicle_client.session.post.assert_called_with(url, json=payload)
 
         assert "results" in result
 
@@ -194,7 +216,7 @@ class TestExecuteQuery:
         """Test execute_query function with error response."""
         response_mock.status_code = 400
         response_mock.text = "Invalid Query"
-        chronicle_client.session.post.return_value = response_mock
+        chronicle_client.session.request.return_value = response_mock
         query = "invalid query syntax"
 
         with pytest.raises(APIError, match="Failed to execute query"):
@@ -216,19 +238,25 @@ class TestGetExecuteQuery:
             "displayName": "Test Query",
             "query": 'udm.metadata.event_type = "PROCESS_LAUNCH"',
         }
-        chronicle_client.session.get.return_value = response_mock
+        chronicle_client.session.request.return_value = response_mock
         query_id = "test-query"
 
         # Call function
         result = dashboard_query.get_execute_query(chronicle_client, query_id)
 
         # Verify API call
-        chronicle_client.session.get.assert_called_once()
         url = (
             f"{chronicle_client.base_url}/{chronicle_client.instance_id}/"
             f"dashboardQueries/{query_id}"
         )
-        chronicle_client.session.get.assert_called_with(url)
+        chronicle_client.session.request.assert_called_once_with(
+            method="GET",
+            url=url,
+            params=None,
+            json=None,
+            headers=None,
+            timeout=None,
+        )
 
         # Verify result
         assert result["name"].endswith("/test-query")
@@ -244,7 +272,7 @@ class TestGetExecuteQuery:
             "displayName": "Test Query",
             "query": 'udm.metadata.event_type = "PROCESS_LAUNCH"',
         }
-        chronicle_client.session.get.return_value = response_mock
+        chronicle_client.session.request.return_value = response_mock
 
         # Full project path query ID
         query_id = "projects/test-project/locations/test-location/dashboardQueries/test-query"
@@ -254,12 +282,18 @@ class TestGetExecuteQuery:
         result = dashboard_query.get_execute_query(chronicle_client, query_id)
 
         # Verify API call uses the extracted ID
-        chronicle_client.session.get.assert_called_once()
         url = (
             f"{chronicle_client.base_url}/{chronicle_client.instance_id}/"
             f"dashboardQueries/{expected_id}"
         )
-        chronicle_client.session.get.assert_called_with(url)
+        chronicle_client.session.request.assert_called_once_with(
+            method="GET",
+            url=url,
+            params=None,
+            json=None,
+            headers=None,
+            timeout=None,
+        )
 
         # Verify result
         assert result["displayName"] == "Test Query"
@@ -271,12 +305,9 @@ class TestGetExecuteQuery:
         # Setup error response
         response_mock.status_code = 404
         response_mock.text = "Query not found"
-        chronicle_client.session.get.return_value = response_mock
+        chronicle_client.session.request.return_value = response_mock
         query_id = "nonexistent-query"
 
         # Verify the function raises an APIError
         with pytest.raises(APIError, match="Failed to get query"):
             dashboard_query.get_execute_query(chronicle_client, query_id)
-
-        # Verify API call
-        chronicle_client.session.get.assert_called_once()

@@ -39,6 +39,11 @@ def setup_config_command(subparsers):
     set_parser = config_subparsers.add_parser(
         "set", help="Set configuration values"
     )
+    set_parser.add_argument(
+        "--local",
+        action="store_true",
+        help="Save configuration to current directory (.secops/config.json)",
+    )
     add_chronicle_args(set_parser)
     add_common_args(set_parser)
     add_time_range_args(set_parser)
@@ -47,6 +52,11 @@ def setup_config_command(subparsers):
     # View config command
     view_parser = config_subparsers.add_parser(
         "view", help="View current configuration"
+    )
+    view_parser.add_argument(
+        "--local",
+        action="store_true",
+        help="View configuration of current directory (.secops/config.json)",
     )
     view_parser.set_defaults(func=handle_config_view_command)
 
@@ -64,7 +74,8 @@ def handle_config_set_command(args, chronicle=None):
         args: Command line arguments
         chronicle: Not used for this command
     """
-    config = load_config()
+    scope = "local" if args.local else "global"
+    config = load_config(scope=scope)
 
     # Update config with new values
     if args.customer_id:
@@ -84,8 +95,9 @@ def handle_config_set_command(args, chronicle=None):
     if args.time_window is not None:
         config["time_window"] = args.time_window
 
-    save_config(config)
-    print(f"Configuration saved to {CONFIG_FILE}")
+    save_config(config, local=args.local)
+    target = "local" if args.local else "global"
+    print(f"Configuration saved to {target} config file")
 
     # Unused argument
     _ = (chronicle,)
@@ -98,13 +110,14 @@ def handle_config_view_command(args, chronicle=None):
         args: Command line arguments
         chronicle: Not used for this command
     """
-    config = load_config()
+    scope = "local" if args.local else "global"
+    config = load_config(scope=scope)
 
     if not config:
         print("No configuration found.")
         return
 
-    print("Current configuration:")
+    print(f"Current {scope} configuration:")
     for key, value in config.items():
         print(f"  {key}: {value}")
 

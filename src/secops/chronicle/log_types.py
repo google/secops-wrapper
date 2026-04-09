@@ -23,7 +23,11 @@ product or vendor.
 import base64
 from typing import TYPE_CHECKING, Any
 
-from secops.exceptions import APIError, SecOpsError
+from secops.chronicle.utils.request_utils import (
+    chronicle_paginated_request,
+    chronicle_request,
+)
+from secops.exceptions import SecOpsError
 
 if TYPE_CHECKING:
     from secops.chronicle.client import ChronicleClient
@@ -51,38 +55,14 @@ def _fetch_log_types_from_api(
     Raises:
         APIError: If the API request fails.
     """
-    url = f"{client.base_url}/{client.instance_id}/logTypes"
-    all_log_types: list[dict[str, Any]] = []
-
-    # Determine if we should fetch all pages or just one
-    fetch_all_pages = page_size is None
-    current_page_token = page_token
-
-    while True:
-        params: dict[str, Any] = {}
-
-        # Set page size (use default of 1000 if fetching all pages)
-        params["pageSize"] = page_size if page_size else 1000
-
-        # Add page token if provided
-        if current_page_token:
-            params["pageToken"] = current_page_token
-
-        response = client.session.get(url, params=params)
-        response.raise_for_status()
-        data = response.json()
-
-        # Add log types from response
-        all_log_types.extend(data.get("logTypes", []))
-
-        # Check for next page
-        current_page_token = data.get("nextPageToken")
-
-        # Stop if: no more pages OR page_size was specified (single page)
-        if not current_page_token or not fetch_all_pages:
-            break
-
-    return all_log_types
+    return chronicle_paginated_request(
+        client,
+        path="logTypes",
+        items_key="logTypes",
+        page_size=page_size,
+        page_token=page_token,
+        as_list=True,
+    )
 
 
 def load_log_types(
@@ -277,15 +257,14 @@ def classify_logs(
     if not isinstance(log_data, str):
         raise SecOpsError("log data must be a string")
 
-    url = f"{client.base_url}/{client.instance_id}/logs:classify"
-
     encoded_log = base64.b64encode(log_data.encode("utf-8")).decode("utf-8")
     payload = {"logData": [encoded_log]}
 
-    response = client.session.post(url, json=payload)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to classify log: {response.text}")
-
-    data = response.json()
+    data = chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="logs:classify",
+        json=payload,
+        error_message="Failed to classify log",
+    )
     return data.get("predictions", [])

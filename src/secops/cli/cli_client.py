@@ -26,6 +26,7 @@ from secops.cli.commands.help import setup_help_command
 from secops.cli.commands.investigation import setup_investigation_command
 from secops.cli.commands.iocs import setup_iocs_command
 from secops.cli.commands.log import setup_log_command
+from secops.cli.commands.log_type import setup_log_type_commands
 from secops.cli.commands.log_processing import (
     setup_log_processing_command,
 )
@@ -171,6 +172,7 @@ def build_parser() -> argparse.ArgumentParser:
     setup_investigation_command(subparsers)
     setup_iocs_command(subparsers)
     setup_log_command(subparsers)
+    setup_log_type_commands(subparsers)
     setup_log_processing_command(subparsers)
     setup_parser_command(subparsers)
     setup_parser_extension_command(subparsers)
@@ -194,7 +196,28 @@ def build_parser() -> argparse.ArgumentParser:
     setup_rule_retrohunt_command(subparsers)
     setup_integrations_command(subparsers)
 
+    # Add common args to all subparsers to support global flags after subcommand
+    # e.g. "secops search ... --output json"
+    # We use suppress_defaults=True so that if the flag is NOT provided,
+    # it doesn't override the global default (or the one from the specific
+    # command if it exists)
+    _apply_common_args_recursively(parser)
+
     return parser
+
+
+def _apply_common_args_recursively(parser: argparse.ArgumentParser) -> None:
+    """Recursively add common args to all subparsers.
+
+    Args:
+        parser: Parser to traverse
+    """
+    for action in getattr(parser, "_actions", []):
+        if hasattr(action, "choices") and isinstance(action.choices, dict):
+            for subparser in action.choices.values():
+                add_common_args(subparser, suppress_defaults=True)
+                add_chronicle_args(subparser, suppress_defaults=True)
+                _apply_common_args_recursively(subparser)
 
 
 def run(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:

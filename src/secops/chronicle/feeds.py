@@ -23,7 +23,10 @@ from dataclasses import asdict, dataclass
 from typing import Annotated, Any, TypedDict
 
 from secops.chronicle.models import APIVersion
-from secops.exceptions import APIError
+from secops.chronicle.utils.request_utils import (
+    chronicle_paginated_request,
+    chronicle_request,
+)
 
 # Use built-in StrEnum if Python 3.11+, otherwise create a compatible version
 if sys.version_info >= (3, 11):
@@ -135,7 +138,8 @@ def list_feeds(
     page_size: int = 100,
     page_token: str = None,
     api_version: APIVersion | None = None,
-) -> list[Feed]:
+    as_list: bool = True,
+) -> dict[str, Any] | list[Feed]:
     """List feeds.
 
     Args:
@@ -143,36 +147,26 @@ def list_feeds(
         page_size: The maximum number of feeds to return
         page_token: A page token, received from a previous ListFeeds call
         api_version: (Optional) Preferred API version to use.
+        as_list: If True, return only the list of feeds.
+            If False, return dict with metadata and pagination tokens.
+            Defaults to True for backward compatibility.
 
     Returns:
-        List of feed dictionaries
+        If as_list is True: List of feed dictionaries.
+        If as_list is False: Dict with feeds list and pagination metadata.
 
     Raises:
         APIError: If the API request fails
     """
-    feeds: list[dict] = []
-
-    url = (
-        f"{client.base_url(api_version, ALLOWED_ENDPOINT_VERSIONS)}/"
-        f"{client.instance_id}/feeds"
+    return chronicle_paginated_request(
+        client,
+        path="feeds",
+        items_key="feeds",
+        api_version=api_version,
+        page_size=page_size,
+        page_token=page_token,
+        as_list=as_list,
     )
-    more = True
-    while more:
-        params = {"pageSize": page_size, "pageToken": page_token}
-        response = client.session.get(url, params=params)
-        if response.status_code != 200:
-            raise APIError(f"Failed to list feeds: {response.text}")
-
-        data = response.json()
-        if "feeds" in data:
-            feeds.extend(data["feeds"])
-
-        if "next_page_token" in data:
-            params["pageToken"] = data["next_page_token"]
-        else:
-            more = False
-
-    return feeds
 
 
 def get_feed(
@@ -192,15 +186,13 @@ def get_feed(
         APIError: If the API request fails
     """
     feed_id = os.path.basename(feed_id)
-    url = (
-        f"{client.base_url(api_version, ALLOWED_ENDPOINT_VERSIONS)}/"
-        f"{client.instance_id}/feeds/{feed_id}"
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"feeds/{feed_id}",
+        api_version=api_version,
+        error_message="Failed to get feed",
     )
-    response = client.session.get(url)
-    if response.status_code != 200:
-        raise APIError(f"Failed to get feed: {response.text}")
-
-    return response.json()
 
 
 def create_feed(
@@ -221,15 +213,14 @@ def create_feed(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url(api_version, ALLOWED_ENDPOINT_VERSIONS)}/"
-        f"{client.instance_id}/feeds"
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="feeds",
+        api_version=api_version,
+        json=feed_config.to_dict(),
+        error_message="Failed to create feed",
     )
-    response = client.session.post(url, json=feed_config.to_dict())
-    if response.status_code != 200:
-        raise APIError(f"Failed to create feed: {response.text}")
-
-    return response.json()
 
 
 def update_feed(
@@ -254,11 +245,6 @@ def update_feed(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url(api_version, ALLOWED_ENDPOINT_VERSIONS)}/"
-        f"{client.instance_id}/feeds/{feed_id}"
-    )
-
     if update_mask is None:
         update_mask = []
         feed_dict = feed_config.to_dict()
@@ -270,13 +256,15 @@ def update_feed(
     if update_mask:
         params = {"updateMask": ",".join(update_mask)}
 
-    response = client.session.patch(
-        url, params=params, json=feed_config.to_dict()
+    return chronicle_request(
+        client,
+        method="PATCH",
+        endpoint_path=f"feeds/{feed_id}",
+        api_version=api_version,
+        params=params if params else None,
+        json=feed_config.to_dict(),
+        error_message="Failed to update feed",
     )
-    if response.status_code != 200:
-        raise APIError(f"Failed to update feed: {response.text}")
-
-    return response.json()
 
 
 def delete_feed(
@@ -292,13 +280,13 @@ def delete_feed(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url(api_version, ALLOWED_ENDPOINT_VERSIONS)}/"
-        f"{client.instance_id}/feeds/{feed_id}"
+    chronicle_request(
+        client,
+        method="DELETE",
+        endpoint_path=f"feeds/{feed_id}",
+        api_version=api_version,
+        error_message="Failed to delete feed",
     )
-    response = client.session.delete(url)
-    if response.status_code != 200:
-        raise APIError(f"Failed to delete feed: {response.text}")
 
 
 def disable_feed(
@@ -317,15 +305,13 @@ def disable_feed(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url(api_version, ALLOWED_ENDPOINT_VERSIONS)}/"
-        f"{client.instance_id}/feeds/{feed_id}:disable"
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=f"feeds/{feed_id}:disable",
+        api_version=api_version,
+        error_message="Failed to disable feed",
     )
-    response = client.session.post(url)
-    if response.status_code != 200:
-        raise APIError(f"Failed to disable feed: {response.text}")
-
-    return response.json()
 
 
 def enable_feed(
@@ -344,15 +330,13 @@ def enable_feed(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url(api_version, ALLOWED_ENDPOINT_VERSIONS)}/"
-        f"{client.instance_id}/feeds/{feed_id}:enable"
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=f"feeds/{feed_id}:enable",
+        api_version=api_version,
+        error_message="Failed to enable feed",
     )
-    response = client.session.post(url)
-    if response.status_code != 200:
-        raise APIError(f"Failed to enable feed: {response.text}")
-
-    return response.json()
 
 
 def generate_secret(
@@ -371,12 +355,10 @@ def generate_secret(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url(api_version, ALLOWED_ENDPOINT_VERSIONS)}/"
-        f"{client.instance_id}/feeds/{feed_id}:generateSecret"
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=f"feeds/{feed_id}:generateSecret",
+        api_version=api_version,
+        error_message="Failed to generate secret",
     )
-    response = client.session.post(url)
-    if response.status_code != 200:
-        raise APIError(f"Failed to generate secret: {response.text}")
-
-    return response.json()

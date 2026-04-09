@@ -91,15 +91,19 @@ def test_create_rule(chronicle_client, mock_response):
     """Test create_rule function."""
     # Arrange
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         # Act
         result = create_rule(chronicle_client, "rule test {}")
 
         # Assert
         mock_post.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules",
+            method="POST",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/rules",
+            params=None,
             json={"text": "rule test {}"},
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -108,7 +112,7 @@ def test_create_rule_error(chronicle_client, mock_error_response):
     """Test create_rule function with error response."""
     # Arrange
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         # Act & Assert
         with pytest.raises(APIError) as exc_info:
@@ -122,14 +126,19 @@ def test_get_rule(chronicle_client, mock_response):
     # Arrange
     rule_id = "ru_12345"
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         # Act
         result = get_rule(chronicle_client, rule_id)
 
         # Assert
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/{rule_id}"
+            method="GET",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/rules/{rule_id}",
+            params=None,
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -139,7 +148,7 @@ def test_get_rule_error(chronicle_client, mock_error_response):
     # Arrange
     rule_id = "ru_12345"
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         # Act & Assert
         with pytest.raises(APIError) as exc_info:
@@ -156,15 +165,19 @@ def test_list_rules(chronicle_client, mock_response):
     }
 
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         # Act
         result = list_rules(chronicle_client)
 
         # Assert
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules",
+            method="GET",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/rules",
             params={"pageSize": 1000, "view": "FULL"},
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
         assert len(result["rules"]) == 2
@@ -176,15 +189,19 @@ def test_list_rules_empty(chronicle_client, mock_response):
     mock_response.json.return_value = {}
 
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         # Act
         result = list_rules(chronicle_client)
 
         # Assert
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules",
+            method="GET",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/rules",
             params={"pageSize": 1000, "view": "FULL"},
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == {"rules": []}
         assert len(result["rules"]) == 0
@@ -217,7 +234,7 @@ def test_list_rules_pagination(chronicle_client):
             raise ValueError(f"Unexpected pageToken: {params.get('pageToken')}")
 
     # Setup session.get to use our dynamic mock response function
-    with patch.object(chronicle_client.session, "get") as mock_get:
+    with patch.object(chronicle_client.session, "request") as mock_get:
         mock_get.side_effect = get_mock_response
 
         # Act
@@ -240,13 +257,13 @@ def test_list_rules_error(chronicle_client, mock_error_response):
     """Test list_rules function with error response."""
     # Arrange
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         # Act & Assert
         with pytest.raises(APIError) as exc_info:
             list_rules(chronicle_client)
 
-        assert "Failed to list rules" in str(exc_info.value)
+        assert "API request failed" in str(exc_info.value)
 
 
 def test_update_rule(chronicle_client, mock_response):
@@ -256,16 +273,19 @@ def test_update_rule(chronicle_client, mock_response):
     rule_text = "rule updated_test {}"
 
     with patch.object(
-        chronicle_client.session, "patch", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_patch:
         # Act
         result = update_rule(chronicle_client, rule_id, rule_text)
 
         # Assert
         mock_patch.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/{rule_id}",
+            method="PATCH",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/rules/{rule_id}",
             params={"update_mask": "text"},
             json={"text": rule_text},
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -277,7 +297,7 @@ def test_update_rule_error(chronicle_client, mock_error_response):
     rule_text = "rule updated_test {}"
 
     with patch.object(
-        chronicle_client.session, "patch", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         # Act & Assert
         with pytest.raises(APIError) as exc_info:
@@ -293,15 +313,19 @@ def test_delete_rule(chronicle_client, mock_response):
     mock_response.json.return_value = {}  # Empty response on successful delete
 
     with patch.object(
-        chronicle_client.session, "delete", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_delete:
         # Act
         result = delete_rule(chronicle_client, rule_id)
 
         # Assert
         mock_delete.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/{rule_id}",
+            method="DELETE",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/rules/{rule_id}",
             params={},
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == {}
 
@@ -312,7 +336,7 @@ def test_delete_rule_error(chronicle_client, mock_error_response):
     rule_id = "ru_12345"
 
     with patch.object(
-        chronicle_client.session, "delete", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         # Act & Assert
         with pytest.raises(APIError) as exc_info:
@@ -328,15 +352,19 @@ def test_delete_rule_force(chronicle_client, mock_response):
     mock_response.json.return_value = {}  # Empty response on successful delete
 
     with patch.object(
-        chronicle_client.session, "delete", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_delete:
         # Act
         result = delete_rule(chronicle_client, rule_id, force=True)
 
         # Assert
         mock_delete.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/{rule_id}",
+            method="DELETE",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/rules/{rule_id}",
             params={"force": "true"},
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == {}
 
@@ -347,16 +375,19 @@ def test_enable_rule(chronicle_client, mock_response):
     rule_id = "ru_12345"
 
     with patch.object(
-        chronicle_client.session, "patch", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_patch:
         # Act
         result = enable_rule(chronicle_client, rule_id, True)
 
         # Assert
         mock_patch.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/{rule_id}/deployment",
+            method="PATCH",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/rules/{rule_id}/deployment",
             params={"update_mask": "enabled"},
             json={"enabled": True},
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -367,16 +398,19 @@ def test_disable_rule(chronicle_client, mock_response):
     rule_id = "ru_12345"
 
     with patch.object(
-        chronicle_client.session, "patch", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_patch:
         # Act
         result = enable_rule(chronicle_client, rule_id, False)
 
         # Assert
         mock_patch.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/{rule_id}/deployment",
+            method="PATCH",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/rules/{rule_id}/deployment",
             params={"update_mask": "enabled"},
             json={"enabled": False},
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -387,7 +421,7 @@ def test_enable_rule_error(chronicle_client, mock_error_response):
     rule_id = "ru_12345"
 
     with patch.object(
-        chronicle_client.session, "patch", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         # Act & Assert
         with pytest.raises(APIError) as exc_info:
@@ -404,15 +438,19 @@ def test_search_rules(chronicle_client, mock_response):
     }
 
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         # Act
         result = search_rules(chronicle_client, ".*")
 
         # Assert
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules",
+            method="GET",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/rules",
             params={"pageSize": 1000, "view": "FULL"},
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
         assert len(result["rules"]) == 2
@@ -422,7 +460,7 @@ def test_search_rules_error(chronicle_client, mock_error_response):
     """Test list_rules function with error response."""
     # Arrange
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         # Act & Assert
         with pytest.raises(SecOpsError) as exc_info:
@@ -441,17 +479,15 @@ def test_run_rule_test(chronicle_client, mock_streaming_response):
     # Mock the response to return a JSON array
     mock_response = Mock()
     mock_response.status_code = 200
-    mock_response.text = json.dumps(
-        [
-            {"progressPercent": 10},
-            {"progressPercent": 50},
-            {"detection": {"rule_id": "rule1", "data": "test"}},
-            {"progressPercent": 100},
-        ]
-    )
+    mock_response.json.return_value = [
+        {"progressPercent": 10},
+        {"progressPercent": 50},
+        {"detection": {"rule_id": "rule1", "data": "test"}},
+        {"progressPercent": 100},
+    ]
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         # Act
         results = list(
@@ -459,9 +495,11 @@ def test_run_rule_test(chronicle_client, mock_streaming_response):
         )
 
         # Assert
-        expected_url = f"{chronicle_client.base_url}/projects/{chronicle_client.project_id}/locations/{chronicle_client.region}/instances/{chronicle_client.customer_id}/legacy:legacyRunTestRule"
+        expected_url = f"{chronicle_client.base_url()}/projects/{chronicle_client.project_id}/locations/{chronicle_client.region}/instances/{chronicle_client.customer_id}/legacy:legacyRunTestRule"
         mock_post.assert_called_once_with(
-            expected_url,
+            method="POST",
+            url=expected_url,
+            params=None,
             json={
                 "ruleText": rule_text,
                 "timeRange": {
@@ -471,6 +509,7 @@ def test_run_rule_test(chronicle_client, mock_streaming_response):
                 "maxResults": 100,
                 "scope": "",
             },
+            headers=None,
             timeout=300,
         )
 
@@ -493,7 +532,7 @@ def test_run_rule_test_error(chronicle_client, mock_error_response):
     rule_text = "rule test {}"
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         # Act & Assert
         with pytest.raises(APIError) as exc_info:
@@ -549,7 +588,7 @@ def test_run_rule_test_handles_exceptions(chronicle_client):
 
     with patch.object(
         chronicle_client.session,
-        "post",
+        "request",
         side_effect=Exception("Connection error"),
     ):
         # Act & Assert
@@ -565,14 +604,19 @@ def test_get_rule_deployment(chronicle_client, mock_response):
     """Test get_rule_deployment function."""
     rule_id = "ru_12345"
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         from secops.chronicle.rule import get_rule_deployment
 
         result = get_rule_deployment(chronicle_client, rule_id)
 
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/{rule_id}/deployment"
+            method="GET",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/rules/{rule_id}/deployment",
+            params=None,
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -581,7 +625,7 @@ def test_get_rule_deployment_error(chronicle_client, mock_error_response):
     """Test get_rule_deployment function with error response."""
     rule_id = "ru_12345"
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         from secops.chronicle.rule import get_rule_deployment
 
@@ -598,15 +642,19 @@ def test_list_rule_deployments_single_page(chronicle_client, mock_response):
     }
 
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         from secops.chronicle.rule import list_rule_deployments
 
         result = list_rule_deployments(chronicle_client)
 
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/-/deployments",
-            params={},
+            method="GET",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/rules/-/deployments",
+            params={"pageSize": 1000},
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == {
             "ruleDeployments": [{"name": "dep1"}, {"name": "dep2"}]
@@ -638,7 +686,7 @@ def test_list_rule_deployments_pagination(chronicle_client):
         else:
             raise ValueError(f"Unexpected pageToken: {params.get('pageToken')}")
 
-    with patch.object(chronicle_client.session, "get") as mock_get:
+    with patch.object(chronicle_client.session, "request") as mock_get:
         mock_get.side_effect = get_mock_response
 
         from secops.chronicle.rule import list_rule_deployments
@@ -655,14 +703,14 @@ def test_list_rule_deployments_pagination(chronicle_client):
 def test_list_rule_deployments_error(chronicle_client, mock_error_response):
     """Test list_rule_deployments function with error response."""
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         from secops.chronicle.rule import list_rule_deployments
 
         with pytest.raises(APIError) as exc_info:
             list_rule_deployments(chronicle_client)
 
-        assert "Failed to list rule deployments" in str(exc_info.value)
+        assert "API request failed" in str(exc_info.value)
 
 
 def test_list_rule_deployments_empty(chronicle_client, mock_response):
@@ -671,7 +719,7 @@ def test_list_rule_deployments_empty(chronicle_client, mock_response):
     mock_response.json.return_value = {}
 
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         from secops.chronicle.rule import list_rule_deployments
 
@@ -680,8 +728,12 @@ def test_list_rule_deployments_empty(chronicle_client, mock_response):
 
         # Assert
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/-/deployments",
-            params={},
+            method="GET",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/rules/-/deployments",
+            params={"pageSize": 1000},
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == {"ruleDeployments": []}
         assert len(result["ruleDeployments"]) == 0
@@ -695,7 +747,7 @@ def test_list_rule_deployments_with_filter(chronicle_client, mock_response):
     }
 
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         from secops.chronicle.rule import list_rule_deployments
 
@@ -707,8 +759,12 @@ def test_list_rule_deployments_with_filter(chronicle_client, mock_response):
 
         # Assert
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/rules/-/deployments",
-            params={"filter": filter_query},
+            method="GET",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/rules/-/deployments",
+            params={"pageSize": 1000, "filter": filter_query},
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == {
             "ruleDeployments": [
@@ -716,3 +772,39 @@ def test_list_rule_deployments_with_filter(chronicle_client, mock_response):
             ]
         }
         assert len(result["ruleDeployments"]) == 1
+
+
+def test_list_rules_as_list(chronicle_client):
+    """Test list_rules function with as_list=True."""
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "rules": [{"name": "rule1"}, {"name": "rule2"}]
+    }
+
+    with patch.object(
+        chronicle_client.session, "request", return_value=mock_response
+    ) as mock_get:
+        # Act
+        result = list_rules(chronicle_client, as_list=True)
+
+        # Assert
+        mock_get.assert_called_once()
+        assert isinstance(result, list)
+        assert len(result) == 2
+        assert result[0]["name"] == "rule1"
+        assert result[1]["name"] == "rule2"
+
+
+def test_list_rules_empty_as_list(chronicle_client):
+    """Test list_rules function with as_list=True when no rules exist."""
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {}
+
+    with patch.object(
+        chronicle_client.session, "request", return_value=mock_response
+    ):
+        result = list_rules(chronicle_client, as_list=True)
+        assert isinstance(result, list)
+        assert len(result) == 0

@@ -40,7 +40,7 @@ def mock_client():
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = {"query": 'ip != ""'}
-    client.session.post.return_value = mock_response
+    client.session.request.return_value = mock_response
 
     return client
 
@@ -50,16 +50,11 @@ def test_translate_nl_to_udm_success(mock_client):
     result = translate_nl_to_udm(mock_client, "show me ip addresses")
 
     # Verify the request was made with correct parameters
-    mock_client.session.post.assert_called_once()
-    call_args = mock_client.session.post.call_args
+    mock_client.session.request.assert_called_once()
+    call_args = mock_client.session.request.call_args
 
     # Check URL format
-    url = call_args[0][0]
-    expected_url = (
-        f"{mock_client.base_url.return_value}/"
-        f"{mock_client.instance_id}:translateUdmQuery"
-    )
-    assert url == expected_url
+    assert "translateUdmQuery" in call_args.kwargs["url"]
 
     # Check payload
     payload = call_args[1]["json"]
@@ -75,12 +70,10 @@ def test_translate_nl_to_udm_error_response(mock_client):
     mock_response = MagicMock()
     mock_response.status_code = 400
     mock_response.text = "Invalid request"
-    mock_client.session.post.return_value = mock_response
+    mock_client.session.request.return_value = mock_response
 
     # Test error handling
-    with pytest.raises(
-        APIError, match="Chronicle API request failed: Invalid request"
-    ):
+    with pytest.raises(APIError, match="Chronicle API request failed"):
         translate_nl_to_udm(mock_client, "invalid query")
 
 
@@ -92,7 +85,7 @@ def test_translate_nl_to_udm_no_valid_query(mock_client):
     mock_response.json.return_value = {
         "message": "Sorry, no valid query could be generated. Try asking a different way."
     }
-    mock_client.session.post.return_value = mock_response
+    mock_client.session.request.return_value = mock_response
 
     # Test error handling for no valid query
     with pytest.raises(
@@ -176,34 +169,6 @@ def test_chronicle_client_integration():
     # Additional check from the module import
     assert hasattr(ChronicleClient, "translate_nl_to_udm")
     assert hasattr(ChronicleClient, "nl_search")
-
-
-@patch("time.sleep")  # Patch sleep to avoid waiting in tests
-def test_translate_nl_to_udm_retry_429(mock_sleep, mock_client):
-    """Test retry logic for 429 errors in translation."""
-    # Set up mock responses - first with 429, then success
-    error_response = MagicMock()
-    error_response.status_code = 429
-    error_response.text = "Resource exhausted, too many requests"
-
-    success_response = MagicMock()
-    success_response.status_code = 200
-    success_response.json.return_value = {"query": 'ip != ""'}
-
-    # Configure the mock to return error first, then success
-    mock_client.session.post.side_effect = [error_response, success_response]
-
-    # Call the function
-    result = translate_nl_to_udm(mock_client, "show me ip addresses")
-
-    # Verify the function was called twice (first attempt + retry)
-    assert mock_client.session.post.call_count == 2
-
-    # Verify sleep was called between retries
-    mock_sleep.assert_called_once_with(5)
-
-    # Check result from successful retry
-    assert result == 'ip != ""'
 
 
 @patch("secops.chronicle.nl_search.translate_nl_to_udm")

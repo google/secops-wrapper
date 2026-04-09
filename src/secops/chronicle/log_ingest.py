@@ -24,7 +24,10 @@ from datetime import datetime
 from typing import Any
 
 from secops.chronicle.log_types import is_valid_log_type
-from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import (
+    chronicle_request,
+    chronicle_paginated_request,
+)
 from secops.exceptions import APIError
 
 # Forward declaration for type hinting to avoid circular import
@@ -344,7 +347,6 @@ def create_forwarder(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/forwarders"
 
     # Create request payload
     payload = {
@@ -375,62 +377,46 @@ def create_forwarder(
     if http_settings:
         payload["config"]["serverSettings"]["httpSettings"] = http_settings
 
-    # Send the request
-    response = client.session.post(url, json=payload)
-
-    # Check for errors
-    if response.status_code != 200:
-        raise APIError(f"Failed to create forwarder: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="forwarders",
+        json=payload,
+        error_message="Failed to create forwarder",
+    )
 
 
 def list_forwarders(
     client: "ChronicleClient",
     page_size: int | None = None,
     page_token: str | None = None,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[Any]:
     """List forwarders in Chronicle.
 
     Args:
         client: ChronicleClient instance
         page_size: Maximum number of forwarders to return (1-1000)
         page_token: Token for pagination
+        as_list: If True, return only the list of forwarders.
+            If False, return dict with metadata and pagination tokens.
 
     Returns:
-        Dictionary containing list of forwarders and next page token
+        If as_list is True: List of forwarders.
+        If as_list is False: Dict with forwarders list and pagination metadata.
 
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/forwarders"
 
-    # Add query parameters
-    params = {}
-    if page_size:
-        params["pageSize"] = min(1000, max(1, page_size))
-    if page_token:
-        params["pageToken"] = page_token
-
-    # Send the request
-    response = client.session.get(url, params=params)
-
-    # Check for errors
-    if response.status_code != 200:
-        raise APIError(f"Failed to list forwarders: {response.text}")
-
-    result = response.json()
-
-    # If there's a next page token, fetch additional pages and combine results
-    if not page_size and "nextPageToken" in result and result["nextPageToken"]:
-        next_page = list_forwarders(client, page_size, result["nextPageToken"])
-        if "forwarders" in next_page and next_page["forwarders"]:
-            # Combine the forwarders from both pages
-            result["forwarders"].extend(next_page["forwarders"])
-        # Remove the nextPageToken since we've fetched all pages
-        result.pop("nextPageToken")
-
-    return result
+    return chronicle_paginated_request(
+        client,
+        path="forwarders",
+        items_key="forwarders",
+        page_size=min(1000, max(1, page_size)) if page_size else None,
+        page_token=page_token,
+        as_list=as_list,
+    )
 
 
 def get_forwarder(
@@ -448,16 +434,12 @@ def get_forwarder(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/forwarders/{forwarder_id}"
-
-    # Send the request
-    response = client.session.get(url)
-
-    # Check for errors
-    if response.status_code != 200:
-        raise APIError(f"Failed to get forwarder: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"forwarders/{forwarder_id}",
+        error_message="Failed to get forwarder",
+    )
 
 
 def update_forwarder(
@@ -495,7 +477,6 @@ def update_forwarder(
     Raises:
         APIError: If the API returns an error response.
     """
-    url = f"{client.base_url}/{client.instance_id}/forwarders/{forwarder_id}"
 
     auto_mask = []  # Update mask if not provided in argument
     payload = {}
@@ -578,14 +559,14 @@ def update_forwarder(
     else:
         params["updateMask"] = ",".join(auto_mask)
 
-    # Send the request
-    response = client.session.patch(url, json=payload, params=params)
-
-    # Check for errors
-    if response.status_code != 200:
-        raise APIError(f"Failed to update forwarder: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="PATCH",
+        endpoint_path=f"forwarders/{forwarder_id}",
+        params=params,
+        json=payload,
+        error_message="Failed to update forwarder",
+    )
 
 
 def delete_forwarder(
@@ -604,14 +585,12 @@ def delete_forwarder(
     Raises:
         APIError: If the API returns an error response.
     """
-    url = f"{client.base_url}/{client.instance_id}/forwarders/{forwarder_id}"
-
-    response = client.session.delete(url)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to delete forwarder: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="DELETE",
+        endpoint_path=f"forwarders/{forwarder_id}",
+        error_message="Failed to delete forwarder",
+    )
 
 
 def _find_forwarder_by_display_name(
@@ -858,12 +837,6 @@ def ingest_log(
     else:
         forwarder_resource = forwarder_id
 
-    # Construct the import URL
-    url = (
-        f"{client.base_url}/{client.instance_id}/logTypes"
-        f"/{log_type}/logs:import"
-    )
-
     if isinstance(log_message, str):
         initialize_multi_line_formats()
         # Split string into individual log entries based on log type
@@ -904,14 +877,13 @@ def ingest_log(
     # Construct the request payload
     payload = {"inline_source": {"logs": logs, "forwarder": forwarder_resource}}
 
-    # Send the request
-    response = client.session.post(url, json=payload)
-
-    # Check for errors
-    if response.status_code != 200:
-        raise APIError(f"Failed to ingest log: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=f"logTypes/{log_type}/logs:import",
+        json=payload,
+        error_message="Failed to ingest log",
+    )
 
 
 def ingest_udm(
@@ -1011,35 +983,23 @@ def ingest_udm(
         if add_missing_ids and "id" not in event["metadata"]:
             event["metadata"]["id"] = str(uuid.uuid4())
 
-    url = (
-        f"{client.base_url(APIVersion.V1ALPHA)}/{client.instance_id}"
-        f"/events:import"
-    )
-
     # Format the request body
     body = {
         "inline_source": {"events": [{"udm": event} for event in events_copy]}
     }
 
-    # Make the API request
-    response = client.session.post(url, json=body)
-
-    # Check for errors
-    if response.status_code >= 400:
-        error_message = f"Failed to ingest UDM events: {response.text}"
-        raise APIError(error_message)
-
-    response_data = {}
-
-    # Parse response if it has content
-    if response.text.strip():
-        try:
-            response_data = response.json()
-        except ValueError:
-            # If JSON parsing fails, provide the raw text in the return value
-            response_data = {"raw_response": response.text}
-
-    return response_data
+    try:
+        return chronicle_request(
+            client,
+            method="POST",
+            endpoint_path="events:import",
+            json=body,
+            expected_status={200, 201},
+            error_message="Failed to ingest UDM events",
+        )
+    except APIError as e:
+        error_message = f"Failed to ingest UDM events: {str(e)}"
+        raise APIError(error_message) from e
 
 
 def import_entities(
@@ -1071,28 +1031,13 @@ def import_entities(
     if not log_type:
         raise ValueError("No log type provided")
 
-    # Prepare the request
-    url = f"{client.base_url}/{client.instance_id}/entities:import"
-
-    # Format the request body
     body = {"inline_source": {"entities": entities, "log_type": log_type}}
 
-    # Make the API request
-    response = client.session.post(url, json=body)
-
-    # Check for errors
-    if response.status_code >= 400:
-        error_message = f"Failed to import entities: {response.text}"
-        raise APIError(error_message)
-
-    response_data = {}
-
-    # Parse response if it has content
-    if response.text.strip():
-        try:
-            response_data = response.json()
-        except ValueError:
-            # If JSON parsing fails, provide the raw text in the return value
-            response_data = {"raw_response": response.text}
-
-    return response_data
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="entities:import",
+        json=body,
+        expected_status={200, 201},
+        error_message="Failed to import entities",
+    )

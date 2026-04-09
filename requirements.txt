@@ -1,11 +1,4 @@
-pytest
-pytest-cov
-build
-black
-packaging
-pathspec
-protobuf
-pylint
-twine
-python-dotenv
-requests
+google-auth>=2.0.0
+google-auth-httplib2>=0.1.0
+google-api-python-client>=2.0.0
+requests>=2.25.1

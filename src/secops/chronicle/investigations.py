@@ -17,7 +17,14 @@
 from typing import Any
 
 from secops.chronicle.models import APIVersion, DetectionType
-from secops.chronicle.utils.request_utils import chronicle_request
+from secops.chronicle.utils.format_utils import (
+    format_resource_id,
+    remove_none_values,
+)
+from secops.chronicle.utils.request_utils import (
+    chronicle_paginated_request,
+    chronicle_request,
+)
 
 
 def fetch_associated_investigations(
@@ -68,26 +75,22 @@ def fetch_associated_investigations(
                     f'Valid values: {", ".join(valid)}'
                 ) from ke
 
-    params: dict[str, Any] = {"detectionType": detection_type}
-
-    if alert_ids is not None:
-        params["alertIds"] = alert_ids
-
-    if case_ids is not None:
-        params["caseIds"] = case_ids
-
-    if association_limit_per_detection is not None:
-        params["associationLimitPerDetection"] = association_limit_per_detection
-
-    if order_by:
-        params["orderBy"] = order_by
+    params = remove_none_values(
+        {
+            "detectionType": detection_type,
+            "alertIds": alert_ids,
+            "caseIds": case_ids,
+            "associationLimitPerDetection": association_limit_per_detection,
+            "orderBy": order_by,
+        }
+    )
 
     return chronicle_request(
         client,
         method="GET",
         endpoint_path="investigations:fetchAssociated",
         api_version=APIVersion.V1ALPHA,
-        params=params,
+        params=params or None,
         error_message="Failed to fetch associated investigations",
     )
 
@@ -108,15 +111,12 @@ def get_investigation(
     Raises:
         APIError: If the API request fails.
     """
-    if not investigation_id.startswith("projects/"):
-        endpoint_path = f"investigations/{investigation_id}"
-    else:
-        endpoint_path = investigation_id
+    inv_id = format_resource_id(investigation_id)
 
     return chronicle_request(
         client,
         method="GET",
-        endpoint_path=endpoint_path,
+        endpoint_path=f"investigations/{inv_id}",
         api_version=APIVersion.V1ALPHA,
         error_message="Failed to get investigation",
     )
@@ -128,7 +128,8 @@ def list_investigations(
     page_token: str | None = None,
     filter_expr: str | None = None,
     order_by: str | None = None,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[Any]:
     """Lists investigations.
 
     Args:
@@ -143,33 +144,33 @@ def list_investigations(
         order_by: Configures ordering of investigations. Default is by
             create time descending. Supported fields: "startTime",
             "endTime", "displayName".
+        as_list: If True, return only the list of investigations.
+            If False, return dict with metadata and pagination tokens.
 
     Returns:
-        Dictionary containing:
-            - investigations: List of investigation objects
-            - nextPageToken: Token for next page (if more results exist)
-            - totalSize: Total number of investigations matching request
+        If as_list is True: List of investigations.
+        If as_list is False: Dict with investigations list, nextPageToken,
+            and totalSize.
 
     Raises:
         APIError: If the API request fails.
     """
-    params: dict[str, Any] = {}
-    if page_size is not None:
-        params["pageSize"] = page_size
-    if page_token:
-        params["pageToken"] = page_token
-    if filter_expr:
-        params["filter"] = filter_expr
-    if order_by:
-        params["orderBy"] = order_by
+    extra_params = remove_none_values(
+        {
+            "filter": filter_expr,
+            "orderBy": order_by,
+        }
+    )
 
-    return chronicle_request(
+    return chronicle_paginated_request(
         client,
-        method="GET",
-        endpoint_path="investigations",
+        path="investigations",
+        items_key="investigations",
         api_version=APIVersion.V1ALPHA,
-        params=params,
-        error_message="Failed to list investigations",
+        page_size=page_size,
+        page_token=page_token,
+        extra_params=extra_params or None,
+        as_list=as_list,
     )
 
 

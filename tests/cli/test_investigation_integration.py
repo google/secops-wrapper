@@ -27,7 +27,11 @@ from tests.config import CHRONICLE_CONFIG
 def test_cli_investigation_list_and_get(cli_env, common_args):
     """Test investigation list and get commands in a workflow."""
     # Step 1: List investigations
-    list_cmd = ["secops"] + common_args + ["investigation", "list"]
+    list_cmd = (
+        ["secops"]
+        + common_args
+        + ["investigation", "list", "--page-size", "10"]
+    )
 
     list_result = subprocess.run(
         list_cmd, env=cli_env, capture_output=True, text=True

@@ -17,7 +17,10 @@
 from datetime import datetime
 from typing import Any, Literal
 
-from secops.exceptions import APIError
+from secops.chronicle.utils.request_utils import (
+    chronicle_request,
+    chronicle_paginated_request,
+)
 
 
 def list_detections(
@@ -31,7 +34,8 @@ def list_detections(
     alert_state: str | None = None,
     page_size: int | None = None,
     page_token: str | None = None,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[Any]:
     """List detections for a rule.
 
     Args:
@@ -53,19 +57,17 @@ def list_detections(
             - "ALERTING"
         page_size: If provided, maximum number of detections to return
         page_token: If provided, continuation token for pagination
+        as_list: If True, return only the list of detections.
+            If False, return dict with metadata and pagination tokens.
 
     Returns:
-        Dictionary containing detection information
+        If as_list is True: List of detections.
+        If as_list is False: Dict with detections list and pagination metadata.
 
     Raises:
         APIError: If the API request fails
         ValueError: If an invalid alert_state is provided
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/legacy:legacySearchDetections"
-    )
-
-    # Define valid alert states
     valid_alert_states = ["UNSPECIFIED", "NOT_ALERTING", "ALERTING"]
     valid_list_basis = [
         "LIST_BASIS_UNSPECIFIED",
@@ -73,10 +75,7 @@ def list_detections(
         "DETECTION_TIME",
     ]
 
-    # Build request parameters
-    params = {
-        "rule_id": rule_id,
-    }
+    extra_params = {"rule_id": rule_id}
 
     if alert_state:
         if alert_state not in valid_alert_states:
@@ -84,7 +83,7 @@ def list_detections(
                 f"alert_state must be one of {valid_alert_states}, "
                 f"got {alert_state}"
             )
-        params["alertState"] = alert_state
+        extra_params["alertState"] = alert_state
 
     if list_basis:
         if list_basis not in valid_list_basis:
@@ -92,25 +91,22 @@ def list_detections(
                 f"list_basis must be one of {valid_list_basis}, "
                 f"got {list_basis}"
             )
-        params["listBasis"] = list_basis
+        extra_params["listBasis"] = list_basis
 
     if start_time:
-        params["startTime"] = start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        extra_params["startTime"] = start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     if end_time:
-        params["endTime"] = end_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        extra_params["endTime"] = end_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
-    if page_size:
-        params["pageSize"] = page_size
-
-    if page_token:
-        params["pageToken"] = page_token
-
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to list detections: {response.text}")
-
-    return response.json()
+    return chronicle_paginated_request(
+        client,
+        path="legacy:legacySearchDetections",
+        items_key="detections",
+        page_size=page_size,
+        page_token=page_token,
+        extra_params=extra_params,
+        as_list=as_list,
+    )
 
 
 def list_errors(client, rule_id: str) -> dict[str, Any]:
@@ -129,18 +125,13 @@ def list_errors(client, rule_id: str) -> dict[str, Any]:
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/ruleExecutionErrors"
-
-    # Create the filter for the specific rule
     rule_filter = f'rule = "{client.instance_id}/rules/{rule_id}"'
+    params = {"filter": rule_filter}
 
-    params = {
-        "filter": rule_filter,
-    }
-
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to list rule errors: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path="ruleExecutionErrors",
+        params=params,
+        error_message="Failed to list rule errors",
+    )

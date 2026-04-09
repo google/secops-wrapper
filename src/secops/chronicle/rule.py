@@ -21,6 +21,10 @@ from datetime import datetime, timezone
 from typing import Any, Literal
 
 from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.request_utils import (
+    chronicle_paginated_request,
+    chronicle_request,
+)
 from secops.exceptions import APIError, SecOpsError
 
 
@@ -39,21 +43,15 @@ def create_rule(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url(api_version, list(APIVersion))}/"
-        f"{client.instance_id}/rules"
+
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="rules",
+        api_version=api_version if api_version else None,
+        json={"text": rule_text},
+        error_message="Failed to create rule",
     )
-
-    body = {
-        "text": rule_text,
-    }
-
-    response = client.session.post(url, json=body)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to create rule: {response.text}")
-
-    return response.json()
 
 
 def get_rule(
@@ -73,17 +71,13 @@ def get_rule(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url(api_version, list(APIVersion))}/"
-        f"{client.instance_id}/rules/{rule_id}"
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"rules/{rule_id}",
+        api_version=api_version,
+        error_message="Failed to get rule",
     )
-
-    response = client.session.get(url)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to get rule: {response.text}")
-
-    return response.json()
 
 
 def list_rules(
@@ -92,7 +86,8 @@ def list_rules(
     page_size: int | None = None,
     page_token: str | None = None,
     api_version: APIVersion | None = APIVersion.V1,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[Any]:
     """Gets a list of rules.
 
     Args:
@@ -107,51 +102,26 @@ def list_rules(
         page_size: Maximum number of rules to return per page.
         page_token: Token for the next page of results, if available.
         api_version: (Optional) Preferred API version to use.
+        as_list: If True, return only the list of rules.
+            If False, return dict with metadata and pagination tokens.
 
     Returns:
-        Dictionary containing information about rules
+        If as_list is True: List of rules.
+        If as_list is False: Dict with rules list and pagination metadata.
 
     Raises:
         APIError: If the API request fails
     """
-    more = True
-    rules = {"rules": []}
-    params = {"pageSize": 1000 if not page_size else page_size, "view": view}
-    if page_token:
-        params["pageToken"] = page_token
-
-    while more:
-        url = (
-            f"{client.base_url(api_version, list(APIVersion))}/"
-            f"{client.instance_id}/rules"
-        )
-        response = client.session.get(url, params=params)
-
-        if response.status_code != 200:
-            raise APIError(f"Failed to list rules: {response.text}")
-
-        data = response.json()
-        if not data:
-            # no rules, api returns {}
-            return rules
-
-        # If Page size is provided return fetched rules as user expects
-        # only that many rules in the response
-        if page_size:
-            rules.update(**data)
-            more = False
-            break
-        else:  # Else auto fetch rest pages (Backward Compatibility)
-            rules["rules"].extend(data["rules"])
-
-        if "nextPageToken" in data:
-            params["pageToken"] = data["nextPageToken"]
-        else:
-            if "pageToken" in params:
-                del params["pageToken"]
-            more = False
-
-    return rules
+    return chronicle_paginated_request(
+        client,
+        path="rules",
+        items_key="rules",
+        api_version=api_version,
+        page_size=page_size,
+        page_token=page_token,
+        extra_params={"view": view} if view else {},
+        as_list=as_list,
+    )
 
 
 def update_rule(
@@ -173,23 +143,18 @@ def update_rule(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url(api_version, list(APIVersion))}/"
-        f"{client.instance_id}/rules/{rule_id}"
-    )
-
-    body = {
-        "text": rule_text,
-    }
-
+    body = {"text": rule_text}
     params = {"update_mask": "text"}
 
-    response = client.session.patch(url, params=params, json=body)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to update rule: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="PATCH",
+        endpoint_path=f"rules/{rule_id}",
+        api_version=api_version,
+        params=params,
+        json=body,
+        error_message="Failed to update rule",
+    )
 
 
 def delete_rule(
@@ -211,22 +176,18 @@ def delete_rule(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url(api_version, list(APIVersion))}/"
-        f"{client.instance_id}/rules/{rule_id}"
-    )
-
     params = {}
     if force:
         params["force"] = "true"
 
-    response = client.session.delete(url, params=params)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to delete rule: {response.text}")
-
-    # The API returns an empty JSON object on success
-    return response.json()
+    return chronicle_request(
+        client,
+        method="DELETE",
+        endpoint_path=f"rules/{rule_id}",
+        api_version=api_version,
+        params=params,
+        error_message="Failed to delete rule",
+    )
 
 
 def enable_rule(client, rule_id: str, enabled: bool = True) -> dict[str, Any]:
@@ -283,14 +244,13 @@ def get_rule_deployment(
         APIError: If the API request fails.
 
     """
-    url = (
-        f"{client.base_url(api_version, list(APIVersion))}/"
-        f"{client.instance_id}/rules/{rule_id}/deployment"
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"rules/{rule_id}/deployment",
+        api_version=api_version,
+        error_message="Failed to get rule deployment",
     )
-    response = client.session.get(url)
-    if response.status_code != 200:
-        raise APIError(f"Failed to get rule deployment: {response.text}")
-    return response.json()
 
 
 def list_rule_deployments(
@@ -299,7 +259,8 @@ def list_rule_deployments(
     page_token: str | None = None,
     filter_query: str | None = None,
     api_version: APIVersion | None = APIVersion.V1,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[Any]:
     """Lists rule deployments for the instance.
 
     Args:
@@ -309,54 +270,33 @@ def list_rule_deployments(
         page_token: Token for the next page of results, if available.
         filter_query: Optional filter query to restrict results.
             Filters results based on expression matching specific fields.
+        api_version: (Optional) Preferred API version to use.
+        as_list: If True, return only the list of rule deployments.
+            If False, return dict with metadata and pagination tokens.
 
     Returns:
-        Dictionary containing rule deployment entries. If ``page_size`` is not
-        provided, returns an aggregated object with a ``deployments`` list.
+        If as_list is True: List of rule deployments.
+        If as_list is False: Dict with ruleDeployments list and
+            pagination metadata.
 
     Raises:
         APIError: If the API request fails.
 
     """
-    params: dict[str, Any] = {}
-    if page_size:
-        params["pageSize"] = page_size
-    if page_token:
-        params["pageToken"] = page_token
+    extra_params = {}
     if filter_query:
-        params["filter"] = filter_query
+        extra_params["filter"] = filter_query
 
-    url = (
-        f"{client.base_url(api_version, list(APIVersion))}/"
-        f"{client.instance_id}/rules/-/deployments"
+    return chronicle_paginated_request(
+        client,
+        path="rules/-/deployments",
+        items_key="ruleDeployments",
+        api_version=api_version,
+        page_size=page_size,
+        page_token=page_token,
+        extra_params=extra_params if extra_params else None,
+        as_list=as_list,
     )
-
-    if page_size:
-        response = client.session.get(url, params=params)
-        if response.status_code != 200:
-            raise APIError(f"Failed to list rule deployments: {response.text}")
-        return response.json()
-
-    deployments: dict[str, Any] = {"ruleDeployments": []}
-    more = True
-    while more:
-        response = client.session.get(url, params=params)
-        if response.status_code != 200:
-            raise APIError(f"Failed to list rule deployments: {response.text}")
-        data = response.json()
-        if not data:
-            # no rule deployments, api returns {}
-            return deployments
-
-        deployments["ruleDeployments"].extend(data["ruleDeployments"])
-
-        if "nextPageToken" in data:
-            params["pageToken"] = data["nextPageToken"]
-        else:
-            params.pop("pageToken", None)
-            more = False
-
-    return deployments
 
 
 def search_rules(
@@ -379,7 +319,7 @@ def search_rules(
     except re.error as e:
         raise SecOpsError(f"Invalid regular expression: {query}") from e
 
-    rules = list_rules(client, api_version=api_version)
+    rules = list_rules(client, api_version=api_version, as_list=False)
     results = {"rules": []}
     for rule in rules["rules"]:
         rule_text = rule.get("text", "")
@@ -438,9 +378,6 @@ def run_rule_test(
     start_time_str = start_time.strftime("%Y-%m-%dT%H:%M:%SZ")
     end_time_str = end_time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    # Fix: Use the full path for the legacy API endpoint
-    url = f"{client.base_url}/{client.instance_id}/legacy:legacyRunTestRule"
-
     body = {
         "ruleText": rule_text,
         "timeRange": {
@@ -448,25 +385,25 @@ def run_rule_test(
             "endTime": end_time_str,
         },
         "maxResults": max_results,
-        "scope": "",  # Empty scope parameter
+        "scope": "",
     }
 
-    # Make the request and get the complete response
     try:
-        response = client.session.post(url, json=body, timeout=timeout)
+        json_array = chronicle_request(
+            client,
+            method="POST",
+            endpoint_path="legacy:legacyRunTestRule",
+            json=body,
+            timeout=timeout,
+            error_message="Failed to test rule",
+        )
 
-        if response.status_code != 200:
-            raise APIError(f"Failed to test rule: {response.text}")
-
-        # Parse the response as a JSON array
         try:
-            json_array = json.loads(response.text)
+            # Process the response as a JSON array
 
             # Yield each item in the array
             for item in json_array:
-                # Transform the response items to match the expected format
                 if "detection" in item:
-                    # Return the detection with proper type
                     yield {"type": "detection", "detection": item["detection"]}
                 elif "progressPercent" in item:
                     yield {
@@ -490,10 +427,9 @@ def run_rule_test(
                         ),
                     }
                 else:
-                    # Unknown item type, yield as-is
                     yield item
 
-        except json.JSONDecodeError as e:
+        except (json.JSONDecodeError, TypeError) as e:
             raise APIError(
                 f"Failed to parse rule test response: {str(e)}"
             ) from e
@@ -542,11 +478,6 @@ def update_rule_deployment(
         - The ``update_mask`` is derived from provided fields in the same order
           they are specified by the caller.
     """
-    url = (
-        f"{client.base_url(api_version, list(APIVersion))}/"
-        f"{client.instance_id}/rules/{rule_id}/deployment"
-    )
-
     body: dict[str, Any] = {}
     fields: list[str] = []
 
@@ -568,8 +499,12 @@ def update_rule_deployment(
 
     params = {"update_mask": ",".join(fields)}
 
-    response = client.session.patch(url, params=params, json=body)
-    if response.status_code != 200:
-        raise APIError(f"Failed to update rule deployment: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="PATCH",
+        endpoint_path=f"rules/{rule_id}/deployment",
+        api_version=api_version,
+        params=params,
+        json=body,
+        error_message="Failed to update rule deployment",
+    )

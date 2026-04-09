@@ -122,7 +122,7 @@ def test_load_log_types_from_api(mock_chronicle_client, mock_api_response):
     mock_response = Mock()
     mock_response.status_code = 200
     mock_response.json.return_value = mock_api_response
-    mock_chronicle_client.session.get.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     result = load_log_types(client=mock_chronicle_client)
 
@@ -136,7 +136,7 @@ def test_load_log_types_from_api(mock_chronicle_client, mock_api_response):
         for log_type in result
     )
     # Verify pagination params: pageSize=1000 for fetching all
-    call_args = mock_chronicle_client.session.get.call_args
+    call_args = mock_chronicle_client.session.request.call_args
     assert call_args[1]["params"]["pageSize"] == 1000
 
 
@@ -155,7 +155,7 @@ def test_load_log_types_api_pagination(
     mock_response_page2.status_code = 200
     mock_response_page2.json.return_value = mock_api_response_paginated_page2
 
-    mock_chronicle_client.session.get.side_effect = [
+    mock_chronicle_client.session.request.side_effect = [
         mock_response_page1,
         mock_response_page2,
     ]
@@ -168,7 +168,7 @@ def test_load_log_types_api_pagination(
     assert any("AWS_CLOUDTRAIL" in log_type.get("name") for log_type in result)
     assert any("WINDOWS" in log_type.get("name") for log_type in result)
     # Verify get was called twice (once per page)
-    assert mock_chronicle_client.session.get.call_count == 2
+    assert mock_chronicle_client.session.request.call_count == 2
 
 
 def test_fetch_log_types_single_page(
@@ -181,7 +181,7 @@ def test_fetch_log_types_single_page(
     mock_response = Mock()
     mock_response.status_code = 200
     mock_response.json.return_value = mock_api_response_paginated_page1
-    mock_chronicle_client.session.get.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     # Fetch with explicit page_size - should fetch only one page
     result = _fetch_log_types_from_api(
@@ -193,9 +193,9 @@ def test_fetch_log_types_single_page(
     assert any("OKTA" in log_type.get("name") for log_type in result)
     assert any("AWS_CLOUDTRAIL" in log_type.get("name") for log_type in result)
     # Verify get was called only once
-    assert mock_chronicle_client.session.get.call_count == 1
+    assert mock_chronicle_client.session.request.call_count == 1
     # Verify correct page_size was used
-    call_args = mock_chronicle_client.session.get.call_args
+    call_args = mock_chronicle_client.session.request.call_args
     assert call_args[1]["params"]["pageSize"] == 2
 
 
@@ -209,7 +209,7 @@ def test_fetch_log_types_with_page_token(
     mock_response = Mock()
     mock_response.status_code = 200
     mock_response.json.return_value = mock_api_response_paginated_page2
-    mock_chronicle_client.session.get.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     # Fetch with page_token
     result = _fetch_log_types_from_api(
@@ -226,7 +226,7 @@ def test_fetch_log_types_with_page_token(
     )
 
     # Verify page_token was passed
-    call_args = mock_chronicle_client.session.get.call_args
+    call_args = mock_chronicle_client.session.request.call_args
     assert call_args[1]["params"]["pageToken"] == "page2_token"
     assert call_args[1]["params"]["pageSize"] == 10
 
@@ -237,11 +237,11 @@ def test_load_log_types_cache(mock_chronicle_client, mock_api_response):
     mock_response = Mock()
     mock_response.status_code = 200
     mock_response.json.return_value = mock_api_response
-    mock_chronicle_client.session.get.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     # First call - should make API request
     result1 = load_log_types(client=mock_chronicle_client)
-    assert mock_chronicle_client.session.get.call_count == 1
+    assert mock_chronicle_client.session.request.call_count == 1
 
     # Second call - should return cached data
     result2 = load_log_types(client=mock_chronicle_client)
@@ -249,7 +249,7 @@ def test_load_log_types_cache(mock_chronicle_client, mock_api_response):
     # Should be the same object (cached)
     assert result1 is result2
     # Should not make another API call
-    assert mock_chronicle_client.session.get.call_count == 1
+    assert mock_chronicle_client.session.request.call_count == 1
 
 
 def test_get_all_log_types_from_api(mock_chronicle_client, mock_api_response):
@@ -257,7 +257,7 @@ def test_get_all_log_types_from_api(mock_chronicle_client, mock_api_response):
     mock_response = Mock()
     mock_response.status_code = 200
     mock_response.json.return_value = mock_api_response
-    mock_chronicle_client.session.get.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     result = get_all_log_types(client=mock_chronicle_client)
 
@@ -272,7 +272,7 @@ def test_is_valid_log_type_from_api(mock_chronicle_client, mock_api_response):
     mock_response = Mock()
     mock_response.status_code = 200
     mock_response.json.return_value = mock_api_response
-    mock_chronicle_client.session.get.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     assert is_valid_log_type(client=mock_chronicle_client, log_type_id="OKTA")
     # Second call uses cached data
@@ -292,7 +292,7 @@ def test_get_log_type_description_from_api(
     mock_response = Mock()
     mock_response.status_code = 200
     mock_response.json.return_value = mock_api_response
-    mock_chronicle_client.session.get.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     desc = get_log_type_description("OKTA", client=mock_chronicle_client)
     assert desc == "Okta Identity Management"
@@ -309,7 +309,7 @@ def test_search_log_types_from_api(mock_chronicle_client, mock_api_response):
     mock_response = Mock()
     mock_response.status_code = 200
     mock_response.json.return_value = mock_api_response
-    mock_chronicle_client.session.get.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     results = search_log_types("OKTA", client=mock_chronicle_client)
     assert len(results) >= 1
@@ -333,7 +333,7 @@ def test_search_log_types_case_sensitive(mock_chronicle_client):
             }
         ]
     }
-    mock_chronicle_client.session.get.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     # Case sensitive - should find
     results = search_log_types(
@@ -366,7 +366,7 @@ def test_search_log_types_id_only(mock_chronicle_client):
             }
         ]
     }
-    mock_chronicle_client.session.get.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     # Search in ID only
     results = search_log_types(
@@ -407,7 +407,7 @@ def test_api_response_missing_fields(mock_chronicle_client):
             },
         ]
     }
-    mock_chronicle_client.session.get.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     result = load_log_types(client=mock_chronicle_client)
 
@@ -429,7 +429,7 @@ def test_classify_logs_success(mock_chronicle_client):
             {"logType": "ONELOGIN", "score": 0.03},
         ]
     }
-    mock_chronicle_client.session.post.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     log_data = '{"eventType": "user.session.start"}'
     result = classify_logs(client=mock_chronicle_client, log_data=log_data)
@@ -441,10 +441,10 @@ def test_classify_logs_success(mock_chronicle_client):
     assert result[1]["logType"] == "ONELOGIN"
     assert result[1]["score"] == 0.03
 
-    mock_chronicle_client.session.post.assert_called_once()
-    call_args = mock_chronicle_client.session.post.call_args
-    assert "logs:classify" in call_args[0][0]
-    assert "logData" in call_args[1]["json"]
+    mock_chronicle_client.session.request.assert_called_once()
+    call_args = mock_chronicle_client.session.request.call_args
+    assert "logs:classify" in call_args.kwargs["url"]
+    assert "logData" in call_args.kwargs["json"]
 
 
 def test_classify_logs_empty_predictions(mock_chronicle_client):
@@ -452,7 +452,7 @@ def test_classify_logs_empty_predictions(mock_chronicle_client):
     mock_response = Mock()
     mock_response.status_code = 200
     mock_response.json.return_value = {"predictions": []}
-    mock_chronicle_client.session.post.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     log_data = "unknown log format"
     result = classify_logs(client=mock_chronicle_client, log_data=log_data)
@@ -466,7 +466,7 @@ def test_classify_logs_missing_predictions_key(mock_chronicle_client):
     mock_response = Mock()
     mock_response.status_code = 200
     mock_response.json.return_value = {}
-    mock_chronicle_client.session.post.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     log_data = "test log"
     result = classify_logs(client=mock_chronicle_client, log_data=log_data)
@@ -480,7 +480,7 @@ def test_classify_logs_empty_log_data(mock_chronicle_client):
     with pytest.raises(SecOpsError, match="log data cannot be empty"):
         classify_logs(client=mock_chronicle_client, log_data="")
 
-    mock_chronicle_client.session.post.assert_not_called()
+    mock_chronicle_client.session.request.assert_not_called()
 
 
 def test_classify_logs_none_log_data(mock_chronicle_client):
@@ -488,7 +488,7 @@ def test_classify_logs_none_log_data(mock_chronicle_client):
     with pytest.raises(SecOpsError, match="log data cannot be empty"):
         classify_logs(client=mock_chronicle_client, log_data=None)
 
-    mock_chronicle_client.session.post.assert_not_called()
+    mock_chronicle_client.session.request.assert_not_called()
 
 
 def test_classify_logs_non_string_log_data(mock_chronicle_client):
@@ -496,7 +496,7 @@ def test_classify_logs_non_string_log_data(mock_chronicle_client):
     with pytest.raises(SecOpsError, match="log data must be a string"):
         classify_logs(client=mock_chronicle_client, log_data=123)
 
-    mock_chronicle_client.session.post.assert_not_called()
+    mock_chronicle_client.session.request.assert_not_called()
 
     with pytest.raises(SecOpsError, match="log data must be a string"):
         classify_logs(client=mock_chronicle_client, log_data=["log"])
@@ -510,7 +510,7 @@ def test_classify_logs_api_error(mock_chronicle_client):
     mock_response = Mock()
     mock_response.status_code = 400
     mock_response.text = "Invalid request"
-    mock_chronicle_client.session.post.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     log_data = "test log"
     with pytest.raises(APIError, match="Failed to classify log"):
@@ -524,7 +524,7 @@ def test_classify_logs_special_characters(mock_chronicle_client):
     mock_response.json.return_value = {
         "predictions": [{"logType": "WINDOWS", "score": 0.88}]
     }
-    mock_chronicle_client.session.post.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     log_data = "<Event>\n  <System>\n    <EventID>4624</EventID>\n  </System>\n</Event>"
     result = classify_logs(client=mock_chronicle_client, log_data=log_data)
@@ -540,14 +540,14 @@ def test_classify_logs_unicode_characters(mock_chronicle_client):
     mock_response.json.return_value = {
         "predictions": [{"logType": "CUSTOM", "score": 0.75}]
     }
-    mock_chronicle_client.session.post.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     log_data = '{"user": "测试用户", "message": "Événement système"}'
     result = classify_logs(client=mock_chronicle_client, log_data=log_data)
 
     assert len(result) == 1
     assert result[0]["logType"] == "CUSTOM"
-    mock_chronicle_client.session.post.assert_called_once()
+    mock_chronicle_client.session.request.assert_called_once()
 
 
 def test_classify_logs_large_log(mock_chronicle_client):
@@ -557,7 +557,7 @@ def test_classify_logs_large_log(mock_chronicle_client):
     mock_response.json.return_value = {
         "predictions": [{"logType": "AWS_CLOUDTRAIL", "score": 0.92}]
     }
-    mock_chronicle_client.session.post.return_value = mock_response
+    mock_chronicle_client.session.request.return_value = mock_response
 
     log_data = '{"eventName": "GetObject"}' * 1000
     result = classify_logs(client=mock_chronicle_client, log_data=log_data)

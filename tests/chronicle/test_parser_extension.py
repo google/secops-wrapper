@@ -194,18 +194,18 @@ class TestParserExtensionConfig:
 def test_create_parser_extension_success(chronicle_client, mock_response):
     """Test successful creation of parser extension."""
     mock_response.json.return_value = {"id": "test-id"}
-    chronicle_client.session.post.return_value = mock_response
+    chronicle_client.session.request.return_value = mock_response
 
     config = ParserExtensionConfig(parser_config="test code")
     result = create_parser_extension(chronicle_client, "test-type", config)
 
     assert result == {"id": "test-id"}
-    chronicle_client.session.post.assert_called_once()
+    chronicle_client.session.request.assert_called_once()
 
 
 def test_create_parser_extension_failure(chronicle_client, mock_error_response):
     """Test failed creation of parser extension."""
-    chronicle_client.session.post.return_value = mock_error_response
+    chronicle_client.session.request.return_value = mock_error_response
 
     config = ParserExtensionConfig(parser_config="test code")
     with pytest.raises(APIError, match="Failed to create parser extension"):
@@ -216,17 +216,17 @@ def test_create_parser_extension_failure(chronicle_client, mock_error_response):
 def test_get_parser_extension_success(chronicle_client, mock_response):
     """Test successful retrieval of parser extension."""
     mock_response.json.return_value = {"id": "test-id"}
-    chronicle_client.session.get.return_value = mock_response
+    chronicle_client.session.request.return_value = mock_response
 
     result = get_parser_extension(chronicle_client, "test-type", "test-id")
 
     assert result == {"id": "test-id"}
-    chronicle_client.session.get.assert_called_once()
+    chronicle_client.session.request.assert_called_once()
 
 
 def test_get_parser_extension_failure(chronicle_client, mock_error_response):
     """Test failed retrieval of parser extension."""
-    chronicle_client.session.get.return_value = mock_error_response
+    chronicle_client.session.request.return_value = mock_error_response
 
     with pytest.raises(APIError, match="Failed to get parser extension"):
         get_parser_extension(chronicle_client, "test-type", "test-id")
@@ -235,47 +235,59 @@ def test_get_parser_extension_failure(chronicle_client, mock_error_response):
 # --- list_parser_extensions Tests ---
 def test_list_parser_extensions_success(chronicle_client, mock_response):
     """Test successful listing of parser extensions."""
-    mock_response.json.return_value = {"parser_extensions": [{"id": "test-id"}]}
-    chronicle_client.session.get.return_value = mock_response
+    mock_response.json.return_value = {"parserExtensions": [{"id": "test-id"}]}
+    chronicle_client.session.request.return_value = mock_response
 
-    result = list_parser_extensions(chronicle_client, "test-type")
+    result = list_parser_extensions(
+        client=chronicle_client, 
+        log_type="test-type", 
+        as_list=False
+    )
 
-    assert result == {"parser_extensions": [{"id": "test-id"}]}
-    chronicle_client.session.get.assert_called_once()
+    assert result == {"parserExtensions": [{"id": "test-id"}]}
+    chronicle_client.session.request.assert_called_once()
 
 
 def test_list_parser_extensions_with_pagination(
     chronicle_client, mock_response
 ):
     """Test listing parser extensions with pagination parameters."""
-    mock_response.json.return_value = {"parser_extensions": []}
-    chronicle_client.session.get.return_value = mock_response
+    mock_response.json.return_value = {"parserExtensions": []}
+    chronicle_client.session.request.return_value = mock_response
 
     list_parser_extensions(
         chronicle_client, "test-type", page_size=10, page_token="next-page"
     )
 
-    chronicle_client.session.get.assert_called_once()
-    assert "pageSize" in chronicle_client.session.get.call_args[1]["params"]
-    assert "pageToken" in chronicle_client.session.get.call_args[1]["params"]
+    chronicle_client.session.request.assert_called_once()
+    assert (
+        "pageSize"
+        in chronicle_client.session.request.call_args.kwargs["params"]
+    )
+    assert (
+        "pageToken"
+        in chronicle_client.session.request.call_args.kwargs["params"]
+    )
 
 
 # --- activate_parser_extension Tests ---
 def test_activate_parser_extension_success(chronicle_client, mock_response):
     """Test successful activation of parser extension."""
-    chronicle_client.session.post.return_value = mock_response
+    chronicle_client.session.request.return_value = mock_response
 
     activate_parser_extension(chronicle_client, "test-type", "test-id")
 
-    chronicle_client.session.post.assert_called_once()
-    assert ":activate" in chronicle_client.session.post.call_args[0][0]
+    chronicle_client.session.request.assert_called_once()
+    assert (
+        ":activate" in chronicle_client.session.request.call_args.kwargs["url"]
+    )
 
 
 def test_activate_parser_extension_failure(
     chronicle_client, mock_error_response
 ):
     """Test failed activation of parser extension."""
-    chronicle_client.session.post.return_value = mock_error_response
+    chronicle_client.session.request.return_value = mock_error_response
 
     with pytest.raises(APIError, match="Failed to activate parser extension"):
         activate_parser_extension(chronicle_client, "test-type", "test-id")
@@ -284,16 +296,16 @@ def test_activate_parser_extension_failure(
 # --- delete_parser_extension Tests ---
 def test_delete_parser_extension_success(chronicle_client, mock_response):
     """Test successful deletion of parser extension."""
-    chronicle_client.session.delete.return_value = mock_response
+    chronicle_client.session.request.return_value = mock_response
 
     delete_parser_extension(chronicle_client, "test-type", "test-id")
 
-    chronicle_client.session.delete.assert_called_once()
+    chronicle_client.session.request.assert_called_once()
 
 
 def test_delete_parser_extension_failure(chronicle_client, mock_error_response):
     """Test failed deletion of parser extension."""
-    chronicle_client.session.delete.return_value = mock_error_response
+    chronicle_client.session.request.return_value = mock_error_response
 
     with pytest.raises(APIError, match="Failed to delete parser extension"):
         delete_parser_extension(chronicle_client, "test-type", "test-id")

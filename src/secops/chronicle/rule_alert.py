@@ -17,7 +17,8 @@
 from datetime import datetime
 from typing import Any, Literal
 
-from secops.exceptions import APIError
+from secops.chronicle.utils.format_utils import remove_none_values
+from secops.chronicle.utils.request_utils import chronicle_request
 
 
 def get_alert(
@@ -36,21 +37,17 @@ def get_alert(
     Raises:
         APIError: If the API request fails
     """
-    url = f"{client.base_url}/{client.instance_id}/legacy:legacyGetAlert"
-
-    params = {
-        "alertId": alert_id,
-    }
-
+    params = {"alertId": alert_id}
     if include_detections:
         params["includeDetections"] = True
 
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to get alert: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path="legacy:legacyGetAlert",
+        params=params,
+        error_message="Failed to get alert",
+    )
 
 
 def update_alert(
@@ -113,8 +110,6 @@ def update_alert(
         APIError: If the API request fails
         ValueError: If invalid values are provided
     """
-    url = f"{client.base_url}/{client.instance_id}/legacy:legacyUpdateAlert"
-
     # Validate inputs
     priority_values = [
         "PRIORITY_UNSPECIFIED",
@@ -155,29 +150,21 @@ def update_alert(
         raise ValueError("severity must be between 0 and 100")
 
     # Build feedback dictionary with only provided values
-    feedback = {}
-    if confidence_score is not None:
-        feedback["confidence_score"] = confidence_score
-    if reason:
-        feedback["reason"] = reason
-    if reputation:
-        feedback["reputation"] = reputation
-    if priority:
-        feedback["priority"] = priority
-    if status:
-        feedback["status"] = status
-    if verdict:
-        feedback["verdict"] = verdict
-    if risk_score is not None:
-        feedback["risk_score"] = risk_score
-    if disregarded is not None:
-        feedback["disregarded"] = disregarded
-    if severity is not None:
-        feedback["severity"] = severity
-    if comment is not None:  # Accept empty string
-        feedback["comment"] = comment
-    if root_cause is not None:  # Accept empty string
-        feedback["root_cause"] = root_cause
+    feedback = remove_none_values(
+        {
+            "confidence_score": confidence_score,
+            "reason": reason,
+            "reputation": reputation,
+            "priority": priority,
+            "status": status,
+            "verdict": verdict,
+            "risk_score": risk_score,
+            "disregarded": disregarded,
+            "severity": severity,
+            "comment": comment,
+            "root_cause": root_cause,
+        }
+    )
 
     # Check if at least one property is provided
     if not feedback:
@@ -190,12 +177,13 @@ def update_alert(
         "feedback": feedback,
     }
 
-    response = client.session.post(url, json=payload)
-
-    if response.status_code != 200:
-        raise APIError(f"Failed to update alert: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="legacy:legacyUpdateAlert",
+        json=payload,
+        error_message="Failed to update alert",
+    )
 
 
 def bulk_update_alerts(
@@ -324,27 +312,20 @@ def search_rule_alerts(
     Raises:
         APIError: If the API request fails
     """
-    # Unused argument. Kept for backward compatibility.
     _ = (rule_status,)
 
-    url = (
-        f"{client.base_url}/{client.instance_id}/legacy:legacySearchRulesAlerts"
+    params = remove_none_values(
+        {
+            "timeRange.start_time": start_time.isoformat(),
+            "timeRange.end_time": end_time.isoformat(),
+            "maxNumAlertsToReturn": page_size,
+        }
     )
 
-    # Build request parameters
-    params = {
-        "timeRange.start_time": start_time.isoformat(),
-        "timeRange.end_time": end_time.isoformat(),
-    }
-
-    # Remove rule status filtering as it doesn't seem to be supported
-    if page_size:
-        params["maxNumAlertsToReturn"] = page_size
-
-    response = client.session.get(url, params=params)
-
-    if response.status_code != 200:
-        error_msg = f"Failed to search rule alerts: {response.text}"
-        raise APIError(error_msg)
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path="legacy:legacySearchRulesAlerts",
+        params=params,
+        error_message="Failed to search rule alerts",
+    )

@@ -16,7 +16,14 @@
 
 from typing import Any
 
-from secops.exceptions import APIError
+from secops.chronicle.utils.format_utils import (
+    format_resource_id,
+    remove_none_values,
+)
+from secops.chronicle.utils.request_utils import (
+    chronicle_request,
+    chronicle_paginated_request,
+)
 
 
 def list_log_processing_pipelines(
@@ -24,7 +31,8 @@ def list_log_processing_pipelines(
     page_size: int | None = None,
     page_token: str | None = None,
     filter_expr: str | None = None,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[Any]:
     """Lists log processing pipelines.
 
     Args:
@@ -34,32 +42,28 @@ def list_log_processing_pipelines(
         page_token: Page token from a previous list call to retrieve
             the next page.
         filter_expr: Filter expression (AIP-160) to restrict results.
+        as_list: If True, return only the list of pipelines.
+            If False, return dict with metadata and pagination tokens.
 
     Returns:
-        Dictionary containing:
-            - logProcessingPipelines: List of pipeline dicts
-            - nextPageToken: Token for next page (if more results exist)
+        If as_list is True: List of log processing pipelines.
+        If as_list is False: Dict with logProcessingPipelines list and
+            pagination metadata.
 
     Raises:
         APIError: If the API request fails.
     """
-    url = f"{client.base_url}/{client.instance_id}/logProcessingPipelines"
+    extra_params = remove_none_values({"filter": filter_expr})
 
-    params: dict[str, Any] = {}
-    if page_size is not None:
-        params["pageSize"] = page_size
-    if page_token:
-        params["pageToken"] = page_token
-    if filter_expr:
-        params["filter"] = filter_expr
-
-    response = client.session.get(url, params=params)
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to list log processing pipelines: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_paginated_request(
+        client,
+        path="logProcessingPipelines",
+        items_key="logProcessingPipelines",
+        page_size=page_size,
+        page_token=page_token,
+        extra_params=extra_params or None,
+        as_list=as_list,
+    )
 
 
 def get_log_processing_pipeline(
@@ -77,21 +81,16 @@ def get_log_processing_pipeline(
     Raises:
         APIError: If the API request fails.
     """
-    if not pipeline_id.startswith("projects/"):
-        url = (
-            f"{client.base_url}/{client.instance_id}/"
-            f"logProcessingPipelines/{pipeline_id}"
-        )
-    else:
-        url = f"{client.base_url}/{pipeline_id}"
 
-    response = client.session.get(url)
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to get log processing pipeline: {response.text}"
-        )
+    extracted_pipeline_id = format_resource_id(pipeline_id)
+    endpoint_path = f"logProcessingPipelines/{extracted_pipeline_id}"
 
-    return response.json()
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=endpoint_path,
+        error_message="Failed to get log processing pipeline",
+    )
 
 
 def create_log_processing_pipeline(
@@ -117,19 +116,20 @@ def create_log_processing_pipeline(
     Raises:
         APIError: If the API request fails.
     """
-    url = f"{client.base_url}/{client.instance_id}/logProcessingPipelines"
+    params = remove_none_values(
+        {
+            "logProcessingPipelineId": pipeline_id,
+        }
+    )
 
-    params: dict[str, Any] = {}
-    if pipeline_id:
-        params["logProcessingPipelineId"] = pipeline_id
-
-    response = client.session.post(url, json=pipeline, params=params)
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to create log processing pipeline: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="logProcessingPipelines",
+        params=params or None,
+        json=pipeline,
+        error_message="Failed to create log processing pipeline",
+    )
 
 
 def update_log_processing_pipeline(
@@ -155,25 +155,22 @@ def update_log_processing_pipeline(
     Raises:
         APIError: If the API request fails.
     """
-    if not pipeline_id.startswith("projects/"):
-        url = (
-            f"{client.base_url}/{client.instance_id}/"
-            f"logProcessingPipelines/{pipeline_id}"
-        )
-    else:
-        url = f"{client.base_url}/{pipeline_id}"
+    extracted_pipeline_id = format_resource_id(pipeline_id)
 
-    params: dict[str, Any] = {}
-    if update_mask:
-        params["updateMask"] = update_mask
+    params = remove_none_values(
+        {
+            "updateMask": update_mask,
+        }
+    )
 
-    response = client.session.patch(url, json=pipeline, params=params)
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to patch log processing pipeline: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="PATCH",
+        endpoint_path=f"logProcessingPipelines/{extracted_pipeline_id}",
+        params=params or None,
+        json=pipeline,
+        error_message="Failed to patch log processing pipeline",
+    )
 
 
 def delete_log_processing_pipeline(
@@ -193,25 +190,22 @@ def delete_log_processing_pipeline(
     Raises:
         APIError: If the API request fails.
     """
-    if not pipeline_id.startswith("projects/"):
-        url = (
-            f"{client.base_url}/{client.instance_id}/"
-            f"logProcessingPipelines/{pipeline_id}"
-        )
-    else:
-        url = f"{client.base_url}/{pipeline_id}"
 
-    params: dict[str, Any] = {}
-    if etag:
-        params["etag"] = etag
+    extracted_pipeline_id = format_resource_id(pipeline_id)
 
-    response = client.session.delete(url, params=params)
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to delete log processing pipeline: {response.text}"
-        )
+    params = remove_none_values(
+        {
+            "etag": etag,
+        }
+    )
 
-    return response.json()
+    return chronicle_request(
+        client,
+        method="DELETE",
+        endpoint_path=f"logProcessingPipelines/{extracted_pipeline_id}",
+        params=params if params else None,
+        error_message="Failed to delete log processing pipeline",
+    )
 
 
 def associate_streams(
@@ -232,20 +226,18 @@ def associate_streams(
     Raises:
         APIError: If the API request fails.
     """
-    if not pipeline_id.startswith("projects/"):
-        url = (
-            f"{client.base_url}/{client.instance_id}/"
-            f"logProcessingPipelines/{pipeline_id}:associateStreams"
-        )
-    else:
-        url = f"{client.base_url}/{pipeline_id}:associateStreams"
-    body = {"streams": streams}
+    extracted_pipeline_id = format_resource_id(pipeline_id)
+    endpoint_path = (
+        f"logProcessingPipelines/{extracted_pipeline_id}:associateStreams"
+    )
 
-    response = client.session.post(url, json=body)
-    if response.status_code != 200:
-        raise APIError(f"Failed to associate streams: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=endpoint_path,
+        json={"streams": streams},
+        error_message="Failed to associate streams",
+    )
 
 
 def dissociate_streams(
@@ -266,21 +258,19 @@ def dissociate_streams(
     Raises:
         APIError: If the API request fails.
     """
-    if not pipeline_id.startswith("projects/"):
-        url = (
-            f"{client.base_url}/{client.instance_id}/"
-            f"logProcessingPipelines/{pipeline_id}:dissociateStreams"
-        )
-    else:
-        url = f"{client.base_url}/{pipeline_id}:dissociateStreams"
 
-    body = {"streams": streams}
+    extracted_pipeline_id = format_resource_id(pipeline_id)
+    endpoint_path = (
+        f"logProcessingPipelines/{extracted_pipeline_id}:dissociateStreams"
+    )
 
-    response = client.session.post(url, json=body)
-    if response.status_code != 200:
-        raise APIError(f"Failed to dissociate streams: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=endpoint_path,
+        json={"streams": streams},
+        error_message="Failed to dissociate streams",
+    )
 
 
 def fetch_associated_pipeline(
@@ -300,21 +290,17 @@ def fetch_associated_pipeline(
     Raises:
         APIError: If the API request fails.
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"logProcessingPipelines:fetchAssociatedPipeline"
-    )
-
-    # Pass stream fields as separate query parameters with stream. prefix
     params = {}
     for key, value in stream.items():
         params[f"stream.{key}"] = value
 
-    response = client.session.get(url, params=params)
-    if response.status_code != 200:
-        raise APIError(f"Failed to fetch associated pipeline: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path="logProcessingPipelines:fetchAssociatedPipeline",
+        params=params,
+        error_message="Failed to fetch associated pipeline",
+    )
 
 
 def fetch_sample_logs_by_streams(
@@ -340,22 +326,20 @@ def fetch_sample_logs_by_streams(
     Raises:
         APIError: If the API request fails.
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"logProcessingPipelines:fetchSampleLogsByStreams"
+    body = remove_none_values(
+        {
+            "streams": streams,
+            "sampleLogsCount": sample_logs_count,
+        }
     )
 
-    body = {"streams": streams}
-    if sample_logs_count is not None:
-        body["sampleLogsCount"] = sample_logs_count
-
-    response = client.session.post(url, json=body)
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to fetch sample logs by streams: {response.text}"
-        )
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="logProcessingPipelines:fetchSampleLogsByStreams",
+        json=body,
+        error_message="Failed to fetch sample logs by streams",
+    )
 
 
 def test_pipeline(
@@ -377,15 +361,12 @@ def test_pipeline(
     Raises:
         APIError: If the API request fails.
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/"
-        f"logProcessingPipelines:testPipeline"
-    )
-
     body = {"logProcessingPipeline": pipeline, "inputLogs": input_logs}
 
-    response = client.session.post(url, json=body)
-    if response.status_code != 200:
-        raise APIError(f"Failed to test pipeline: {response.text}")
-
-    return response.json()
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="logProcessingPipelines:testPipeline",
+        json=body,
+        error_message="Failed to test pipeline",
+    )

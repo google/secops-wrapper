@@ -252,7 +252,7 @@ jobs:
           python -m pytest tests/ -m "integration" -v --junitxml=junit/integration-test-results.xml
       
       - name: Upload integration test results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: integration-test-results
@@ -260,7 +260,7 @@ jobs:
           retention-days: 1
           
       - name: Publish integration test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
+        uses: EnricoMi/publish-unit-test-result-action@v2.23.0
         if: always()
         with:
           files: junit/integration-test-results.xml

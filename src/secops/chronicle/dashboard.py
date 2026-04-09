@@ -36,6 +36,7 @@ from secops.chronicle.utils.request_utils import (
 from secops.chronicle.utils.format_utils import (
     format_resource_id,
     parse_json_list,
+    remove_none_values,
 )
 
 if TYPE_CHECKING:
@@ -105,21 +106,22 @@ def create_dashboard(
     if charts is not None:
         charts = parse_json_list(charts, "charts")
 
-    definition = {}
-    if filters is not None:
-        definition["filters"] = filters
-    if charts is not None:
-        definition["charts"] = charts
+    definition = remove_none_values(
+        {
+            "filters": filters,
+            "charts": charts,
+        }
+    )
 
-    payload = {
-        "displayName": display_name,
-        "definition": definition,
-        "access": access_type.value,
-        "type": "CUSTOM",
-    }
-
-    if description is not None:
-        payload["description"] = description
+    payload = remove_none_values(
+        {
+            "displayName": display_name,
+            "definition": definition,
+            "access": access_type.value,
+            "type": "CUSTOM",
+            "description": description,
+        }
+    )
 
     return chronicle_request(
         client,

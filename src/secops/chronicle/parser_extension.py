@@ -19,7 +19,10 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
-from secops.exceptions import APIError
+from secops.chronicle.utils.request_utils import (
+    chronicle_request,
+    chronicle_paginated_request,
+)
 
 
 @dataclass
@@ -152,14 +155,13 @@ def create_parser_extension(
         except (ValueError, TypeError) as e:
             raise ValueError(f"Invalid extension configuration: {e}") from e
 
-    url = (
-        f"{client.base_url}/{client.instance_id}/logTypes/"
-        f"{log_type}/parserExtensions"
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=f"logTypes/{log_type}/parserExtensions",
+        json=extension_config.to_dict(),
+        error_message="Failed to create parser extension",
     )
-    response = client.session.post(url, json=extension_config.to_dict())
-    if not response.ok:
-        raise APIError(f"Failed to create parser extension: {response.text}")
-    return response.json()
 
 
 def get_parser_extension(
@@ -178,14 +180,12 @@ def get_parser_extension(
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/logTypes/"
-        f"{log_type}/parserExtensions/{extension_id}"
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"logTypes/{log_type}/parserExtensions/{extension_id}",
+        error_message="Failed to get parser extension",
     )
-    response = client.session.get(url)
-    if not response.ok:
-        raise APIError(f"Failed to get parser extension: {response.text}")
-    return response.json()
 
 
 def list_parser_extensions(
@@ -193,7 +193,8 @@ def list_parser_extensions(
     log_type: str,
     page_size: int | None = None,
     page_token: str | None = None,
-) -> dict[str, Any]:
+    as_list: bool = False,
+) -> dict[str, Any] | list[Any]:
     """List parser extensions.
 
     Args:
@@ -201,27 +202,25 @@ def list_parser_extensions(
         log_type: The log type to list parser extensions for
         page_size: Maximum number of parser extensions to return
         page_token: Token for pagination
+        as_list: If True, return only the list of parser extensions.
+            If False, return dict with metadata and pagination tokens.
 
     Returns:
-        Dict containing list of parser extensions and next page token if any
+        If as_list is True: List of parser extensions.
+        If as_list is False: Dict with parserExtensions list and
+            pagination metadata.
 
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/logTypes/"
-        f"{log_type}/parserExtensions"
+    return chronicle_paginated_request(
+        client,
+        path=f"logTypes/{log_type}/parserExtensions",
+        items_key="parserExtensions",
+        page_size=page_size,
+        page_token=page_token,
+        as_list=as_list,
     )
-    params = {}
-    if page_size is not None:
-        params["pageSize"] = page_size
-    if page_token is not None:
-        params["pageToken"] = page_token
-
-    response = client.session.get(url, params=params)
-    if not response.ok:
-        raise APIError(f"Failed to list parser extensions: {response.text}")
-    return response.json()
 
 
 def activate_parser_extension(client, log_type: str, extension_id: str) -> None:
@@ -235,13 +234,14 @@ def activate_parser_extension(client, log_type: str, extension_id: str) -> None:
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/logTypes/"
-        f"{log_type}/parserExtensions/{extension_id}:activate"
+    chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=(
+            f"logTypes/{log_type}/parserExtensions/{extension_id}:activate"
+        ),
+        error_message="Failed to activate parser extension",
     )
-    response = client.session.post(url)
-    if not response.ok:
-        raise APIError(f"Failed to activate parser extension: {response.text}")
 
 
 def delete_parser_extension(client, log_type: str, extension_id: str) -> None:
@@ -255,10 +255,9 @@ def delete_parser_extension(client, log_type: str, extension_id: str) -> None:
     Raises:
         APIError: If the API request fails
     """
-    url = (
-        f"{client.base_url}/{client.instance_id}/logTypes/"
-        f"{log_type}/parserExtensions/{extension_id}"
+    chronicle_request(
+        client,
+        method="DELETE",
+        endpoint_path=f"logTypes/{log_type}/parserExtensions/{extension_id}",
+        error_message="Failed to delete parser extension",
     )
-    response = client.session.delete(url)
-    if not response.ok:
-        raise APIError(f"Failed to delete parser extension: {response.text}")

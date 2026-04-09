@@ -17,6 +17,7 @@
 import sys
 
 from secops.chronicle import DetectionType
+from secops.cli.utils.common_args import add_as_list_arg
 from secops.cli.utils.formatters import output_formatter
 
 
@@ -73,6 +74,7 @@ def _setup_list_subcommand(subparsers):
         dest="order_by",
         help=("Order by field (e.g., 'startTime', 'endTime', 'displayName')"),
     )
+    add_as_list_arg(list_parser)
     list_parser.set_defaults(func=_handle_list)
 
 
@@ -170,6 +172,7 @@ def _handle_list(args, chronicle):
             page_token=args.page_token,
             filter_expr=args.filter,
             order_by=args.order_by,
+            as_list=args.as_list,
         )
         output_formatter(result, args.output)
     except Exception as e:  # pylint: disable=broad-exception-caught

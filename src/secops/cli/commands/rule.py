@@ -18,6 +18,7 @@ import json
 import sys
 
 from secops.cli.utils.common_args import (
+    add_as_list_arg,
     add_pagination_args,
     add_time_range_args,
 )
@@ -37,6 +38,7 @@ def setup_rule_command(subparsers):
     # List rules command
     list_parser = rule_subparsers.add_parser("list", help="List rules")
     add_pagination_args(list_parser)
+    add_as_list_arg(list_parser)
     list_parser.add_argument(
         "--view",
         type=str,
@@ -152,6 +154,7 @@ def setup_rule_command(subparsers):
         "list-deployments", help="List rule deployments"
     )
     add_pagination_args(list_dep_parser)
+    add_as_list_arg(list_dep_parser)
     list_dep_parser.add_argument(
         "--filter",
         dest="filter_query",
@@ -232,7 +235,10 @@ def handle_rule_list_command(args, chronicle):
     """Handle rule list command."""
     try:
         result = chronicle.list_rules(
-            view=args.view, page_size=args.page_size, page_token=args.page_token
+            view=args.view,
+            page_size=args.page_size,
+            page_token=args.page_token,
+            as_list=args.as_list,
         )
         output_formatter(result, args.output)
     except Exception as e:  # pylint: disable=broad-exception-caught
@@ -397,6 +403,7 @@ def handle_rule_list_deployments_command(args, chronicle):
             filter_query=(
                 args.filter_query if hasattr(args, "filter_query") else None
             ),
+            as_list=args.as_list,
         )
         output_formatter(result, args.output)
     except Exception as e:  # pylint: disable=broad-exception-caught

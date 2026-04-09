@@ -16,6 +16,7 @@
 
 import sys
 
+from secops.cli.utils.common_args import add_as_list_arg, add_pagination_args
 from secops.cli.utils.formatters import output_formatter
 
 
@@ -29,6 +30,8 @@ def setup_feed_command(subparsers):
 
     # List feeds command
     list_parser = feed_subparsers.add_parser("list", help="List feeds")
+    add_as_list_arg(list_parser)
+    add_pagination_args(list_parser)
     list_parser.set_defaults(func=handle_feed_list_command)
 
     # Get feed command
@@ -87,7 +90,11 @@ def setup_feed_command(subparsers):
 def handle_feed_list_command(args, chronicle):
     """Handle feed list command."""
     try:
-        result = chronicle.list_feeds()
+        result = chronicle.list_feeds(
+            page_size=args.page_size,
+            page_token=args.page_token,
+            as_list=args.as_list,
+        )
         output_formatter(result, args.output)
     except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error: {e}", file=sys.stderr)

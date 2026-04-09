@@ -8,7 +8,9 @@ from unittest.mock import (
 )  # Added call for checking multiple calls if needed
 
 from secops.chronicle.models import APIVersion
-from secops.chronicle.client import ChronicleClient  # This will be the actual client
+from secops.chronicle.client import (
+    ChronicleClient,
+)  # This will be the actual client
 
 # We'll need to import the enums and functions once they are in their final place
 # For now, let's assume they might be in a module like secops.chronicle.data_table
@@ -61,25 +63,34 @@ class TestDataTables:
             "columnInfo": [{"originalColumn": "col1", "columnType": "STRING"}],
             "dataTableUuid": "some-uuid",
         }
-        mock_chronicle_client.session.post.return_value = mock_response
+        mock_chronicle_client.session.request.return_value = mock_response
 
         dt_name = "test_dt_123"
         description = "Test Description"
         header = {"col1": DataTableColumnType.STRING}
 
-        result = create_data_table(mock_chronicle_client, dt_name, description, header)
+        result = create_data_table(
+            mock_chronicle_client, dt_name, description, header
+        )
 
         assert result["name"] == expected_dt_name
         assert result["description"] == description
-        mock_chronicle_client.session.post.assert_called_once_with(
-            f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables",
+        mock_chronicle_client.session.request.assert_called_once_with(
+            method="POST",
+            url=f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables",
             params={"dataTableId": dt_name},
             json={
                 "description": description,
                 "columnInfo": [
-                    {"columnIndex": 0, "originalColumn": "col1", "columnType": "STRING"}
+                    {
+                        "columnIndex": 0,
+                        "originalColumn": "col1",
+                        "columnType": "STRING",
+                    }
                 ],
             },
+            headers=None,
+            timeout=None,
         )
 
     @patch("secops.chronicle.data_table.create_data_table_rows")
@@ -101,7 +112,7 @@ class TestDataTables:
             "description": "Test With Rows",
             # ... other fields
         }
-        mock_chronicle_client.session.post.return_value = mock_dt_response
+        mock_chronicle_client.session.request.return_value = mock_dt_response
 
         mock_create_rows.return_value = [
             {"dataTableRows": [{"name": "row1_full_name"}]}
@@ -147,34 +158,45 @@ class TestDataTables:
         mock_response = Mock()
         mock_response.status_code = 200
         expected_dt_name = "projects/test-project/locations/us/instances/test-customer/dataTables/test_dt_123"
-        entity_mapping = "entity.domain.name" # Sample valid entity mapping
+        entity_mapping = "entity.domain.name"  # Sample valid entity mapping
         mock_response.json.return_value = {
             "name": expected_dt_name,
             "displayName": "test_dt_123",
             "description": "Test Description",
             "createTime": "2025-06-17T10:00:00Z",
-            "columnInfo": [{"originalColumn": "col1", "mappedColumnPath": entity_mapping}],
+            "columnInfo": [
+                {"originalColumn": "col1", "mappedColumnPath": entity_mapping}
+            ],
             "dataTableUuid": "some-uuid",
         }
-        mock_chronicle_client.session.post.return_value = mock_response
+        mock_chronicle_client.session.request.return_value = mock_response
 
         dt_name = "test_dt_123"
         description = "Test Description"
         header = {"col1": entity_mapping}
 
-        result = create_data_table(mock_chronicle_client, dt_name, description, header)
+        result = create_data_table(
+            mock_chronicle_client, dt_name, description, header
+        )
 
         assert result["name"] == expected_dt_name
         assert result["description"] == description
-        mock_chronicle_client.session.post.assert_called_once_with(
-            f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables",
+        mock_chronicle_client.session.request.assert_called_once_with(
+            method="POST",
+            url=f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables",
             params={"dataTableId": dt_name},
             json={
                 "description": description,
                 "columnInfo": [
-                    {"columnIndex": 0, "originalColumn": "col1", "mappedColumnPath": entity_mapping}
+                    {
+                        "columnIndex": 0,
+                        "originalColumn": "col1",
+                        "mappedColumnPath": entity_mapping,
+                    }
                 ],
             },
+            headers=None,
+            timeout=None,
         )
 
     @patch("secops.chronicle.data_table.REF_LIST_DATA_TABLE_ID_REGEX")
@@ -192,39 +214,65 @@ class TestDataTables:
             "description": "Test Description",
             "createTime": "2025-06-17T10:00:00Z",
             "columnInfo": [
-                {"originalColumn": "key", "columnType": "NUMBER", "keyColumn": True},
-                {"originalColumn": "repetitive", "columnType": "STRING", "repeatedValues": True}
+                {
+                    "originalColumn": "key",
+                    "columnType": "NUMBER",
+                    "keyColumn": True,
+                },
+                {
+                    "originalColumn": "repetitive",
+                    "columnType": "STRING",
+                    "repeatedValues": True,
+                },
             ],
             "dataTableUuid": "some-uuid",
         }
-        mock_chronicle_client.session.post.return_value = mock_response
+        mock_chronicle_client.session.request.return_value = mock_response
 
         dt_name = "test_dt_123"
         description = "Test Description"
         header = {
             "key": DataTableColumnType.NUMBER,
-            "repetitive": DataTableColumnType.STRING
+            "repetitive": DataTableColumnType.STRING,
         }
         column_options = {
             "key": {"keyColumn": True},
-            "repetitive": {"repeatedValues": True}
+            "repetitive": {"repeatedValues": True},
         }
 
-        result = create_data_table(mock_chronicle_client, dt_name, description, header,
-            column_options=column_options)
+        result = create_data_table(
+            mock_chronicle_client,
+            dt_name,
+            description,
+            header,
+            column_options=column_options,
+        )
 
         assert result["name"] == expected_dt_name
         assert result["description"] == description
-        mock_chronicle_client.session.post.assert_called_once_with(
-            f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables",
+        mock_chronicle_client.session.request.assert_called_once_with(
+            method="POST",
+            url=f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables",
             params={"dataTableId": dt_name},
             json={
                 "description": description,
                 "columnInfo": [
-                    {"columnIndex": 0, "originalColumn": "key", "columnType": "NUMBER", "keyColumn": True},
-                    {"columnIndex": 1, "originalColumn": "repetitive", "columnType": "STRING", "repeatedValues": True}
+                    {
+                        "columnIndex": 0,
+                        "originalColumn": "key",
+                        "columnType": "NUMBER",
+                        "keyColumn": True,
+                    },
+                    {
+                        "columnIndex": 1,
+                        "originalColumn": "repetitive",
+                        "columnType": "STRING",
+                        "repeatedValues": True,
+                    },
                 ],
             },
+            headers=None,
+            timeout=None,
         )
 
     def test_get_data_table_success(self, mock_chronicle_client: Mock) -> None:
@@ -238,15 +286,22 @@ class TestDataTables:
             # ... other fields based on logs
         }
         mock_response.json.return_value = expected_response
-        mock_chronicle_client.session.get.return_value = mock_response
+        mock_chronicle_client.session.request.return_value = mock_response
 
         result = get_data_table(mock_chronicle_client, dt_name)
         assert result == expected_response
-        mock_chronicle_client.session.get.assert_called_once_with(
-            f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}"
+        mock_chronicle_client.session.request.assert_called_once_with(
+            method="GET",
+            url=f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
+            params=None,
+            json=None,
+            headers=None,
+            timeout=None,
         )
 
-    def test_list_data_tables_success(self, mock_chronicle_client: Mock) -> None:
+    def test_list_data_tables_success(
+        self, mock_chronicle_client: Mock
+    ) -> None:
         """Test successful listing of data tables without pagination."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -257,15 +312,21 @@ class TestDataTables:
             ]
             # No nextPageToken means single page
         }
-        mock_chronicle_client.session.get.return_value = mock_response
+        mock_chronicle_client.session.request.return_value = mock_response
 
-        result = list_data_tables(mock_chronicle_client, order_by="createTime asc")
+        result = list_data_tables(
+            mock_chronicle_client, order_by="createTime asc"
+        )
 
         assert len(result) == 2
         assert result[0]["displayName"] == "DT One"
-        mock_chronicle_client.session.get.assert_called_once_with(
-            f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables",
+        mock_chronicle_client.session.request.assert_called_once_with(
+            method="GET",
+            url=f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables",
             params={"pageSize": 1000, "orderBy": "createTime asc"},
+            json=None,
+            headers=None,
+            timeout=None,
         )
 
     def test_list_data_tables_api_error_invalid_orderby(
@@ -274,31 +335,38 @@ class TestDataTables:
         """Test list_data_tables when API returns error for invalid orderBy."""
         mock_response = Mock()
         mock_response.status_code = 400
-        mock_response.text = (
-            "invalid order by field: ordering is only supported by create time asc"
-        )
+        mock_response.text = "invalid order by field: ordering is only supported by create time asc"
         # No .json() method will be called if status is not 200 in the actual code
-        mock_chronicle_client.session.get.return_value = mock_response
+        mock_chronicle_client.session.request.return_value = mock_response
 
         with pytest.raises(
-            APIError, match="Failed to list data tables: 400 invalid order by field"
+            APIError,
+            match="API request failed",
         ):
             list_data_tables(mock_chronicle_client, order_by="createTime desc")
 
-    def test_delete_data_table_success(self, mock_chronicle_client: Mock) -> None:
+    def test_delete_data_table_success(
+        self, mock_chronicle_client: Mock
+    ) -> None:
         """Test successful deletion of a data table."""
         mock_response = Mock()
-        mock_response.status_code = 200  # API might return 200 with empty body or LRO
+        mock_response.status_code = (
+            200  # API might return 200 with empty body or LRO
+        )
         mock_response.json.return_value = {}  # Based on your logs
-        mock_chronicle_client.session.delete.return_value = mock_response
+        mock_chronicle_client.session.request.return_value = mock_response
 
         dt_name = "dt_to_delete"
         result = delete_data_table(mock_chronicle_client, dt_name, force=True)
 
         assert result == {}
-        mock_chronicle_client.session.delete.assert_called_once_with(
-            f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
+        mock_chronicle_client.session.request.assert_called_once_with(
+            method="DELETE",
+            url=f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
             params={"force": "true"},
+            json=None,
+            headers=None,
+            timeout=None,
         )
 
     @patch("secops.chronicle.data_table._create_data_table_rows")
@@ -316,7 +384,9 @@ class TestDataTables:
         }
 
         dt_name = "dt_for_chunking"
-        responses = create_data_table_rows(mock_chronicle_client, dt_name, rows_data)
+        responses = create_data_table_rows(
+            mock_chronicle_client, dt_name, rows_data
+        )
 
         # Expect two calls: one for 1000 rows, one for 500 rows
         assert mock_internal_create_rows.call_count == 2
@@ -331,7 +401,9 @@ class TestDataTables:
 
         assert len(responses) == 2
 
-    def test_list_data_table_rows_success(self, mock_chronicle_client: Mock) -> None:
+    def test_list_data_table_rows_success(
+        self, mock_chronicle_client: Mock
+    ) -> None:
         """Test successful listing of data table rows."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -341,7 +413,7 @@ class TestDataTables:
                 {"name": "row2_full", "values": ["c", "d"]},
             ]
         }
-        mock_chronicle_client.session.get.return_value = mock_response
+        mock_chronicle_client.session.request.return_value = mock_response
         dt_name = "my_table_with_rows"
 
         result = list_data_table_rows(
@@ -350,9 +422,13 @@ class TestDataTables:
 
         assert len(result) == 2
         assert result[0]["values"] == ["a", "b"]
-        mock_chronicle_client.session.get.assert_called_once_with(
-            f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}/dataTableRows",
+        mock_chronicle_client.session.request.assert_called_once_with(
+            method="GET",
+            url=f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}/dataTableRows",
             params={"pageSize": 1000, "orderBy": "createTime asc"},
+            json=None,
+            headers=None,
+            timeout=None,
         )
 
     @patch("secops.chronicle.data_table._delete_data_table_row")
@@ -414,7 +490,7 @@ class TestReferenceLists:
             "syntaxType": "REFERENCE_LIST_SYNTAX_TYPE_PLAIN_TEXT_STRING",
         }
         mock_response.json.return_value = expected_response_json
-        mock_chronicle_client.session.post.return_value = mock_response
+        mock_chronicle_client.session.request.return_value = mock_response
 
         result = create_reference_list(
             mock_chronicle_client, rl_name, description, entries, syntax_type
@@ -423,14 +499,17 @@ class TestReferenceLists:
         assert result["displayName"] == rl_name
         assert result["description"] == description
         assert len(result["entries"]) == 2
-        mock_chronicle_client.session.post.assert_called_once_with(
-            f"{mock_chronicle_client.base_url(APIVersion.V1)}/{mock_chronicle_client.instance_id}/referenceLists",
+        mock_chronicle_client.session.request.assert_called_once_with(
+            method="POST",
+            url=f"{mock_chronicle_client.base_url(APIVersion.V1)}/{mock_chronicle_client.instance_id}/referenceLists",
             params={"referenceListId": rl_name},
             json={
                 "description": description,
                 "entries": [{"value": "entryA"}, {"value": "entryB"}],
                 "syntaxType": syntax_type.value,
             },
+            headers=None,
+            timeout=None,
         )
 
     @patch("secops.chronicle.reference_list.REF_LIST_DATA_TABLE_ID_REGEX")
@@ -454,7 +533,7 @@ class TestReferenceLists:
             "syntaxType": "REFERENCE_LIST_SYNTAX_TYPE_CIDR",
             "entries": [{"value": "192.168.1.0/24"}],
         }
-        mock_chronicle_client.session.post.return_value = mock_response
+        mock_chronicle_client.session.request.return_value = mock_response
 
         create_reference_list(
             mock_chronicle_client,
@@ -483,7 +562,7 @@ class TestReferenceLists:
             "scopeInfo": {"referenceListScope": {}},
         }
         mock_response.json.return_value = expected_response_json
-        mock_chronicle_client.session.get.return_value = mock_response
+        mock_chronicle_client.session.request.return_value = mock_response
 
         result = get_reference_list(
             mock_chronicle_client, rl_name, view=ReferenceListView.FULL
@@ -491,9 +570,13 @@ class TestReferenceLists:
 
         assert result["description"] == "Full RL details"
         assert len(result["entries"]) == 1
-        mock_chronicle_client.session.get.assert_called_once_with(
-            f"{mock_chronicle_client.base_url(APIVersion.V1)}/{mock_chronicle_client.instance_id}/referenceLists/{rl_name}",
+        mock_chronicle_client.session.request.assert_called_once_with(
+            method="GET",
+            url=f"{mock_chronicle_client.base_url(APIVersion.V1)}/{mock_chronicle_client.instance_id}/referenceLists/{rl_name}",
             params={"view": ReferenceListView.FULL.value},
+            json=None,
+            headers=None,
+            timeout=None,
         )
 
     def test_list_reference_lists_basic_view_success(
@@ -513,16 +596,22 @@ class TestReferenceLists:
                 }
             ]
         }
-        mock_chronicle_client.session.get.return_value = mock_response
+        mock_chronicle_client.session.request.return_value = mock_response
 
-        results = list_reference_lists(mock_chronicle_client)  # Defaults to BASIC
+        results = list_reference_lists(
+            mock_chronicle_client
+        )  # Defaults to BASIC
 
         assert len(results) == 1
         assert results[0]["displayName"] == "rl_basic1"
         assert "entries" not in results[0]  # Entries are not in BASIC view
-        mock_chronicle_client.session.get.assert_called_once_with(
-            f"{mock_chronicle_client.base_url(APIVersion.V1)}/{mock_chronicle_client.instance_id}/referenceLists",
+        mock_chronicle_client.session.request.assert_called_once_with(
+            method="GET",
+            url=f"{mock_chronicle_client.base_url(APIVersion.V1)}/{mock_chronicle_client.instance_id}/referenceLists",
             params={"pageSize": 1000, "view": ReferenceListView.BASIC.value},
+            json=None,
+            headers=None,
+            timeout=None,
         )
 
     @patch("secops.chronicle.reference_list.get_reference_list")
@@ -553,7 +642,7 @@ class TestReferenceLists:
             # other fields like scopeInfo might be present
         }
         mock_response.json.return_value = expected_response_json
-        mock_chronicle_client.session.patch.return_value = mock_response
+        mock_chronicle_client.session.request.return_value = mock_response
 
         result = update_reference_list(
             mock_chronicle_client,
@@ -566,13 +655,19 @@ class TestReferenceLists:
         assert len(result["entries"]) == 2
         assert result["entries"][0]["value"] == "updated_entryX"
 
-        mock_chronicle_client.session.patch.assert_called_once_with(
-            f"{mock_chronicle_client.base_url(APIVersion.V1)}/{mock_chronicle_client.instance_id}/referenceLists/{rl_name}",
+        mock_chronicle_client.session.request.assert_called_once_with(
+            method="PATCH",
+            url=f"{mock_chronicle_client.base_url(APIVersion.V1)}/{mock_chronicle_client.instance_id}/referenceLists/{rl_name}",
+            params={'updateMask': 'description,entries'},
             json={
                 "description": new_description,
-                "entries": [{"value": "updated_entryX"}, {"value": "new_entryY"}],
+                "entries": [
+                    {"value": "updated_entryX"},
+                    {"value": "new_entryY"},
+                ],
             },
-            params={"updateMask": "description,entries"},
+            headers=None,
+            timeout=None,
         )
 
     def test_update_reference_list_no_changes_error(
@@ -584,7 +679,7 @@ class TestReferenceLists:
             match=r"Either description or entries \(or both\) must be provided for update.",
         ):
             update_reference_list(mock_chronicle_client, "some_rl_name")
-            
+
     @patch("secops.chronicle.data_table.REF_LIST_DATA_TABLE_ID_REGEX")
     def test_update_data_table_success_both_params(
         self, mock_regex_check: Mock, mock_chronicle_client: Mock
@@ -593,12 +688,12 @@ class TestReferenceLists:
         mock_regex_check.match.return_value = True  # Assume name is valid
         mock_response = Mock()
         mock_response.status_code = 200
-        
+
         dt_name = "test_dt_update"
         expected_dt_name = f"projects/test-project/locations/us/instances/test-customer/dataTables/{dt_name}"
         new_description = "Updated description"
         new_row_ttl = "48h"
-        
+
         mock_response.json.return_value = {
             "name": expected_dt_name,
             "description": new_description,
@@ -607,27 +702,30 @@ class TestReferenceLists:
             "columnInfo": [{"originalColumn": "col1", "columnType": "STRING"}],
             "dataTableUuid": "test-uuid",
         }
-        
-        mock_chronicle_client.session.patch.return_value = mock_response
+
+        mock_chronicle_client.session.request.return_value = mock_response
 
         result = update_data_table(
-            mock_chronicle_client, 
-            dt_name, 
-            description=new_description, 
-            row_time_to_live=new_row_ttl
+            mock_chronicle_client,
+            dt_name,
+            description=new_description,
+            row_time_to_live=new_row_ttl,
         )
 
         assert result["name"] == expected_dt_name
         assert result["description"] == new_description
         assert result["rowTimeToLive"] == new_row_ttl
-        
-        mock_chronicle_client.session.patch.assert_called_once_with(
-            f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
-            params={},
+
+        mock_chronicle_client.session.request.assert_called_once_with(
+            method="PATCH",
+            url=f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
+            params=None,
             json={
                 "description": new_description,
                 "row_time_to_live": new_row_ttl,
             },
+            headers=None,
+            timeout=None,
         )
 
     @patch("secops.chronicle.data_table.REF_LIST_DATA_TABLE_ID_REGEX")
@@ -638,34 +736,35 @@ class TestReferenceLists:
         mock_regex_check.match.return_value = True
         mock_response = Mock()
         mock_response.status_code = 200
-        
+
         dt_name = "test_dt_update"
         expected_dt_name = f"projects/test-project/locations/us/instances/test-customer/dataTables/{dt_name}"
         new_description = "Updated description only"
-        
+
         mock_response.json.return_value = {
             "name": expected_dt_name,
             "description": new_description,
             "updateTime": "2025-08-25T10:05:00Z",
             "dataTableUuid": "test-uuid",
         }
-        
-        mock_chronicle_client.session.patch.return_value = mock_response
+
+        mock_chronicle_client.session.request.return_value = mock_response
 
         result = update_data_table(
-            mock_chronicle_client, 
-            dt_name, 
-            description=new_description
+            mock_chronicle_client, dt_name, description=new_description
         )
 
         assert result["name"] == expected_dt_name
         assert result["description"] == new_description
         assert "rowTimeToLive" not in result
-        
-        mock_chronicle_client.session.patch.assert_called_once_with(
-            f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
-            params={},
+
+        mock_chronicle_client.session.request.assert_called_once_with(
+            method="PATCH",
+            url=f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
+            params=None,
             json={"description": new_description},
+            headers=None,
+            timeout=None,
         )
 
     @patch("secops.chronicle.data_table.REF_LIST_DATA_TABLE_ID_REGEX")
@@ -676,34 +775,35 @@ class TestReferenceLists:
         mock_regex_check.match.return_value = True
         mock_response = Mock()
         mock_response.status_code = 200
-        
+
         dt_name = "test_dt_update"
         expected_dt_name = f"projects/test-project/locations/us/instances/test-customer/dataTables/{dt_name}"
         new_row_ttl = "72h"
-        
+
         mock_response.json.return_value = {
             "name": expected_dt_name,
             "rowTimeToLive": new_row_ttl,
             "updateTime": "2025-08-25T10:10:00Z",
             "dataTableUuid": "test-uuid",
         }
-        
-        mock_chronicle_client.session.patch.return_value = mock_response
+
+        mock_chronicle_client.session.request.return_value = mock_response
 
         result = update_data_table(
-            mock_chronicle_client, 
-            dt_name, 
-            row_time_to_live=new_row_ttl
+            mock_chronicle_client, dt_name, row_time_to_live=new_row_ttl
         )
 
         assert result["name"] == expected_dt_name
         assert result["rowTimeToLive"] == new_row_ttl
         assert "description" not in result
-        
-        mock_chronicle_client.session.patch.assert_called_once_with(
-            f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
-            params={},
+
+        mock_chronicle_client.session.request.assert_called_once_with(
+            method="PATCH",
+            url=f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
+            params=None,
             json={"row_time_to_live": new_row_ttl},
+            headers=None,
+            timeout=None,
         )
 
     @patch("secops.chronicle.data_table.REF_LIST_DATA_TABLE_ID_REGEX")
@@ -727,29 +827,32 @@ class TestReferenceLists:
             "updateTime": "2025-08-25T10:15:00Z",
             "dataTableUuid": "test-uuid",
         }
-        
-        mock_chronicle_client.session.patch.return_value = mock_response
+
+        mock_chronicle_client.session.request.return_value = mock_response
 
         result = update_data_table(
-            mock_chronicle_client, 
-            dt_name, 
+            mock_chronicle_client,
+            dt_name,
             description=new_description,
             row_time_to_live=new_row_ttl,
-            update_mask=update_mask
+            update_mask=update_mask,
         )
 
         assert result["name"] == expected_dt_name
         assert result["description"] == new_description
-        
+
         # Verify that even though row_time_to_live was provided, it wasn't included in the API call
         # due to the update_mask
-        mock_chronicle_client.session.patch.assert_called_once_with(
-            f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
+        mock_chronicle_client.session.request.assert_called_once_with(
+            method="PATCH",
+            url=f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
             params={"updateMask": "description"},
             json={
                 "description": new_description,
                 "row_time_to_live": new_row_ttl,
             },
+            headers=None,
+            timeout=None,
         )
 
     @patch("secops.chronicle.data_table.REF_LIST_DATA_TABLE_ID_REGEX")
@@ -766,9 +869,9 @@ class TestReferenceLists:
                 "invalid_name!",
                 description="New description",
             )
-            
+
         # Verify the API was never called
-        mock_chronicle_client.session.patch.assert_not_called()
+        mock_chronicle_client.session.request.assert_not_called()
 
     def test_update_data_table_api_error(
         self, mock_chronicle_client: Mock
@@ -777,22 +880,24 @@ class TestReferenceLists:
         mock_response = Mock()
         mock_response.status_code = 400
         mock_response.text = "Invalid row_time_to_live format"
-        
-        mock_chronicle_client.session.patch.return_value = mock_response
-        
+
+        mock_chronicle_client.session.request.return_value = mock_response
+
         with pytest.raises(
-            APIError, match="Failed to update data table 'test_table': 400 Invalid row_time_to_live format"
+            APIError,
+            match="Failed to update data table 'test_table'",
         ):
             update_data_table(
-                mock_chronicle_client, 
-                "test_table", 
-                row_time_to_live="invalid"
+                mock_chronicle_client, "test_table", row_time_to_live="invalid"
             )
 
-    @patch('secops.chronicle.data_table._estimate_row_json_size')
-    @patch('secops.chronicle.data_table.create_data_table_rows')
+    @patch("secops.chronicle.data_table._estimate_row_json_size")
+    @patch("secops.chronicle.data_table.create_data_table_rows")
     def test_replace_data_table_rows_size_based_batching(
-        self, mock_create_rows: Mock, mock_estimate_size: Mock, mock_chronicle_client: Mock
+        self,
+        mock_create_rows: Mock,
+        mock_estimate_size: Mock,
+        mock_chronicle_client: Mock,
     ) -> None:
         """Test that replace_data_table_rows handles size-based batching."""
         # Mock response for API calls
@@ -801,51 +906,62 @@ class TestReferenceLists:
         mock_response.json.return_value = {
             "dataTableRows": [{"name": "row_replaced"}]
         }
-        mock_chronicle_client.session.post.return_value = mock_response
-        
+        mock_chronicle_client.session.request.return_value = mock_response
+
         # Mock create_data_table_rows function for remaining rows
-        mock_create_rows.return_value = [{"dataTableRows": [{"name": "row_created"}]}]
-        
+        mock_create_rows.return_value = [
+            {"dataTableRows": [{"name": "row_created"}]}
+        ]
+
         # Create test data: first batch will have some rows close to 4MB limit
         # to test size-based batching
         dt_name = "dt_for_replace_batching"
-        rows_data = [[f"small_value{i}"] for i in range(950)]  # Under 1000 rows total
-        
+        rows_data = [
+            [f"small_value{i}"] for i in range(950)
+        ]  # Under 1000 rows total
+
         # Mock size estimation to force size-based batching
         # First 5 rows are large (close to 1MB each), rest are small
         def estimate_size_side_effect(row):
             if row[0].startswith("small_value") and int(row[0][11:]) < 5:
                 return 900000  # Almost 1MB each for first 5 rows
             return 10000  # Small size for other rows
-            
+
         mock_estimate_size.side_effect = estimate_size_side_effect
-        
+
         # Call the function under test
-        responses = replace_data_table_rows(mock_chronicle_client, dt_name, rows_data)
-        
+        responses = replace_data_table_rows(
+            mock_chronicle_client, dt_name, rows_data
+        )
+
         # Verify the correct behavior:
         # 1. Single bulkReplace call for the rows that fit in 4MB
         # 2. create_data_table_rows function call for remaining rows
-        
+
         # First call should be bulkReplace with only the rows that fit in 4MB
-        mock_chronicle_client.session.post.assert_called_once()
-        post_call = mock_chronicle_client.session.post.call_args
-        assert "bulkReplace" in post_call[0][0]
-        
+        mock_chronicle_client.session.request.assert_called_once()
+        post_call = mock_chronicle_client.session.request.call_args
+        assert "bulkReplace" in post_call[1]["url"]
+
         # The create_data_table_rows function should be called for remaining rows
         mock_create_rows.assert_called_once()
         create_call_args = mock_create_rows.call_args
         # Verify the function was called with the right parameters
         assert create_call_args[0][0] == mock_chronicle_client  # client
         assert create_call_args[0][1] == dt_name  # name
-        
+
         # Verify we got responses from both operations
         assert len(responses) == 2
 
-    @patch('secops.chronicle.data_table._estimate_row_json_size', return_value=1000)  # Small enough for all rows
-    @patch('secops.chronicle.data_table.create_data_table_rows')
+    @patch(
+        "secops.chronicle.data_table._estimate_row_json_size", return_value=1000
+    )  # Small enough for all rows
+    @patch("secops.chronicle.data_table.create_data_table_rows")
     def test_replace_data_table_rows_chunking(
-        self, mock_create_rows: Mock, mock_estimate_size: Mock, mock_chronicle_client: Mock
+        self,
+        mock_create_rows: Mock,
+        mock_estimate_size: Mock,
+        mock_chronicle_client: Mock,
     ) -> None:
         """Test that replace_data_table_rows chunks large inputs over 1000 rows."""
         # Mock responses for API calls
@@ -854,39 +970,47 @@ class TestReferenceLists:
         mock_response.json.return_value = {
             "dataTableRows": [{"name": "row_replaced_chunk"}]
         }
-        mock_chronicle_client.session.post.return_value = mock_response
-        
+        mock_chronicle_client.session.request.return_value = mock_response
+
         # Mock create_data_table_rows function for remaining rows
-        mock_create_rows.return_value = [{"dataTableRows": [{"name": "row_created_chunk"}]}]
-        
+        mock_create_rows.return_value = [
+            {"dataTableRows": [{"name": "row_created_chunk"}]}
+        ]
+
         # Create test data with more than 1000 rows
         dt_name = "dt_for_replace_chunking"
         rows_data = [[f"new_value{i}"] for i in range(1500)]  # 1500 rows
-        
+
         # Call the function under test
-        responses = replace_data_table_rows(mock_chronicle_client, dt_name, rows_data)
-        
+        responses = replace_data_table_rows(
+            mock_chronicle_client, dt_name, rows_data
+        )
+
         # Verify first call was bulkReplace with first 1000 rows
-        assert mock_chronicle_client.session.post.call_count == 1
-        post_call = mock_chronicle_client.session.post.call_args
-        assert "bulkReplace" in post_call[0][0]
-        
+        assert mock_chronicle_client.session.request.call_count == 1
+        post_call = mock_chronicle_client.session.request.call_args
+        assert "bulkReplace" in post_call[1]["url"]
+
         # Verify the remaining rows were sent using create_data_table_rows function
         mock_create_rows.assert_called_once()
         create_call = mock_create_rows.call_args
-        
+
         # Verify function was called with correct parameters
         assert create_call[0][0] == mock_chronicle_client  # client parameter
         assert create_call[0][1] == dt_name  # table name parameter
-        
+
         # We need to include rows 1000-1499 (500 rows total) in the remaining batch
-        remaining_rows = create_call[0][2]  # Get the rows passed to create_data_table_rows
+        remaining_rows = create_call[0][
+            2
+        ]  # Get the rows passed to create_data_table_rows
         assert len(remaining_rows) == 500  # 500 remaining rows
-        
+
         # Verify we got response correctly
         assert len(responses) == 2
 
-    def test_replace_data_table_rows_few_rows(self, mock_chronicle_client: Mock) -> None:
+    def test_replace_data_table_rows_few_rows(
+        self, mock_chronicle_client: Mock
+    ) -> None:
         """Test direct call to replace_data_table_rows with a small number of rows."""
         # Mock response for API call
         mock_response = Mock()
@@ -897,68 +1021,102 @@ class TestReferenceLists:
                 {"name": "replaced_row2", "values": ["new3", "new4"]},
             ]
         }
-        mock_chronicle_client.session.post.return_value = mock_response
-            
+        mock_chronicle_client.session.request.return_value = mock_response
+
         dt_name = "test_dt_replace"
-        rows_to_replace = [["new1", "new2"], ["new3", "new4"]]  # Small set of rows
-            
+        rows_to_replace = [
+            ["new1", "new2"],
+            ["new3", "new4"],
+        ]  # Small set of rows
+
         # Patch row size estimation to return small values and create_data_table_rows
         # since we don't use it in this test case
-        with patch('secops.chronicle.data_table._estimate_row_json_size', return_value=1000), \
-             patch('secops.chronicle.data_table.create_data_table_rows') as mock_create_rows:
+        with (
+            patch(
+                "secops.chronicle.data_table._estimate_row_json_size",
+                return_value=1000,
+            ),
+            patch(
+                "secops.chronicle.data_table.create_data_table_rows"
+            ) as mock_create_rows,
+        ):
             # Mock doesn't get called in this test but needs to be patched
             # to prevent any unwanted side effects
             mock_create_rows.return_value = []
-            
+
             # Call the function under test
-            result = replace_data_table_rows(mock_chronicle_client, dt_name, rows_to_replace)
-            
+            result = replace_data_table_rows(
+                mock_chronicle_client, dt_name, rows_to_replace
+            )
+
             # Verify API was called correctly
-            mock_chronicle_client.session.post.assert_called_once()
-            call_args = mock_chronicle_client.session.post.call_args
-            assert "bulkReplace" in call_args[0][0]  # URL has bulkReplace
-            
+            mock_chronicle_client.session.request.assert_called_once()
+            call_args = mock_chronicle_client.session.request.call_args
+            assert "bulkReplace" in call_args[1]["url"]  # URL has bulkReplace
+
             # Verify we have all rows in a single request
             requests = call_args[1]["json"]["requests"]
             assert len(requests) == 2  # Both rows in a single request
-            
+
             # Verify response was processed correctly
             assert len(result) == 1
             assert result[0] == mock_response.json.return_value
-            
+
             # Verify we didn't need to use create_data_table_rows for additional rows
             mock_create_rows.assert_not_called()
 
-    def test_replace_data_table_rows_api_error(self, mock_chronicle_client: Mock) -> None:
+    def test_replace_data_table_rows_api_error(
+        self, mock_chronicle_client: Mock
+    ) -> None:
         """Test API error handling in replace_data_table_rows."""
         # Mock API error response
         error_response = Mock()
         error_response.status_code = 400
         error_response.text = "Invalid row format"
-        mock_chronicle_client.session.post.return_value = error_response
-        
+        mock_chronicle_client.session.request.return_value = error_response
+
         dt_name = "invalid_table"
         rows_to_replace = [["bad_data"]]  # Small test data
-        
+
         # Patch row size estimation to avoid size issues and patch create_data_table_rows
         # as it's not expected to be called in this error case
-        with patch('secops.chronicle.data_table._estimate_row_json_size', return_value=1000), \
-             patch('secops.chronicle.data_table.create_data_table_rows'):
-            with pytest.raises(APIError, match="Failed to replace data table rows for 'invalid_table': 400 Invalid row format"):
-                replace_data_table_rows(mock_chronicle_client, dt_name, rows_to_replace)
+        with (
+            patch(
+                "secops.chronicle.data_table._estimate_row_json_size",
+                return_value=1000,
+            ),
+            patch("secops.chronicle.data_table.create_data_table_rows"),
+        ):
+            with pytest.raises(
+                APIError,
+                match="Failed to replace data table rows for 'invalid_table'",
+            ):
+                replace_data_table_rows(
+                    mock_chronicle_client, dt_name, rows_to_replace
+                )
 
-    def test_replace_data_table_rows_single_oversized_row(self, mock_chronicle_client: Mock) -> None:
+    def test_replace_data_table_rows_single_oversized_row(
+        self, mock_chronicle_client: Mock
+    ) -> None:
         """Test handling of a single oversized row in replace_data_table_rows."""
         dt_name = "dt_with_big_row"
         oversized_row = [["*" * 1000000]]  # Very large row
-            
+
         # Mock _estimate_row_json_size to return a value larger than 4MB for our oversized row
         # Also patch create_data_table_rows as it won't be called in this error case
-        with patch('secops.chronicle.data_table._estimate_row_json_size', return_value=5000000), \
-             patch('secops.chronicle.data_table.create_data_table_rows'):
-            with pytest.raises(SecOpsError, match="Single row is too large to process"):
-                replace_data_table_rows(mock_chronicle_client, dt_name, oversized_row)
-
+        with (
+            patch(
+                "secops.chronicle.data_table._estimate_row_json_size",
+                return_value=5000000,
+            ),
+            patch("secops.chronicle.data_table.create_data_table_rows"),
+        ):
+            with pytest.raises(
+                SecOpsError, match="Single row is too large to process"
+            ):
+                replace_data_table_rows(
+                    mock_chronicle_client, dt_name, oversized_row
+                )
 
     def test_update_data_table_rows_success(
         self, mock_chronicle_client: Mock
@@ -981,7 +1139,7 @@ class TestReferenceLists:
                 },
             ]
         }
-        mock_chronicle_client.session.post.return_value = mock_response
+        mock_chronicle_client.session.request.return_value = mock_response
 
         dt_name = "dt1"
         row_updates = [
@@ -1007,17 +1165,18 @@ class TestReferenceLists:
             )
 
             # Verify API was called correctly
-            mock_chronicle_client.session.post.assert_called_once()
-            call_args = mock_chronicle_client.session.post.call_args
-            assert "bulkUpdate" in call_args[0][0]
+            mock_chronicle_client.session.request.assert_called_once()
+            call_args = mock_chronicle_client.session.request.call_args
+            assert "bulkUpdate" in call_args[1]["url"]
 
             # Verify payload structure
             requests = call_args[1]["json"]["requests"]
             assert len(requests) == 2
             assert requests[0]["dataTableRow"]["name"] == row_updates[0]["name"]
-            assert requests[0]["dataTableRow"]["values"] == row_updates[0][
-                "values"
-            ]
+            assert (
+                requests[0]["dataTableRow"]["values"]
+                == row_updates[0]["values"]
+            )
 
             # Verify response
             assert len(result) == 1
@@ -1038,7 +1197,7 @@ class TestReferenceLists:
                 }
             ]
         }
-        mock_chronicle_client.session.post.return_value = mock_response
+        mock_chronicle_client.session.request.return_value = mock_response
 
         dt_name = "dt1"
         row_updates = [
@@ -1059,7 +1218,7 @@ class TestReferenceLists:
             )
 
             # Verify update mask is included in request
-            call_args = mock_chronicle_client.session.post.call_args
+            call_args = mock_chronicle_client.session.request.call_args
             requests = call_args[1]["json"]["requests"]
             assert "updateMask" in requests[0]
             assert requests[0]["updateMask"] == "values"
@@ -1078,7 +1237,7 @@ class TestReferenceLists:
         mock_response.json.return_value = {
             "dataTableRows": [{"name": "row_updated"}]
         }
-        mock_chronicle_client.session.post.return_value = mock_response
+        mock_chronicle_client.session.request.return_value = mock_response
 
         # Mock small row sizes
         mock_estimate_size.return_value = 1000
@@ -1100,15 +1259,15 @@ class TestReferenceLists:
         )
 
         # Verify API was called twice (1000 + 500)
-        assert mock_chronicle_client.session.post.call_count == 2
+        assert mock_chronicle_client.session.request.call_count == 2
 
         # Verify first call has 1000 rows
-        first_call = mock_chronicle_client.session.post.call_args_list[0]
+        first_call = mock_chronicle_client.session.request.call_args_list[0]
         first_requests = first_call[1]["json"]["requests"]
         assert len(first_requests) == 1000
 
         # Verify second call has 500 rows
-        second_call = mock_chronicle_client.session.post.call_args_list[1]
+        second_call = mock_chronicle_client.session.request.call_args_list[1]
         second_requests = second_call[1]["json"]["requests"]
         assert len(second_requests) == 500
 
@@ -1125,7 +1284,7 @@ class TestReferenceLists:
         mock_response.json.return_value = {
             "dataTableRows": [{"name": "row_updated"}]
         }
-        mock_chronicle_client.session.post.return_value = mock_response
+        mock_chronicle_client.session.request.return_value = mock_response
 
         dt_name = "dt_size_chunking"
         # Create test data with varying sizes
@@ -1154,7 +1313,7 @@ class TestReferenceLists:
         )
 
         # Should have multiple chunks due to size constraints
-        assert mock_chronicle_client.session.post.call_count >= 2
+        assert mock_chronicle_client.session.request.call_count >= 2
         assert len(result) >= 2
 
     def test_update_data_table_rows_empty_list(
@@ -1173,7 +1332,7 @@ class TestReferenceLists:
             )
 
             # Should not make any API calls
-            mock_chronicle_client.session.post.assert_not_called()
+            mock_chronicle_client.session.request.assert_not_called()
             # Should return empty list
             assert result == []
 
@@ -1185,7 +1344,7 @@ class TestReferenceLists:
         error_response = Mock()
         error_response.status_code = 400
         error_response.text = "Invalid row data"
-        mock_chronicle_client.session.post.return_value = error_response
+        mock_chronicle_client.session.request.return_value = error_response
 
         dt_name = "dt_error"
         row_updates = [
@@ -1202,8 +1361,7 @@ class TestReferenceLists:
         ):
             with pytest.raises(
                 APIError,
-                match="Failed to update data table rows for 'dt_error': "
-                "400 Invalid row data",
+                match="Failed to update data table rows for 'dt_error': ",
             ):
                 update_data_table_rows(
                     mock_chronicle_client, dt_name, row_updates

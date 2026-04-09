@@ -1,0 +1,13 @@
+pytest>=7.0.0
+pytest-cov>=3.0.0
+tox>=3.24.0
+python-dotenv>=0.17.1
+build
+black
+packaging
+pathspec
+protobuf
+pylint
+twine
+sphinx>=4.0.0
+sphinx-rtd-theme>=1.0.0

@@ -21,6 +21,7 @@ from secops.chronicle.utils.format_utils import (
     build_patch_body,
     format_resource_id,
     parse_json_list,
+    remove_none_values,
 )
 from secops.exceptions import APIError
 
@@ -202,4 +203,62 @@ def test_build_patch_body_mask_order_matches_field_map_order() -> None:
 
     assert params == {"updateMask": "z_key,a_key,m_key"}
     assert list(body.keys()) == ["z", "a", "m"]
+
+
+
+# ---------------------------------------------------------------------------
+# remove_none_values
+# ---------------------------------------------------------------------------
+
+
+def test_remove_none_values_removes_none_entries() -> None:
+    # Keys whose value is None should be absent from the result.
+    result = remove_none_values({"a": 1, "b": None, "c": "hello"})
+    assert result == {"a": 1, "c": "hello"}
+
+
+def test_remove_none_values_keeps_all_entries_when_no_nones() -> None:
+    d = {"x": 0, "y": False, "z": ""}
+    assert remove_none_values(d) == {"x": 0, "y": False, "z": ""}
+
+
+def test_remove_none_values_returns_empty_dict_when_all_none() -> None:
+    assert remove_none_values({"a": None, "b": None}) == {}
+
+
+def test_remove_none_values_returns_empty_dict_for_empty_input() -> None:
+    assert remove_none_values({}) == {}
+
+
+def test_remove_none_values_keeps_falsy_non_none_values() -> None:
+    # 0, False, and "" are falsy but not None — they must be preserved.
+    result = remove_none_values({"zero": 0, "false": False, "empty": "", "none": None})
+    assert result == {"zero": 0, "false": False, "empty": ""}
+
+
+def test_remove_none_values_keeps_nested_dicts_intact() -> None:
+    # The function is shallow — nested dicts are kept as-is even if they
+    # contain None values inside them.
+    inner = {"nested_none": None}
+    result = remove_none_values({"outer": inner, "gone": None})
+    assert result == {"outer": inner}
+    assert result["outer"]["nested_none"] is None
+
+
+def test_remove_none_values_does_not_mutate_original_dict() -> None:
+    original = {"a": 1, "b": None}
+    _ = remove_none_values(original)
+    assert "b" in original  # original must be unchanged
+
+
+def test_remove_none_values_returns_new_dict_object() -> None:
+    original = {"a": 1}
+    result = remove_none_values(original)
+    assert result is not original
+
+
+def test_remove_none_values_with_list_and_dict_values() -> None:
+    # Lists and dicts as values should be preserved.
+    result = remove_none_values({"lst": [1, 2], "dct": {"k": "v"}, "gone": None})
+    assert result == {"lst": [1, 2], "dct": {"k": "v"}}
 

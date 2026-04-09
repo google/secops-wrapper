@@ -31,16 +31,15 @@ import requests
 @pytest.fixture
 def mock_chronicle_client():
     """Create a mock Chronicle client."""
-    client = Mock()
-    client.project_id = "test-project"
-    client.customer_id = "test-customer"
-    client.region = "us"
-    client.base_url = "https://us-chronicle.googleapis.com/v1alpha"
-    client.instance_id = (
-        "projects/test-project/locations/us/instances/test-customer"
-    )
-    client.session = Mock()
-    return client
+    with patch("secops.auth.SecOpsAuth") as mock_auth:
+        mock_session = Mock()
+        mock_session.headers = {}
+        mock_auth.return_value.session = mock_session
+        from secops.chronicle.client import ChronicleClient
+
+        return ChronicleClient(
+            customer_id="test-customer", project_id="test-project"
+        )
 
 
 @pytest.fixture
@@ -85,7 +84,9 @@ def sample_gemini_response():
                         "displayText": "Open in Rule Editor",
                         "actionType": "NAVIGATION",
                         "useCaseId": "test-use-case",
-                        "navigation": {"targetUri": "/rulesEditor?rule=example"},
+                        "navigation": {
+                            "targetUri": "/rulesEditor?rule=example"
+                        },
                     }
                 ],
             }
@@ -133,9 +134,14 @@ def test_suggested_action_init():
 
 def test_gemini_response_init():
     """Test GeminiResponse class initialization."""
-    blocks = [Block("TEXT", "Text content"), Block("CODE", "Code content", "Example")]
+    blocks = [
+        Block("TEXT", "Text content"),
+        Block("CODE", "Code content", "Example"),
+    ]
     actions = [
-        SuggestedAction("Action", "NAVIGATION", "test-case", NavigationAction("/uri"))
+        SuggestedAction(
+            "Action", "NAVIGATION", "test-case", NavigationAction("/uri")
+        )
     ]
     references = [Block("HTML", "<p>Reference</p>")]
 
@@ -161,7 +167,10 @@ def test_gemini_response_init():
 
     # Test with default values
     basic_response = GeminiResponse(
-        name="test", input_query="query", create_time="2025-01-01T00:00:00Z", blocks=[]
+        name="test",
+        input_query="query",
+        create_time="2025-01-01T00:00:00Z",
+        blocks=[],
     )
     assert basic_response.suggested_actions == []
     assert basic_response.references == []
@@ -249,7 +258,10 @@ def test_gemini_response_helper_methods():
     # Test get_html_blocks
     html_blocks = response.get_html_blocks()
     assert len(html_blocks) == 1
-    assert html_blocks[0].content == "<p>HTML <strong>formatted</strong> content</p>"
+    assert (
+        html_blocks[0].content
+        == "<p>HTML <strong>formatted</strong> content</p>"
+    )
 
     # Test get_raw_response
     raw_data = {"test": "data"}
@@ -273,33 +285,36 @@ def test_create_conversation_success(mock_chronicle_client):
         "createTime": "2025-01-01T00:00:00Z",
     }
 
-    mock_chronicle_client.session.post.return_value = mock_response
+    with patch.object(
+        mock_chronicle_client.session, "request", return_value=mock_response
+    ):
+        # Test with default display name
+        conv_id = create_conversation(mock_chronicle_client)
+        assert conv_id == "test-conv-id"
 
-    # Test with default display name
-    conv_id = create_conversation(mock_chronicle_client)
-    assert conv_id == "test-conv-id"
+        # Check API call
+        mock_chronicle_client.session.request.assert_called_once()
+        call_args = mock_chronicle_client.session.request.call_args
 
-    # Check API call
-    mock_chronicle_client.session.post.assert_called_once()
-    call_args = mock_chronicle_client.session.post.call_args
+        # Check URL
+        expected_url = (
+            f"{mock_chronicle_client.base_url()}/"
+            f"{mock_chronicle_client.instance_id}/users/me/conversations"
+        )
+        assert call_args.kwargs["url"] == expected_url
 
-    # Check URL
-    expected_url = (
-        f"{mock_chronicle_client.base_url}/"
-        f"{mock_chronicle_client.instance_id}/users/me/conversations"
-    )
-    assert call_args[0][0] == expected_url
-
-    # Check payload
-    assert call_args[1]["json"] == {"displayName": "New chat"}
+        # Check payload
+        assert call_args.kwargs["json"] == {"displayName": "New chat"}
 
     # Test with custom display name
-    mock_chronicle_client.session.post.reset_mock()
-    conv_id = create_conversation(mock_chronicle_client, "Custom Chat")
-    assert conv_id == "test-conv-id"
-    assert mock_chronicle_client.session.post.call_args[1]["json"] == {
-        "displayName": "Custom Chat"
-    }
+    with patch.object(
+        mock_chronicle_client.session, "request", return_value=mock_response
+    ):
+        conv_id = create_conversation(mock_chronicle_client, "Custom Chat")
+        assert conv_id == "test-conv-id"
+        assert mock_chronicle_client.session.request.call_args.kwargs[
+            "json"
+        ] == {"displayName": "Custom Chat"}
 
 
 def test_create_conversation_error(mock_chronicle_client):
@@ -310,50 +325,57 @@ def test_create_conversation_error(mock_chronicle_client):
     mock_response.text = "Bad request"
     mock_response.raise_for_status.side_effect = Exception("HTTP Error")
 
-    mock_chronicle_client.session.post.return_value = mock_response
+    with patch.object(
+        mock_chronicle_client.session, "request", return_value=mock_response
+    ):
+        with pytest.raises(APIError) as excinfo:
+            create_conversation(mock_chronicle_client)
 
-    with pytest.raises(APIError) as excinfo:
-        create_conversation(mock_chronicle_client)
-
-    assert "Failed to create conversation" in str(excinfo.value)
+        assert "Failed to create conversation" in str(excinfo.value)
 
 
-def test_query_gemini_new_conversation(mock_chronicle_client, sample_gemini_response):
+def test_query_gemini_new_conversation(
+    mock_chronicle_client, sample_gemini_response
+):
     """Test querying Gemini with a new conversation."""
     # Mock create_conversation
-    with patch("secops.chronicle.gemini.create_conversation") as mock_create_conv:
+    with patch(
+        "secops.chronicle.gemini.create_conversation"
+    ) as mock_create_conv:
         mock_create_conv.return_value = "test-conv-id"
 
         # Mock the API response
         mock_resp = Mock()
         mock_resp.status_code = 200
         mock_resp.json.return_value = sample_gemini_response
-        mock_chronicle_client.session.post.return_value = mock_resp
 
-        # Call the function
-        response = query_gemini(
-            mock_chronicle_client, query="What is Windows event ID 4625?"
-        )
+        with patch.object(
+            mock_chronicle_client.session, "request", return_value=mock_resp
+        ):
+            # Call the function
+            response = query_gemini(
+                mock_chronicle_client, query="What is Windows event ID 4625?"
+            )
 
-        # Check that create_conversation was called
-        mock_create_conv.assert_called_once_with(mock_chronicle_client)
+            # Check that create_conversation was called
+            mock_create_conv.assert_called_once_with(mock_chronicle_client)
 
-        # Check API call
-        mock_chronicle_client.session.post.assert_called_once()
-        call_args = mock_chronicle_client.session.post.call_args
+            # Check API call
+            mock_chronicle_client.session.request.assert_called_once()
+            call_args = mock_chronicle_client.session.request.call_args
 
-        # Check URL
-        assert "test-conv-id/messages" in call_args[0][0]
+            # Check URL
+            assert "test-conv-id/messages" in call_args.kwargs["url"]
 
-        # Check payload
-        payload = call_args[1]["json"]
-        assert payload["input"]["body"] == "What is Windows event ID 4625?"
-        assert payload["input"]["context"]["uri"] == "/search"
+            # Check payload
+            payload = call_args.kwargs["json"]
+            assert payload["input"]["body"] == "What is Windows event ID 4625?"
+            assert payload["input"]["context"]["uri"] == "/search"
 
-        # Check response
-        assert isinstance(response, GeminiResponse)
-        assert len(response.blocks) == 3
-        assert response.blocks[0].block_type == "TEXT"
+            # Check response
+            assert isinstance(response, GeminiResponse)
+            assert len(response.blocks) == 3
+            assert response.blocks[0].block_type == "TEXT"
 
 
 def test_query_gemini_existing_conversation(
@@ -364,28 +386,30 @@ def test_query_gemini_existing_conversation(
     mock_resp = Mock()
     mock_resp.status_code = 200
     mock_resp.json.return_value = sample_gemini_response
-    mock_chronicle_client.session.post.return_value = mock_resp
 
-    # Call the function with an existing conversation ID
-    response = query_gemini(
-        mock_chronicle_client,
-        query="What is Windows event ID 4625?",
-        conversation_id="existing-conv-id",
-        context_uri="/custom-context",
-        context_body={"custom": "data"},
-    )
+    with patch.object(
+        mock_chronicle_client.session, "request", return_value=mock_resp
+    ):
+        # Call the function with an existing conversation ID
+        response = query_gemini(
+            mock_chronicle_client,
+            query="What is Windows event ID 4625?",
+            conversation_id="existing-conv-id",
+            context_uri="/custom-context",
+            context_body={"custom": "data"},
+        )
 
-    # Check API call
-    mock_chronicle_client.session.post.assert_called_once()
-    call_args = mock_chronicle_client.session.post.call_args
+        # Check API call
+        mock_chronicle_client.session.request.assert_called_once()
+        call_args = mock_chronicle_client.session.request.call_args
 
-    # Check URL contains the existing conversation ID
-    assert "existing-conv-id/messages" in call_args[0][0]
+        # Check URL contains the existing conversation ID
+        assert "existing-conv-id/messages" in call_args.kwargs["url"]
 
-    # Check payload contains context
-    payload = call_args[1]["json"]
-    assert payload["input"]["context"]["uri"] == "/custom-context"
-    assert payload["input"]["context"]["body"] == {"custom": "data"}
+        # Check payload contains context
+        payload = call_args.kwargs["json"]
+        assert payload["input"]["context"]["uri"] == "/custom-context"
+        assert payload["input"]["context"]["body"] == {"custom": "data"}
 
 
 def test_query_gemini_error(mock_chronicle_client):
@@ -396,16 +420,19 @@ def test_query_gemini_error(mock_chronicle_client):
     mock_response.text = "Bad request"
     mock_response.raise_for_status.side_effect = Exception("HTTP Error")
 
-    mock_chronicle_client.session.post.return_value = mock_response
-
     # Mock create_conversation to avoid testing that part
-    with patch("secops.chronicle.gemini.create_conversation") as mock_create_conv:
+    with patch(
+        "secops.chronicle.gemini.create_conversation"
+    ) as mock_create_conv:
         mock_create_conv.return_value = "test-conv-id"
 
-        with pytest.raises(APIError) as excinfo:
-            query_gemini(mock_chronicle_client, "test query")
+        with patch.object(
+            mock_chronicle_client.session, "request", return_value=mock_response
+        ):
+            with pytest.raises(APIError) as excinfo:
+                query_gemini(mock_chronicle_client, "test query")
 
-        assert "Failed to query Gemini" in str(excinfo.value)
+            assert "Failed to query Gemini" in str(excinfo.value)
 
 
 def test_opt_in_to_gemini_success(mock_chronicle_client):
@@ -417,26 +444,33 @@ def test_opt_in_to_gemini_success(mock_chronicle_client):
         "ui_preferences": {"enable_duet_ai_chat": True},
     }
 
-    mock_chronicle_client.session.patch.return_value = mock_response
+    with patch.object(
+        mock_chronicle_client.session, "request", return_value=mock_response
+    ):
+        # Call the function
+        result = opt_in_to_gemini(mock_chronicle_client)
 
-    # Call the function
-    result = opt_in_to_gemini(mock_chronicle_client)
+        # Verify the result
+        assert result is True
 
-    # Verify the result
-    assert result is True
+        # Verify the API call
+        mock_chronicle_client.session.request.assert_called_once()
+        call_args = mock_chronicle_client.session.request.call_args
 
-    # Verify the API call
-    mock_chronicle_client.session.patch.assert_called_once()
-    call_args = mock_chronicle_client.session.patch.call_args
+        # Check URL
+        assert "preferenceSet" in call_args.kwargs["url"]
 
-    # Check URL
-    assert "preferenceSet" in call_args[0][0]
+        # Check payload
+        assert (
+            call_args.kwargs["json"]["ui_preferences"]["enable_duet_ai_chat"]
+            is True
+        )
 
-    # Check payload
-    assert call_args[1]["json"]["ui_preferences"]["enable_duet_ai_chat"] is True
-
-    # Check update mask parameter
-    assert call_args[1]["params"]["updateMask"] == "ui_preferences.enable_duet_ai_chat"
+        # Check update mask parameter
+        assert (
+            call_args.kwargs["params"]["updateMask"]
+            == "ui_preferences.enable_duet_ai_chat"
+        )
 
 
 def test_opt_in_to_gemini_permission_error(mock_chronicle_client):
@@ -448,13 +482,15 @@ def test_opt_in_to_gemini_permission_error(mock_chronicle_client):
     # Simulate a permission error
     error = requests.exceptions.HTTPError("Permission denied")
     error.response = mock_response
-    mock_chronicle_client.session.patch.side_effect = error
 
-    # Call the function - should not raise but return False
-    result = opt_in_to_gemini(mock_chronicle_client)
+    with patch.object(
+        mock_chronicle_client.session, "request", side_effect=error
+    ):
+        # Call the function - should not raise but return False
+        result = opt_in_to_gemini(mock_chronicle_client)
 
-    # Verify the result
-    assert result is False
+        # Verify the result
+        assert result is False
 
 
 def test_opt_in_to_gemini_other_error(mock_chronicle_client):
@@ -466,112 +502,129 @@ def test_opt_in_to_gemini_other_error(mock_chronicle_client):
     # Simulate an error
     error = requests.exceptions.HTTPError("Bad request")
     error.response = mock_response
-    mock_chronicle_client.session.patch.side_effect = error
 
-    # Call the function - should raise APIError
-    with pytest.raises(APIError) as excinfo:
-        opt_in_to_gemini(mock_chronicle_client)
+    with patch.object(
+        mock_chronicle_client.session, "request", side_effect=error
+    ):
+        # Call the function - should raise APIError
+        with pytest.raises(APIError) as excinfo:
+            opt_in_to_gemini(mock_chronicle_client)
 
-    assert "Failed to opt in to Gemini" in str(excinfo.value)
+        assert "Failed to opt in to Gemini" in str(excinfo.value)
 
 
-def test_query_gemini_auto_opt_in(mock_chronicle_client, sample_gemini_response):
+def test_query_gemini_auto_opt_in(
+    mock_chronicle_client, sample_gemini_response
+):
     """Test automatic opt-in when querying Gemini."""
     # First create a mock for the conversation creation method
-    with patch("secops.chronicle.gemini.create_conversation") as mock_create_conv:
+    with patch(
+        "secops.chronicle.gemini.create_conversation"
+    ) as mock_create_conv:
         mock_create_conv.return_value = "test-conv-id"
 
-        # Setup the session post to first fail with an opt-in error, then succeed
-        mock_opt_in_response = Mock()
-        mock_opt_in_response.status_code = 200
-        mock_opt_in_response.json.return_value = {
-            "ui_preferences": {"enable_duet_ai_chat": True}
-        }
-
-        # First request fails with opt-in error
+        # First request fails with opt-in error (status 400)
         first_response = Mock()
         first_response.status_code = 400
         first_response.text = (
             '{"error":{"message":"users must opt-in before using Gemini"}}'
         )
-        first_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
-                "400 Client Error", response=first_response
-        )
+        first_response.json.return_value = {
+            "error": {"message": "users must opt-in before using Gemini"}
+        }
+        first_response.headers = {"Content-Type": "application/json"}
 
-        # Second request succeeds
-        second_response = Mock()
-        second_response.status_code = 200
-        second_response.json.return_value = sample_gemini_response
-
-        # Set up the sequence of responses
-        mock_chronicle_client.session.post.side_effect = [
-            first_response,
-            second_response,
-        ]
-        mock_chronicle_client.session.patch.return_value = mock_opt_in_response
-
-        # Call the function - this should trigger opt-in and retry
-        response = query_gemini(mock_chronicle_client, "What is Windows event ID 4625?")
-
-        # Verify the result is a proper GeminiResponse
-        assert isinstance(response, GeminiResponse)
-        assert len(response.blocks) == 3
-
-        # Verify opt-in was attempted
-        mock_chronicle_client.session.patch.assert_called_once()
-
-        # Verify two POST calls were made (first failed, second succeeded)
-        assert mock_chronicle_client.session.post.call_count == 2
-
-
-def test_query_gemini_opt_in_flag(mock_chronicle_client, sample_gemini_response):
-    """Test that the opt-in flag is properly set on the client."""
-    # First create a mock for the conversation creation method
-    with patch("secops.chronicle.gemini.create_conversation") as mock_create_conv:
-        mock_create_conv.return_value = "test-conv-id"
-
-        # Set up responses
+        # Opt-in request succeeds
         mock_opt_in_response = Mock()
         mock_opt_in_response.status_code = 200
         mock_opt_in_response.json.return_value = {
             "ui_preferences": {"enable_duet_ai_chat": True}
         }
+        mock_opt_in_response.headers = {"Content-Type": "application/json"}
 
+        # Retry request succeeds
+        second_response = Mock()
+        second_response.status_code = 200
+        second_response.json.return_value = sample_gemini_response
+        second_response.headers = {"Content-Type": "application/json"}
+
+        # Set up the sequence of responses
+        with patch.object(
+            mock_chronicle_client.session,
+            "request",
+            side_effect=[first_response, mock_opt_in_response, second_response],
+        ):
+            # Call the function - this should trigger opt-in and retry
+            response = query_gemini(
+                mock_chronicle_client, "What is Windows event ID 4625?"
+            )
+
+            # Verify the result is a proper GeminiResponse
+            assert isinstance(response, GeminiResponse)
+            assert len(response.blocks) == 3
+
+            # Verify request calls were made (first POST failed, PATCH for opt-in, second POST succeeded)
+            assert mock_chronicle_client.session.request.call_count == 3
+
+
+def test_query_gemini_opt_in_flag(
+    mock_chronicle_client, sample_gemini_response
+):
+    """Test that the opt-in flag is properly set on the client."""
+    # First create a mock for the conversation creation method
+    with patch(
+        "secops.chronicle.gemini.create_conversation"
+    ) as mock_create_conv:
+        mock_create_conv.return_value = "test-conv-id"
+
+        # Opt-in error response
         opt_in_error = Mock()
         opt_in_error.status_code = 400
         opt_in_error.text = (
             '{"error":{"message":"users must opt-in before using Gemini"}}'
         )
-        opt_in_error.raise_for_status.side_effect = requests.exceptions.HTTPError(
-                "400 Client Error", response=opt_in_error
-        )
+        opt_in_error.json.return_value = {
+            "error": {"message": "users must opt-in before using Gemini"}
+        }
+        opt_in_error.headers = {"Content-Type": "application/json"}
 
+        # Opt-in success response
+        mock_opt_in_response = Mock()
+        mock_opt_in_response.status_code = 200
+        mock_opt_in_response.json.return_value = {
+            "ui_preferences": {"enable_duet_ai_chat": True}
+        }
+        mock_opt_in_response.headers = {"Content-Type": "application/json"}
+
+        # Query success response
         success_response = Mock()
         success_response.status_code = 200
         success_response.json.return_value = sample_gemini_response
+        success_response.headers = {"Content-Type": "application/json"}
 
         # First call - opt-in error, then success
-        mock_chronicle_client.session.post.side_effect = [
-            opt_in_error,
-            success_response,
-        ]
-        mock_chronicle_client.session.patch.return_value = mock_opt_in_response
+        with patch.object(
+            mock_chronicle_client.session,
+            "request",
+            side_effect=[opt_in_error, mock_opt_in_response, success_response],
+        ):
+            # Call the function - this should trigger opt-in and retry
+            response1 = query_gemini(mock_chronicle_client, "Test query 1")
 
-        # Call the function - this should trigger opt-in and retry
-        response1 = query_gemini(mock_chronicle_client, "Test query 1")
-
-        # Verify opt-in was attempted once
-        assert mock_chronicle_client.session.patch.call_count == 1
+            # Verify requests were made (POST failed, PATCH opt-in, POST success)
+            assert mock_chronicle_client.session.request.call_count == 3
 
         # Second call - should not trigger opt-in again
-        mock_chronicle_client.session.post.side_effect = [success_response]
-        mock_chronicle_client.session.patch.reset_mock()
+        with patch.object(
+            mock_chronicle_client.session,
+            "request",
+            side_effect=[success_response],
+        ):
+            response2 = query_gemini(mock_chronicle_client, "Test query 2")
 
-        response2 = query_gemini(mock_chronicle_client, "Test query 2")
+            # Verify only one request was made (POST success)
+            assert mock_chronicle_client.session.request.call_count == 1
 
-        # Verify opt-in was not attempted again
-        assert mock_chronicle_client.session.patch.call_count == 0
-
-        # Check that the flag was set on the client
-        assert hasattr(mock_chronicle_client, "_gemini_opt_in_attempted")
-        assert mock_chronicle_client._gemini_opt_in_attempted is True
+            # Check that the flag was set on the client
+            assert hasattr(mock_chronicle_client, "_gemini_opt_in_attempted")
+            assert mock_chronicle_client._gemini_opt_in_attempted is True

@@ -9,7 +9,11 @@ from secops.chronicle.data_table import (
     validate_cidr_entries,
 )
 from secops.chronicle.models import APIVersion
-from secops.exceptions import APIError, SecOpsError
+from secops.chronicle.utils.request_utils import (
+    chronicle_paginated_request,
+    chronicle_request,
+)
+from secops.exceptions import SecOpsError
 
 # Use built-in StrEnum if Python 3.11+, otherwise create a compatible version
 if sys.version_info >= (3, 11):
@@ -102,24 +106,19 @@ def create_reference_list(
     if syntax_type == ReferenceListSyntaxType.CIDR:
         validate_cidr_entries_local(entries)
 
-    response = client.session.post(
-        f"{client.base_url(api_version, list(APIVersion))}/"
-        f"{client.instance_id}/referenceLists",
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path="referenceLists",
+        api_version=api_version,
+        params={"referenceListId": name},
         json={
             "description": description,
             "entries": [{"value": x} for x in entries],
             "syntaxType": syntax_type.value,
         },
-        params={"referenceListId": name},
+        error_message=f"Failed to create reference list '{name}'",
     )
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to create reference list '{name}': {response.status_code} "
-            f"{response.text}"
-        )
-
-    return response.json()
 
 
 def get_reference_list(
@@ -147,26 +146,22 @@ def get_reference_list(
     if view != ReferenceListView.UNSPECIFIED:
         params["view"] = view.value
 
-    response = client.session.get(
-        f"{client.base_url(api_version, list(APIVersion))}/"
-        f"{client.instance_id}/referenceLists/{name}",
+    return chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"referenceLists/{name}",
+        api_version=api_version,
         params=params if params else None,
+        error_message=f"Failed to get reference list '{name}'",
     )
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to get reference list '{name}': {response.status_code} "
-            f"{response.text}"
-        )
-
-    return response.json()
 
 
 def list_reference_lists(
     client: "Any",
     view: ReferenceListView = ReferenceListView.BASIC,
     api_version: APIVersion | None = APIVersion.V1,
-) -> list[dict[str, Any]]:
+    as_list: bool = True,
+) -> dict[str, Any] | list[Any]:
     """List reference lists.
 
     Args:
@@ -174,42 +169,31 @@ def list_reference_lists(
         view: How much of each ReferenceList to view. Defaults to
             REFERENCE_LIST_VIEW_BASIC.
         api_version: Preferred API version to use. Defaults to V1
+        as_list: If True, return only the list of reference lists.
+            If False, return dict with metadata and pagination tokens.
+            Defaults to True for backward compatibility.
 
     Returns:
-        List of reference lists, ordered in ascending alphabetical order by name
+        If as_list is True: List of reference lists, ordered in ascending
+            alphabetical order by name.
+        If as_list is False: Dict with referenceLists list and
+            pagination metadata.
 
     Raises:
         APIError: If the API request fails
     """
-    all_ref_lists = []
-    params = {"pageSize": 1000}
-
+    extra_params = {}
     if view != ReferenceListView.UNSPECIFIED:
-        params["view"] = view.value
+        extra_params["view"] = view.value
 
-    while True:
-        response = client.session.get(
-            f"{client.base_url(api_version, list(APIVersion))}/"
-            f"{client.instance_id}/referenceLists",
-            params=params,
-        )
-
-        if response.status_code != 200:
-            raise APIError(
-                f"Failed to list reference lists: {response.status_code} "
-                f"{response.text}"
-            )
-
-        resp_json = response.json()
-        all_ref_lists.extend(resp_json.get("referenceLists", []))
-
-        page_token = resp_json.get("nextPageToken")
-        if page_token:
-            params["pageToken"] = page_token
-        else:
-            break
-
-    return all_ref_lists
+    return chronicle_paginated_request(
+        client,
+        path="referenceLists",
+        items_key="referenceLists",
+        api_version=api_version,
+        extra_params=extra_params if extra_params else None,
+        as_list=as_list,
+    )
 
 
 def update_reference_list(
@@ -262,23 +246,17 @@ def update_reference_list(
         payload["entries"] = [{"value": x} for x in entries]
         update_paths.append("entries")
 
-    # Use updateMask query parameter to specify which fields to update
     params = {"updateMask": ",".join(update_paths)}
 
-    response = client.session.patch(
-        f"{client.base_url(api_version, list(APIVersion))}/"
-        f"{client.instance_id}/referenceLists/{name}",
-        json=payload,
+    return chronicle_request(
+        client,
+        method="PATCH",
+        endpoint_path=f"referenceLists/{name}",
+        api_version=api_version,
         params=params,
+        json=payload,
+        error_message=f"Failed to update reference list '{name}'",
     )
-
-    if response.status_code != 200:
-        raise APIError(
-            f"Failed to update reference list '{name}': {response.status_code} "
-            f"{response.text}"
-        )
-
-    return response.json()
 
 
 # Note: Reference List deletion is currently not supported by the API

@@ -23,104 +23,150 @@ from typing import Any, Literal, Union
 
 from google.auth.transport import requests as google_auth_requests
 
-# pylint: disable=line-too-long
 from secops import auth as secops_auth
 from secops.auth import RetryConfig
 from secops.chronicle.alert import get_alerts as _get_alerts
-from secops.chronicle.case import get_cases_from_list
-from secops.chronicle.dashboard import (
-    DashboardAccessType,
-    DashboardView,
-    add_chart as _add_chart,
-    create_dashboard as _create_dashboard,
-    delete_dashboard as _delete_dashboard,
-    duplicate_dashboard as _duplicate_dashboard,
-    edit_chart as _edit_chart,
-    export_dashboard as _export_dashboard,
-    get_chart as _get_chart,
-    get_dashboard as _get_dashboard,
-    import_dashboard as _import_dashboard,
-    list_dashboards as _list_dashboards,
-    remove_chart as _remove_chart,
-    update_dashboard as _update_dashboard,
+from secops.chronicle.case import execute_bulk_add_tag as _execute_bulk_add_tag
+from secops.chronicle.case import execute_bulk_assign as _execute_bulk_assign
+from secops.chronicle.case import (
+    execute_bulk_change_priority as _execute_bulk_change_priority,
 )
+from secops.chronicle.case import (
+    execute_bulk_change_stage as _execute_bulk_change_stage,
+)
+from secops.chronicle.case import execute_bulk_close as _execute_bulk_close
+from secops.chronicle.case import execute_bulk_reopen as _execute_bulk_reopen
+from secops.chronicle.case import get_case as _get_case
+from secops.chronicle.case import get_cases_from_list
+from secops.chronicle.case import list_cases as _list_cases
+from secops.chronicle.case import merge_cases as _merge_cases
+from secops.chronicle.case import patch_case as _patch_case
+from secops.chronicle.dashboard import DashboardAccessType, DashboardView
+from secops.chronicle.dashboard import add_chart as _add_chart
+from secops.chronicle.dashboard import create_dashboard as _create_dashboard
+from secops.chronicle.dashboard import delete_dashboard as _delete_dashboard
+from secops.chronicle.dashboard import (
+    duplicate_dashboard as _duplicate_dashboard,
+)
+from secops.chronicle.dashboard import edit_chart as _edit_chart
+from secops.chronicle.dashboard import export_dashboard as _export_dashboard
+from secops.chronicle.dashboard import get_chart as _get_chart
+from secops.chronicle.dashboard import get_dashboard as _get_dashboard
+from secops.chronicle.dashboard import import_dashboard as _import_dashboard
+from secops.chronicle.dashboard import list_dashboards as _list_dashboards
+from secops.chronicle.dashboard import remove_chart as _remove_chart
+from secops.chronicle.dashboard import update_dashboard as _update_dashboard
 from secops.chronicle.dashboard_query import (
     execute_query as _execute_dashboard_query,
+)
+from secops.chronicle.dashboard_query import (
     get_execute_query as _get_execute_query,
 )
 from secops.chronicle.data_export import (
     cancel_data_export as _cancel_data_export,
+)
+from secops.chronicle.data_export import (
     create_data_export as _create_data_export,
+)
+from secops.chronicle.data_export import (
     fetch_available_log_types as _fetch_available_log_types,
-    get_data_export as _get_data_export,
-    list_data_export as _list_data_export,
+)
+from secops.chronicle.data_export import get_data_export as _get_data_export
+from secops.chronicle.data_export import list_data_export as _list_data_export
+from secops.chronicle.data_export import (
     update_data_export as _update_data_export,
 )
+from secops.chronicle.data_table import DataTableColumnType
+from secops.chronicle.data_table import create_data_table as _create_data_table
 from secops.chronicle.data_table import (
-    DataTableColumnType,
-    create_data_table as _create_data_table,
     create_data_table_rows as _create_data_table_rows,
-    delete_data_table as _delete_data_table,
+)
+from secops.chronicle.data_table import delete_data_table as _delete_data_table
+from secops.chronicle.data_table import (
     delete_data_table_rows as _delete_data_table_rows,
-    get_data_table as _get_data_table,
+)
+from secops.chronicle.data_table import get_data_table as _get_data_table
+from secops.chronicle.data_table import (
     list_data_table_rows as _list_data_table_rows,
-    list_data_tables as _list_data_tables,
+)
+from secops.chronicle.data_table import list_data_tables as _list_data_tables
+from secops.chronicle.data_table import (
     replace_data_table_rows as _replace_data_table_rows,
-    update_data_table as _update_data_table,
+)
+from secops.chronicle.data_table import update_data_table as _update_data_table
+from secops.chronicle.data_table import (
     update_data_table_rows as _update_data_table_rows,
 )
-from secops.chronicle.entity import (
-    _detect_value_type_for_query,
-    summarize_entity as _summarize_entity,
-)
-from secops.chronicle.featured_content_rules import (
-    list_featured_content_rules as _list_featured_content_rules,
-)
-from secops.chronicle.feeds import (
-    CreateFeedModel,
-    UpdateFeedModel,
-    create_feed as _create_feed,
-    delete_feed as _delete_feed,
-    disable_feed as _disable_feed,
-    enable_feed as _enable_feed,
-    generate_secret as _generate_secret,
-    get_feed as _get_feed,
-    list_feeds as _list_feeds,
-    update_feed as _update_feed,
-)
-from secops.chronicle.gemini import (
-    GeminiResponse,
-    opt_in_to_gemini as _opt_in_to_gemini,
-    query_gemini as _query_gemini,
-)
+from secops.chronicle.entity import _detect_value_type_for_query
+from secops.chronicle.entity import summarize_entity as _summarize_entity
+from secops.chronicle.feeds import CreateFeedModel, UpdateFeedModel
+from secops.chronicle.feeds import create_feed as _create_feed
+from secops.chronicle.feeds import delete_feed as _delete_feed
+from secops.chronicle.feeds import disable_feed as _disable_feed
+from secops.chronicle.feeds import enable_feed as _enable_feed
+from secops.chronicle.feeds import generate_secret as _generate_secret
+from secops.chronicle.feeds import get_feed as _get_feed
+from secops.chronicle.feeds import list_feeds as _list_feeds
+from secops.chronicle.feeds import update_feed as _update_feed
+from secops.chronicle.gemini import GeminiResponse
+from secops.chronicle.gemini import opt_in_to_gemini as _opt_in_to_gemini
+from secops.chronicle.gemini import query_gemini as _query_gemini
+from secops.chronicle.ioc import list_iocs as _list_iocs
 from secops.chronicle.investigations import (
     fetch_associated_investigations as _fetch_associated_investigations,
+)
+from secops.chronicle.investigations import (
     get_investigation as _get_investigation,
+)
+from secops.chronicle.investigations import (
     list_investigations as _list_investigations,
+)
+from secops.chronicle.investigations import (
     trigger_investigation as _trigger_investigation,
 )
-from secops.chronicle.ioc import list_iocs as _list_iocs
+from secops.chronicle.log_ingest import create_forwarder as _create_forwarder
+from secops.chronicle.log_ingest import delete_forwarder as _delete_forwarder
+from secops.chronicle.log_ingest import get_forwarder as _get_forwarder
 from secops.chronicle.log_ingest import (
-    create_forwarder as _create_forwarder,
-    delete_forwarder as _delete_forwarder,
-    get_forwarder as _get_forwarder,
     get_or_create_forwarder as _get_or_create_forwarder,
-    import_entities as _import_entities,
-    ingest_log as _ingest_log,
-    ingest_udm as _ingest_udm,
-    list_forwarders as _list_forwarders,
-    update_forwarder as _update_forwarder,
 )
+from secops.chronicle.log_ingest import import_entities as _import_entities
+from secops.chronicle.log_ingest import ingest_log as _ingest_log
+from secops.chronicle.log_ingest import ingest_udm as _ingest_udm
+from secops.chronicle.log_ingest import list_forwarders as _list_forwarders
+from secops.chronicle.log_ingest import update_forwarder as _update_forwarder
+from secops.chronicle.log_types import classify_logs as _classify_logs
+from secops.chronicle.log_types import get_all_log_types as _get_all_log_types
+from secops.chronicle.log_types import (
+    get_log_type_description as _get_log_type_description,
+)
+from secops.chronicle.log_types import is_valid_log_type as _is_valid_log_type
+from secops.chronicle.log_types import search_log_types as _search_log_types
 from secops.chronicle.log_processing_pipelines import (
     associate_streams as _associate_streams,
+)
+from secops.chronicle.log_processing_pipelines import (
     create_log_processing_pipeline as _create_log_processing_pipeline,
+)
+from secops.chronicle.log_processing_pipelines import (
     delete_log_processing_pipeline as _delete_log_processing_pipeline,
+)
+from secops.chronicle.log_processing_pipelines import (
     dissociate_streams as _dissociate_streams,
+)
+from secops.chronicle.log_processing_pipelines import (
     fetch_associated_pipeline as _fetch_associated_pipeline,
+)
+from secops.chronicle.log_processing_pipelines import (
     fetch_sample_logs_by_streams as _fetch_sample_logs_by_streams,
+)
+from secops.chronicle.log_processing_pipelines import (
     get_log_processing_pipeline as _get_log_processing_pipeline,
+)
+from secops.chronicle.log_processing_pipelines import (
     list_log_processing_pipelines as _list_log_processing_pipelines,
-    test_pipeline as _test_pipeline,
+)
+from secops.chronicle.log_processing_pipelines import (
     update_log_processing_pipeline as _update_log_processing_pipeline,
 )
 from secops.chronicle.log_types import (
@@ -161,79 +207,117 @@ from secops.chronicle.integration.manager_revisions import (
     list_integration_manager_revisions as _list_integration_manager_revisions,
     rollback_integration_manager_revision as _rollback_integration_manager_revision,
 )
+from secops.chronicle.log_processing_pipelines import (
+    test_pipeline as _test_pipeline,
+)
 from secops.chronicle.models import (
     APIVersion,
+    CaseCloseReason,
     CaseList,
+    CasePriority,
     DashboardChart,
     DashboardQuery,
     EntitySummary,
     InputInterval,
     TileType,
+    AlertState,
+    ListBasis,
 )
-from secops.chronicle.nl_search import (
-    nl_search as _nl_search,
-    translate_nl_to_udm,
-)
+from secops.chronicle.nl_search import nl_search as _nl_search
+from secops.chronicle.nl_search import translate_nl_to_udm
+from secops.chronicle.parser import activate_parser as _activate_parser
 from secops.chronicle.parser import (
-    activate_parser as _activate_parser,
     activate_release_candidate_parser as _activate_release_candidate_parser,
-    copy_parser as _copy_parser,
-    create_parser as _create_parser,
-    deactivate_parser as _deactivate_parser,
-    delete_parser as _delete_parser,
-    get_parser as _get_parser,
-    list_parsers as _list_parsers,
-    run_parser as _run_parser,
+)
+from secops.chronicle.parser import copy_parser as _copy_parser
+from secops.chronicle.parser import create_parser as _create_parser
+from secops.chronicle.parser import deactivate_parser as _deactivate_parser
+from secops.chronicle.parser import delete_parser as _delete_parser
+from secops.chronicle.parser import get_parser as _get_parser
+from secops.chronicle.parser import list_parsers as _list_parsers
+from secops.chronicle.parser import run_parser as _run_parser
+from secops.chronicle.parser_extension import ParserExtensionConfig
+from secops.chronicle.parser_extension import (
+    activate_parser_extension as _activate_parser_extension,
 )
 from secops.chronicle.parser_extension import (
-    ParserExtensionConfig,
-    activate_parser_extension as _activate_parser_extension,
     create_parser_extension as _create_parser_extension,
+)
+from secops.chronicle.parser_extension import (
     delete_parser_extension as _delete_parser_extension,
+)
+from secops.chronicle.parser_extension import (
     get_parser_extension as _get_parser_extension,
+)
+from secops.chronicle.parser_extension import (
     list_parser_extensions as _list_parser_extensions,
 )
 from secops.chronicle.reference_list import (
     ReferenceListSyntaxType,
     ReferenceListView,
+)
+from secops.chronicle.reference_list import (
     create_reference_list as _create_reference_list,
+)
+from secops.chronicle.reference_list import (
     get_reference_list as _get_reference_list,
+)
+from secops.chronicle.reference_list import (
     list_reference_lists as _list_reference_lists,
+)
+from secops.chronicle.reference_list import (
     update_reference_list as _update_reference_list,
 )
+
+from secops.chronicle.rule import create_rule as _create_rule
+from secops.chronicle.rule import delete_rule as _delete_rule
+from secops.chronicle.rule import enable_rule as _enable_rule
+from secops.chronicle.rule import get_rule as _get_rule
+from secops.chronicle.rule import get_rule_deployment as _get_rule_deployment
 from secops.chronicle.rule import (
-    create_rule as _create_rule,
-    delete_rule as _delete_rule,
-    enable_rule as _enable_rule,
-    get_rule as _get_rule,
-    get_rule_deployment as _get_rule_deployment,
     list_rule_deployments as _list_rule_deployments,
-    list_rules as _list_rules,
-    run_rule_test,
-    search_rules as _search_rules,
-    set_rule_alerting as _set_rule_alerting,
-    update_rule as _update_rule,
+)
+from secops.chronicle.rule import list_rules as _list_rules
+from secops.chronicle.rule import run_rule_test
+from secops.chronicle.rule import search_rules as _search_rules
+from secops.chronicle.rule import set_rule_alerting as _set_rule_alerting
+from secops.chronicle.rule import update_rule as _update_rule
+from secops.chronicle.rule import (
     update_rule_deployment as _update_rule_deployment,
 )
 from secops.chronicle.rule_alert import (
     bulk_update_alerts as _bulk_update_alerts,
-    get_alert as _get_alert,
+)
+from secops.chronicle.rule_alert import get_alert as _get_alert
+from secops.chronicle.rule_alert import (
     search_rule_alerts as _search_rule_alerts,
-    update_alert as _update_alert,
 )
-from secops.chronicle.rule_detection import (
-    list_detections as _list_detections,
-    list_errors as _list_errors,
-)
+from secops.chronicle.rule_alert import update_alert as _update_alert
+from secops.chronicle.rule_detection import list_detections as _list_detections
+from secops.chronicle.rule_detection import list_errors as _list_errors
 from secops.chronicle.rule_exclusion import (
     RuleExclusionType,
     UpdateRuleDeployment,
+)
+from secops.chronicle.rule_exclusion import (
     compute_rule_exclusion_activity as _compute_rule_exclusion_activity,
+)
+from secops.chronicle.rule_exclusion import (
     create_rule_exclusion as _create_rule_exclusion,
+)
+from secops.chronicle.rule_exclusion import (
     get_rule_exclusion as _get_rule_exclusion,
+)
+from secops.chronicle.rule_exclusion import (
     get_rule_exclusion_deployment as _get_rule_exclusion_deployment,
+)
+from secops.chronicle.rule_exclusion import (
     list_rule_exclusions as _list_rule_exclusions,
+)
+from secops.chronicle.rule_exclusion import (
     patch_rule_exclusion as _patch_rule_exclusion,
+)
+from secops.chronicle.rule_exclusion import (
     update_rule_exclusion_deployment as _update_rule_exclusion_deployment,
 )
 from secops.chronicle.rule_retrohunt import (
@@ -242,42 +326,76 @@ from secops.chronicle.rule_retrohunt import (
     list_retrohunts as _list_retrohunts,
 )
 from secops.chronicle.rule_set import (
-    batch_update_curated_rule_set_deployments as _batch_update_curated_rule_set_deployments,
-    get_curated_rule as _get_curated_rule,
+    batch_update_curated_rule_set_deployments as _batch_update_curated_rule_set_deployments,  # pylint: disable=line-too-long
+)
+from secops.chronicle.rule_set import get_curated_rule as _get_curated_rule
+from secops.chronicle.rule_set import (
     get_curated_rule_by_name as _get_curated_rule_by_name,
+)
+from secops.chronicle.rule_set import (
     get_curated_rule_set as _get_curated_rule_set,
+)
+from secops.chronicle.rule_set import (
     get_curated_rule_set_category as _get_curated_rule_set_category,
+)
+from secops.chronicle.rule_set import (
     get_curated_rule_set_deployment as _get_curated_rule_set_deployment,
-    get_curated_rule_set_deployment_by_name as _get_curated_rule_set_deployment_by_name,
+)
+from secops.chronicle.rule_set import (
+    get_curated_rule_set_deployment_by_name as _get_curated_rule_set_deployment_by_name,  # pylint: disable=line-too-long
+)
+from secops.chronicle.rule_set import (
     list_curated_rule_set_categories as _list_curated_rule_set_categories,
+)
+from secops.chronicle.rule_set import (
     list_curated_rule_set_deployments as _list_curated_rule_set_deployments,
+)
+from secops.chronicle.rule_set import (
     list_curated_rule_sets as _list_curated_rule_sets,
-    list_curated_rules as _list_curated_rules,
+)
+from secops.chronicle.rule_set import list_curated_rules as _list_curated_rules
+from secops.chronicle.rule_set import (
     search_curated_detections as _search_curated_detections,
+)
+from secops.chronicle.rule_set import (
     update_curated_rule_set_deployment as _update_curated_rule_set_deployment,
+)
+from secops.chronicle.featured_content_rules import (
+    list_featured_content_rules as _list_featured_content_rules,
 )
 from secops.chronicle.rule_validation import validate_rule as _validate_rule
 from secops.chronicle.search import search_udm as _search_udm
 from secops.chronicle.log_search import search_raw_logs as _search_raw_logs
 from secops.chronicle.stats import get_stats as _get_stats
+from secops.chronicle.udm_mapping import RowLogFormat
 from secops.chronicle.udm_mapping import (
-    RowLogFormat,
     generate_udm_key_value_mappings as _generate_udm_key_value_mappings,
 )
+
 from secops.chronicle.udm_search import (
     fetch_udm_search_csv as _fetch_udm_search_csv,
+)
+from secops.chronicle.udm_search import (
     fetch_udm_search_view as _fetch_udm_search_view,
+)
+from secops.chronicle.udm_search import (
     find_udm_field_values as _find_udm_field_values,
 )
 from secops.chronicle.validate import validate_query as _validate_query
 from secops.chronicle.watchlist import (
-    create_watchlist as _create_watchlist,
-    delete_watchlist as _delete_watchlist,
-    get_watchlist as _get_watchlist,
     list_watchlists as _list_watchlists,
+    get_watchlist as _get_watchlist,
+    delete_watchlist as _delete_watchlist,
+    create_watchlist as _create_watchlist,
     update_watchlist as _update_watchlist,
 )
+from secops.chronicle.parser import (
+    get_analysis_report as _get_analysis_report,
+    trigger_github_checks as _trigger_github_checks,
+)
 from secops.exceptions import SecOpsError
+from secops.chronicle.soar import SOARService
+
 
 # pylint: enable=line-too-long
 
@@ -442,6 +560,7 @@ class ChronicleClient:
         self.default_api_version = APIVersion(default_api_version)
         self._default_forwarder_display_name: str = "Wrapper-SDK-Forwarder"
         self._cached_default_forwarder_id: str | None = None
+        self.soar = SOARService(self)
 
         # Format the instance ID to match the expected format
         if region in ["dev", "staging"]:
@@ -1651,6 +1770,58 @@ class ChronicleClient:
             revision_id,
             api_version=api_version,
         )
+    def get_analysis_report(
+        self,
+        log_type: str,
+        parser_id: str,
+        report_id: str,
+        timeout: int = 60,
+    ) -> dict[str, Any]:
+        """Get a parser analysis report.
+        Args:
+            log_type: Log type of the parser.
+            parser_id: The ID of the parser.
+            report_id: The ID of the analysis report.
+            timeout: Optional timeout in seconds (default: 60).
+        Returns:
+            Dictionary containing the analysis report.
+        Raises:
+            APIError: If the API request fails.
+        """
+        return _get_analysis_report(
+            self,
+            log_type=log_type,
+            parser_id=parser_id,
+            report_id=report_id,
+            timeout=timeout,
+        )
+
+    def trigger_github_checks(
+        self,
+        associated_pr: str,
+        log_type: str,
+        timeout: int = 60,
+    ) -> dict[str, Any]:
+        """Trigger GitHub checks for a parser.
+
+        Args:
+            associated_pr: The PR string (e.g., "owner/repo/pull/123").
+            log_type: The string name of the LogType enum.
+            timeout: Optional request timeout in seconds (default: 60).
+
+        Returns:
+            Dictionary containing the response details.
+
+        Raises:
+            SecOpsError: If modules or client stub are not available.
+            APIError: If the API request fails.
+        """
+        return _trigger_github_checks(
+            self,
+            associated_pr=associated_pr,
+            log_type=log_type,
+            timeout=timeout,
+        )
 
     def get_stats(
         self,
@@ -1968,6 +2139,227 @@ class ChronicleClient:
         """
         return get_cases_from_list(self, case_ids)
 
+    def get_case(self, case_name: str, expand: str | None = None) -> "Case":
+        """Get a single case details.
+
+        Args:
+            case_name: Case resource name or case ID.
+            expand: Optional expand field for getting related resources
+
+        Returns:
+            Case object with case details
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _get_case(self, case_name, expand)
+
+    def list_cases(
+        self,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_query: str | None = None,
+        order_by: str | None = None,
+        expand: str | None = None,
+        distinct_by: str | None = None,
+        as_list: bool = False,
+    ) -> list[dict[str, Any]] | dict[str, Any]:
+        """List cases with optional filtering and pagination.
+
+        Args:
+            page_size: Maximum number of cases to return per page (1-1000).
+                If None, automatically paginates and returns all results.
+            page_token: Token for pagination from previous list call.
+                Only used when page_size is provided.
+            filter_query: Filter expression for filtering cases
+            order_by: Comma-separated list of fields to order by
+            expand: Expand fields (e.g., "tags, products")
+            distinct_by: Field to distinct cases by
+            as_list: If True, return a list of cases instead of a dict
+                with cases list, nextPageToken, and totalSize.
+
+        Returns:
+            If as_list is True: A list of case dictionaries.
+            If as_list is False: A dictionary with cases, nextPageToken,
+                and totalSize.
+
+        Raises:
+            APIError: If the API request fails
+            ValueError: If page_size is invalid
+        """
+        return _list_cases(
+            self,
+            page_size,
+            page_token,
+            filter_query,
+            order_by,
+            expand,
+            distinct_by,
+            as_list,
+        )
+
+    def patch_case(
+        self,
+        case_name: str,
+        case_data: dict[str, Any],
+        update_mask: str | None = None,
+    ) -> "Case":
+        """Update a case using partial update (PATCH).
+
+        Args:
+            case_name: Case resource name or case ID.
+            case_data: Dictionary containing case fields to update
+            update_mask: Optional comma-separated list of fields to update
+
+        Returns:
+            Updated Case object
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _patch_case(self, case_name, case_data, update_mask)
+
+    def merge_cases(
+        self, case_ids: list[int], case_to_merge_with: int
+    ) -> dict[str, Any]:
+        """Merge multiple cases into a single case.
+
+        Args:
+            case_ids: List of case IDs to merge
+            case_to_merge_with: ID of the case to merge with
+
+        Returns:
+            Dictionary with newCaseId, isRequestValid, and errors
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _merge_cases(self, case_ids, case_to_merge_with)
+
+    def execute_bulk_add_tag(
+        self, case_ids: list[int], tags: list[str]
+    ) -> dict[str, Any]:
+        """Add tags to multiple cases in bulk.
+
+        Args:
+            case_ids: List of case IDs to add tags to
+            tags: List of tags to add to the cases
+
+        Returns:
+            Empty dictionary on success
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _execute_bulk_add_tag(self, case_ids, tags)
+
+    def execute_bulk_assign(
+        self, case_ids: list[int], username: str
+    ) -> dict[str, Any]:
+        """Assign multiple cases to a user in bulk.
+
+        Args:
+            case_ids: List of case IDs to assign
+            username: Username to assign the cases to
+
+        Returns:
+            Empty dictionary on success
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _execute_bulk_assign(self, case_ids, username)
+
+    def execute_bulk_change_priority(
+        self, case_ids: list[int], priority: str | CasePriority
+    ) -> dict[str, Any]:
+        """Change priority of multiple cases in bulk.
+
+        Args:
+            case_ids: List of case IDs to change priority for
+            priority: Priority level (CasePriority enum or string).
+                Valid values: PRIORITY_UNSPECIFIED, PRIORITY_INFO,
+                PRIORITY_LOW, PRIORITY_MEDIUM, PRIORITY_HIGH,
+                PRIORITY_CRITICAL
+
+        Returns:
+            Empty dictionary on success
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _execute_bulk_change_priority(self, case_ids, priority)
+
+    def execute_bulk_change_stage(
+        self, case_ids: list[int], stage: str
+    ) -> dict[str, Any]:
+        """Change stage of multiple cases in bulk.
+
+        Args:
+            case_ids: List of case IDs to change stage for
+            stage: Stage to set for the cases
+
+        Returns:
+            Empty dictionary on success
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _execute_bulk_change_stage(self, case_ids, stage)
+
+    def execute_bulk_close(
+        self,
+        case_ids: list[int],
+        close_reason: str | CaseCloseReason,
+        root_cause: str | None = None,
+        close_comment: str | None = None,
+        dynamic_parameters: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        """Close multiple cases in bulk.
+
+        Args:
+            case_ids: List of case IDs to close
+            close_reason: Reason for closing the cases.
+                Can be CaseCloseReason enum or string.
+                Valid values: MALICIOUS, NOT_MALICIOUS, MAINTENANCE,
+                INCONCLUSIVE, UNKNOWN, CLOSE_REASON_UNSPECIFIED
+            root_cause: Optional root cause for closing cases
+            close_comment: Optional comment to add when closing
+            dynamic_parameters: Optional dynamic parameters for close
+
+        Returns:
+            Empty dictionary on success
+
+        Raises:
+            APIError: If the API request fails
+            ValueError: If an invalid close_reason value is provided
+        """
+        return _execute_bulk_close(
+            self,
+            case_ids,
+            close_reason,
+            root_cause,
+            close_comment,
+            dynamic_parameters,
+        )
+
+    def execute_bulk_reopen(
+        self, case_ids: list[int], reopen_comment: str
+    ) -> dict[str, Any]:
+        """Reopen multiple cases in bulk.
+
+        Args:
+            case_ids: List of case IDs to reopen
+            reopen_comment: Comment to add when reopening cases
+
+        Returns:
+            Empty dictionary on success
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _execute_bulk_reopen(self, case_ids, reopen_comment)
+
     def get_alerts(
         self,
         start_time: datetime,
@@ -2154,18 +2546,25 @@ class ChronicleClient:
         log_type: str,
         page_size: int | None = None,
         page_token: str | None = None,
-    ) -> dict[str, Any]:
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[Any]:
         """List parser extensions.
 
         Args:
             log_type: The log type to list parser extensions for
             page_size: Maximum number of parser extensions to return
             page_token: Token for pagination
+            as_list: If True, return only the list of parser extensions.
+                If False, return dict with metadata and pagination tokens.
 
         Returns:
-            Dict containing list of parser extensions and next page token if any
+            If as_list is True: List of parser extensions.
+            If as_list is False: Dict with parserExtensions list and
+                pagination metadata.
         """
-        return _list_parser_extensions(self, log_type, page_size, page_token)
+        return _list_parser_extensions(
+            self, log_type, page_size, page_token, as_list
+        )
 
     def activate_parser_extension(
         self, log_type: str, extension_id: str
@@ -2272,21 +2671,26 @@ class ChronicleClient:
         page_size: int = 100,
         page_token: str = None,
         api_version: APIVersion | None = None,
-    ) -> list[dict[str, Any]]:
+        as_list: bool = True,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
         """List feeds.
 
         Args:
             page_size: The maximum number of feeds to return
             page_token: A page token, received from a previous ListFeeds call
             api_version: (Optional) Preferred API version to use.
+            as_list: If True, return only the list of feeds.
+                If False, return dict with metadata and pagination tokens.
+                Defaults to True for backward compatibility.
 
         Returns:
-            List of feed dictionaries
+            If as_list is True: List of feed dictionaries.
+            If as_list is False: Dict with feeds list and pagination metadata.
 
         Raises:
             APIError: If the API request fails
         """
-        return _list_feeds(self, page_size, page_token, api_version)
+        return _list_feeds(self, page_size, page_token, api_version, as_list)
 
     def get_feed(
         self, feed_id: str, api_version: APIVersion | None = None
@@ -2430,22 +2834,27 @@ class ChronicleClient:
         page_size: int | None = None,
         page_token: str | None = None,
         filter_expr: str | None = None,
-    ) -> dict[str, Any]:
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[Any]:
         """Lists log processing pipelines.
 
         Args:
             page_size: Maximum number of pipelines to return.
             page_token: Page token for pagination.
             filter_expr: Filter expression to restrict results.
+            as_list: If True, return only the list of pipelines.
+                If False, return dict with metadata and pagination tokens.
 
         Returns:
-            Dictionary containing pipelines and pagination info.
+            If as_list is True: List of log processing pipelines.
+            If as_list is False: Dict with logProcessingPipelines list and
+                pagination metadata.
 
         Raises:
             APIError: If the API request fails.
         """
         return _list_log_processing_pipelines(
-            self, page_size, page_token, filter_expr
+            self, page_size, page_token, filter_expr, as_list
         )
 
     def get_log_processing_pipeline(self, pipeline_id: str) -> dict[str, Any]:
@@ -2678,7 +3087,8 @@ class ChronicleClient:
         page_token: str | None = None,
         filter_expr: str | None = None,
         order_by: str | None = None,
-    ) -> dict[str, Any]:
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[Any]:
         """Lists investigations.
 
         Args:
@@ -2690,16 +3100,19 @@ class ChronicleClient:
             order_by: Ordering of investigations. Default is create time
                 descending. Supported fields: "startTime", "endTime",
                 "displayName".
+            as_list: If True, return only the list of investigations.
+                If False, return dict with metadata and pagination tokens.
 
         Returns:
-            Dictionary containing investigations, next page token, and
-            total size.
+            If as_list is True: List of investigations.
+            If as_list is False: Dict with investigations list,
+                nextPageToken, and totalSize.
 
         Raises:
             APIError: If the API request fails.
         """
         return _list_investigations(
-            self, page_size, page_token, filter_expr, order_by
+            self, page_size, page_token, filter_expr, order_by, as_list
         )
 
     def trigger_investigation(self, alert_id: str) -> dict[str, Any]:
@@ -2722,7 +3135,8 @@ class ChronicleClient:
         page_size: int | None = None,
         page_token: str | None = None,
         api_version: APIVersion | None = APIVersion.V1,
-    ) -> dict[str, Any]:
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[Any]:
         """Gets a list of rules.
 
         Args:
@@ -2736,9 +3150,12 @@ class ChronicleClient:
             page_size: Maximum number of rules to return per page.
             page_token: Token for the next page of results, if available.
             api_version: (Optional) Preferred API version to use.
+            as_list: If True, return only the list of rules.
+                If False, return dict with metadata and pagination tokens.
 
         Returns:
-            Dictionary containing information about rules
+            If as_list is True: List of rules.
+            If as_list is False: Dict with rules list and pagination metadata.
 
         Raises:
             APIError: If the API request fails
@@ -2749,6 +3166,7 @@ class ChronicleClient:
             page_size=page_size,
             page_token=page_token,
             api_version=api_version,
+            as_list=as_list,
         )
 
     def update_rule(
@@ -3054,7 +3472,8 @@ class ChronicleClient:
         alert_state: str | None = None,
         page_size: int | None = None,
         page_token: str | None = None,
-    ) -> dict[str, Any]:
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[Any]:
         """List detections for a rule.
 
         Args:
@@ -3075,9 +3494,13 @@ class ChronicleClient:
                 - "ALERTING"
             page_size: If provided, maximum number of detections to return
             page_token: If provided, continuation token for pagination
+            as_list: If True, return only the list of detections.
+                If False, return dict with metadata and pagination tokens.
 
         Returns:
-            Dictionary containing detection information
+            If as_list is True: List of detections.
+            If as_list is False: Dict with detections list and
+                pagination metadata.
 
         Raises:
             APIError: If the API request fails
@@ -3092,6 +3515,7 @@ class ChronicleClient:
             alert_state,
             page_size,
             page_token,
+            as_list,
         )
 
     def list_errors(self, rule_id: str) -> dict[str, Any]:
@@ -3339,6 +3763,7 @@ class ChronicleClient:
         page_size: int | None = None,
         page_token: str | None = None,
         filter: str = None,  # pylint: disable=redefined-builtin
+        as_list: bool = True,
     ) -> list[Any] | dict[str, Any]:
         """List parsers.
 
@@ -3350,6 +3775,8 @@ class ChronicleClient:
             page_token: A page token, received from a previous ListParsers
                 call.
             filter: Optional filter expression
+            as_list: If True (default), returns a list of parsers.
+                If False, returns the raw API response with pagination info.
 
         Returns:
             If page_size is None: List of all parsers
@@ -3366,6 +3793,7 @@ class ChronicleClient:
             page_size=page_size,
             page_token=page_token,
             filter=filter,
+            as_list=as_list,
         )
 
     def run_parser(
@@ -4443,16 +4871,21 @@ class ChronicleClient:
         filters: str | None = None,
         page_size: int | None = None,
         page_token: str | None = None,
-    ) -> dict[str, Any]:
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[Any]:
         """List data export jobs.
 
         Args:
             filters: Filter string
             page_size: Page size
             page_token: Page token
+            as_list: If True, return only the list of data exports.
+                If False, return dict with metadata and pagination tokens.
 
         Returns:
-            Dictionary containing data export list
+            If as_list is True: List of data exports.
+            If as_list is False: Dict with dataExports list and
+                pagination metadata.
 
         Raises:
             APIError: If the API request fails
@@ -4467,6 +4900,7 @@ class ChronicleClient:
             filters=filters,
             page_size=page_size,
             page_token=page_token,
+            as_list=as_list,
         )
 
     # Data Table methods
@@ -4674,7 +5108,7 @@ class ChronicleClient:
                   (format: projects/{project}/locations/{location}/
                   instances/{instance}/dataTables/{table}/
                   dataTableRows/{row_id})
-                - 'values': List[str] - The new values for the row
+                - 'values': list[str] - The new values for the row
                 - 'update_mask': str (optional) - Comma-separated list
                   of fields to update (e.g., 'values'). If not specified,
                   all fields are updated.
@@ -5473,7 +5907,8 @@ class ChronicleClient:
         page_token: str | None = None,
         filter_query: str | None = None,
         api_version: APIVersion | None = APIVersion.V1,
-    ) -> dict[str, Any]:
+        as_list: bool = False,
+    ) -> dict[str, Any] | list[Any]:
         """List rule deployments for the instance.
 
         Args:
@@ -5481,9 +5916,13 @@ class ChronicleClient:
             page_token: Token for the next page of results, if available
             filter_query: Optional filter query to restrict results
             api_version: (Optional) Preferred API version to use.
+            as_list: If True, return only the list of rule deployments.
+                If False, return dict with metadata and pagination tokens.
 
         Returns:
-            Dictionary containing rule deployments and pagination info
+            If as_list is True: List of rule deployments.
+            If as_list is False: Dict with ruleDeployments list and
+                pagination metadata.
 
         Raises:
             APIError: If the API request fails
@@ -5494,6 +5933,7 @@ class ChronicleClient:
             page_token=page_token,
             filter_query=filter_query,
             api_version=api_version,
+            as_list=as_list,
         )
 
     def set_rule_alerting(

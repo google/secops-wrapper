@@ -1,5 +1,3 @@
-from tests.chronicle.test_rule_integration import chronicle
-
 # Google SecOps SDK for Python
 
 [![PyPI version](https://img.shields.io/pypi/v/secops.svg)](https://pypi.org/project/secops/)
@@ -1426,6 +1424,134 @@ case = cases.get_case("case-id-1")
 
 > **Note**: The case management API uses the `legacy:legacyBatchGetCases` endpoint to retrieve multiple cases in a single request. You can retrieve up to 1000 cases in a single batch.
 
+### Case Management
+
+Chronicle provides comprehensive case management capabilities for tracking and managing security investigations. The SDK supports listing, retrieving, updating, and performing bulk operations on cases.
+
+#### List cases
+
+Retrieve cases with optional filtering and pagination:
+
+```python
+# List all cases with default pagination
+result = chronicle.list_cases(page_size=50)
+for case_data in result["cases"]:
+    case_id = case_data["name"].split("/")[-1]
+    print(f"Case {case_id}: {case_data['displayName']}")
+
+# List with filtering
+open_cases = chronicle.list_cases(
+    page_size=100,
+    filter_query='status = "OPENED"',
+    order_by="createTime desc"
+)
+
+# Get cases as a flat list instead of paginated dict
+cases_list = chronicle.list_cases(page_size=50, as_list=True)
+for case in cases_list:
+    print(f"{case['displayName']}: {case['priority']}")
+```
+
+#### Get case details
+
+Retrieve detailed information about a specific case:
+
+```python
+# Get case by ID
+case = chronicle.get_case("12345")
+print(f"Case: {case.display_name}")
+print(f"Priority: {case.priority}")
+print(f"Status: {case.status}")
+print(f"Stage: {case.stage}")
+
+# Get case with expanded fields
+case_expanded = chronicle.get_case("12345", expand="tags,products")
+```
+
+#### Update a case
+
+Update case fields using partial updates:
+
+```python
+# Update case priority
+updated_case = chronicle.patch_case(
+    case_name="12345",
+    case_data={"priority": "PRIORITY_HIGH"},
+    update_mask="priority"
+)
+
+# Update multiple fields
+updated_case = chronicle.patch_case(
+    case_name="12345",
+    case_data={
+        "priority": "PRIORITY_MEDIUM",
+        "stage": "Investigation"
+    },
+    update_mask="priority,stage"
+)
+```
+
+#### Merge cases
+
+Merge multiple cases into a single target case:
+
+```python
+# Merge source cases into target case
+result = chronicle.merge_cases(
+    case_ids=[12345, 67890],
+    case_to_merge_with=11111
+)
+
+if result.get("isRequestValid"):
+    print(f"Cases merged into case {result['newCaseId']}")
+else:
+    print(f"Merge failed: {result.get('errors')}")
+```
+
+#### Bulk operations
+
+Perform operations on multiple cases simultaneously:
+
+```python
+# Bulk add tags
+chronicle.execute_bulk_add_tag(
+    case_ids=[12345, 67890],
+    tags=["phishing", "high-priority"]
+)
+
+# Bulk assign cases
+chronicle.execute_bulk_assign(
+    case_ids=[12345, 67890],
+    username="@SecurityTeam"
+)
+
+# Bulk change priority
+chronicle.execute_bulk_change_priority(
+    case_ids=[12345, 67890],
+    priority="PRIORITY_HIGH"
+)
+
+# Bulk change stage
+chronicle.execute_bulk_change_stage(
+    case_ids=[12345, 67890],
+    stage="Remediation"
+)
+
+# Bulk close cases
+chronicle.execute_bulk_close(
+    case_ids=[12345, 67890],
+    close_reason="NOT_MALICIOUS",
+    root_cause="False positive - benign activity",
+    close_comment="Verified with asset owner"
+)
+
+# Bulk reopen cases
+chronicle.execute_bulk_reopen(
+    case_ids=[12345, 67890],
+    reopen_comment="New evidence discovered"
+)
+```
+
 ### Investigation Management
 
 Chronicle investigations provide automated analysis and recommendations for alerts and cases. The SDK provides methods to list, retrieve, trigger, and fetch associated investigations.
@@ -1532,13 +1658,13 @@ udm_mapping = chronicle.generate_udm_mapping(log_type="WINDOWS_AD")
 print(udm_mapping)
 ```
 
-## Parser Management
+### Parser Management
 
 Chronicle parsers are used to process and normalize raw log data into Chronicle's Unified Data Model (UDM) format. Parsers transform various log formats (JSON, XML, CEF, etc.) into a standardized structure that enables consistent querying and analysis across different data sources.
 
 The SDK provides comprehensive support for managing Chronicle parsers:
 
-### Creating Parsers
+#### Creating Parsers
 
 Create new parser:
 
@@ -1584,7 +1710,7 @@ parser_id = parser.get("name", "").split("/")[-1]
 print(f"Parser ID: {parser_id}")
 ```
 
-### Managing Parsers
+#### Managing Parsers
 
 Retrieve, list, copy, activate/deactivate, and delete parsers:
 
@@ -1628,7 +1754,7 @@ chronicle.activate_release_candidate_parser(log_type=log_type, id="pa_release_ca
 
 > **Note:** Parsers work in conjunction with log ingestion. When you ingest logs using `chronicle.ingest_log()`, Chronicle automatically applies the appropriate parser based on the log type to transform your raw logs into UDM format. If you're working with custom log formats, you may need to create or configure custom parsers first.
 
-### Run Parser against sample logs
+#### Run Parser against sample logs
 
 Run the parser on one or more sample logs:
 
@@ -1718,7 +1844,7 @@ The `run_parser` function includes comprehensive validation:
 - Enforces size limits (10MB per log, 50MB total, max 1000 logs)
 - Provides detailed error messages for different failure scenarios
 
-### Complete Parser Workflow Example
+#### Complete Parser Workflow Example
 
 Here's a complete example that demonstrates retrieving a parser, running it against a log, and ingesting the parsed UDM event:
 
@@ -1772,13 +1898,35 @@ This workflow is useful for:
 - Re-processing logs with updated parsers
 - Debugging parsing issues
 
+### Parser Extension
+### Parser Validation
+
+Trigger and retrieve analysis reports for parsers associated with GitHub pull requests:
+
+```python
+# Trigger GitHub checks for a parser against a PR
+response = chronicle.trigger_github_checks(
+    associated_pr="owner/repo/pull/123",
+    log_type="WINDOWS_AD"
+)
+print(f"Triggered checks: {response}")
+
+# Retrieve the analysis report
+report = chronicle.get_analysis_report(
+    log_type="WINDOWS_AD",
+    parser_id="pa_1234567890",
+    report_id="report_0987654321"
+)
+print(f"Analysis report: {report}")
+```
+
 ## Parser Extension
 
 Parser extensions provide a flexible way to extend the capabilities of existing default (or custom) parsers without replacing them. The extensions let you customize the parser pipeline by adding new parsing logic, extracting and transforming fields, and updating or removing UDM field mappings.
 
 The SDK provides comprehensive support for managing Chronicle parser extensions:
 
-### List Parser Extensions
+#### List Parser Extensions
 
 List parser extensions for a log type:
 
@@ -1789,7 +1937,7 @@ extensions = chronicle.list_parser_extensions(log_type)
 print(f"Found {len(extensions["parserExtensions"])} parser extensions for log type: {log_type}")
 ```
 
-### Create a new parser extension
+#### Create a new parser extension
 
 Create new parser extension using either CBN snippet, field extractor or dynamic parsing:
 
@@ -1812,7 +1960,7 @@ field_extractor = {
 chronicle.create_parser_extension(log_type, field_extractor=field_extractor)
 ```
 
-### Get parser extension
+#### Get parser extension
 
 Get parser extension details:
 
@@ -1825,7 +1973,7 @@ extension = chronicle.get_parser_extension(log_type, extension_id)
 print(extension)
 ```
 
-### Activate Parser Extension
+#### Activate Parser Extension
 
 Activate parser extension:
 
@@ -1836,7 +1984,7 @@ extension_id = "1234567890"
 chronicle.activate_parser_extension(log_type, extension_id)
 ```
 
-### Delete Parser Extension
+#### Delete Parser Extension
 
 Delete parser extension:
 
@@ -1847,9 +1995,9 @@ extension_id = "1234567890"
 chronicle.delete_parser_extension(log_type, extension_id)
 ```
 
-## Watchlist Management
+### Watchlist Management
 
-### Creating a Watchlist
+#### Creating a Watchlist
 
 Create a new watchlist:
 
@@ -1862,7 +2010,7 @@ watchlist = chronicle.create_watchlist(
 )
 ```
 
-### Updating a Watchlist
+#### Updating a Watchlist
 
 Update a watchlist by ID:
 
@@ -1877,7 +2025,7 @@ updated_watchlist = chronicle.update_watchlist(
 )
 ```
 
-### Deleting a Watchlist
+#### Deleting a Watchlist
 
 Delete a watchlist by ID:
 
@@ -1885,7 +2033,7 @@ Delete a watchlist by ID:
 chronicle.delete_watchlist("acb-123-def", force=True)
 ```
 
-### Getting a Watchlist
+#### Getting a Watchlist
 
 Get a watchlist by ID:
 
@@ -1893,7 +2041,7 @@ Get a watchlist by ID:
 watchlist = chronicle.get_watchlist("acb-123-def")
 ```
 
-### List all Watchlists
+#### List all Watchlists
 
 List all watchlists:
 
@@ -2333,10 +2481,11 @@ chronicle.delete_integration_manager_revision(
 ```
 
 ## Rule Management
+### Rule Management
 
 The SDK provides comprehensive support for managing Chronicle detection rules:
 
-### Creating Rules
+#### Creating Rules
 
 Create new detection rules using YARA-L 2.0 syntax:
 
@@ -2364,7 +2513,7 @@ rule_id = rule.get("name", "").split("/")[-1]
 print(f"Rule ID: {rule_id}")
 ```
 
-### Managing Rules
+#### Managing Rules
 
 Retrieve, list, update, enable/disable, and delete rules:
 
@@ -2395,7 +2544,7 @@ deployment = chronicle.enable_rule(rule_id, enabled=False) # Disable
 chronicle.delete_rule(rule_id)
 ```
 
-### Rule Deployment
+#### Rule Deployment
 
 Manage a rule's deployment (enabled/alerting/archive state and run frequency):
 
@@ -2424,7 +2573,7 @@ chronicle.update_rule_deployment(
 )
 ```
 
-### Searching Rules
+#### Searching Rules
 
 Search for rules using regular expressions:
 
@@ -2440,7 +2589,7 @@ mitre_rules = chronicle.search_rules("T1055")
 print(f"Found {len(mitre_rules.get('rules', []))} rules mentioning T1055 technique")
 ```
 
-### Testing Rules
+#### Testing Rules
 
 Test rules against historical data to validate their effectiveness before deployment:
 
@@ -2504,7 +2653,7 @@ for result in test_results:
 print(f"Finished testing. Found {detection_count} detection(s).")
 ```
 
-# Extract just the UDM events for programmatic processing
+#### Extract just the UDM events for programmatic processing
 ```python
 udm_events = []
 for result in chronicle.run_rule_test(rule_text, start_time, end_time, max_results=100):
@@ -2526,7 +2675,7 @@ for event in udm_events:
     print(f"Event type: {metadata.get('eventType')}")
 ```
 
-### Retrohunts
+#### Retrohunts
 
 Run rules against historical data to find past matches:
 
@@ -2549,7 +2698,7 @@ state = retrohunt_status.get("state", "")
 retrohunts = chronicle.list_retrohunts(rule_id)
 ```
 
-### Detections and Errors
+#### Detections and Errors
 
 Monitor rule detections and execution errors:
 
@@ -2579,7 +2728,7 @@ for error in errors.get("ruleExecutionErrors", []):
     print(f"Error: {error_message}, Time: {create_time}")
 ```
 
-### Rule Alerts
+#### Rule Alerts
 
 Search for alerts generated by rules:
 
@@ -2637,7 +2786,7 @@ for rule_alert in alerts_response.get('ruleAlerts', []):
 
 If `tooManyAlerts` is True in the response, consider narrowing your search criteria using a smaller time window or more specific filters.
 
-### Curated Rule Sets
+#### Curated Rule Sets
 
 Query curated rules:
 
@@ -2800,7 +2949,7 @@ chronicle.update_curated_rule_set_deployment(
 
 ```
 
-### Rule Validation
+#### Rule Validation
 
 Validate a YARA-L2 rule before creating or updating it:
 
@@ -2832,7 +2981,7 @@ else:
         print(f"Error at line {result.position['startLine']}, column {result.position['startColumn']}")
 ```
 
-### Rule Exclusions
+#### Rule Exclusions
 
 Rule Exclusions allow you to exclude specific events from triggering detections in Chronicle. They are useful for filtering out known false positives or excluding test/development traffic from production detections.
 
@@ -2891,7 +3040,7 @@ activity = chronicle.compute_rule_exclusion_activity(
 )
 ```
 
-### Featured Content Rules
+#### Featured Content Rules
 
 Featured content rules are pre-built detection rules available in the Chronicle Content Hub. These curated rules help you quickly deploy detections without writing custom rules.
 
@@ -2925,11 +3074,11 @@ filtered_rules = chronicle.list_featured_content_rules(
 )
 ```
 
-## Data Tables and Reference Lists
+### Data Tables and Reference Lists
 
 Chronicle provides two ways to manage and reference structured data in detection rules: Data Tables and Reference Lists. These can be used to maintain lists of trusted/suspicious entities, mappings of contextual information, or any other structured data useful for detection.
 
-### Data Tables
+#### Data Tables
 
 Data Tables are collections of structured data with defined columns and data types. They can be referenced in detection rules to enhance your detections with additional context.
 
@@ -3038,11 +3187,11 @@ chronicle.update_data_table_rows(
 chronicle.delete_data_table("suspicious_ips", force=True)  # force=True deletes even if it has rows
 ```
 
-### Reference Lists
+#### Reference Lists
 
 Reference Lists are simple lists of values (strings, CIDR blocks, or regex patterns) that can be referenced in detection rules. They are useful for maintaining whitelists, blacklists, or any other categorized sets of values.
 
-#### Creating Reference Lists
+##### Creating Reference Lists
 
 ```python
 from secops.chronicle.reference_list import ReferenceListSyntaxType, ReferenceListView
@@ -3074,7 +3223,7 @@ regex_list = chronicle.create_reference_list(
 )
 ```
 
-#### Managing Reference Lists
+##### Managing Reference Lists
 
 ```python
 # List all reference lists (basic view without entries)
@@ -3102,11 +3251,11 @@ chronicle.update_reference_list(
 
 ```
 
-### Using in YARA-L Rules
+#### Using in YARA-L Rules
 
 Both Data Tables and Reference Lists can be referenced in YARA-L detection rules.
 
-#### Using Data Tables in Rules
+##### Using Data Tables in Rules
 
 ```
 rule detect_with_data_table {
@@ -3146,7 +3295,7 @@ rule detect_with_reference_list {
 }
 ```
 
-## Gemini AI
+### Gemini AI
 
 You can use Chronicle's Gemini AI to get security insights, generate detection rules, explain security concepts, and more:
 
@@ -3193,7 +3342,7 @@ for action in response.suggested_actions:
         print(f"Action URI: {action.navigation.target_uri}")
 ```
 
-### Response Content Methods
+#### Response Content Methods
 
 The `GeminiResponse` class provides several methods to work with response content:
 
@@ -3204,7 +3353,7 @@ The `GeminiResponse` class provides several methods to work with response conten
 
 These methods help you work with different types of content in a structured way.
 
-### Accessing Raw API Response
+#### Accessing Raw API Response
 
 For advanced use cases or debugging, you can access the raw API response:
 
@@ -3225,7 +3374,7 @@ if "responses" in raw_response:
 
 This gives you direct access to the original API response format, which can be useful for accessing advanced features or troubleshooting.
 
-### Manual Opt-In
+#### Manual Opt-In
 
 If your account has sufficient permissions, you can manually opt-in to Gemini before using it:
 
@@ -3243,7 +3392,7 @@ response = chronicle.gemini("What is Windows event ID 4625?")
 
 This can be useful in environments where you want to explicitly control when the opt-in happens.
 
-### Generate Detection Rules
+#### Generate Detection Rules
 
 Chronicle Gemini can generate YARA-L rules for detection:
 
@@ -3264,7 +3413,7 @@ if code_blocks:
             print("Rule can be opened in editor:", rule_editor_url)
 ```
 
-### Get Intel Information
+#### Get Intel Information
 
 Get detailed information about malware, threat actors, files, vulnerabilities:
 
@@ -3277,7 +3426,7 @@ cve_explanation = cve_response.get_text_content()
 print("CVE explanation:", cve_explanation)
 ```
 
-### Maintain Conversation Context
+#### Maintain Conversation Context
 
 You can maintain conversation context by reusing the same conversation ID:
 
@@ -3297,7 +3446,7 @@ followup_response = chronicle.gemini(
 # Gemini will remember the context of the previous question about DDoS
 ```
 
-## Feed Management
+### Feed Management
 
 Feeds are used to ingest data into Chronicle. The SDK provides methods to manage feeds.
 
@@ -3371,11 +3520,11 @@ The Feed API supports different feed types such as HTTP, HTTPS Push, and S3 buck
 
 > **Note**: Secret generation is only available for certain feed types that require authentication.
 
-## Chronicle Dashboard
+### Chronicle Dashboard
 
 The Chronicle Dashboard API provides methods to manage native dashboards and dashboard charts in Chronicle.
 
-### Create Dashboard
+#### Create Dashboard
 ```python
 # Create a dashboard
 dashboard = chronicle.create_dashboard(
@@ -3387,7 +3536,7 @@ dashboard_id = dashboard["name"].split("/")[-1]
 print(f"Created dashboard with ID: {dashboard_id}")
 ```
 
-### Get Specific Dashboard Details
+#### Get Specific Dashboard Details
 ```python
 # Get a specific dashboard
 dashboard = chronicle.get_dashboard(
@@ -3397,7 +3546,7 @@ dashboard = chronicle.get_dashboard(
 print(f"Dashboard Details: {dashboard}")
 ```
 
-### List Dashboards
+#### List Dashboards
 ```python
 dashboards = chronicle.list_dashboards()
 for dashboard in dashboards.get("nativeDashboards", []):
@@ -3416,7 +3565,7 @@ if "nextPageToken" in dashboards:
     )
 ```
 
-### Update existing dashboard details
+#### Update existing dashboard details
 ```python
 filters = [
     {
@@ -3448,7 +3597,7 @@ updated_dashboard = chronicle.update_dashboard(
 print(f"Updated dashboard: {updated_dashboard['displayName']}")
 ```
 
-### Duplicate existing dashboard
+#### Duplicate existing dashboard
 ```python
 # Duplicate a dashboard
 duplicate = chronicle.duplicate_dashboard(
@@ -3496,7 +3645,7 @@ dashboards = chronicle.export_dashboard(dashboard_names=["<dashboard_id>"])
 ```
 
 
-### Add Chart to existing dashboard
+#### Add Chart to existing dashboard
 ```python
 # Define chart configuration
 query = """
@@ -3539,7 +3688,7 @@ chart = chronicle.add_chart(
 )
 ```
 
-### Get Dashboard Chart Details
+#### Get Dashboard Chart Details
 ```python
 # Get dashboard chart details
 dashboard_chart = chronicle.get_chart(
@@ -3548,7 +3697,7 @@ dashboard_chart = chronicle.get_chart(
 print(f"Dashboard Chart Details: {dashboard_chart}")
 ```
 
-### Edit Dashboard Chart
+#### Edit Dashboard Chart
 ```python
 # Dashboard Query updated details
 updated_dashboard_query={
@@ -3576,7 +3725,7 @@ updated_chart = chronicle.edit_chart(
 print(f"Updated dashboard chart: {updated_chart}")
 ```
 
-### Remove Chart from existing dashboard
+#### Remove Chart from existing dashboard
 ```python
 # Remove chart from dashboard
 chronicle.remove_chart(
@@ -3585,18 +3734,18 @@ chronicle.remove_chart(
 )
 ```
 
-### Delete existing dashboard
+#### Delete existing dashboard
 ```python
 # Delete a dashboard
 chronicle.delete_dashboard(dashboard_id="dashboard-id-here")
 print("Dashboard deleted successfully")
 ```
 
-## Dashboard Query
+### Dashboard Query
 
 The Chronicle Dashboard Query API provides methods to execute dashboard queries without creating a dashboard and get details of dashboard query.
 
-### Execute Dashboard Query
+#### Execute Dashboard Query
 ```python
 # Define query and time interval
 query = """
@@ -3628,13 +3777,455 @@ for result in results.get("results", []):
     print(result)
 ```
 
-### Get Dashboard Query details
+#### Get Dashboard Query details
 ```python
 # Get dashboard query details
 dashboard_query = chronicle.get_dashboard_query(
     query_id="query-id-here"
 )
 print(f"Dashboard Query Details: {dashboard_query}")
+```
+
+## SOAR Modules
+
+The SDK provides functions to interact with SOAR modules in Google SecOps. These are available under the `soar` namespace on the `ChronicleClient` instance, e.g. `chronicle.soar.<method>(...)`. This covers the full lifecycle of integrations, integration instances, actions, connectors, jobs, managers, and playbooks.
+
+### Integration Management
+
+#### Marketplace Integrations
+
+List available marketplace integrations:
+
+```python
+# Get all available marketplace integrations
+integrations = chronicle.soar.list_marketplace_integrations()
+for integration in integrations.get("marketplaceIntegrations", []):
+    integration_title = integration.get("title")
+    integration_id = integration.get("name", "").split("/")[-1]
+    integration_version = integration.get("version", "")
+    documentation_url = integration.get("documentationUri", "")
+
+# Get all integrations as a list
+integrations = chronicle.soar.list_marketplace_integrations(as_list=True)
+
+# Get all currently installed integrations
+integrations = chronicle.soar.list_marketplace_integrations(filter_string="installed = true")
+
+# Get all installed integrations with updates available
+integrations = chronicle.soar.list_marketplace_integrations(
+    filter_string="installed = true AND updateAvailable = true"
+)
+
+# Specify use of V1 Alpha API version
+integrations = chronicle.soar.list_marketplace_integrations(api_version=APIVersion.V1ALPHA)
+```
+
+Get a specific marketplace integration:
+
+```python
+integration = chronicle.soar.get_marketplace_integration("AWSSecurityHub")
+```
+
+Get the diff between the currently installed version and the latest
+available version of an integration:
+
+```python
+diff = chronicle.soar.get_marketplace_integration_diff("AWSSecurityHub")
+```
+
+Install or update a marketplace integration:
+
+```python
+# Install an integration with the default settings
+integration_name = "AWSSecurityHub"
+integration = chronicle.soar.install_marketplace_integration(integration_name)
+
+# Install to staging environment and override any existing ontology mappings
+integration = chronicle.soar.install_marketplace_integration(
+    integration_name,
+    staging=True,
+    override_mapping=True,
+)
+
+# Installing a currently installed integration with no specified version
+# number will update it to the latest version
+integration = chronicle.soar.install_marketplace_integration(integration_name)
+
+# Or you can specify a specific version to install
+integration = chronicle.soar.install_marketplace_integration(
+    integration_name,
+    version="5.0",
+)
+```
+
+Uninstall a marketplace integration:
+
+```python
+chronicle.soar.uninstall_marketplace_integration("AWSSecurityHub")
+```
+
+#### Integrations
+
+List all installed integrations:
+
+```python
+# Get all integrations
+integrations = chronicle.soar.list_integrations()
+for i in integrations.get("integrations", []):
+    integration_id = i["identifier"]
+    integration_display_name = i["displayName"]
+    integration_type = i["type"]
+
+# Get all integrations as a list
+integrations = chronicle.soar.list_integrations(as_list=True)
+
+for i in integrations:
+    integration = chronicle.soar.get_integration(i["identifier"])
+    if integration.get("parameters"):
+        print(json.dumps(integration, indent=2))
+
+# Get integrations ordered by display name
+integrations = chronicle.soar.list_integrations(order_by="displayName", as_list=True)
+```
+
+Get details of a specific integration:
+
+```python
+integration = chronicle.soar.get_integration("AWSSecurityHub")
+```
+
+Create an integration:
+
+```python
+from secops.chronicle.models import (
+    IntegrationParam,
+    IntegrationParamType,
+    IntegrationType,
+    PythonVersion,
+)
+
+integration = chronicle.soar.create_integration(
+    display_name="MyNewIntegration",
+    staging=True,
+    description="This is my integration",
+    python_version=PythonVersion.PYTHON_3_11,
+    parameters=[
+        IntegrationParam(
+            display_name="AWS Access Key",
+            property_name="aws_access_key",
+            type=IntegrationParamType.STRING,
+            description="AWS access key for authentication",
+            mandatory=True,
+        ),
+        IntegrationParam(
+            display_name="AWS Secret Key",
+            property_name="aws_secret_key",
+            type=IntegrationParamType.PASSWORD,
+            description="AWS secret key for authentication",
+            mandatory=False,
+        ),
+    ],
+    categories=["Cloud Security", "Cloud", "Security"],
+    integration_type=IntegrationType.RESPONSE,
+)
+```
+
+Update an integration:
+
+```python
+from secops.chronicle.models import IntegrationParam, IntegrationParamType
+
+updated_integration = chronicle.soar.update_integration(
+    integration_name="MyNewIntegration",
+    display_name="Updated Integration Name",
+    description="Updated description",
+    parameters=[
+        IntegrationParam(
+            display_name="AWS Region",
+            property_name="aws_region",
+            type=IntegrationParamType.STRING,
+            description="AWS region to use",
+            mandatory=True,
+        ),
+    ],
+    categories=["Cloud Security", "Cloud", "Security"],
+)
+```
+
+Update a custom integration (including its scripts and dependencies):
+
+```python
+result = chronicle.soar.update_custom_integration(
+    integration_name="MyNewIntegration",
+    display_name="Updated Integration Name",
+    description="Updated description",
+    dependencies_to_remove=["old-lib==1.0.0"],
+)
+# result contains "successful", "integration", and optionally "dependencies"
+```
+
+Delete an integration:
+
+```python
+chronicle.soar.delete_integration("MyNewIntegration")
+```
+
+Download an entire integration as a bytes object and save it as a `.zip` file.
+This includes all the integration details, parameters, and actions in a format
+that can be re-uploaded to Chronicle or used for backup purposes:
+
+```python
+integration_bytes = chronicle.soar.download_integration("MyIntegration")
+with open("MyIntegration.zip", "wb") as f:
+    f.write(integration_bytes)
+```
+
+Export selected items from an integration (e.g. only specific actions) as a `.zip` file:
+
+```python
+# Export only actions with IDs 1 and 2 from the integration
+export_bytes = chronicle.soar.export_integration_items(
+    integration_name="AWSSecurityHub",
+    actions=["1", "2"],  # IDs of the actions to export
+)
+with open("AWSSecurityHub_Export.zip", "wb") as f:
+    f.write(export_bytes)
+
+# Export multiple item types at once
+export_bytes = chronicle.soar.export_integration_items(
+    integration_name="AWSSecurityHub",
+    actions=["1", "2"],
+    connectors=["3"],
+    jobs=["4", "5"],
+)
+```
+
+Get dependencies for an integration:
+
+```python
+dependencies = chronicle.soar.get_integration_dependencies("AWSSecurityHub")
+for dep in dependencies.get("dependencies", []):
+    parts = dep.split("-")
+    dependency_name = parts[0]
+    dependency_version = parts[1] if len(parts) > 1 else "latest"
+    print(f"Dependency: {dependency_name}, Version: {dependency_version}")
+```
+
+Force a dependency download for an integration:
+
+```python
+# Install a specific version of a dependency
+chronicle.soar.download_integration_dependency(
+    "MyIntegration",
+    "boto3==1.42.44",
+)
+
+# Install the latest version of a dependency
+chronicle.soar.download_integration_dependency(
+    "MyIntegration",
+    "boto3",
+)
+```
+
+Get remote agents that would be restricted from running an updated version of the integration:
+
+```python
+from secops.chronicle.models import PythonVersion
+
+agents = chronicle.soar.get_integration_restricted_agents(
+    integration_name="AWSSecurityHub",
+    required_python_version=PythonVersion.PYTHON_3_11,
+)
+```
+
+Get the integrations currently installed on a specific agent:
+
+```python
+agent_integrations = chronicle.soar.get_agent_integrations(agent_id="my-agent-id")
+```
+
+Get items (connector instances, job instances, playbooks) affected by changes to an integration:
+
+```python
+affected = chronicle.soar.get_integration_affected_items("AWSSecurityHub")
+```
+
+Get integration diff between two versions of an integration:
+
+```python
+from secops.chronicle.models import DiffType
+
+# Get the diff between the commercial version and the current version in the environment
+diff = chronicle.soar.get_integration_diff(
+    integration_name="AWSSecurityHub",
+    diff_type=DiffType.COMMERCIAL,
+)
+
+# Get the difference between the staging integration and its matching production version
+diff = chronicle.soar.get_integration_diff(
+    integration_name="AWSSecurityHub",
+    diff_type=DiffType.PRODUCTION,
+)
+
+# Get the difference between the production integration and its corresponding staging version
+diff = chronicle.soar.get_integration_diff(
+    integration_name="AWSSecurityHub",
+    diff_type=DiffType.STAGING,
+)
+```
+
+Transition an integration to staging or production environment:
+
+```python
+from secops.chronicle.models import TargetMode
+
+# Transition to staging environment
+chronicle.soar.transition_integration(
+    integration_name="AWSSecurityHub",
+    target_mode=TargetMode.STAGING,
+)
+
+# Transition to production environment
+chronicle.soar.transition_integration(
+    integration_name="AWSSecurityHub",
+    target_mode=TargetMode.PRODUCTION,
+)
+```
+
+#### Integration Instances
+
+List all instances for a specific integration:
+
+```python
+# Get all instances for an integration
+instances = chronicle.soar.list_integration_instances("MyIntegration")
+for instance in instances.get("integrationInstances", []):
+    print(f"Instance: {instance.get('displayName')}, ID: {instance.get('name')}")
+    print(f"Environment: {instance.get('environment')}")
+
+# Get all instances as a list
+instances = chronicle.soar.list_integration_instances("MyIntegration", as_list=True)
+
+# Get instances for a specific environment
+instances = chronicle.soar.list_integration_instances(
+    "MyIntegration",
+    filter_string="environment = 'production'",
+)
+```
+
+Get details of a specific integration instance:
+
+```python
+instance = chronicle.soar.get_integration_instance(
+    integration_name="MyIntegration",
+    integration_instance_id="ii1",
+)
+print(f"Display Name: {instance.get('displayName')}")
+print(f"Environment: {instance.get('environment')}")
+print(f"Agent: {instance.get('agent')}")
+```
+
+Create a new integration instance:
+
+```python
+from secops.chronicle.models import IntegrationInstanceParameter
+
+# Create instance with required fields only
+new_instance = chronicle.soar.create_integration_instance(
+    integration_name="MyIntegration",
+    environment="production",
+)
+
+# Create instance with all fields
+new_instance = chronicle.soar.create_integration_instance(
+    integration_name="MyIntegration",
+    environment="production",
+    display_name="Production Instance",
+    description="Main production integration instance",
+    parameters=[
+        IntegrationInstanceParameter(value="api_key_value"),
+        IntegrationInstanceParameter(value="https://api.example.com"),
+    ],
+    agent="agent-123",
+)
+```
+
+Update an existing integration instance:
+
+```python
+from secops.chronicle.models import IntegrationInstanceParameter
+
+# Update instance display name
+updated_instance = chronicle.soar.update_integration_instance(
+    integration_name="MyIntegration",
+    integration_instance_id="ii1",
+    display_name="Updated Production Instance",
+)
+
+# Update multiple fields including parameters
+updated_instance = chronicle.soar.update_integration_instance(
+    integration_name="MyIntegration",
+    integration_instance_id="ii1",
+    display_name="Updated Instance",
+    description="Updated description",
+    environment="staging",
+    parameters=[
+        IntegrationInstanceParameter(value="new_api_key"),
+    ],
+)
+
+# Use a custom update mask to restrict which fields are patched
+updated_instance = chronicle.soar.update_integration_instance(
+    integration_name="MyIntegration",
+    integration_instance_id="ii1",
+    display_name="New Name",
+    update_mask="displayName",
+)
+```
+
+Delete an integration instance:
+
+```python
+chronicle.soar.delete_integration_instance(
+    integration_name="MyIntegration",
+    integration_instance_id="ii1",
+)
+```
+
+Execute a connectivity test for an integration instance:
+
+```python
+# Test if the instance can connect to the third-party service
+test_result = chronicle.soar.execute_integration_instance_test(
+    integration_name="MyIntegration",
+    integration_instance_id="ii1",
+)
+print(f"Test Successful: {test_result.get('successful')}")
+print(f"Message: {test_result.get('message')}")
+```
+
+Get affected items (playbooks) that depend on an integration instance:
+
+```python
+# Perform impact analysis before deleting or modifying an instance
+affected_items = chronicle.soar.get_integration_instance_affected_items(
+    integration_name="MyIntegration",
+    integration_instance_id="ii1",
+)
+for playbook in affected_items.get("affectedPlaybooks", []):
+    print(f"Playbook: {playbook.get('displayName')}")
+    print(f"  ID: {playbook.get('name')}")
+```
+
+Get the default integration instance:
+
+```python
+# Get the system default configuration for a commercial product
+default_instance = chronicle.soar.get_default_integration_instance(
+    integration_name="AWSSecurityHub",
+)
+print(f"Default Instance: {default_instance.get('displayName')}")
+print(f"Environment: {default_instance.get('environment')}")
 ```
 
 ## Error Handling
@@ -3654,7 +4245,7 @@ except SecOpsError as e:
     print(f"General error: {e}")
 ```
 
-## Value Type Detection
+### Value Type Detection
 
 The SDK automatically detects the most common entity types when using the `summarize_entity` function:
 - IP addresses (IPv4 and IPv6)

@@ -455,3 +455,24 @@ def test_update_watchlist_error(chronicle_client):
             )
 
         assert "Failed to update watchlist" in str(exc_info.value)
+
+
+def test_list_watchlists_as_list(chronicle_client):
+    """Test list_watchlists function returning a list."""
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "watchlists": [
+            {"name": "watchlist-1", "displayName": "VIPs"},
+            {"name": "watchlist-2", "displayName": "Suspicious IPs"},
+        ]
+    }
+    with patch.object(
+        chronicle_client.session, "request", return_value=mock_response
+    ):
+        result = list_watchlists(chronicle_client, as_list=True)
+
+        assert isinstance(result, list)
+        assert len(result) == 2
+        assert result[0]["name"] == "watchlist-1"
+        assert result[1]["displayName"] == "Suspicious IPs"

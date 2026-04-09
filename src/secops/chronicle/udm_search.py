@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any
 
 from secops.exceptions import APIError
 from secops.chronicle.models import APIVersion
+from secops.chronicle.utils.format_utils import remove_none_values
 from secops.chronicle.utils.request_utils import chronicle_request
 
 if TYPE_CHECKING:
@@ -92,9 +93,12 @@ def find_udm_field_values(
     Raises:
         APIError: If the API request fails
     """
-    params = {"query": query}
-    if page_size is not None:
-        params["pageSize"] = page_size
+    params = remove_none_values(
+        {
+            "query": query,
+            "pageSize": page_size,
+        }
+    )
 
     return chronicle_request(
         client,

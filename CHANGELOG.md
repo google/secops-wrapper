@@ -5,6 +5,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.41.0] - 2026-04-09
+### Added
+- Comprehensive SOAR integration management capabilities
+  - Integration management (`create_integration()`, `update_integration()`, `list_integrations()`, `export_integration_items()`, etc.)
+  - Integration instances management (`get_default_integration_instance()`, `list_integration_instances()`, etc.)
+  - Marketplace integration management (`install_marketplace_integration()`, `uninstall_marketplace_integration()`, etc.)
+- CLI support for SOAR integration management commands
+  - `secops integration integrations` for managing custom integrations
+  - `secops integration instances` for managing integration instances
+  - `secops integration marketplace` for managing marketplace integrations
+- Comprehensive utility helpers and data models for SOAR integration parameters, action types, scheduling, and connector configurations
+
+## [0.40.0] - 2026-04-06
+### Added
+- Parser validation methods
+  - `trigger_github_checks()` - Trigger GitHub checks for a parser against an associated pull request
+  - `get_analysis_report()` - Retrieve a completed parser analysis report
+- CLI support for parser validation commands
+  - `secops log-type trigger-checks` - Trigger parser validation checks for a PR
+  - `secops log-type get-analysis-report` - Get details of a specific analysis report
+
+## [0.39.0] - 2026-04-02
+### Updated
+- Refactored Chronicle modules to use centralized `chronicle_request` and `chronicle_paginated_request` helper functions for improved code consistency and maintainability
+- Standardized `as_list` parameter support across paginated API methods
+
+## [0.38.0] - 2026-03-31
+### Added
+- CLI local configuration support with `--local` flag for config set and view commands
+- `SECOPS_LOCAL_CONFIG_DIR` environment variable support for managing multiple local configurations
+
+### Updated
+- CLI argument parsing to properly handle global flags placed after subcommands
+
+## [0.37.0] - 2026-03-11
+### Added
+- Comprehensive case management functionality for Chronicle
+  - `get_case()` - Retrieve single case details with optional field expansion
+  - `list_cases()` - List cases with filtering, pagination, and sorting capabilities
+  - `patch_case()` - Update case properties using partial updates
+  - `merge_cases()` - Merge multiple cases into a single case
+  - `get_cases()` - Legacy batch case retrieval for multiple case IDs
+- Bulk case operations for efficient case management
+  - `execute_bulk_add_tag()` - Add tags to multiple cases
+  - `execute_bulk_assign()` - Assign multiple cases to users
+  - `execute_bulk_change_priority()` - Change priority for multiple cases
+  - `execute_bulk_change_stage()` - Change stage for multiple cases
+  - `execute_bulk_close()` - Close multiple cases with reasons
+  - `execute_bulk_reopen()` - Reopen multiple cases
+- Complete CLI support for case management through `secops case` commands
+  - `secops case get` - Get single case details
+  - `secops case list` - List cases with filtering and pagination
+  - `secops case update` - Update case properties
+  - `secops case merge` - Merge multiple cases
+  - `secops case bulk-*` commands for bulk operations
+
 ## [0.36.0] - 2026-03-10
 ### Added
 - Raw log search functionality with `search_raw_logs()` method

@@ -6,7 +6,7 @@ import argparse
 import base64
 import sys
 
-from secops.cli.utils.common_args import add_pagination_args
+from secops.cli.utils.common_args import add_as_list_arg, add_pagination_args
 from secops.cli.utils.formatters import output_formatter
 from secops.exceptions import APIError, SecOpsError
 
@@ -136,6 +136,7 @@ def setup_parser_command(subparsers):
         help="Log type to filter by (default: '-' for all).",
     )
     add_pagination_args(list_parsers_sub)
+    add_as_list_arg(list_parsers_sub)
     list_parsers_sub.add_argument(
         "--filter",
         type=str,
@@ -327,7 +328,11 @@ def handle_parser_list_command(args, chronicle):
     """Handle parser list command."""
     try:
         result = chronicle.list_parsers(
-            args.log_type, args.page_size, args.page_token, args.filter
+            args.log_type,
+            args.page_size,
+            args.page_token,
+            args.filter,
+            args.as_list,
         )
         output_formatter(result, args.output)
     except Exception as e:  # pylint: disable=broad-exception-caught
@@ -353,9 +358,7 @@ def handle_parser_run_command(args, chronicle):
             # If no parser code provided,
             # try to find an active parser for the log type
             parser_list_response = chronicle.list_parsers(
-                args.log_type,
-                page_size=1,
-                filter="STATE=ACTIVE",
+                args.log_type, page_size=1, filter="STATE=ACTIVE", as_list=False
             )
             parsers = parser_list_response.get("parsers", [])
             if len(parsers) < 1:

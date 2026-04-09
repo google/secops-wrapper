@@ -84,7 +84,7 @@ class PythonVersion(str, Enum):
 
 
 class DiffType(str, Enum):
-    """Type of diff to retrieve."""
+    """Type of integration diff to retrieve."""
 
     COMMERCIAL = "Commercial"
     PRODUCTION = "Production"
@@ -107,9 +107,9 @@ class IntegrationType(str, Enum):
 
 
 class IntegrationParamType(str, Enum):
-    """Type of integration parameter."""
+    """Parameter types for Chronicle SOAR integration functions."""
 
-    PARAM_TYPE_UNSPECIFIED = "PARAM_TYPE_UNSPECIFIED"
+    UNSPECIFIED = "PARAM_TYPE_UNSPECIFIED"
     BOOLEAN = "BOOLEAN"
     INT = "INT"
     STRING = "STRING"
@@ -126,6 +126,7 @@ class IntegrationParamType(str, Enum):
     MULTI_VALUES_SELECTION = "MULTI_VALUES_SELECTION"
     SCRIPT = "SCRIPT"
     FILTER_LIST = "FILTER_LIST"
+    NUMERICAL_VALUES = "NUMERICAL_VALUES"
 
 
 @dataclass
@@ -228,29 +229,6 @@ class ActionParameter:
         return data
 
 
-class ParamType(str, Enum):
-    """Parameter types for Chronicle SOAR integration functions."""
-
-    UNSPECIFIED = "PARAM_TYPE_UNSPECIFIED"
-    BOOLEAN = "BOOLEAN"
-    INT = "INT"
-    STRING = "STRING"
-    PASSWORD = "PASSWORD"
-    IP = "IP"
-    IP_OR_HOST = "IP_OR_HOST"
-    URL = "URL"
-    DOMAIN = "DOMAIN"
-    EMAIL = "EMAIL"
-    VALUES_LIST = "VALUES_LIST"
-    VALUES_AS_SEMICOLON_SEPARATED_STRING = (
-        "VALUES_AS_SEMICOLON_SEPARATED_STRING"
-    )
-    MULTI_VALUES_SELECTION = "MULTI_VALUES_SELECTION"
-    SCRIPT = "SCRIPT"
-    FILTER_LIST = "FILTER_LIST"
-    NUMERICAL_VALUES = "NUMERICAL_VALUES"
-
-
 class ConnectorParamMode(str, Enum):
     """Parameter modes for Chronicle SOAR integration connectors."""
 
@@ -285,7 +263,7 @@ class ConnectorParameter:
     """
 
     display_name: str
-    type: ParamType
+    type: IntegrationParamType
     mode: ConnectorParamMode
     mandatory: bool
     default_value: str | None = None
@@ -551,7 +529,7 @@ class JobParameter:
     display_name: str
     description: str
     mandatory: bool
-    type: ParamType
+    type: IntegrationParamType
     default_value: str | None = None
 
     def to_dict(self) -> dict:
@@ -566,28 +544,6 @@ class JobParameter:
         if self.default_value is not None:
             data["defaultValue"] = self.default_value
         return data
-
-
-class IntegrationParameterType(str, Enum):
-    """Parameter types for Chronicle SOAR integration instances."""
-
-    UNSPECIFIED = "INTEGRATION_PARAMETER_TYPE_UNSPECIFIED"
-    BOOLEAN = "BOOLEAN"
-    INT = "INT"
-    STRING = "STRING"
-    PASSWORD = "PASSWORD"
-    IP = "IP"
-    IP_OR_HOST = "IP_OR_HOST"
-    URL = "URL"
-    DOMAIN = "DOMAIN"
-    EMAIL = "EMAIL"
-    VALUES_LIST = "VALUES_LIST"
-    VALUES_AS_SEMICOLON_SEPARATED_STRING = (
-        "VALUES_AS_SEMICOLON_SEPARATED_STRING"
-    )
-    MULTI_VALUES_SELECTION = "MULTI_VALUES_SELECTION"
-    SCRIPT = "SCRIPT"
-    FILTER_LIST = "FILTER_LIST"
 
 
 @dataclass
@@ -752,6 +708,28 @@ class ConnectorRule:
             "displayName": self.display_name,
             "type": str(self.type.value),
         }
+
+
+class CasePriority(StrEnum):
+    """Priority levels for cases."""
+
+    UNSPECIFIED = "PRIORITY_UNSPECIFIED"
+    INFO = "PRIORITY_INFO"
+    LOW = "PRIORITY_LOW"
+    MEDIUM = "PRIORITY_MEDIUM"
+    HIGH = "PRIORITY_HIGH"
+    CRITICAL = "PRIORITY_CRITICAL"
+
+
+class CaseCloseReason(StrEnum):
+    """Close reason values for cases."""
+
+    UNSPECIFIED = "CLOSE_REASON_UNSPECIFIED"
+    MALICIOUS = "MALICIOUS"
+    NOT_MALICIOUS = "NOT_MALICIOUS"
+    MAINTENANCE = "MAINTENANCE"
+    INCONCLUSIVE = "INCONCLUSIVE"
+    UNKNOWN = "UNKNOWN"
 
 
 @dataclass

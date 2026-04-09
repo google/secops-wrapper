@@ -74,15 +74,19 @@ def test_create_feed(chronicle_client, mock_response):
     )
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         # Act
         result = create_feed(chronicle_client, feed_config)
 
         # Assert
         mock_post.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/feeds",
+            method="POST",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds",
+            params=None,
             json=feed_config.to_dict(),
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -96,7 +100,7 @@ def test_create_feed_with_json_string(chronicle_client, mock_response):
     )
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         # Act
         result = create_feed(chronicle_client, feed_config)
@@ -107,8 +111,12 @@ def test_create_feed_with_json_string(chronicle_client, mock_response):
             "details": {"feed_source_type": "syslog", "log_type": "network"},
         }
         mock_post.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/feeds",
+            method="POST",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds",
+            params=None,
             json=expected_json,
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -121,7 +129,7 @@ def test_create_feed_error(chronicle_client, mock_error_response):
     )
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         # Act & Assert
         with pytest.raises(APIError) as exc_info:
@@ -135,14 +143,19 @@ def test_get_feed(chronicle_client, mock_response):
     # Arrange
     feed_id = "feed_12345"
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         # Act
         result = get_feed(chronicle_client, feed_id)
 
         # Assert
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/feeds/{feed_id}"
+            method="GET",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds/{feed_id}",
+            params=None,
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -152,7 +165,7 @@ def test_get_feed_error(chronicle_client, mock_error_response):
     # Arrange
     feed_id = "feed_12345"
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         # Act & Assert
         with pytest.raises(APIError) as exc_info:
@@ -169,73 +182,91 @@ def test_list_feeds(chronicle_client, mock_response):
     }
 
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         # Act
         result = list_feeds(chronicle_client)
 
         # Assert
         mock_get.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/feeds",
-            params={"pageSize": 100, "pageToken": None},
+            method="GET",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds",
+            params={"pageSize": 100},
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value["feeds"]
         assert len(result) == 2
 
 
 def test_list_feeds_with_pagination(chronicle_client, mock_response):
-    """Test list_feeds function with pagination."""
-    # Arrange - Mock first call with next_page_token, second call without it
+    """Test list_feeds function with automatic pagination across multiple pages."""
+    # Arrange - When page_token is NOT provided, it automatically fetches
+    # all pages and aggregates results
     first_response = Mock()
     first_response.status_code = 200
     first_response.json.return_value = {
-        "feeds": [{"name": "feed1"}],
-        "next_page_token": "token123",
+        "feeds": [{"name": "feed1"}, {"name": "feed2"}],
+        "nextPageToken": "next_token_456",
     }
 
     second_response = Mock()
     second_response.status_code = 200
-    second_response.json.return_value = {"feeds": [{"name": "feed2"}]}
+    second_response.json.return_value = {
+        "feeds": [{"name": "feed3"}],
+        "nextPageToken": "next_token_789",
+    }
+
+    third_response = Mock()
+    third_response.status_code = 200
+    third_response.json.return_value = {
+        "feeds": [{"name": "feed4"}],
+    }
 
     with patch.object(
         chronicle_client.session,
-        "get",
-        side_effect=[first_response, second_response],
+        "request",
+        side_effect=[first_response, second_response, third_response],
     ) as mock_get:
-        # Act
-        result = list_feeds(
-            chronicle_client, page_size=50, page_token="token123"
-        )
+        # Act - Pass page_size=None and page_token=None to enable automatic pagination
+        # If page_size has a default value, it triggers single-page mode
+        result = list_feeds(chronicle_client, page_size=None, page_token=None)
 
-        # Assert
-        assert mock_get.call_count == 2
-        # First call with initial page_token
-        mock_get.assert_any_call(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/feeds",
-            params={"pageSize": 50, "pageToken": "token123"},
-        )
-        # Second call with next_page_token from first response
-        mock_get.assert_any_call(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/feeds",
-            params={"pageSize": 50, "pageToken": "token123"},
-        )
-        # Result should be combined feeds from both pages
-        assert len(result) == 2
+        # Assert - Multiple calls are made to fetch all pages
+        assert mock_get.call_count == 3
+
+        # Verify each call was made with correct params (DEFAULT_PAGE_SIZE=1000)
+        calls = mock_get.call_args_list
+        assert calls[0].kwargs["params"] == {"pageSize": 1000}
+        assert calls[1].kwargs["params"] == {
+            "pageSize": 1000,
+            "pageToken": "next_token_456",
+        }
+        assert calls[2].kwargs["params"] == {
+            "pageSize": 1000,
+            "pageToken": "next_token_789",
+        }
+
+        # Result should be aggregated feeds from all pages
+        assert len(result) == 4
         assert result[0]["name"] == "feed1"
         assert result[1]["name"] == "feed2"
+        assert result[2]["name"] == "feed3"
+        assert result[3]["name"] == "feed4"
 
 
 def test_list_feeds_error(chronicle_client, mock_error_response):
     """Test list_feeds function with error response."""
     # Arrange
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         # Act & Assert
         with pytest.raises(APIError) as exc_info:
             list_feeds(chronicle_client)
 
-        assert "Failed to list feeds" in str(exc_info.value)
+        assert "API request failed" in str(exc_info.value)
 
 
 def test_update_feed(chronicle_client, mock_response):
@@ -248,16 +279,19 @@ def test_update_feed(chronicle_client, mock_response):
     )
 
     with patch.object(
-        chronicle_client.session, "patch", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_patch:
         # Act
         result = update_feed(chronicle_client, feed_id, feed_config)
 
         # Assert
         mock_patch.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/feeds/{feed_id}",
+            method="PATCH",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds/{feed_id}",
             params={"updateMask": "display_name,details"},
             json=feed_config.to_dict(),
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -270,7 +304,7 @@ def test_update_feed_with_custom_mask(chronicle_client, mock_response):
     update_mask = ["display_name"]
 
     with patch.object(
-        chronicle_client.session, "patch", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_patch:
         # Act
         result = update_feed(
@@ -279,9 +313,12 @@ def test_update_feed_with_custom_mask(chronicle_client, mock_response):
 
         # Assert
         mock_patch.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/feeds/{feed_id}",
+            method="PATCH",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds/{feed_id}",
             params={"updateMask": "display_name"},
             json=feed_config.to_dict(),
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -293,7 +330,7 @@ def test_update_feed_error(chronicle_client, mock_error_response):
     feed_config = UpdateFeedModel(display_name="Updated Feed")
 
     with patch.object(
-        chronicle_client.session, "patch", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         # Act & Assert
         with pytest.raises(APIError) as exc_info:
@@ -307,14 +344,19 @@ def test_delete_feed(chronicle_client, mock_response):
     # Arrange
     feed_id = "feed_12345"
     with patch.object(
-        chronicle_client.session, "delete", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_delete:
         # Act
         result = delete_feed(chronicle_client, feed_id)
 
         # Assert
         mock_delete.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/feeds/{feed_id}"
+            method="DELETE",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds/{feed_id}",
+            params=None,
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result is None
 
@@ -324,7 +366,7 @@ def test_delete_feed_error(chronicle_client, mock_error_response):
     # Arrange
     feed_id = "feed_12345"
     with patch.object(
-        chronicle_client.session, "delete", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         # Act & Assert
         with pytest.raises(APIError) as exc_info:
@@ -338,14 +380,19 @@ def test_enable_feed(chronicle_client, mock_response):
     # Arrange
     feed_id = "feed_12345"
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         # Act
         result = enable_feed(chronicle_client, feed_id)
 
         # Assert
         mock_post.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/feeds/{feed_id}:enable"
+            method="POST",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds/{feed_id}:enable",
+            params=None,
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert feed_id in f"{result}"
 
@@ -355,7 +402,7 @@ def test_enable_feed_error(chronicle_client, mock_error_response):
     # Arrange
     feed_id = "feed_12345"
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         # Act & Assert
         with pytest.raises(APIError) as exc_info:
@@ -369,14 +416,19 @@ def test_disable_feed(chronicle_client, mock_response):
     # Arrange
     feed_id = "feed_12345"
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         # Act
         result = disable_feed(chronicle_client, feed_id)
 
         # Assert
         mock_post.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/feeds/{feed_id}:disable"
+            method="POST",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds/{feed_id}:disable",
+            params=None,
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert feed_id in f"{result}"
 
@@ -386,7 +438,7 @@ def test_disable_feed_error(chronicle_client, mock_error_response):
     # Arrange
     feed_id = "feed_12345"
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         # Act & Assert
         with pytest.raises(APIError) as exc_info:
@@ -402,14 +454,19 @@ def test_generate_secret(chronicle_client, mock_response):
     mock_response.json.return_value = {"secret": "generated_secret_123"}
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         # Act
         result = generate_secret(chronicle_client, feed_id)
 
         # Assert
         mock_post.assert_called_once_with(
-            f"{chronicle_client.base_url}/{chronicle_client.instance_id}/feeds/{feed_id}:generateSecret"
+            method="POST",
+            url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds/{feed_id}:generateSecret",
+            params=None,
+            json=None,
+            headers=None,
+            timeout=None,
         )
         assert result == mock_response.json.return_value
 
@@ -419,7 +476,7 @@ def test_generate_secret_error(chronicle_client, mock_error_response):
     # Arrange
     feed_id = "feed_12345"
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_error_response
+        chronicle_client.session, "request", return_value=mock_error_response
     ):
         # Act & Assert
         with pytest.raises(APIError) as exc_info:

@@ -21,6 +21,7 @@ def test_cli_feed_list(cli_env, common_args):
     ] + common_args + [
         "feed",
         "list",
+        "--as_list"
     ]
 
     result = subprocess.run(cmd, env=cli_env, capture_output=True, text=True)
@@ -51,6 +52,7 @@ def test_cli_feed_get(cli_env, common_args):
     ] + common_args + [
         "feed",
         "list",
+        "--as_list"
     ]
 
     list_result = subprocess.run(list_cmd, env=cli_env, capture_output=True, text=True)

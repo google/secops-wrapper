@@ -50,7 +50,7 @@ def test_get_data_export(chronicle_client):
         "data_export_status": {"stage": "FINISHED_SUCCESS", "progress_percentage": 100},
     }
 
-    with patch.object(chronicle_client.session, "get", return_value=mock_response):
+    with patch.object(chronicle_client.session, "request", return_value=mock_response):
         result = chronicle_client.get_data_export("export123")
 
         assert result["name"].endswith("/dataExports/export123")
@@ -64,7 +64,7 @@ def test_get_data_export_error(chronicle_client):
     mock_response.status_code = 404
     mock_response.text = "Data export not found"
 
-    with patch.object(chronicle_client.session, "get", return_value=mock_response):
+    with patch.object(chronicle_client.session, "request", return_value=mock_response):
         with pytest.raises(APIError, match="Failed to get data export"):
             chronicle_client.get_data_export("nonexistent-export")
 
@@ -84,7 +84,7 @@ def test_create_data_export_with_log_type(chronicle_client):
         "dataExportStatus": {"stage": "IN_QUEUE"},
     }
 
-    with patch.object(chronicle_client.session, "post", return_value=mock_response) as mock_post:
+    with patch.object(chronicle_client.session, "request", return_value=mock_response) as mock_post:
         start_time = datetime(2024, 1, 1, tzinfo=timezone.utc)
         end_time = datetime(2024, 1, 2, tzinfo=timezone.utc)
 
@@ -124,7 +124,7 @@ def test_create_data_export_with_log_types(chronicle_client):
         "dataExportStatus": {"stage": "IN_QUEUE"},
     }
 
-    with patch.object(chronicle_client.session, "post", return_value=mock_response) as mock_post:
+    with patch.object(chronicle_client.session, "request", return_value=mock_response) as mock_post:
         start_time = datetime(2024, 1, 1, tzinfo=timezone.utc)
         end_time = datetime(2024, 1, 2, tzinfo=timezone.utc)
 
@@ -222,7 +222,7 @@ def test_create_data_export_with_all_logs(chronicle_client):
     }
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         start_time = datetime(2024, 1, 1, tzinfo=timezone.utc)
         end_time = datetime(2024, 1, 2, tzinfo=timezone.utc)
@@ -252,7 +252,7 @@ def test_cancel_data_export(chronicle_client):
     }
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         result = chronicle_client.cancel_data_export("export123")
 
@@ -260,8 +260,7 @@ def test_cancel_data_export(chronicle_client):
 
         # Check that the request was sent to the correct URL
         mock_post.assert_called_once()
-        args, kwargs = mock_post.call_args
-        assert args[0].endswith("/dataExports/export123:cancel")
+        assert mock_post.call_args[1]["url"].endswith("/dataExports/export123:cancel")
 
 
 def test_cancel_data_export_error(chronicle_client):
@@ -270,7 +269,7 @@ def test_cancel_data_export_error(chronicle_client):
     mock_response.status_code = 404
     mock_response.text = "Data export not found"
 
-    with patch.object(chronicle_client.session, "post", return_value=mock_response):
+    with patch.object(chronicle_client.session, "request", return_value=mock_response):
         with pytest.raises(APIError, match="Failed to cancel data export"):
             chronicle_client.cancel_data_export("nonexistent-export")
 
@@ -298,7 +297,7 @@ def test_fetch_available_log_types(chronicle_client):
     }
 
     with patch.object(
-        chronicle_client.session, "post", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_post:
         start_time = datetime(2024, 1, 1, tzinfo=timezone.utc)
         end_time = datetime(2024, 1, 2, tzinfo=timezone.utc)
@@ -338,7 +337,7 @@ def test_fetch_available_log_types_error(chronicle_client):
     mock_response.status_code = 400
     mock_response.text = "Invalid time range"
 
-    with patch.object(chronicle_client.session, "post", return_value=mock_response):
+    with patch.object(chronicle_client.session, "request", return_value=mock_response):
         start_time = datetime(2024, 1, 1, tzinfo=timezone.utc)
         end_time = datetime(2024, 1, 2, tzinfo=timezone.utc)
 
@@ -367,7 +366,7 @@ def test_update_data_export_success(chronicle_client):
 
     # Act
     with patch.object(
-        chronicle_client.session, "patch", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_patch:
         start_time = datetime(2024, 1, 2, tzinfo=timezone.utc)
         end_time = datetime(2024, 1, 3, tzinfo=timezone.utc)
@@ -415,7 +414,7 @@ def test_update_data_export_partial_update(chronicle_client):
 
     # Act
     with patch.object(
-        chronicle_client.session, "patch", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_patch:
         result = update_data_export(
             client=chronicle_client,
@@ -467,7 +466,7 @@ def test_update_data_export_api_error(chronicle_client):
     mock_response.text = "Invalid data export ID"
 
     # Act
-    with patch.object(chronicle_client.session, "patch", return_value=mock_response):
+    with patch.object(chronicle_client.session, "request", return_value=mock_response):
         # Assert
         with pytest.raises(APIError, match="Failed to update data export"):
             update_data_export(
@@ -498,7 +497,7 @@ def test_list_data_export_success(chronicle_client):
 
     # Act
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         result = list_data_export(
             client=chronicle_client,
@@ -535,7 +534,7 @@ def test_list_data_export_default_params(chronicle_client):
 
     # Act
     with patch.object(
-        chronicle_client.session, "get", return_value=mock_response
+        chronicle_client.session, "request", return_value=mock_response
     ) as mock_get:
         result = list_data_export(client=chronicle_client)
 
@@ -545,9 +544,9 @@ def test_list_data_export_default_params(chronicle_client):
     # Check default parameters
     mock_get.assert_called_once()
     _, kwargs = mock_get.call_args
-    assert kwargs["params"]["pageSize"] is None
-    assert kwargs["params"]["pageToken"] is None
-    assert kwargs["params"]["filter"] is None
+    assert kwargs["params"]["pageSize"] == 1000 # 1000 page size for auto pagination
+    assert "pageToken" not in kwargs["params"]
+    assert "filter" not in kwargs["params"]
 
 
 def test_list_data_export_error(chronicle_client):
@@ -558,9 +557,9 @@ def test_list_data_export_error(chronicle_client):
     mock_response.text = "Invalid filter"
 
     # Act
-    with patch.object(chronicle_client.session, "get", return_value=mock_response):
+    with patch.object(chronicle_client.session, "request", return_value=mock_response):
         # Assert
-        with pytest.raises(APIError, match="Failed to get data export"):
+        with pytest.raises(APIError, match="API request failed:"):
             list_data_export(
                 client=chronicle_client,
                 filters="invalid-filter"
