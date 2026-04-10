@@ -905,7 +905,7 @@ class SOARService:
         Raises:
             APIError: If the API request fails.
         """
-        return _delete_integration_instance(
+        _delete_integration_instance(
             self._client,
             integration_name,
             integration_instance_id,
@@ -1215,7 +1215,7 @@ class SOARService:
         Raises:
             APIError: If the API request fails
         """
-        return _delete_integration_action(
+        _delete_integration_action(
             self._client,
             integration_name,
             action_id,
@@ -1559,7 +1559,7 @@ class SOARService:
         Raises:
             APIError: If the API request fails.
         """
-        return _delete_integration_action_revision(
+        _delete_integration_action_revision(
             self._client,
             integration_name,
             action_id,
@@ -1746,7 +1746,7 @@ class SOARService:
         Raises:
             APIError: If the API request fails.
         """
-        return _delete_integration_manager(
+        _delete_integration_manager(
             self._client,
             integration_name,
             manager_id,
@@ -1984,7 +1984,7 @@ class SOARService:
         Raises:
             APIError: If the API request fails.
         """
-        return _delete_integration_manager_revision(
+        _delete_integration_manager_revision(
             self._client,
             integration_name,
             manager_id,

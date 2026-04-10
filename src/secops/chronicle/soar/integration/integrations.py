@@ -486,7 +486,7 @@ def get_integration_restricted_agents(
 def get_integration_diff(
     client: "ChronicleClient",
     integration_name: str,
-    diff_type: DiffType = DiffType.COMMERCIAL,
+    diff_type: DiffType | None = DiffType.COMMERCIAL,
     api_version: APIVersion | None = APIVersion.V1BETA,
 ) -> dict[str, Any]:
     """Get the configuration diff of a specific integration.
