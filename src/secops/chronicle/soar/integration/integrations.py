@@ -68,13 +68,10 @@ def list_integrations(
     Raises:
         APIError: If the API request fails
     """
-    param_fields = {
+    param_fields = remove_none_values({
         "filter": filter_string,
         "orderBy": order_by,
-    }
-
-    # Remove keys with None values
-    param_fields = {k: v for k, v in param_fields.items() if v is not None}
+    })
 
     return chronicle_paginated_request(
         client,
@@ -290,16 +287,16 @@ def export_integration_items(
         integration_name: name of the integration to export items from
         actions: Optional. IDs of the actions to export as a list or
                 comma-separated string. Format: [1,2,3] or "1,2,3"
-            jobs: Optional. IDs of the jobs to export as a list or
-                comma-separated string.
-            connectors: Optional. IDs of the connectors to export as a
-                list or comma-separated string.
-            managers: Optional. IDs of the managers to export as a list
-                or comma-separated string.
-            transformers: Optional. IDs of the transformers to export as
-                a list or comma-separated string.
-            logical_operators: Optional. IDs of the logical operators to
-                export as a list or comma-separated string.
+        jobs: Optional. IDs of the jobs to export as a list or
+            comma-separated string.
+        connectors: Optional. IDs of the connectors to export as a
+            list or comma-separated string.
+        managers: Optional. IDs of the managers to export as a list
+            or comma-separated string.
+        transformers: Optional. IDs of the transformers to export as
+            a list or comma-separated string.
+        logical_operators: Optional. IDs of the logical operators to
+            export as a list or comma-separated string.
         api_version: API version to use for the request. Default is V1BETA.
 
     Returns:

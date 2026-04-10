@@ -20,6 +20,7 @@ from secops.chronicle.models import APIVersion, ActionParameter
 from secops.chronicle.utils.format_utils import (
     format_resource_id,
     build_patch_body,
+    remove_none_values,
 )
 from secops.chronicle.utils.request_utils import (
     chronicle_paginated_request,
@@ -62,14 +63,11 @@ def list_integration_actions(
     Raises:
         APIError: If the API request fails
     """
-    field_map = {
+    field_map = remove_none_values({
         "filter": filter_string,
         "orderBy": order_by,
         "expand": expand,
-    }
-
-    # Remove keys with None values
-    field_map = {k: v for k, v in field_map.items() if v is not None}
+    })
 
     return chronicle_paginated_request(
         client,
@@ -200,7 +198,7 @@ def create_integration_action(
         else None
     )
 
-    body = {
+    body = remove_none_values({
         "displayName": display_name,
         "script": script,
         "timeoutSeconds": timeout_seconds,
@@ -214,10 +212,7 @@ def create_integration_action(
         "dynamicResults": dynamic_results,
         "parameters": resolved_parameters,
         "aiGenerated": ai_generated,
-    }
-
-    # Remove keys with None values
-    body = {k: v for k, v in body.items() if v is not None}
+    })
 
     return chronicle_request(
         client,
