@@ -288,7 +288,7 @@ def handle_actions_get_command(args, chronicle):
 def handle_actions_delete_command(args, chronicle):
     """Handle integration action delete command"""
     try:
-        chronicle.delete_integration_action(
+        chronicle.soar.delete_integration_action(
             integration_name=args.integration_name,
             action_id=args.action_id,
         )
@@ -340,7 +340,7 @@ def handle_actions_test_command(args, chronicle):
     """Handle integration action test command"""
     try:
         # First get the action to test
-        action = chronicle.get_integration_action(
+        action = chronicle.soar.get_integration_action(
             integration_name=args.integration_name,
             action_id=args.action_id,
         )

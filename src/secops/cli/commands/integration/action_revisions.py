@@ -170,7 +170,7 @@ def handle_action_revisions_list_command(args, chronicle):
 def handle_action_revisions_delete_command(args, chronicle):
     """Handle integration action revision delete command"""
     try:
-        chronicle.delete_integration_action_revision(
+        chronicle.soar.delete_integration_action_revision(
             integration_name=args.integration_name,
             action_id=args.action_id,
             revision_id=args.revision_id,
@@ -185,7 +185,7 @@ def handle_action_revisions_create_command(args, chronicle):
     """Handle integration action revision create command"""
     try:
         # Get the current action to create a revision
-        action = chronicle.get_integration_action(
+        action = chronicle.soar.get_integration_action(
             integration_name=args.integration_name,
             action_id=args.action_id,
         )
