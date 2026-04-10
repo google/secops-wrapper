@@ -65,10 +65,12 @@ def list_integration_action_revisions(
     Raises:
         APIError: If the API request fails.
     """
-    extra_params = remove_none_values({
-        "filter": filter_string,
-        "orderBy": order_by,
-    })
+    extra_params = remove_none_values(
+        {
+            "filter": filter_string,
+            "orderBy": order_by,
+        }
+    )
 
     return chronicle_paginated_request(
         client,

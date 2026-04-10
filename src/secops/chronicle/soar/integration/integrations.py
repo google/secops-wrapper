@@ -68,10 +68,12 @@ def list_integrations(
     Raises:
         APIError: If the API request fails
     """
-    param_fields = remove_none_values({
-        "filter": filter_string,
-        "orderBy": order_by,
-    })
+    param_fields = remove_none_values(
+        {
+            "filter": filter_string,
+            "orderBy": order_by,
+        }
+    )
 
     return chronicle_paginated_request(
         client,

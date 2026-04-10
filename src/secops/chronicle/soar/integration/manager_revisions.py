@@ -19,7 +19,7 @@ from typing import Any, TYPE_CHECKING
 from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.format_utils import (
     format_resource_id,
-    remove_none_values
+    remove_none_values,
 )
 from secops.chronicle.utils.request_utils import (
     chronicle_paginated_request,
@@ -65,10 +65,12 @@ def list_integration_manager_revisions(
     Raises:
         APIError: If the API request fails.
     """
-    extra_params = remove_none_values({
-        "filter": filter_string,
-        "orderBy": order_by,
-    })
+    extra_params = remove_none_values(
+        {
+            "filter": filter_string,
+            "orderBy": order_by,
+        }
+    )
 
     return chronicle_paginated_request(
         client,

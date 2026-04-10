@@ -1128,15 +1128,15 @@ class SOARService:
     # -------------------------------------------------------------------------
 
     def list_integration_actions(
-            self,
-            integration_name: str,
-            page_size: int | None = None,
-            page_token: str | None = None,
-            filter_string: str | None = None,
-            order_by: str | None = None,
-            expand: str | None = None,
-            api_version: APIVersion | None = APIVersion.V1BETA,
-            as_list: bool = False,
+        self,
+        integration_name: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        expand: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """Get a list of actions for a given integration.
 
@@ -1171,10 +1171,10 @@ class SOARService:
         )
 
     def get_integration_action(
-            self,
-            integration_name: str,
-            action_id: str,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        action_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> dict[str, Any]:
         """Get details of a specific action for a given integration.
 
@@ -1197,10 +1197,10 @@ class SOARService:
         )
 
     def delete_integration_action(
-            self,
-            integration_name: str,
-            action_id: str,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        action_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> None:
         """Delete a specific action from a given integration.
 
@@ -1223,22 +1223,22 @@ class SOARService:
         )
 
     def create_integration_action(
-            self,
-            integration_name: str,
-            display_name: str,
-            script: str,
-            timeout_seconds: int,
-            enabled: bool,
-            script_result_name: str,
-            is_async: bool,
-            description: str | None = None,
-            default_result_value: str | None = None,
-            async_polling_interval_seconds: int | None = None,
-            async_total_timeout_seconds: int | None = None,
-            dynamic_results: list[dict[str, Any]] | None = None,
-            parameters: list[dict[str, Any]] | None = None,
-            ai_generated: bool | None = None,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        display_name: str,
+        script: str,
+        timeout_seconds: int,
+        enabled: bool,
+        script_result_name: str,
+        is_async: bool,
+        description: str | None = None,
+        default_result_value: str | None = None,
+        async_polling_interval_seconds: int | None = None,
+        async_total_timeout_seconds: int | None = None,
+        dynamic_results: list[dict[str, Any]] | None = None,
+        parameters: list[dict[str, Any]] | None = None,
+        ai_generated: bool | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> dict[str, Any]:
         """Create a new custom action for a given integration.
 
@@ -1293,24 +1293,24 @@ class SOARService:
         )
 
     def update_integration_action(
-            self,
-            integration_name: str,
-            action_id: str,
-            display_name: str | None = None,
-            script: str | None = None,
-            timeout_seconds: int | None = None,
-            enabled: bool | None = None,
-            script_result_name: str | None = None,
-            is_async: bool | None = None,
-            description: str | None = None,
-            default_result_value: str | None = None,
-            async_polling_interval_seconds: int | None = None,
-            async_total_timeout_seconds: int | None = None,
-            dynamic_results: list[dict[str, Any]] | None = None,
-            parameters: list[dict[str, Any]] | None = None,
-            ai_generated: bool | None = None,
-            update_mask: str | None = None,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        action_id: str,
+        display_name: str | None = None,
+        script: str | None = None,
+        timeout_seconds: int | None = None,
+        enabled: bool | None = None,
+        script_result_name: str | None = None,
+        is_async: bool | None = None,
+        description: str | None = None,
+        default_result_value: str | None = None,
+        async_polling_interval_seconds: int | None = None,
+        async_total_timeout_seconds: int | None = None,
+        dynamic_results: list[dict[str, Any]] | None = None,
+        parameters: list[dict[str, Any]] | None = None,
+        ai_generated: bool | None = None,
+        update_mask: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> dict[str, Any]:
         """Update an existing custom action for a given integration.
 
@@ -1370,13 +1370,13 @@ class SOARService:
         )
 
     def execute_integration_action_test(
-            self,
-            integration_name: str,
-            test_case_id: int,
-            action: dict[str, Any],
-            scope: str,
-            integration_instance_id: str,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        test_case_id: int,
+        action: dict[str, Any],
+        scope: str,
+        integration_instance_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> dict[str, Any]:
         """Execute a test run of an integration action's script.
 
@@ -1413,11 +1413,11 @@ class SOARService:
         )
 
     def get_integration_actions_by_environment(
-            self,
-            integration_name: str,
-            environments: list[str],
-            include_widgets: bool,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        environments: list[str],
+        include_widgets: bool,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> dict[str, Any]:
         """List actions executable within specified environments.
 
@@ -1447,10 +1447,10 @@ class SOARService:
         )
 
     def get_integration_action_template(
-            self,
-            integration_name: str,
-            is_async: bool = False,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        is_async: bool = False,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> dict[str, Any]:
         """Retrieve a default Python script template for a new
         integration action.
@@ -1483,15 +1483,15 @@ class SOARService:
     # -------------------------------------------------------------------------
 
     def list_integration_action_revisions(
-            self,
-            integration_name: str,
-            action_id: str,
-            page_size: int | None = None,
-            page_token: str | None = None,
-            filter_string: str | None = None,
-            order_by: str | None = None,
-            api_version: APIVersion | None = APIVersion.V1BETA,
-            as_list: bool = False,
+        self,
+        integration_name: str,
+        action_id: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """List all revisions for a specific integration action.
 
@@ -1534,11 +1534,11 @@ class SOARService:
         )
 
     def delete_integration_action_revision(
-            self,
-            integration_name: str,
-            action_id: str,
-            revision_id: str,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        action_id: str,
+        revision_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> None:
         """Delete a specific action revision.
 
@@ -1568,12 +1568,12 @@ class SOARService:
         )
 
     def create_integration_action_revision(
-            self,
-            integration_name: str,
-            action_id: str,
-            action: dict[str, Any],
-            comment: str | None = None,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        action_id: str,
+        action: dict[str, Any],
+        comment: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> dict[str, Any]:
         """Create a new revision for an integration action.
 
@@ -1606,11 +1606,11 @@ class SOARService:
         )
 
     def rollback_integration_action_revision(
-            self,
-            integration_name: str,
-            action_id: str,
-            revision_id: str,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        action_id: str,
+        revision_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> dict[str, Any]:
         """Rollback an integration action to a previous revision.
 
@@ -1644,14 +1644,14 @@ class SOARService:
     # -------------------------------------------------------------------------
 
     def list_integration_managers(
-            self,
-            integration_name: str,
-            page_size: int | None = None,
-            page_token: str | None = None,
-            filter_string: str | None = None,
-            order_by: str | None = None,
-            api_version: APIVersion | None = APIVersion.V1BETA,
-            as_list: bool = False,
+        self,
+        integration_name: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """List all managers defined for a specific integration.
 
@@ -1692,10 +1692,10 @@ class SOARService:
         )
 
     def get_integration_manager(
-            self,
-            integration_name: str,
-            manager_id: str,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        manager_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> dict[str, Any]:
         """Get a single manager for a given integration.
 
@@ -1723,10 +1723,10 @@ class SOARService:
         )
 
     def delete_integration_manager(
-            self,
-            integration_name: str,
-            manager_id: str,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        manager_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> None:
         """Delete a specific custom manager from a given integration.
 
@@ -1754,12 +1754,12 @@ class SOARService:
         )
 
     def create_integration_manager(
-            self,
-            integration_name: str,
-            display_name: str,
-            script: str,
-            description: str | None = None,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        display_name: str,
+        script: str,
+        description: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> dict[str, Any]:
         """Create a new custom manager for a given integration.
 
@@ -1795,14 +1795,14 @@ class SOARService:
         )
 
     def update_integration_manager(
-            self,
-            integration_name: str,
-            manager_id: str,
-            display_name: str | None = None,
-            script: str | None = None,
-            description: str | None = None,
-            update_mask: str | None = None,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        manager_id: str,
+        display_name: str | None = None,
+        script: str | None = None,
+        description: str | None = None,
+        update_mask: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> dict[str, Any]:
         """Update an existing custom manager for a given integration.
 
@@ -1842,9 +1842,9 @@ class SOARService:
         )
 
     def get_integration_manager_template(
-            self,
-            integration_name: str,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> dict[str, Any]:
         """Retrieve a default Python script template for a new
         integration manager.
@@ -1874,15 +1874,15 @@ class SOARService:
     # -------------------------------------------------------------------------
 
     def list_integration_manager_revisions(
-            self,
-            integration_name: str,
-            manager_id: str,
-            page_size: int | None = None,
-            page_token: str | None = None,
-            filter_string: str | None = None,
-            order_by: str | None = None,
-            api_version: APIVersion | None = APIVersion.V1BETA,
-            as_list: bool = False,
+        self,
+        integration_name: str,
+        manager_id: str,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        filter_string: str | None = None,
+        order_by: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
+        as_list: bool = False,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """List all revisions for a specific integration manager.
 
@@ -1924,11 +1924,11 @@ class SOARService:
         )
 
     def get_integration_manager_revision(
-            self,
-            integration_name: str,
-            manager_id: str,
-            revision_id: str,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        manager_id: str,
+        revision_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> dict[str, Any]:
         """Get a single revision for a specific integration manager.
 
@@ -1959,11 +1959,11 @@ class SOARService:
         )
 
     def delete_integration_manager_revision(
-            self,
-            integration_name: str,
-            manager_id: str,
-            revision_id: str,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        manager_id: str,
+        revision_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> None:
         """Delete a specific revision for a given integration manager.
 
@@ -1993,12 +1993,12 @@ class SOARService:
         )
 
     def create_integration_manager_revision(
-            self,
-            integration_name: str,
-            manager_id: str,
-            manager: dict[str, Any],
-            comment: str | None = None,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        manager_id: str,
+        manager: dict[str, Any],
+        comment: str | None = None,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> dict[str, Any]:
         """Create a new revision snapshot of the current integration
         manager.
@@ -2033,11 +2033,11 @@ class SOARService:
         )
 
     def rollback_integration_manager_revision(
-            self,
-            integration_name: str,
-            manager_id: str,
-            revision_id: str,
-            api_version: APIVersion | None = APIVersion.V1BETA,
+        self,
+        integration_name: str,
+        manager_id: str,
+        revision_id: str,
+        api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> dict[str, Any]:
         """Revert the current manager definition to a previously saved
         revision.

@@ -63,11 +63,13 @@ def list_integration_actions(
     Raises:
         APIError: If the API request fails
     """
-    field_map = remove_none_values({
-        "filter": filter_string,
-        "orderBy": order_by,
-        "expand": expand,
-    })
+    field_map = remove_none_values(
+        {
+            "filter": filter_string,
+            "orderBy": order_by,
+            "expand": expand,
+        }
+    )
 
     return chronicle_paginated_request(
         client,
@@ -198,21 +200,23 @@ def create_integration_action(
         else None
     )
 
-    body = remove_none_values({
-        "displayName": display_name,
-        "script": script,
-        "timeoutSeconds": timeout_seconds,
-        "enabled": enabled,
-        "scriptResultName": script_result_name,
-        "async": is_async,
-        "description": description,
-        "defaultResultValue": default_result_value,
-        "asyncPollingIntervalSeconds": async_polling_interval_seconds,
-        "asyncTotalTimeoutSeconds": async_total_timeout_seconds,
-        "dynamicResults": dynamic_results,
-        "parameters": resolved_parameters,
-        "aiGenerated": ai_generated,
-    })
+    body = remove_none_values(
+        {
+            "displayName": display_name,
+            "script": script,
+            "timeoutSeconds": timeout_seconds,
+            "enabled": enabled,
+            "scriptResultName": script_result_name,
+            "async": is_async,
+            "description": description,
+            "defaultResultValue": default_result_value,
+            "asyncPollingIntervalSeconds": async_polling_interval_seconds,
+            "asyncTotalTimeoutSeconds": async_total_timeout_seconds,
+            "dynamicResults": dynamic_results,
+            "parameters": resolved_parameters,
+            "aiGenerated": ai_generated,
+        }
+    )
 
     return chronicle_request(
         client,
