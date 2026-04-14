@@ -209,7 +209,7 @@ def handle_manager_revisions_get_command(args, chronicle):
 def handle_manager_revisions_delete_command(args, chronicle):
     """Handle integration manager revision delete command"""
     try:
-        chronicle.delete_integration_manager_revision(
+        chronicle.soar.delete_integration_manager_revision(
             integration_name=args.integration_name,
             manager_id=args.manager_id,
             revision_id=args.revision_id,
@@ -224,7 +224,7 @@ def handle_manager_revisions_create_command(args, chronicle):
     """Handle integration manager revision create command"""
     try:
         # Get the current manager to create a revision
-        manager = chronicle.get_integration_manager(
+        manager = chronicle.soar.get_integration_manager(
             integration_name=args.integration_name,
             manager_id=args.manager_id,
         )

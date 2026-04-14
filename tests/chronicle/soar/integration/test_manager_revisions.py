@@ -54,12 +54,15 @@ def test_list_integration_manager_revisions_success(chronicle_client):
         "nextPageToken": "t",
     }
 
-    with patch(
-        "secops.chronicle.soar.integration.manager_revisions.chronicle_paginated_request",
-        return_value=expected,
-    ) as mock_paginated, patch(
-        "secops.chronicle.soar.integration.manager_revisions.format_resource_id",
-        return_value="My Integration",
+    with (
+        patch(
+            "secops.chronicle.soar.integration.manager_revisions.chronicle_paginated_request",
+            return_value=expected,
+        ) as mock_paginated,
+        patch(
+            "secops.chronicle.soar.integration.manager_revisions.format_resource_id",
+            return_value="My Integration",
+        ),
     ):
         result = list_integration_manager_revisions(
             chronicle_client,
@@ -250,7 +253,10 @@ def test_create_integration_manager_revision_required_fields_only(
     chronicle_client,
 ):
     """Test create_integration_manager_revision with required fields only."""
-    expected = {"name": "revisions/new", "manager": {"displayName": "My Manager"}}
+    expected = {
+        "name": "revisions/new",
+        "manager": {"displayName": "My Manager"},
+    }
     manager_dict = {
         "displayName": "My Manager",
         "script": "def helper(): pass",
@@ -373,7 +379,9 @@ def test_rollback_integration_manager_revision_error(chronicle_client):
 # -- API version tests --
 
 
-def test_list_integration_manager_revisions_custom_api_version(chronicle_client):
+def test_list_integration_manager_revisions_custom_api_version(
+    chronicle_client,
+):
     """Test list_integration_manager_revisions with custom API version."""
     expected = {"revisions": []}
 
@@ -414,4 +422,3 @@ def test_get_integration_manager_revision_custom_api_version(chronicle_client):
 
         _, kwargs = mock_request.call_args
         assert kwargs["api_version"] == APIVersion.V1ALPHA
-

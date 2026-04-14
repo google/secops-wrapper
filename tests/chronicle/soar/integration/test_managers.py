@@ -50,14 +50,20 @@ def chronicle_client():
 
 def test_list_integration_managers_success(chronicle_client):
     """Test list_integration_managers delegates to chronicle_paginated_request."""
-    expected = {"managers": [{"name": "m1"}, {"name": "m2"}], "nextPageToken": "t"}
+    expected = {
+        "managers": [{"name": "m1"}, {"name": "m2"}],
+        "nextPageToken": "t",
+    }
 
-    with patch(
-        "secops.chronicle.soar.integration.managers.chronicle_paginated_request",
-        return_value=expected,
-    ) as mock_paginated, patch(
-        "secops.chronicle.soar.integration.managers.format_resource_id",
-        return_value="My Integration",
+    with (
+        patch(
+            "secops.chronicle.soar.integration.managers.chronicle_paginated_request",
+            return_value=expected,
+        ) as mock_paginated,
+        patch(
+            "secops.chronicle.soar.integration.managers.format_resource_id",
+            return_value="My Integration",
+        ),
     ):
         result = list_integration_managers(
             chronicle_client,
@@ -315,13 +321,19 @@ def test_update_integration_manager_single_field(chronicle_client):
     """Test update_integration_manager updates a single field."""
     expected = {"name": "managers/m1", "displayName": "Updated Manager"}
 
-    with patch(
-        "secops.chronicle.soar.integration.managers.chronicle_request",
-        return_value=expected,
-    ) as mock_request, patch(
-        "secops.chronicle.soar.integration.managers.build_patch_body",
-        return_value=({"displayName": "Updated Manager"}, {"updateMask": "displayName"}),
-    ) as mock_build_patch:
+    with (
+        patch(
+            "secops.chronicle.soar.integration.managers.chronicle_request",
+            return_value=expected,
+        ) as mock_request,
+        patch(
+            "secops.chronicle.soar.integration.managers.build_patch_body",
+            return_value=(
+                {"displayName": "Updated Manager"},
+                {"updateMask": "displayName"},
+            ),
+        ) as mock_build_patch,
+    ):
         result = update_integration_manager(
             chronicle_client,
             integration_name="test-integration",
@@ -346,18 +358,21 @@ def test_update_integration_manager_multiple_fields(chronicle_client):
     """Test update_integration_manager updates multiple fields."""
     expected = {"name": "managers/m1", "displayName": "Updated Manager"}
 
-    with patch(
-        "secops.chronicle.soar.integration.managers.chronicle_request",
-        return_value=expected,
-    ) as mock_request, patch(
-        "secops.chronicle.soar.integration.managers.build_patch_body",
-        return_value=(
-            {
-                "displayName": "Updated Manager",
-                "script": "def new_helper(): pass",
-                "description": "New description",
-            },
-            {"updateMask": "displayName,script,description"},
+    with (
+        patch(
+            "secops.chronicle.soar.integration.managers.chronicle_request",
+            return_value=expected,
+        ) as mock_request,
+        patch(
+            "secops.chronicle.soar.integration.managers.build_patch_body",
+            return_value=(
+                {
+                    "displayName": "Updated Manager",
+                    "script": "def new_helper(): pass",
+                    "description": "New description",
+                },
+                {"updateMask": "displayName,script,description"},
+            ),
         ),
     ):
         result = update_integration_manager(
@@ -376,14 +391,17 @@ def test_update_integration_manager_with_update_mask(chronicle_client):
     """Test update_integration_manager respects explicit update_mask."""
     expected = {"name": "managers/m1", "displayName": "Updated Manager"}
 
-    with patch(
-        "secops.chronicle.soar.integration.managers.chronicle_request",
-        return_value=expected,
-    ) as mock_request, patch(
-        "secops.chronicle.soar.integration.managers.build_patch_body",
-        return_value=(
-            {"displayName": "Updated Manager"},
-            {"updateMask": "displayName"},
+    with (
+        patch(
+            "secops.chronicle.soar.integration.managers.chronicle_request",
+            return_value=expected,
+        ) as mock_request,
+        patch(
+            "secops.chronicle.soar.integration.managers.build_patch_body",
+            return_value=(
+                {"displayName": "Updated Manager"},
+                {"updateMask": "displayName"},
+            ),
         ),
     ):
         result = update_integration_manager(
@@ -399,12 +417,18 @@ def test_update_integration_manager_with_update_mask(chronicle_client):
 
 def test_update_integration_manager_error(chronicle_client):
     """Test update_integration_manager raises APIError on failure."""
-    with patch(
-        "secops.chronicle.soar.integration.managers.chronicle_request",
-        side_effect=APIError("Failed to update integration manager"),
-    ), patch(
-        "secops.chronicle.soar.integration.managers.build_patch_body",
-        return_value=({"displayName": "Updated"}, {"updateMask": "displayName"}),
+    with (
+        patch(
+            "secops.chronicle.soar.integration.managers.chronicle_request",
+            side_effect=APIError("Failed to update integration manager"),
+        ),
+        patch(
+            "secops.chronicle.soar.integration.managers.build_patch_body",
+            return_value=(
+                {"displayName": "Updated"},
+                {"updateMask": "displayName"},
+            ),
+        ),
     ):
         with pytest.raises(APIError) as exc_info:
             update_integration_manager(
@@ -456,5 +480,6 @@ def test_get_integration_manager_template_error(chronicle_client):
                 chronicle_client,
                 integration_name="test-integration",
             )
-        assert "Failed to get integration manager template" in str(exc_info.value)
-
+        assert "Failed to get integration manager template" in str(
+            exc_info.value
+        )

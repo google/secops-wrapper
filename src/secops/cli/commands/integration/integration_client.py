@@ -72,4 +72,3 @@ def setup_integrations_command(subparsers):
     managers.setup_managers_command(lvl1)
     manager_revisions.setup_manager_revisions_command(lvl1)
     marketplace_integration.setup_marketplace_integrations_command(lvl1)
-

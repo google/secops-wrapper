@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any
 
 # pylint: disable=line-too-long
 from secops.chronicle.models import (
+    ActionParameter,
     APIVersion,
     DiffType,
     IntegrationInstanceParameter,
@@ -1236,7 +1237,7 @@ class SOARService:
         async_polling_interval_seconds: int | None = None,
         async_total_timeout_seconds: int | None = None,
         dynamic_results: list[dict[str, Any]] | None = None,
-        parameters: list[dict[str, Any]] | None = None,
+        parameters: list[dict[str, Any] | ActionParameter] | None = None,
         ai_generated: bool | None = None,
         api_version: APIVersion | None = APIVersion.V1BETA,
     ) -> dict[str, Any]:
@@ -1307,7 +1308,7 @@ class SOARService:
         async_polling_interval_seconds: int | None = None,
         async_total_timeout_seconds: int | None = None,
         dynamic_results: list[dict[str, Any]] | None = None,
-        parameters: list[dict[str, Any]] | None = None,
+        parameters: list[dict[str, Any] | ActionParameter] | None = None,
         ai_generated: bool | None = None,
         update_mask: str | None = None,
         api_version: APIVersion | None = APIVersion.V1BETA,

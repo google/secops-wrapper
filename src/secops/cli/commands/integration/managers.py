@@ -128,12 +128,6 @@ def setup_managers_command(subparsers):
         help="Description of the manager",
         dest="description",
     )
-    create_parser.add_argument(
-        "--manager-id",
-        type=str,
-        help="Custom ID for the manager",
-        dest="manager_id",
-    )
     create_parser.set_defaults(func=handle_managers_create_command)
 
     # update command
@@ -228,7 +222,7 @@ def handle_managers_get_command(args, chronicle):
 def handle_managers_delete_command(args, chronicle):
     """Handle integration manager delete command"""
     try:
-        chronicle.delete_integration_manager(
+        chronicle.soar.delete_integration_manager(
             integration_name=args.integration_name,
             manager_id=args.manager_id,
         )
@@ -244,9 +238,8 @@ def handle_managers_create_command(args, chronicle):
         out = chronicle.soar.create_integration_manager(
             integration_name=args.integration_name,
             display_name=args.display_name,
-            code=args.code,
+            script=args.code,
             description=args.description,
-            manager_id=args.manager_id,
         )
         output_formatter(out, getattr(args, "output", "json"))
     except Exception as e:  # pylint: disable=broad-exception-caught
@@ -261,7 +254,7 @@ def handle_managers_update_command(args, chronicle):
             integration_name=args.integration_name,
             manager_id=args.manager_id,
             display_name=args.display_name,
-            code=args.code,
+            script=args.code,
             description=args.description,
             update_mask=args.update_mask,
         )

@@ -106,8 +106,10 @@ def get_integration_action(
     return chronicle_request(
         client,
         method="GET",
-        endpoint_path=f"integrations/{format_resource_id(integration_name)}"
-        f"/actions/{action_id}",
+        endpoint_path=(
+            f"integrations/{format_resource_id(integration_name)}"
+            f"/actions/{action_id}"
+        ),
         api_version=api_version,
     )
 
@@ -135,8 +137,10 @@ def delete_integration_action(
     chronicle_request(
         client,
         method="DELETE",
-        endpoint_path=f"integrations/{format_resource_id(integration_name)}"
-        f"/actions/{action_id}",
+        endpoint_path=(
+            f"integrations/{format_resource_id(integration_name)}"
+            f"/actions/{action_id}"
+        ),
         api_version=api_version,
     )
 
@@ -221,8 +225,9 @@ def create_integration_action(
     return chronicle_request(
         client,
         method="POST",
-        endpoint_path=f"integrations/{format_resource_id(integration_name)}"
-        f"/actions",
+        endpoint_path=(
+            f"integrations/{format_resource_id(integration_name)}/actions"
+        ),
         api_version=api_version,
         json=body,
     )
@@ -316,8 +321,10 @@ def update_integration_action(
     return chronicle_request(
         client,
         method="PATCH",
-        endpoint_path=f"integrations/{format_resource_id(integration_name)}"
-        f"/actions/{action_id}",
+        endpoint_path=(
+            f"integrations/{format_resource_id(integration_name)}"
+            f"/actions/{action_id}"
+        ),
         api_version=api_version,
         json=body,
         params=params,
@@ -368,8 +375,10 @@ def execute_integration_action_test(
     return chronicle_request(
         client,
         method="POST",
-        endpoint_path=f"integrations/{format_resource_id(integration_name)}"
-        f"/actions:executeTest",
+        endpoint_path=(
+            f"integrations/{format_resource_id(integration_name)}"
+            "/actions:executeTest"
+        ),
         api_version=api_version,
         json=body,
     )
@@ -409,8 +418,10 @@ def get_integration_actions_by_environment(
     return chronicle_request(
         client,
         method="GET",
-        endpoint_path=f"integrations/{format_resource_id(integration_name)}"
-        f"/actions:fetchActionsByEnvironment",
+        endpoint_path=(
+            f"integrations/{format_resource_id(integration_name)}"
+            "/actions:fetchActionsByEnvironment"
+        ),
         api_version=api_version,
         params=params,
     )
@@ -444,8 +455,10 @@ def get_integration_action_template(
     return chronicle_request(
         client,
         method="GET",
-        endpoint_path=f"integrations/{format_resource_id(integration_name)}"
-        f"/actions:fetchTemplate",
+        endpoint_path=(
+            f"integrations/{format_resource_id(integration_name)}"
+            "/actions:fetchTemplate"
+        ),
         api_version=api_version,
         params={"async": is_async},
     )

@@ -140,6 +140,26 @@ def setup_actions_command(subparsers):
         help="Custom ID for the action",
         dest="action_id",
     )
+    create_parser.add_argument(
+        "--timeout-seconds",
+        type=int,
+        help="Action timeout in seconds (default: 300)",
+        dest="timeout_seconds",
+        default=300,
+    )
+    create_parser.add_argument(
+        "--disabled",
+        action="store_false",
+        help="Create the action in a disabled state",
+        dest="enabled",
+    )
+    create_parser.add_argument(
+        "--script-result-name",
+        type=str,
+        help="Field name that holds the script result (default: result)",
+        dest="script_result_name",
+        default="result",
+    )
     create_parser.set_defaults(func=handle_actions_create_command)
 
     # update command
@@ -202,6 +222,27 @@ def setup_actions_command(subparsers):
         type=str,
         help="ID of the action to test",
         dest="action_id",
+        required=True,
+    )
+    test_parser.add_argument(
+        "--test-case-id",
+        type=int,
+        help="ID of the action test case",
+        dest="test_case_id",
+        required=True,
+    )
+    test_parser.add_argument(
+        "--scope",
+        type=str,
+        help="The action test scope",
+        dest="scope",
+        required=True,
+    )
+    test_parser.add_argument(
+        "--integration-instance-id",
+        type=str,
+        help="The integration instance ID to use for testing",
+        dest="integration_instance_id",
         required=True,
     )
     test_parser.set_defaults(func=handle_actions_test_command)
@@ -304,10 +345,10 @@ def handle_actions_create_command(args, chronicle):
         out = chronicle.soar.create_integration_action(
             integration_name=args.integration_name,
             display_name=args.display_name,
-            script=args.code,  # CLI uses --code flag but API expects script
-            timeout_seconds=300,  # Default 5 minutes
-            enabled=True,  # Default to enabled
-            script_result_name="result",  # Default result field name
+            script=args.code,
+            timeout_seconds=args.timeout_seconds,
+            enabled=args.enabled,
+            script_result_name=args.script_result_name,
             is_async=args.is_async,
             description=args.description,
         )
@@ -346,8 +387,10 @@ def handle_actions_test_command(args, chronicle):
         )
         out = chronicle.soar.execute_integration_action_test(
             integration_name=args.integration_name,
-            action_id=args.action_id,
+            test_case_id=args.test_case_id,
             action=action,
+            scope=args.scope,
+            integration_instance_id=args.integration_instance_id,
         )
         output_formatter(out, getattr(args, "output", "json"))
     except Exception as e:  # pylint: disable=broad-exception-caught

@@ -52,15 +52,21 @@ def chronicle_client():
 
 def test_list_integration_actions_success(chronicle_client):
     """Test list_integration_actions delegates to chronicle_paginated_request."""
-    expected = {"actions": [{"name": "a1"}, {"name": "a2"}], "nextPageToken": "t"}
+    expected = {
+        "actions": [{"name": "a1"}, {"name": "a2"}],
+        "nextPageToken": "t",
+    }
 
-    with patch(
-        "secops.chronicle.soar.integration.actions.chronicle_paginated_request",
-        return_value=expected,
-    ) as mock_paginated, patch(
-        # Avoid assuming how format_resource_id encodes/cases values
-        "secops.chronicle.soar.integration.actions.format_resource_id",
-        return_value="My Integration",
+    with (
+        patch(
+            "secops.chronicle.soar.integration.actions.chronicle_paginated_request",
+            return_value=expected,
+        ) as mock_paginated,
+        patch(
+            # Avoid assuming how format_resource_id encodes/cases values
+            "secops.chronicle.soar.integration.actions.format_resource_id",
+            return_value="My Integration",
+        ),
     ):
         result = list_integration_actions(
             chronicle_client,
@@ -475,7 +481,10 @@ def test_update_integration_action_auto_update_mask(chronicle_client):
         _, kwargs = mock_request.call_args
 
         assert kwargs["method"] == "PATCH"
-        assert kwargs["endpoint_path"] == "integrations/test-integration/actions/a1"
+        assert (
+            kwargs["endpoint_path"]
+            == "integrations/test-integration/actions/a1"
+        )
         assert kwargs["api_version"] == APIVersion.V1BETA
 
         assert kwargs["json"] == {"enabled": False, "timeoutSeconds": 300}
