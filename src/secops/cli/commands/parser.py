@@ -144,6 +144,26 @@ def setup_parser_command(subparsers):
     )
     list_parsers_sub.set_defaults(func=handle_parser_list_command)
 
+    # --- Fetch Parser Candidates Command ---
+    fetch_parser_candidates_sub = parser_subparsers.add_parser(
+        "fetch-candidates", help="Fetch unactivated prebuilt parsers."
+    )
+    fetch_parser_candidates_sub.add_argument(
+        "--log-type", type=str, required=True, help="Log type of the parser."
+    )
+    fetch_parser_candidates_sub.add_argument(
+        "--parser-action",
+        type=str,
+        required=True,
+        help=(
+            "Action for the parser candidates "
+            "(e.g., PARSER_ACTION_OPT_IN_TO_PREVIEW)."
+        ),
+    )
+    fetch_parser_candidates_sub.set_defaults(
+        func=handle_parser_fetch_candidates_command
+    )
+
     # --- Run Parser Command ---
     run_parser_sub = parser_subparsers.add_parser(
         "run",
@@ -311,6 +331,18 @@ def handle_parser_delete_command(args, chronicle):
         output_formatter(result, args.output)
     except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error deleting parser: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_parser_fetch_candidates_command(args, chronicle):
+    """Handle parser fetch-candidates command."""
+    try:
+        result = chronicle.fetch_parser_candidates(
+            args.log_type, args.parser_action
+        )
+        output_formatter(result, args.output)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        print(f"Error fetching parser candidates: {e}", file=sys.stderr)
         sys.exit(1)
 
 

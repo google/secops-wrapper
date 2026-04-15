@@ -174,6 +174,7 @@ from secops.chronicle.log_processing_pipelines import (
 )
 from secops.chronicle.models import (
     APIVersion,
+    AlertState,
     CaseCloseReason,
     CaseList,
     CasePriority,
@@ -181,9 +182,9 @@ from secops.chronicle.models import (
     DashboardQuery,
     EntitySummary,
     InputInterval,
-    TileType,
-    AlertState,
     ListBasis,
+    ParserAction,
+    TileType,
 )
 from secops.chronicle.nl_search import nl_search as _nl_search
 from secops.chronicle.nl_search import translate_nl_to_udm
@@ -195,6 +196,9 @@ from secops.chronicle.parser import copy_parser as _copy_parser
 from secops.chronicle.parser import create_parser as _create_parser
 from secops.chronicle.parser import deactivate_parser as _deactivate_parser
 from secops.chronicle.parser import delete_parser as _delete_parser
+from secops.chronicle.parser import (
+    fetch_parser_candidates as _fetch_parser_candidates,
+)
 from secops.chronicle.parser import get_parser as _get_parser
 from secops.chronicle.parser import list_parsers as _list_parsers
 from secops.chronicle.parser import run_parser as _run_parser
@@ -2773,6 +2777,35 @@ class ChronicleClient:
             APIError: If the API request fails
         """
         return _get_parser(self, log_type=log_type, id=id)
+
+    def fetch_parser_candidates(
+        self,
+        log_type: str,
+        parser_action: ParserAction | str,
+    ) -> list[Any]:
+        """Retrieves prebuilt parser candidates.
+
+        Args:
+            log_type: Log type of the parser
+            parser_action: Action to perform on the parser candidates. Can be
+                a ParserAction enum value or a string. Valid values:
+                - ParserAction.PARSER_ACTION_UNSPECIFIED
+                - ParserAction.PARSER_ACTION_OPT_IN_TO_PREVIEW
+                - ParserAction.PARSER_ACTION_OPT_OUT_OF_PREVIEW
+                - ParserAction.CLONE_PREBUILT
+
+        Returns:
+            List of candidate parsers
+
+        Raises:
+            ValueError: If parser_action is an invalid string value
+            APIError: If the API request fails
+        """
+        return _fetch_parser_candidates(
+            self,
+            log_type=log_type,
+            parser_action=parser_action,
+        )
 
     def list_parsers(
         self,

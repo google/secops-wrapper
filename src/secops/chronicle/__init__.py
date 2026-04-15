@@ -137,6 +137,7 @@ from secops.chronicle.models import (
     ListBasis,
     MonthlyScheduleDetails,
     OneTimeScheduleDetails,
+    ParserAction,
     PrevalenceData,
     PythonVersion,
     ScheduleType,
@@ -151,6 +152,7 @@ from secops.chronicle.models import (
     WidgetMetadata,
 )
 from secops.chronicle.nl_search import translate_nl_to_udm
+from secops.chronicle.parser import fetch_parser_candidates
 from secops.chronicle.reference_list import (
     ReferenceListSyntaxType,
     ReferenceListView,
@@ -243,6 +245,9 @@ __all__ = [
     "search_raw_logs",
     # Natural Language Search
     "translate_nl_to_udm",
+    # Parser
+    "fetch_parser_candidates",
+    "ParserAction",
     # Entity
     "import_entities",
     "summarize_entity",

@@ -353,6 +353,33 @@ def test_cli_parser_list(cli_env, common_args):
 
 
 @pytest.mark.integration
+def test_cli_fetch_parser_candidates(cli_env, common_args):
+    """Test the parser fetch-candidates command."""
+    cmd = (
+        ["secops"]
+        + common_args
+        + [
+            "parser",
+            "fetch-candidates",
+            "--log-type",
+            "OKTA",
+            "--parser-action",
+            "PARSER_ACTION_OPT_IN_TO_PREVIEW",
+        ]
+    )
+
+    result = subprocess.run(cmd, env=cli_env, capture_output=True, text=True)
+
+    assert result.returncode == 0, f"Command failed: {result.stderr}"
+
+    output = json.loads(result.stdout)
+    assert isinstance(output, list)
+    print(f"\nFetched {len(output)} parser candidate(s) for OKTA")
+    for candidate in output:
+        assert isinstance(candidate, dict)
+
+
+@pytest.mark.integration
 def test_cli_parser_get(cli_env, common_args):
     """Test the rule get command (first need to find an existing rule ID)."""
     # First list rules to get a valid rule ID

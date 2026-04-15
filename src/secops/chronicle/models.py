@@ -1150,3 +1150,18 @@ class APIVersion(StrEnum):
     V1 = "v1"
     V1BETA = "v1beta"
     V1ALPHA = "v1alpha"
+
+
+class ParserAction(StrEnum):
+    """Actions that can be performed on parser candidates.
+
+    See:
+        https://cloud.google.com/chronicle/docs/reference/rest/v1beta/
+        projects.locations.instances.logTypes.parsers/
+        fetchParserCandidates#ParserAction
+    """
+
+    PARSER_ACTION_UNSPECIFIED = "PARSER_ACTION_UNSPECIFIED"
+    PARSER_ACTION_OPT_IN_TO_PREVIEW = "PARSER_ACTION_OPT_IN_TO_PREVIEW"
+    PARSER_ACTION_OPT_OUT_OF_PREVIEW = "PARSER_ACTION_OPT_OUT_OF_PREVIEW"
+    CLONE_PREBUILT = "CLONE_PREBUILT"

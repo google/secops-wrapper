@@ -78,8 +78,8 @@ def example_udm_search(chronicle):
 
 
 def example_udm_search_view(chronicle):
-    """Example 14: UDM Search View."""
-    print("\n=== Example 14: UDM Search View ===")
+    """Example 15: UDM Search View."""
+    print("\n=== Example 15: UDM Search View ===")
     start_time, end_time = get_time_range()
 
     try:
@@ -1413,9 +1413,48 @@ def example_parser_workflow(chronicle):
         print(f"\nUnexpected error: {e}")
 
 
+def example_fetch_parser_candidates(chronicle):
+    """Example 13: Fetch Parser Candidates for a log type."""
+    print("\n=== Example 13: Fetch Parser Candidates ===")
+
+    log_type = "OKTA"
+    parser_action = "PARSER_ACTION_OPT_IN_TO_PREVIEW"
+
+    try:
+        print(
+            f"\nFetching parser candidates for log type '{log_type}' "
+            f"with action '{parser_action}'..."
+        )
+        candidates = chronicle.fetch_parser_candidates(
+            log_type=log_type,
+            parser_action=parser_action,
+        )
+
+        if not candidates:
+            print(f"No parser candidates found for log type '{log_type}'.")
+            return
+
+        print(f"Found {len(candidates)} parser candidate(s):")
+        for candidate in candidates:
+            name = candidate.get("name", "N/A")
+            state = candidate.get("state", "N/A")
+            parser_id = name.split("/")[-1]
+            print(f"  - ID: {parser_id}, State: {state}")
+
+    except APIError as e:
+        print(f"\nAPI Error: {e}")
+        print("\nTroubleshooting tips:")
+        print(
+            "- Ensure the log type supports prebuilt parser candidates"
+        )
+        print("- Check if you have the required permissions")
+    except ValueError as e:
+        print(f"\nInvalid input: {e}")
+
+
 def example_rule_test(chronicle):
-    """Example 13: Test a detection rule against historical data."""
-    print("\n=== Example 13: Test a Detection Rule Against Historical Data ===")
+    """Example 14: Test a detection rule against historical data."""
+    print("\n=== Example 14: Test a Detection Rule Against Historical Data ===")
 
     # Define time range for testing - use a recent time period (last 7 days)
     end_time = datetime.now(timezone.utc) - timedelta(minutes=15)
@@ -1491,8 +1530,9 @@ EXAMPLES = {
     "10": example_udm_ingestion,
     "11": example_gemini,
     "12": example_parser_workflow,
-    "13": example_rule_test,
-    "14": example_udm_search_view,
+    "13": example_fetch_parser_candidates,
+    "14": example_rule_test,
+    "15": example_udm_search_view,
 }
 
 
@@ -1507,7 +1547,7 @@ def main():
     parser.add_argument(
         "--example",
         "-e",
-        help="Example number to run (1-14). If not specified, runs all examples.",
+        help="Example number to run (1-15). If not specified, runs all examples.",
     )
 
     args = parser.parse_args()

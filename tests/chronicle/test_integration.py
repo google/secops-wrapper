@@ -2212,3 +2212,33 @@ def test_chronicle_log_types_description():
     except APIError as e:
         print(f"\nAPI Error details: {str(e)}")
         pytest.fail(f"API Error during log type description test: {e}")
+
+
+@pytest.mark.integration
+def test_chronicle_fetch_parser_candidates():
+    """Test fetching parser candidates using the Chronicle client."""
+    if (
+        not CHRONICLE_CONFIG["customer_id"]
+        or not CHRONICLE_CONFIG["project_id"]
+    ):
+        pytest.skip("Chronicle configuration not available")
+
+    try:
+        client = SecOpsClient()
+        chronicle = client.chronicle(**CHRONICLE_CONFIG)
+
+        result = chronicle.fetch_parser_candidates(
+            log_type="OKTA",
+            parser_action="PARSER_ACTION_OPT_IN_TO_PREVIEW",
+        )
+
+        assert isinstance(result, list)
+        print(f"\nFetched {len(result)} parser candidate(s) for OKTA")
+
+        for candidate in result:
+            assert isinstance(candidate, dict)
+            print(f"  Candidate: {candidate.get('name', 'N/A')}")
+
+    except APIError as e:
+        print(f"\nAPI Error details: {str(e)}")
+        pytest.fail(f"API Error during fetch_parser_candidates test: {e}")

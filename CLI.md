@@ -593,6 +593,12 @@ secops parser list --log-type "OKTA" --page-size 50 --filter "state=ACTIVE"
 secops parser get --log-type "WINDOWS" --id "pa_12345"
 ```
 
+#### Fetch parser candidates:
+
+```bash
+secops parser fetch-candidates --log-type "WINDOWS_DHCP" --parser-action "PARSER_ACTION_OPT_IN_TO_PREVIEW"
+```
+
 #### Create a new parser:
 
 ```bash

@@ -19,13 +19,14 @@ import json
 import logging
 from typing import Any
 
-from secops.chronicle.models import APIVersion
+from secops.chronicle.models import APIVersion, ParserAction
 from secops.chronicle.utils.format_utils import remove_none_values
 from secops.chronicle.utils.request_utils import (
     chronicle_paginated_request,
     chronicle_request,
 )
 from secops.exceptions import APIError, SecOpsError
+
 
 # Constants for size limits
 MAX_LOG_SIZE = 10 * 1024 * 1024  # 10MB per log
@@ -233,6 +234,54 @@ def get_parser(
         endpoint_path=f"logTypes/{log_type}/parsers/{id}",
         error_message="Failed to get parser",
     )
+
+
+def fetch_parser_candidates(
+    client: "ChronicleClient",
+    log_type: str,
+    parser_action: ParserAction | str,
+) -> list[Any]:
+    """Retrieves prebuilt parser candidates.
+
+    Args:
+        client: ChronicleClient instance
+        log_type: Log type of the parser
+        parser_action: Action to perform on the parser candidates. Can be a
+            ParserAction enum value or a string. Valid values:
+            - ParserAction.PARSER_ACTION_UNSPECIFIED
+            - ParserAction.PARSER_ACTION_OPT_IN_TO_PREVIEW
+            - ParserAction.PARSER_ACTION_OPT_OUT_OF_PREVIEW
+            - ParserAction.CLONE_PREBUILT
+
+    Returns:
+        List of candidate parsers
+
+    Raises:
+        ValueError: If log_type is empty or parser_action is an invalid string
+        APIError: If the API request fails
+    """
+    if not log_type:
+        raise ValueError("log_type cannot be empty")
+    if isinstance(parser_action, str) and not isinstance(
+        parser_action, ParserAction
+    ):
+        try:
+            parser_action = ParserAction(parser_action)
+        except ValueError as e:
+            valid = ", ".join(m.value for m in ParserAction)
+            raise ValueError(
+                f'Invalid parser_action: "{parser_action}". '
+                f"Valid values: {valid}"
+            ) from e
+
+    data = chronicle_request(
+        client,
+        method="GET",
+        endpoint_path=f"logTypes/{log_type}/parsers:fetchParserCandidates",
+        params={"parserAction": parser_action},
+        error_message="Failed to fetch parser candidates",
+    )
+    return data.get("candidates", [])
 
 
 def list_parsers(

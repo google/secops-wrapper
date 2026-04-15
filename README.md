@@ -1739,6 +1739,12 @@ print(f"Parser content: {parser.get('text')}")
 chronicle.activate_parser(log_type=log_type, id=parser_id)
 chronicle.deactivate_parser(log_type=log_type, id=parser_id)
 
+# Fetch parser candidates (unactivated prebuilt parsers)
+candidates = chronicle.fetch_parser_candidates(
+    log_type=log_type,
+    parser_action="PARSER_ACTION_OPT_IN_TO_PREVIEW"
+)
+
 # Copy an existing parser as a starting point
 copied_parser = chronicle.copy_parser(log_type=log_type, id="pa_existing_parser")
 
