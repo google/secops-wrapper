@@ -365,9 +365,7 @@ def handle_actions_update_command(args, chronicle):
             integration_name=args.integration_name,
             action_id=args.action_id,
             display_name=args.display_name,
-            script=(
-                args.script if args.script else None
-            ),  # CLI uses --code flag but API expects script
+            script=args.script or None,
             description=args.description,
             update_mask=args.update_mask,
         )

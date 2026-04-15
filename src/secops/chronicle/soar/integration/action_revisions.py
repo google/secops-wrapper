@@ -150,10 +150,7 @@ def create_integration_action_revision(
     Raises:
         APIError: If the API request fails.
     """
-    body = {"action": action}
-
-    if comment is not None:
-        body["comment"] = comment
+    body = remove_none_values({"action": action, "comment": comment})
 
     return chronicle_request(
         client,

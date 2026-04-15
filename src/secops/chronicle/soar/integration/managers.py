@@ -180,13 +180,13 @@ def create_integration_manager(
     Raises:
         APIError: If the API request fails.
     """
-    body = {
-        "displayName": display_name,
-        "script": script,
-    }
-
-    if description is not None:
-        body["description"] = description
+    body = remove_none_values(
+        {
+            "displayName": display_name,
+            "script": script,
+            "description": description,
+        }
+    )
 
     return chronicle_request(
         client,
