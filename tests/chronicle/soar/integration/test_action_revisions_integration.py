@@ -33,7 +33,7 @@ def test_action_revisions_workflow():
 
     TODO: Remove 401 skip logic once SOAR IAM role issue is fixed.
     """
-    client = SecOpsClient()
+    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
     chronicle = client.chronicle(**CHRONICLE_CONFIG)
 
     integration_name = None
