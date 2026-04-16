@@ -16,11 +16,11 @@
 
 import sys
 
-from secops.cli.utils.formatters import output_formatter
 from secops.cli.utils.common_args import (
-    add_pagination_args,
     add_as_list_arg,
+    add_pagination_args,
 )
+from secops.cli.utils.formatters import output_formatter
 
 
 def setup_action_revisions_command(subparsers):

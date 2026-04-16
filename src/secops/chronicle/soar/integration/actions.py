@@ -16,10 +16,10 @@
 
 from typing import Any, TYPE_CHECKING
 
-from secops.chronicle.models import APIVersion, ActionParameter
+from secops.chronicle.models import ActionParameter, APIVersion
 from secops.chronicle.utils.format_utils import (
-    format_resource_id,
     build_patch_body,
+    format_resource_id,
     remove_none_values,
 )
 from secops.chronicle.utils.request_utils import (

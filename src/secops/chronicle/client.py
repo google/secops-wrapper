@@ -160,6 +160,9 @@ from secops.chronicle.log_processing_pipelines import (
     list_log_processing_pipelines as _list_log_processing_pipelines,
 )
 from secops.chronicle.log_processing_pipelines import (
+    test_pipeline as _test_pipeline,
+)
+from secops.chronicle.log_processing_pipelines import (
     update_log_processing_pipeline as _update_log_processing_pipeline,
 )
 from secops.chronicle.log_types import (
@@ -168,9 +171,6 @@ from secops.chronicle.log_types import (
     get_log_type_description as _get_log_type_description,
     is_valid_log_type as _is_valid_log_type,
     search_log_types as _search_log_types,
-)
-from secops.chronicle.log_processing_pipelines import (
-    test_pipeline as _test_pipeline,
 )
 from secops.chronicle.models import (
     APIVersion,

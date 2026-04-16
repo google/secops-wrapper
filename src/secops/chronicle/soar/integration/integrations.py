@@ -14,7 +14,7 @@
 #
 """Integrations functionality for Chronicle."""
 
-from typing import TYPE_CHECKING, Any
+from typing import Any, TYPE_CHECKING
 
 from secops.chronicle.models import (
     APIVersion,

@@ -14,7 +14,7 @@
 #
 """Chronicle SOAR API client."""
 
-from typing import TYPE_CHECKING, Any
+from typing import Any, TYPE_CHECKING
 
 # pylint: disable=line-too-long
 from secops.chronicle.models import (
@@ -22,17 +22,36 @@ from secops.chronicle.models import (
     APIVersion,
     DiffType,
     IntegrationInstanceParameter,
+    IntegrationParam,
     IntegrationType,
     PythonVersion,
     TargetMode,
-    IntegrationParam,
 )
-from secops.chronicle.soar.integration.marketplace_integrations import (
-    get_marketplace_integration as _get_marketplace_integration,
-    get_marketplace_integration_diff as _get_marketplace_integration_diff,
-    install_marketplace_integration as _install_marketplace_integration,
-    list_marketplace_integrations as _list_marketplace_integrations,
-    uninstall_marketplace_integration as _uninstall_marketplace_integration,
+from secops.chronicle.soar.integration.action_revisions import (
+    create_integration_action_revision as _create_integration_action_revision,
+    delete_integration_action_revision as _delete_integration_action_revision,
+    list_integration_action_revisions as _list_integration_action_revisions,
+    rollback_integration_action_revision as _rollback_integration_action_revision,
+)
+from secops.chronicle.soar.integration.actions import (
+    create_integration_action as _create_integration_action,
+    delete_integration_action as _delete_integration_action,
+    execute_integration_action_test as _execute_integration_action_test,
+    get_integration_action as _get_integration_action,
+    get_integration_action_template as _get_integration_action_template,
+    get_integration_actions_by_environment as _get_integration_actions_by_environment,
+    list_integration_actions as _list_integration_actions,
+    update_integration_action as _update_integration_action,
+)
+from secops.chronicle.soar.integration.integration_instances import (
+    create_integration_instance as _create_integration_instance,
+    delete_integration_instance as _delete_integration_instance,
+    execute_integration_instance_test as _execute_integration_instance_test,
+    get_default_integration_instance as _get_default_integration_instance,
+    get_integration_instance as _get_integration_instance,
+    get_integration_instance_affected_items as _get_integration_instance_affected_items,
+    list_integration_instances as _list_integration_instances,
+    update_integration_instance as _update_integration_instance,
 )
 from secops.chronicle.soar.integration.integrations import (
     create_integration as _create_integration,
@@ -51,31 +70,12 @@ from secops.chronicle.soar.integration.integrations import (
     update_custom_integration as _update_custom_integration,
     update_integration as _update_integration,
 )
-from secops.chronicle.soar.integration.integration_instances import (
-    create_integration_instance as _create_integration_instance,
-    delete_integration_instance as _delete_integration_instance,
-    execute_integration_instance_test as _execute_integration_instance_test,
-    get_default_integration_instance as _get_default_integration_instance,
-    get_integration_instance as _get_integration_instance,
-    get_integration_instance_affected_items as _get_integration_instance_affected_items,
-    list_integration_instances as _list_integration_instances,
-    update_integration_instance as _update_integration_instance,
-)
-from secops.chronicle.soar.integration.actions import (
-    create_integration_action as _create_integration_action,
-    delete_integration_action as _delete_integration_action,
-    execute_integration_action_test as _execute_integration_action_test,
-    get_integration_action as _get_integration_action,
-    get_integration_action_template as _get_integration_action_template,
-    get_integration_actions_by_environment as _get_integration_actions_by_environment,
-    list_integration_actions as _list_integration_actions,
-    update_integration_action as _update_integration_action,
-)
-from secops.chronicle.soar.integration.action_revisions import (
-    create_integration_action_revision as _create_integration_action_revision,
-    delete_integration_action_revision as _delete_integration_action_revision,
-    list_integration_action_revisions as _list_integration_action_revisions,
-    rollback_integration_action_revision as _rollback_integration_action_revision,
+from secops.chronicle.soar.integration.manager_revisions import (
+    create_integration_manager_revision as _create_integration_manager_revision,
+    delete_integration_manager_revision as _delete_integration_manager_revision,
+    get_integration_manager_revision as _get_integration_manager_revision,
+    list_integration_manager_revisions as _list_integration_manager_revisions,
+    rollback_integration_manager_revision as _rollback_integration_manager_revision,
 )
 from secops.chronicle.soar.integration.managers import (
     create_integration_manager as _create_integration_manager,
@@ -85,12 +85,12 @@ from secops.chronicle.soar.integration.managers import (
     list_integration_managers as _list_integration_managers,
     update_integration_manager as _update_integration_manager,
 )
-from secops.chronicle.soar.integration.manager_revisions import (
-    create_integration_manager_revision as _create_integration_manager_revision,
-    delete_integration_manager_revision as _delete_integration_manager_revision,
-    get_integration_manager_revision as _get_integration_manager_revision,
-    list_integration_manager_revisions as _list_integration_manager_revisions,
-    rollback_integration_manager_revision as _rollback_integration_manager_revision,
+from secops.chronicle.soar.integration.marketplace_integrations import (
+    get_marketplace_integration as _get_marketplace_integration,
+    get_marketplace_integration_diff as _get_marketplace_integration_diff,
+    install_marketplace_integration as _install_marketplace_integration,
+    list_marketplace_integrations as _list_marketplace_integrations,
+    uninstall_marketplace_integration as _uninstall_marketplace_integration,
 )
 
 # pylint: enable=line-too-long
