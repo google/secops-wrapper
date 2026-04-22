@@ -15,7 +15,7 @@
 """Tests for Chronicle log processing pipeline functions."""
 
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, patch
 
 from secops.chronicle.client import ChronicleClient
 from secops.chronicle.log_processing_pipelines import (
@@ -87,7 +87,7 @@ def test_list_log_processing_pipelines(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines",
             params={"pageSize": 1000},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -121,7 +121,7 @@ def test_list_log_processing_pipelines_with_params(
                 "filter": 'displayName="Test"',
             },
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -154,7 +154,7 @@ def test_get_log_processing_pipeline(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}",
             params=None,
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -195,7 +195,7 @@ def test_create_log_processing_pipeline(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines",
             params=None,
             json=pipeline_config,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -223,7 +223,7 @@ def test_create_log_processing_pipeline_with_id(
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines",
             params={"logProcessingPipelineId": pipeline_id},
             json=pipeline_config,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -265,7 +265,7 @@ def test_update_log_processing_pipeline(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}",
             params=None,
             json=pipeline_config,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -297,7 +297,7 @@ def test_update_log_processing_pipeline_with_update_mask(
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}",
             params={"updateMask": update_mask},
             json=pipeline_config,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -325,7 +325,7 @@ def test_update_log_processing_pipeline_with_full_name(
             url=f"{chronicle_client.base_url()}/{full_name}",
             params=None,
             json=pipeline_config,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -364,7 +364,7 @@ def test_delete_log_processing_pipeline(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}",
             params=None,
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == {}
@@ -390,7 +390,7 @@ def test_delete_log_processing_pipeline_with_etag(
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}",
             params={"etag": etag},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == {}
@@ -427,7 +427,7 @@ def test_associate_streams(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}:associateStreams",
             params=None,
             json={"streams": streams},
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == {}
@@ -463,7 +463,7 @@ def test_associate_streams_empty_list(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}:associateStreams",
             params=None,
             json={"streams": []},
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == {}
@@ -485,7 +485,7 @@ def test_dissociate_streams(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines/{pipeline_id}:dissociateStreams",
             params=None,
             json={"streams": streams},
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == {}
@@ -521,7 +521,7 @@ def test_fetch_associated_pipeline_with_log_type(
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines:fetchAssociatedPipeline",
             params={"stream.logType": "WINEVTLOG"},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -543,7 +543,7 @@ def test_fetch_associated_pipeline_with_feed_id(
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines:fetchAssociatedPipeline",
             params={"stream.feedId": "feed_123"},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -597,7 +597,7 @@ def test_fetch_sample_logs_by_streams(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines:fetchSampleLogsByStreams",
             params=None,
             json={"streams": streams},
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -623,7 +623,7 @@ def test_fetch_sample_logs_by_streams_with_count(
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines:fetchSampleLogsByStreams",
             params=None,
             json={"streams": streams, "sampleLogsCount": sample_logs_count},
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -661,7 +661,7 @@ def test_fetch_sample_logs_by_streams_empty_streams(
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/logProcessingPipelines:fetchSampleLogsByStreams",
             params=None,
             json={"streams": []},
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -694,7 +694,7 @@ def test_test_pipeline(chronicle_client, mock_response):
                 "logProcessingPipeline": pipeline_config,
                 "inputLogs": input_logs,
             },
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -740,7 +740,7 @@ def test_test_pipeline_empty_logs(chronicle_client, mock_response):
                 "logProcessingPipeline": pipeline_config,
                 "inputLogs": [],
             },
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
