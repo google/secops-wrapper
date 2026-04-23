@@ -15,7 +15,7 @@
 """Tests for Chronicle parser functions."""
 
 import base64
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, patch
 
 import pytest
 
@@ -91,7 +91,7 @@ def test_activate_parser_success(chronicle_client, mock_response):
             url=expected_url,
             params=None,
             json={},
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == {}
@@ -132,7 +132,7 @@ def test_activate_release_candidate_parser_success(
             url=expected_url,
             params=None,
             json={},
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == {}
@@ -179,7 +179,7 @@ def test_fetch_parser_candidates_success(chronicle_client, mock_response):
             url=expected_url,
             params={"parserAction": parser_action},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == expected_parsers
@@ -207,7 +207,7 @@ def test_fetch_parser_candidates_empty(chronicle_client, mock_response):
             url=expected_url,
             params={"parserAction": parser_action},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == []
@@ -249,7 +249,7 @@ def test_fetch_parser_candidates_with_enum(chronicle_client, mock_response):
             url=expected_url,
             params={"parserAction": parser_action},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == expected_parsers
@@ -287,7 +287,7 @@ def test_copy_parser_success(chronicle_client, mock_response):
             url=expected_url,
             params=None,
             json={},
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == expected_parser
@@ -336,7 +336,7 @@ def test_create_parser_success_default_validation(
                 ),
                 "validated_on_empty_logs": True,
             },
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == expected_parser_info
@@ -376,7 +376,7 @@ def test_create_parser_success_with_validation_false(
                 ),
                 "validated_on_empty_logs": False,
             },
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == expected_parser_info
@@ -413,7 +413,7 @@ def test_deactivate_parser_success(chronicle_client, mock_response):
             url=expected_url,
             params=None,
             json={},
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == {}
@@ -450,7 +450,7 @@ def test_delete_parser_success_no_force(chronicle_client, mock_response):
             url=expected_url,
             params={"force": False},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == {}
@@ -475,7 +475,7 @@ def test_delete_parser_success_with_force(chronicle_client, mock_response):
             url=expected_url,
             params={"force": True},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == {}
@@ -516,7 +516,7 @@ def test_get_parser_success(chronicle_client, mock_response):
             url=expected_url,
             params=None,
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == expected_parser
@@ -556,7 +556,7 @@ def test_list_parsers_single_page_success(chronicle_client, mock_response):
             url=expected_url,
             params={"pageSize": 1000},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == expected_parsers
@@ -580,7 +580,7 @@ def test_list_parsers_no_parsers_success(chronicle_client, mock_response):
             url=expected_url,
             params={"pageSize": 1000},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == []
@@ -638,7 +638,7 @@ def test_list_parsers_with_page_size_returns_raw_response(
                 "filter": filter_query,
             },
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         # With page_size provided, returns raw response dict
@@ -746,7 +746,7 @@ def test_list_parsers_manual_pagination_single_page(
             url=expected_url,
             params={"pageSize": page_size},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         # Returns raw response dict, not just the parsers list

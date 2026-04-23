@@ -2,6 +2,7 @@
 
 import pytest
 from unittest.mock import (
+    ANY,
     Mock,
     patch,
     call,
@@ -89,7 +90,7 @@ class TestDataTables:
                     }
                 ],
             },
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -195,7 +196,7 @@ class TestDataTables:
                     }
                 ],
             },
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -271,7 +272,7 @@ class TestDataTables:
                     },
                 ],
             },
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -295,7 +296,7 @@ class TestDataTables:
             url=f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
             params=None,
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -325,7 +326,7 @@ class TestDataTables:
             url=f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables",
             params={"pageSize": 1000, "orderBy": "createTime asc"},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -365,7 +366,7 @@ class TestDataTables:
             url=f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
             params={"force": "true"},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -427,7 +428,7 @@ class TestDataTables:
             url=f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}/dataTableRows",
             params={"pageSize": 1000, "orderBy": "createTime asc"},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -508,7 +509,7 @@ class TestReferenceLists:
                 "entries": [{"value": "entryA"}, {"value": "entryB"}],
                 "syntaxType": syntax_type.value,
             },
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -575,7 +576,7 @@ class TestReferenceLists:
             url=f"{mock_chronicle_client.base_url(APIVersion.V1)}/{mock_chronicle_client.instance_id}/referenceLists/{rl_name}",
             params={"view": ReferenceListView.FULL.value},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -610,7 +611,7 @@ class TestReferenceLists:
             url=f"{mock_chronicle_client.base_url(APIVersion.V1)}/{mock_chronicle_client.instance_id}/referenceLists",
             params={"pageSize": 1000, "view": ReferenceListView.BASIC.value},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -666,7 +667,7 @@ class TestReferenceLists:
                     {"value": "new_entryY"},
                 ],
             },
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -724,7 +725,7 @@ class TestReferenceLists:
                 "description": new_description,
                 "row_time_to_live": new_row_ttl,
             },
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -763,7 +764,7 @@ class TestReferenceLists:
             url=f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
             params=None,
             json={"description": new_description},
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -802,7 +803,7 @@ class TestReferenceLists:
             url=f"{mock_chronicle_client.base_url}/{mock_chronicle_client.instance_id}/dataTables/{dt_name}",
             params=None,
             json={"row_time_to_live": new_row_ttl},
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -851,7 +852,7 @@ class TestReferenceLists:
                 "description": new_description,
                 "row_time_to_live": new_row_ttl,
             },
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 

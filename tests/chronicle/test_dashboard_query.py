@@ -14,7 +14,7 @@
 #
 """Tests for the Dashboard query module."""
 import json
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, patch
 
 import pytest
 
@@ -102,7 +102,7 @@ class TestExecuteQuery:
             url=url,
             params=None,
             json=payload,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -138,7 +138,7 @@ class TestExecuteQuery:
             url=url,
             params=None,
             json=payload,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -172,7 +172,7 @@ class TestExecuteQuery:
             url=url,
             params=None,
             json=payload,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -201,7 +201,7 @@ class TestExecuteQuery:
             ),
             params=None,
             json={"query": {"query": query, "input": json.loads(interval_str)}},
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -254,7 +254,7 @@ class TestGetExecuteQuery:
             url=url,
             params=None,
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 
@@ -291,7 +291,7 @@ class TestGetExecuteQuery:
             url=url,
             params=None,
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
 

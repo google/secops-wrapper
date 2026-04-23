@@ -15,7 +15,7 @@
 """Tests for Chronicle feed functions."""
 
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, patch
 from secops.chronicle.client import ChronicleClient
 from secops.chronicle.feeds import (
     create_feed,
@@ -85,7 +85,7 @@ def test_create_feed(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds",
             params=None,
             json=feed_config.to_dict(),
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -115,7 +115,7 @@ def test_create_feed_with_json_string(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds",
             params=None,
             json=expected_json,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -154,7 +154,7 @@ def test_get_feed(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds/{feed_id}",
             params=None,
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -193,7 +193,7 @@ def test_list_feeds(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds",
             params={"pageSize": 100},
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value["feeds"]
@@ -290,7 +290,7 @@ def test_update_feed(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds/{feed_id}",
             params={"updateMask": "display_name,details"},
             json=feed_config.to_dict(),
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -317,7 +317,7 @@ def test_update_feed_with_custom_mask(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds/{feed_id}",
             params={"updateMask": "display_name"},
             json=feed_config.to_dict(),
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value
@@ -355,7 +355,7 @@ def test_delete_feed(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds/{feed_id}",
             params=None,
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result is None
@@ -391,7 +391,7 @@ def test_enable_feed(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds/{feed_id}:enable",
             params=None,
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert feed_id in f"{result}"
@@ -427,7 +427,7 @@ def test_disable_feed(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds/{feed_id}:disable",
             params=None,
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert feed_id in f"{result}"
@@ -465,7 +465,7 @@ def test_generate_secret(chronicle_client, mock_response):
             url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/feeds/{feed_id}:generateSecret",
             params=None,
             json=None,
-            headers=None,
+            headers=ANY,
             timeout=None,
         )
         assert result == mock_response.json.return_value

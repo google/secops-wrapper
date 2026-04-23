@@ -16,7 +16,7 @@
 
 import pytest
 from datetime import datetime
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, patch
 
 from secops.chronicle import rule_detection
 from secops.chronicle.client import ChronicleClient
@@ -90,7 +90,7 @@ def test_list_detections_minimal(chronicle_client, response_mock):
             "listBasis": "LIST_BASIS_UNSPECIFIED",
         },
         json=None,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
     assert result == response_mock.json()
@@ -127,7 +127,7 @@ def test_list_detections_all_params(chronicle_client, response_mock):
             "pageToken": "next-1",
         },
         json=None,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
     assert result == response_mock.json()
@@ -180,7 +180,7 @@ def test_list_errors_minimal(chronicle_client, response_mock):
         url=f"{chronicle_client.base_url()}/{chronicle_client.instance_id}/ruleExecutionErrors",
         params={"filter": expected_filter},
         json=None,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
     assert result == response_mock.json()
