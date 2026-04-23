@@ -14,7 +14,7 @@
 #
 """Integrations functionality for Chronicle."""
 
-from typing import TYPE_CHECKING, Any
+from typing import Any, TYPE_CHECKING
 
 from secops.chronicle.models import (
     APIVersion,
@@ -68,13 +68,12 @@ def list_integrations(
     Raises:
         APIError: If the API request fails
     """
-    param_fields = {
-        "filter": filter_string,
-        "orderBy": order_by,
-    }
-
-    # Remove keys with None values
-    param_fields = {k: v for k, v in param_fields.items() if v is not None}
+    param_fields = remove_none_values(
+        {
+            "filter": filter_string,
+            "orderBy": order_by,
+        }
+    )
 
     return chronicle_paginated_request(
         client,
@@ -290,16 +289,16 @@ def export_integration_items(
         integration_name: name of the integration to export items from
         actions: Optional. IDs of the actions to export as a list or
                 comma-separated string. Format: [1,2,3] or "1,2,3"
-            jobs: Optional. IDs of the jobs to export as a list or
-                comma-separated string.
-            connectors: Optional. IDs of the connectors to export as a
-                list or comma-separated string.
-            managers: Optional. IDs of the managers to export as a list
-                or comma-separated string.
-            transformers: Optional. IDs of the transformers to export as
-                a list or comma-separated string.
-            logical_operators: Optional. IDs of the logical operators to
-                export as a list or comma-separated string.
+        jobs: Optional. IDs of the jobs to export as a list or
+            comma-separated string.
+        connectors: Optional. IDs of the connectors to export as a
+            list or comma-separated string.
+        managers: Optional. IDs of the managers to export as a list
+            or comma-separated string.
+        transformers: Optional. IDs of the transformers to export as
+            a list or comma-separated string.
+        logical_operators: Optional. IDs of the logical operators to
+            export as a list or comma-separated string.
         api_version: API version to use for the request. Default is V1BETA.
 
     Returns:
@@ -487,7 +486,7 @@ def get_integration_restricted_agents(
 def get_integration_diff(
     client: "ChronicleClient",
     integration_name: str,
-    diff_type: DiffType = DiffType.COMMERCIAL,
+    diff_type: DiffType | None = DiffType.COMMERCIAL,
     api_version: APIVersion | None = APIVersion.V1BETA,
 ) -> dict[str, Any]:
     """Get the configuration diff of a specific integration.

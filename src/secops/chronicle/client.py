@@ -135,13 +135,6 @@ from secops.chronicle.log_ingest import ingest_log as _ingest_log
 from secops.chronicle.log_ingest import ingest_udm as _ingest_udm
 from secops.chronicle.log_ingest import list_forwarders as _list_forwarders
 from secops.chronicle.log_ingest import update_forwarder as _update_forwarder
-from secops.chronicle.log_types import classify_logs as _classify_logs
-from secops.chronicle.log_types import get_all_log_types as _get_all_log_types
-from secops.chronicle.log_types import (
-    get_log_type_description as _get_log_type_description,
-)
-from secops.chronicle.log_types import is_valid_log_type as _is_valid_log_type
-from secops.chronicle.log_types import search_log_types as _search_log_types
 from secops.chronicle.log_processing_pipelines import (
     associate_streams as _associate_streams,
 )
@@ -167,10 +160,17 @@ from secops.chronicle.log_processing_pipelines import (
     list_log_processing_pipelines as _list_log_processing_pipelines,
 )
 from secops.chronicle.log_processing_pipelines import (
-    update_log_processing_pipeline as _update_log_processing_pipeline,
+    test_pipeline as _test_pipeline,
 )
 from secops.chronicle.log_processing_pipelines import (
-    test_pipeline as _test_pipeline,
+    update_log_processing_pipeline as _update_log_processing_pipeline,
+)
+from secops.chronicle.log_types import (
+    classify_logs as _classify_logs,
+    get_all_log_types as _get_all_log_types,
+    get_log_type_description as _get_log_type_description,
+    is_valid_log_type as _is_valid_log_type,
+    search_log_types as _search_log_types,
 )
 from secops.chronicle.models import (
     APIVersion,

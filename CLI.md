@@ -962,6 +962,174 @@ secops integration integrations delete --integration-id "MyIntegration"
 ```
 
 Download an integration package:
+#### Integration Actions
+
+List integration actions:
+
+```bash
+# List all actions for an integration
+secops integration actions list --integration-name "MyIntegration"
+
+# List actions as a direct list (fetches all pages automatically)
+secops integration actions list --integration-name "MyIntegration" --as-list
+
+# List with pagination
+secops integration actions list --integration-name "MyIntegration" --page-size 50
+
+# List with filtering
+secops integration actions list --integration-name "MyIntegration" --filter-string "enabled = true"
+```
+
+Get action details:
+
+```bash
+secops integration actions get --integration-name "MyIntegration" --action-id "123"
+```
+
+Create a new action:
+
+```bash
+# Create a basic action with Python code
+secops integration actions create \
+  --integration-name "MyIntegration" \
+  --display-name "Send Alert" \
+  --code "def main(context): return {'status': 'success'}"
+
+# Create an async action
+secops integration actions create \
+  --integration-name "MyIntegration" \
+  --display-name "Async Task" \
+  --code "async def main(context): return await process()" \
+  --is-async
+
+# Create with description
+secops integration actions create \
+  --integration-name "MyIntegration" \
+  --display-name "My Action" \
+  --code "def main(context): return {}" \
+  --description "Action description"
+```
+
+> **Note:** When creating an action, the following default values are automatically applied:
+> - `timeout_seconds`: 300 (5 minutes)
+> - `enabled`: true
+> - `script_result_name`: "result"
+> 
+> The `--code` parameter contains the Python script that will be executed by the action.
+
+Update an existing action:
+
+```bash
+# Update display name
+secops integration actions update \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --display-name "Updated Action Name"
+
+# Update code
+secops integration actions update \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --code "def main(context): return {'status': 'updated'}"
+
+# Update multiple fields with update mask
+secops integration actions update \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --display-name "New Name" \
+  --description "New description" \
+  --update-mask "displayName,description"
+```
+
+Delete an action:
+
+```bash
+secops integration actions delete --integration-name "MyIntegration" --action-id "123"
+```
+
+Test an action:
+
+```bash
+# Test an action to verify it executes correctly
+secops integration actions test --integration-name "MyIntegration" --action-id "123"
+```
+
+Get action template:
+
+```bash
+# Get synchronous action template
+secops integration actions template --integration-name "MyIntegration"
+
+# Get asynchronous action template
+secops integration actions template --integration-name "MyIntegration" --is-async
+```
+
+#### Action Revisions
+
+List action revisions:
+
+```bash
+# List all revisions for an action
+secops integration action-revisions list \
+  --integration-name "MyIntegration" \
+  --action-id "123"
+
+# List revisions as a direct list
+secops integration action-revisions list \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --as-list
+
+# List with pagination
+secops integration action-revisions list \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --page-size 10
+
+# List with filtering and ordering
+secops integration action-revisions list \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --filter-string 'version = "1.0"' \
+  --order-by "createTime desc"
+```
+
+Create a revision backup:
+
+```bash
+# Create revision with comment
+secops integration action-revisions create \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --comment "Backup before major refactor"
+
+# Create revision without comment
+secops integration action-revisions create \
+  --integration-name "MyIntegration" \
+  --action-id "123"
+```
+
+Rollback to a previous revision:
+
+```bash
+secops integration action-revisions rollback \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --revision-id "r456"
+```
+
+Delete an old revision:
+
+```bash
+secops integration action-revisions delete \
+  --integration-name "MyIntegration" \
+  --action-id "123" \
+  --revision-id "r789"
+```
+
+#### Integration Managers
+
+List integration managers:
 
 ```bash
 # Download integration as a ZIP file

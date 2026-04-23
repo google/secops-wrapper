@@ -17,8 +17,8 @@
 from secops.cli.commands.integration import (
     marketplace_integration,
     integration,
-    # actions,
-    # action_revisions,
+    actions,
+    action_revisions,
     # connectors,
     # connector_revisions,
     # connector_context_properties,
@@ -29,8 +29,8 @@ from secops.cli.commands.integration import (
     # job_context_properties,
     # job_instance_logs,
     # job_instances,
-    # managers,
-    # manager_revisions,
+    managers,
+    manager_revisions,
     integration_instances,
     # transformers,
     # transformer_revisions,
@@ -55,8 +55,8 @@ def setup_integrations_command(subparsers):
     # transformer_revisions.setup_transformer_revisions_command(lvl1)
     # logical_operators.setup_logical_operators_command(lvl1)
     # logical_operator_revisions.setup_logical_operator_revisions_command(lvl1)
-    # actions.setup_actions_command(lvl1)
-    # action_revisions.setup_action_revisions_command(lvl1)
+    actions.setup_actions_command(lvl1)
+    action_revisions.setup_action_revisions_command(lvl1)
     # connectors.setup_connectors_command(lvl1)
     # connector_revisions.setup_connector_revisions_command(lvl1)
     # connector_context_properties.setup_connector_context_properties_command(
@@ -69,6 +69,6 @@ def setup_integrations_command(subparsers):
     # job_context_properties.setup_job_context_properties_command(lvl1)
     # job_instance_logs.setup_job_instance_logs_command(lvl1)
     # job_instances.setup_job_instances_command(lvl1)
-    # managers.setup_managers_command(lvl1)
-    # manager_revisions.setup_manager_revisions_command(lvl1)
+    managers.setup_managers_command(lvl1)
+    manager_revisions.setup_manager_revisions_command(lvl1)
     marketplace_integration.setup_marketplace_integrations_command(lvl1)
