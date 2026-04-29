@@ -2045,6 +2045,430 @@ for watchlist in watchlists:
     print(f"Watchlist: {watchlist.get('displayName')}")
 ```
 
+## Integration Management
+
+### Integration Actions
+
+List all available actions for an integration:
+
+```python
+# Get all actions for an integration
+actions = chronicle.list_integration_actions("AWSSecurityHub")
+for action in actions.get("actions", []):
+    print(f"Action: {action.get('displayName')}, ID: {action.get('name')}")
+
+# Get all actions as a list
+actions = chronicle.list_integration_actions("AWSSecurityHub", as_list=True)
+
+# Get only enabled actions
+actions = chronicle.list_integration_actions("AWSSecurityHub", filter_string="enabled = true")
+```
+
+Get details of a specific action:
+
+```python
+
+action = chronicle.get_integration_action(
+   integration_name="AWSSecurityHub",
+   action_id="123"
+)
+```
+
+Create an integration action
+
+```python
+from secops.chronicle.models import ActionParameter, ActionParamType
+
+new_action = chronicle.create_integration_action(
+        integration_name="MyIntegration",
+        display_name="New Action",
+        description="This is a new action",
+        enabled=True,
+        timeout_seconds=900,
+        is_async=False,
+        script_result_name="script_result",
+        parameters=[
+            ActionParameter(
+                display_name="Parameter 1",
+                type=ActionParamType.STRING,
+                description="This is parameter 1",
+                mandatory=True,
+            )
+        ],
+        script="print('Hello, World!')"
+    )
+```
+
+Update an integration action
+
+```python
+from secops.chronicle.models import ActionParameter, ActionParamType
+
+updated_action = chronicle.update_integration_action(
+    integration_name="MyIntegration",
+    action_id="123",
+    display_name="Updated Action Name",
+    description="Updated description",
+    enabled=False,
+   parameters=[
+        ActionParameter(
+            display_name="New Parameter",
+            type=ActionParamType.PASSWORD,
+            description="This is a new parameter",
+            mandatory=True,
+        )
+    ],
+    script="print('Updated script')"
+)
+```
+
+Delete an integration action
+
+```python
+chronicle.delete_integration_action(
+    integration_name="MyIntegration",
+    action_id="123"
+)
+```
+
+Execute test run of an integration action
+
+```python
+# Get the integration instance ID by using chronicle.list_integration_instances()
+integration_instance_id = "abc-123-def-456"
+
+test_run = chronicle.execute_integration_action_test(
+        integration_name="MyIntegration",
+        test_case_id=123456,
+        action=chronicle.get_integration_action("MyIntegration", "123"),
+        scope="TEST",
+        integration_instance_id=integration_instance_id,
+)
+```
+
+Get integration actions by environment
+
+```python
+# Get all actions for an integration in the Default Environment
+actions = chronicle.get_integration_actions_by_environment(
+    integration_name="MyIntegration",
+    environments=["Default Environment"],
+    include_widgets=True,
+)
+```
+
+Get a template for creating an action in an integration
+
+```python
+template = chronicle.get_integration_action_template("MyIntegration")
+```
+
+### Integration Action Revisions
+
+List all revisions for an action:
+
+```python
+# Get all revisions for an action
+revisions = chronicle.list_integration_action_revisions(
+    integration_name="MyIntegration",
+    action_id="123"
+)
+for revision in revisions.get("revisions", []):
+    print(f"Revision: {revision.get('name')}, Comment: {revision.get('comment')}")
+
+# Get all revisions as a list
+revisions = chronicle.list_integration_action_revisions(
+    integration_name="MyIntegration",
+    action_id="123",
+    as_list=True
+)
+
+# Filter revisions
+revisions = chronicle.list_integration_action_revisions(
+    integration_name="MyIntegration",
+    action_id="123",
+    filter_string='version = "1.0"',
+    order_by="createTime desc"
+)
+```
+
+Delete a specific action revision:
+
+```python
+chronicle.delete_integration_action_revision(
+    integration_name="MyIntegration",
+    action_id="123",
+    revision_id="rev-456"
+)
+```
+
+Create a new revision before making changes:
+
+```python
+# Get the current action
+action = chronicle.get_integration_action(
+    integration_name="MyIntegration",
+    action_id="123"
+)
+
+# Create a backup revision
+new_revision = chronicle.create_integration_action_revision(
+    integration_name="MyIntegration",
+    action_id="123",
+    action=action,
+    comment="Backup before major refactor"
+)
+print(f"Created revision: {new_revision.get('name')}")
+
+# Create revision with custom comment
+new_revision = chronicle.create_integration_action_revision(
+    integration_name="MyIntegration",
+    action_id="123",
+    action=action,
+    comment="Version 2.0 - Added error handling"
+)
+```
+
+Rollback to a previous revision:
+
+```python
+# Rollback to a previous working version
+rollback_result = chronicle.rollback_integration_action_revision(
+    integration_name="MyIntegration",
+    action_id="123",
+    revision_id="rev-456"
+)
+print(f"Rolled back to: {rollback_result.get('name')}")
+```
+
+Example workflow: Safe action updates with revision control:
+
+```python
+# 1. Get the current action
+action = chronicle.get_integration_action(
+    integration_name="MyIntegration",
+    action_id="123"
+)
+
+# 2. Create a backup revision
+backup = chronicle.create_integration_action_revision(
+    integration_name="MyIntegration",
+    action_id="123",
+    action=action,
+    comment="Backup before updating logic"
+)
+
+# 3. Make changes to the action
+updated_action = chronicle.update_integration_action(
+    integration_name="MyIntegration",
+    action_id="123",
+    display_name="Updated Action",
+    script="""
+def main(context):
+    # New logic here
+    return {"status": "success"}
+"""
+)
+
+# 4. Test the updated action
+test_result = chronicle.execute_integration_action_test(
+    integration_name="MyIntegration",
+    action_id="123",
+    action=updated_action
+)
+
+# 5. If test fails, rollback to backup
+if not test_result.get("successful"):
+    print("Test failed - rolling back")
+    chronicle.rollback_integration_action_revision(
+        integration_name="MyIntegration",
+        action_id="123",
+        revision_id=backup.get("name").split("/")[-1]
+    )
+else:
+    print("Test passed - changes saved")
+```
+
+### Integration Managers
+
+List all available managers for an integration:
+
+```python
+# Get all managers for an integration
+managers = chronicle.list_integration_managers("MyIntegration")
+for manager in managers.get("managers", []):
+    print(f"Manager: {manager.get('displayName')}, ID: {manager.get('name')}")
+
+# Get all managers as a list
+managers = chronicle.list_integration_managers("MyIntegration", as_list=True)
+
+# Filter managers by display name
+managers = chronicle.list_integration_managers(
+    "MyIntegration",
+    filter_string='displayName = "API Helper"'
+)
+
+# Sort managers by display name
+managers = chronicle.list_integration_managers(
+    "MyIntegration",
+    order_by="displayName"
+)
+```
+
+Get details of a specific manager:
+
+```python
+manager = chronicle.get_integration_manager(
+    integration_name="MyIntegration",
+    manager_id="123"
+)
+```
+
+Create an integration manager:
+
+```python
+new_manager = chronicle.create_integration_manager(
+    integration_name="MyIntegration",
+    display_name="API Helper",
+    description="Shared utility functions for API calls",
+    script="""
+def make_api_request(url, headers=None):
+    '''Helper function to make API requests'''
+    import requests
+    return requests.get(url, headers=headers)
+
+def parse_response(response):
+    '''Parse API response'''
+    return response.json()
+"""
+)
+```
+
+Update an integration manager:
+
+```python
+updated_manager = chronicle.update_integration_manager(
+    integration_name="MyIntegration",
+    manager_id="123",
+    display_name="Updated API Helper",
+    description="Updated shared utility functions",
+    script="""
+def make_api_request(url, headers=None, method='GET'):
+    '''Updated helper function with method parameter'''
+    import requests
+    if method == 'GET':
+        return requests.get(url, headers=headers)
+    elif method == 'POST':
+        return requests.post(url, headers=headers)
+"""
+)
+
+# Update only specific fields
+updated_manager = chronicle.update_integration_manager(
+    integration_name="MyIntegration",
+    manager_id="123",
+    description="New description only"
+)
+```
+
+Delete an integration manager:
+
+```python
+chronicle.delete_integration_manager(
+    integration_name="MyIntegration",
+    manager_id="123"
+)
+```
+
+Get a template for creating a manager in an integration:
+
+```python
+template = chronicle.get_integration_manager_template("MyIntegration")
+print(f"Template script: {template.get('script')}")
+```
+
+### Integration Manager Revisions
+
+List all revisions for a specific manager:
+
+```python
+# Get all revisions for a manager
+revisions = chronicle.list_integration_manager_revisions(
+    integration_name="MyIntegration",
+    manager_id="123"
+)
+for revision in revisions.get("revisions", []):
+    print(f"Revision: {revision.get('name')}, Comment: {revision.get('comment')}")
+
+# Get all revisions as a list
+revisions = chronicle.list_integration_manager_revisions(
+    integration_name="MyIntegration",
+    manager_id="123",
+    as_list=True
+)
+
+# Filter revisions
+revisions = chronicle.list_integration_manager_revisions(
+    integration_name="MyIntegration",
+    manager_id="123",
+    filter_string='comment contains "backup"',
+    order_by="createTime desc"
+)
+```
+
+Get details of a specific revision:
+
+```python
+revision = chronicle.get_integration_manager_revision(
+    integration_name="MyIntegration",
+    manager_id="123",
+    revision_id="r1"
+)
+print(f"Revision script: {revision.get('manager', {}).get('script')}")
+```
+
+Create a new revision snapshot:
+
+```python
+# Get the current manager
+manager = chronicle.get_integration_manager(
+    integration_name="MyIntegration",
+    manager_id="123"
+)
+
+# Create a revision before making changes
+revision = chronicle.create_integration_manager_revision(
+    integration_name="MyIntegration",
+    manager_id="123",
+    manager=manager,
+    comment="Backup before major refactor"
+)
+print(f"Created revision: {revision.get('name')}")
+```
+
+Rollback to a previous revision:
+
+```python
+# Rollback to a previous working version
+rollback_result = chronicle.rollback_integration_manager_revision(
+    integration_name="MyIntegration",
+    manager_id="123",
+    revision_id="acb123de-abcd-1234-ef00-1234567890ab"
+)
+print(f"Rolled back to: {rollback_result.get('name')}")
+```
+
+Delete a revision:
+
+```python
+chronicle.delete_integration_manager_revision(
+    integration_name="MyIntegration",
+    manager_id="123",
+    revision_id="r1"
+)
+```
+
+## Rule Management
 ### Rule Management
 
 The SDK provides comprehensive support for managing Chronicle detection rules:
