@@ -188,7 +188,11 @@ class SecOpsAuth:
         """Get credentials from various sources."""
         try:
             if credentials:
-                google_credentials = credentials.with_scopes(self.scopes)
+                if hasattr(credentials, "with_scopes"):
+                    google_credentials = credentials.with_scopes(self.scopes)
+                else:
+                    # Assume credentials are already scoped
+                    google_credentials = credentials
 
             elif service_account_info:
                 google_credentials = (

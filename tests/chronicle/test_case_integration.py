@@ -30,7 +30,7 @@ def test_list_and_get_cases_workflow():
 
     TODO: Remove 401 skip logic once SOAR IAM role issue is fixed.
     """
-    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+    client = SecOpsClient()
     chronicle = client.chronicle(**CHRONICLE_CONFIG)
 
     try:
@@ -68,10 +68,11 @@ def test_list_and_get_cases_workflow():
             if case_id:
                 case = chronicle.get_case(case_id)
                 assert case is not None
-                assert hasattr(case, "id")
-                assert hasattr(case, "display_name")
-                assert hasattr(case, "priority")
-                assert hasattr(case, "status")
+                assert isinstance(case, dict)
+                assert "name" in case
+                assert "displayName" in case
+                assert "priority" in case
+                assert "status" in case
         else:
             pytest.skip("No cases available for testing")
 
@@ -90,7 +91,7 @@ def test_case_update_workflow():
 
     TODO: Remove 401 skip logic once SOAR IAM role issue is fixed.
     """
-    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+    client = SecOpsClient()
     chronicle = client.chronicle(**CHRONICLE_CONFIG)
 
     # Use dedicated test case ID
@@ -99,7 +100,7 @@ def test_case_update_workflow():
     try:
         # Get original case state
         original_case = chronicle.get_case(case_id)
-        original_priority = original_case.priority
+        original_priority = original_case["priority"]
 
         # Determine new priority (toggle between HIGH and MEDIUM)
         new_priority = (
@@ -117,11 +118,11 @@ def test_case_update_workflow():
             )
 
             assert updated_case is not None
-            assert updated_case.priority == new_priority
+            assert updated_case["priority"] == new_priority
 
             # Verify by fetching again
             verified_case = chronicle.get_case(case_id)
-            assert verified_case.priority == new_priority
+            assert verified_case["priority"] == new_priority
 
         finally:
             # Cleanup: Restore original priority
@@ -147,7 +148,7 @@ def test_bulk_operations_workflow():
 
     TODO: Remove 401 skip logic once SOAR IAM role issue is fixed.
     """
-    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+    client = SecOpsClient()
     chronicle = client.chronicle(**CHRONICLE_CONFIG)
 
     # Use dedicated test case ID
@@ -188,7 +189,7 @@ def test_bulk_assign():
 
     TODO: Remove 401 skip logic once SOAR IAM role issue is fixed.
     """
-    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+    client = SecOpsClient()
     chronicle = client.chronicle(**CHRONICLE_CONFIG)
 
     # Use dedicated test case ID
@@ -218,7 +219,7 @@ def test_bulk_close_reopen_workflow():
 
     TODO: Remove 401 skip logic once SOAR IAM role issue is fixed.
     """
-    client = SecOpsClient(service_account_info=SERVICE_ACCOUNT_JSON)
+    client = SecOpsClient()
     chronicle = client.chronicle(**CHRONICLE_CONFIG)
 
     # Use dedicated test case ID
@@ -240,7 +241,7 @@ def test_bulk_close_reopen_workflow():
             # Verify cases are closed by fetching one
             if case_ids:
                 case = chronicle.get_case(str(case_ids[0]))
-                assert case.status == "CLOSED"
+                assert case["status"] == "CLOSED"
                 print(f"Verified case {case_ids[0]} is CLOSED")
 
         finally:
@@ -256,7 +257,7 @@ def test_bulk_close_reopen_workflow():
                 # Verify case is reopened
                 if case_ids:
                     case = chronicle.get_case(str(case_ids[0]))
-                    assert case.status == "OPENED"
+                    assert case["status"] == "OPENED"
                     print(f"Verified case {case_ids[0]} is OPENED")
 
             except Exception as e:

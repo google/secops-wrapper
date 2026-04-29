@@ -267,32 +267,7 @@ def handle_case_get_batch_command(args, chronicle):
     try:
         case_ids = [case_id.strip() for case_id in args.ids.split(",")]
         result = chronicle.get_cases(case_ids)
-
-        # Convert CaseList to dictionary for output
-        cases_dict = {
-            "cases": [
-                {
-                    "id": case.id,
-                    "display_name": case.display_name,
-                    "stage": case.stage,
-                    "priority": case.priority,
-                    "status": case.status,
-                    "soar_platform_info": (
-                        {
-                            "case_id": case.soar_platform_info.case_id,
-                            "platform_type": (
-                                case.soar_platform_info.platform_type
-                            ),
-                        }
-                        if case.soar_platform_info
-                        else None
-                    ),
-                    "alert_ids": case.alert_ids,
-                }
-                for case in result.cases
-            ]
-        }
-        output_formatter(cases_dict, args.output)
+        output_formatter(result, args.output)
     except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
@@ -301,22 +276,8 @@ def handle_case_get_batch_command(args, chronicle):
 def handle_case_get_command(args, chronicle):
     """Handle case get command."""
     try:
-        case = chronicle.get_case(args.id, expand=args.expand)
-        case_dict = {
-            "id": case.id,
-            "display_name": case.display_name,
-            "stage": case.stage,
-            "priority": case.priority,
-            "status": case.status,
-        }
-        if case.soar_platform_info:
-            case_dict["soar_platform_info"] = {
-                "case_id": case.soar_platform_info.case_id,
-                "platform_type": case.soar_platform_info.platform_type,
-            }
-        if case.alert_ids:
-            case_dict["alert_ids"] = case.alert_ids
-        output_formatter(case_dict, args.output)
+        result = chronicle.get_case(args.id, expand=args.expand)
+        output_formatter(result, args.output)
     except APIError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
@@ -344,17 +305,10 @@ def handle_case_patch_command(args, chronicle):
     """Handle case patch command."""
     try:
         case_data = json.loads(args.data)
-        case = chronicle.patch_case(
+        result = chronicle.patch_case(
             args.id, case_data, update_mask=args.update_mask
         )
-        case_dict = {
-            "id": case.id,
-            "display_name": case.display_name,
-            "stage": case.stage,
-            "priority": case.priority,
-            "status": case.status,
-        }
-        output_formatter(case_dict, args.output)
+        output_formatter(result, args.output)
     except json.JSONDecodeError as e:
         print(f"Error: Invalid JSON data - {e}", file=sys.stderr)
         sys.exit(1)

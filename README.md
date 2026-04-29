@@ -1376,19 +1376,19 @@ case_ids = {alert.get('caseName') for alert in alert_list if alert.get('caseName
 
 # Get case details using the batch API
 if case_ids:
-    cases = chronicle.get_cases(list(case_ids))
+    result = chronicle.get_cases(list(case_ids))
     
     # Process cases
-    for case in cases.cases:
-        print(f"Case: {case.display_name}")
-        print(f"Priority: {case.priority}")
-        print(f"Status: {case.status}")
-        print(f"Stage: {case.stage}")
+    for case in result.get("cases", []):
+        print(f"Case: {case['displayName']}")
+        print(f"Priority: {case['priority']}")
+        print(f"Status: {case['status']}")
+        print(f"Stage: {case['stage']}")
         
         # Access SOAR platform information if available
-        if case.soar_platform_info:
-            print(f"SOAR Case ID: {case.soar_platform_info.case_id}")
-            print(f"SOAR Platform: {case.soar_platform_info.platform_type}")
+        if case.get("soarPlatformInfo"):
+            print(f"SOAR Case ID: {case['soarPlatformInfo']['caseId']}")
+            print(f"SOAR Platform: {case['soarPlatformInfo']['responsePlatformType']}")
 ```
 
 The alerts response includes:
@@ -1403,24 +1403,6 @@ You can filter alerts using the snapshot query parameter with fields like:
 - `feedback_summary.verdict`
 - `feedback_summary.priority`
 - `feedback_summary.status`
-
-### Case Management Helpers
-
-The `CaseList` class provides helper methods for working with cases:
-
-```python
-# Get details for specific cases (uses the batch API)
-cases = chronicle.get_cases(["case-id-1", "case-id-2"])
-
-# Filter cases by priority
-high_priority = cases.filter_by_priority("PRIORITY_HIGH")
-
-# Filter cases by status
-open_cases = cases.filter_by_status("STATUS_OPEN")
-
-# Look up a specific case
-case = cases.get_case("case-id-1")
-```
 
 > **Note**: The case management API uses the `legacy:legacyBatchGetCases` endpoint to retrieve multiple cases in a single request. You can retrieve up to 1000 cases in a single batch.
 
@@ -1459,10 +1441,10 @@ Retrieve detailed information about a specific case:
 ```python
 # Get case by ID
 case = chronicle.get_case("12345")
-print(f"Case: {case.display_name}")
-print(f"Priority: {case.priority}")
-print(f"Status: {case.status}")
-print(f"Stage: {case.stage}")
+print(f"Case: {case['displayName']}")
+print(f"Priority: {case['priority']}")
+print(f"Status: {case['status']}")
+print(f"Stage: {case['stage']}")
 
 # Get case with expanded fields
 case_expanded = chronicle.get_case("12345", expand="tags,products")

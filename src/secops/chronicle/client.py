@@ -176,7 +176,6 @@ from secops.chronicle.models import (
     APIVersion,
     AlertState,
     CaseCloseReason,
-    CaseList,
     CasePriority,
     DashboardChart,
     DashboardQuery,
@@ -1142,7 +1141,7 @@ class ChronicleClient:
             prioritized_only,
         )
 
-    def get_cases(self, case_ids: list[str]) -> CaseList:
+    def get_cases(self, case_ids: list[str]) -> dict[str, Any]:
         """Get case information for the specified case IDs.
 
         Uses the legacy:legacyBatchGetCases endpoint to retrieve multiple cases
@@ -1152,7 +1151,7 @@ class ChronicleClient:
             case_ids: List of case IDs to retrieve (maximum 1000)
 
         Returns:
-            A CaseList object containing the requested cases
+            Dictionary containing cases data
 
         Raises:
             APIError: If the API request fails
@@ -1160,7 +1159,9 @@ class ChronicleClient:
         """
         return get_cases_from_list(self, case_ids)
 
-    def get_case(self, case_name: str, expand: str | None = None) -> "Case":
+    def get_case(
+        self, case_name: str, expand: str | None = None
+    ) -> dict[str, Any]:
         """Get a single case details.
 
         Args:
@@ -1168,7 +1169,7 @@ class ChronicleClient:
             expand: Optional expand field for getting related resources
 
         Returns:
-            Case object with case details
+            Dictionary containing case details
 
         Raises:
             APIError: If the API request fails
@@ -1224,7 +1225,7 @@ class ChronicleClient:
         case_name: str,
         case_data: dict[str, Any],
         update_mask: str | None = None,
-    ) -> "Case":
+    ) -> dict[str, Any]:
         """Update a case using partial update (PATCH).
 
         Args:
@@ -1233,7 +1234,7 @@ class ChronicleClient:
             update_mask: Optional comma-separated list of fields to update
 
         Returns:
-            Updated Case object
+            Dictionary containing the updated case
 
         Raises:
             APIError: If the API request fails

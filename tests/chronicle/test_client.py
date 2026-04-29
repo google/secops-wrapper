@@ -19,7 +19,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from secops.chronicle.client import ChronicleClient
-from secops.chronicle.models import APIVersion, CaseList
+from secops.chronicle.models import APIVersion
 from secops.exceptions import APIError
 
 
@@ -323,15 +323,16 @@ def test_get_cases(chronicle_client):
         # Verify the correct parameter name was used
         assert call_args[1]["params"] == {"names": ["case-123"]}
 
-        assert isinstance(result, CaseList)
-        case = result.get_case("case-123")
-        assert case.display_name == "Test Case"
-        assert case.priority == "PRIORITY_HIGH"
-        assert case.soar_platform_info.case_id == "soar-123"
+        assert isinstance(result, dict)
+        assert len(result["cases"]) == 1
+        case = result["cases"][0]
+        assert case["displayName"] == "Test Case"
+        assert case["priority"] == "PRIORITY_HIGH"
+        assert case["soarPlatformInfo"]["caseId"] == "soar-123"
 
 
-def test_get_cases_filtering(chronicle_client):
-    """Test CaseList filtering methods."""
+def test_get_cases_multiple(chronicle_client):
+    """Test getting multiple cases returns raw dict."""
     mock_response = Mock()
     mock_response.status_code = 200
     mock_response.json.return_value = {
@@ -356,13 +357,10 @@ def test_get_cases_filtering(chronicle_client):
     ):
         result = chronicle_client.get_cases(["case-1", "case-2"])
 
-        high_priority = result.filter_by_priority("PRIORITY_HIGH")
-        assert len(high_priority) == 1
-        assert high_priority[0].id == "case-1"
-
-        open_cases = result.filter_by_status("OPEN")
-        assert len(open_cases) == 1
-        assert open_cases[0].id == "case-1"
+        assert isinstance(result, dict)
+        assert len(result["cases"]) == 2
+        assert result["cases"][0]["id"] == "case-1"
+        assert result["cases"][1]["id"] == "case-2"
 
 
 def test_get_cases_error(chronicle_client):

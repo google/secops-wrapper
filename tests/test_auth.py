@@ -73,3 +73,16 @@ def test_custom_user_agent():
     assert session is not None
     assert hasattr(session, "headers")
     assert session.headers.get("User-Agent") == "secops-wrapper-sdk"
+
+
+def test_bearer_token_credentials_accepted():
+    """Test scope passed for token credentials"""
+    from google.oauth2.credentials import Credentials as OAuthCredentials
+
+    creds = OAuthCredentials(token="fake-bearer-token")
+    assert not hasattr(creds, "with_scopes"), (
+        "Test assumption broken: OAuthCredentials now has with_scopes"
+    )
+
+    auth = SecOpsAuth(credentials=creds)
+    assert auth.credentials is creds

@@ -100,7 +100,7 @@ def test_cli_list_and_get_cases_workflow(cli_env, common_args):
                 assert get_result.returncode == 0
 
                 get_output = json.loads(get_result.stdout)
-                assert "id" in get_output or "display_name" in get_output
+                assert "name" in get_output or "display_name" in get_output
                 assert "priority" in get_output
                 assert "status" in get_output
     except (json.JSONDecodeError, KeyError):

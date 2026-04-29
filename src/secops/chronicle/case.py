@@ -19,9 +19,7 @@ from typing import Any
 
 from secops.chronicle.models import (
     APIVersion,
-    Case,
     CaseCloseReason,
-    CaseList,
     CasePriority,
 )
 from secops.chronicle.utils.format_utils import (
@@ -95,7 +93,7 @@ def get_cases(
     )
 
 
-def get_cases_from_list(client, case_ids: list[str]) -> CaseList:
+def get_cases_from_list(client, case_ids: list[str]) -> dict[str, Any]:
     """Get cases from Chronicle.
 
     Args:
@@ -103,7 +101,7 @@ def get_cases_from_list(client, case_ids: list[str]) -> CaseList:
         case_ids: List of case IDs to retrieve
 
     Returns:
-        CaseList object with case details
+        Dictionary containing cases data
 
     Raises:
         APIError: If the API request fails
@@ -112,7 +110,7 @@ def get_cases_from_list(client, case_ids: list[str]) -> CaseList:
     if len(case_ids) > 1000:
         raise ValueError("Maximum of 1000 cases can be retrieved in a batch")
 
-    data = chronicle_request(
+    return chronicle_request(
         client,
         method="GET",
         endpoint_path="legacy:legacyBatchGetCases",
@@ -120,13 +118,6 @@ def get_cases_from_list(client, case_ids: list[str]) -> CaseList:
         params={"names": case_ids},
         error_message="Failed to get cases",
     )
-
-    cases = []
-    if "cases" in data:
-        for case_data in data["cases"]:
-            cases.append(Case.from_dict(case_data))
-
-    return CaseList(cases)
 
 
 def execute_bulk_add_tag(
@@ -345,7 +336,9 @@ def execute_bulk_reopen(
     )
 
 
-def get_case(client, case_name: str, expand: str | None = None) -> Case:
+def get_case(
+    client, case_name: str, expand: str | None = None
+) -> dict[str, Any]:
     """Get a single case details.
 
     Args:
@@ -357,7 +350,7 @@ def get_case(client, case_name: str, expand: str | None = None) -> Case:
         expand: Optional expand field for getting related resources
 
     Returns:
-        Case object with case details
+        Dictionary containing case details
 
     Raises:
         APIError: If the API request fails
@@ -370,7 +363,7 @@ def get_case(client, case_name: str, expand: str | None = None) -> Case:
         }
     )
 
-    data = chronicle_request(
+    return chronicle_request(
         client,
         method="GET",
         endpoint_path=f"cases/{endpoint_path}",
@@ -378,8 +371,6 @@ def get_case(client, case_name: str, expand: str | None = None) -> Case:
         params=params or None,
         error_message="Failed to get case",
     )
-
-    return Case.from_dict(data)
 
 
 def list_cases(
@@ -478,7 +469,7 @@ def patch_case(
     case_name: str,
     case_data: dict[str, Any],
     update_mask: str | None = None,
-) -> Case:
+) -> dict[str, Any]:
     """Update a case using partial update (PATCH).
 
     Args:
@@ -491,7 +482,7 @@ def patch_case(
         update_mask: Optional comma-separated list of fields to update
 
     Returns:
-        Updated Case object
+        Dictionary containing the updated case
 
     Raises:
         APIError: If the API request fails
@@ -519,7 +510,7 @@ def patch_case(
         }
     )
 
-    data = chronicle_request(
+    return chronicle_request(
         client,
         method="PATCH",
         endpoint_path=f"cases/{endpoint_path}",
@@ -528,5 +519,3 @@ def patch_case(
         params=params or None,
         error_message="Failed to patch case",
     )
-
-    return Case.from_dict(data)
