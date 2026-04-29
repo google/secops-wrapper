@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.44.0] - 2026-04-29
+### Added
+- Automatic `x-goog-api-client` header on all API requests for client telemetry and tracing
+- Support for pre-scoped credentials (e.g. `google.oauth2.credentials.Credentials`) in `SecOpsAuth`
+  - Credentials without a `with_scopes` method are now accepted directly, enabling bearer token authentication
+
 ## [0.43.0] - 2026-04-22
 ### Changed
 - Standardised case management return types to return `dict` instead of typed objects, consistent with the rest of the SDK

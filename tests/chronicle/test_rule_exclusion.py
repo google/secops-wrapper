@@ -16,7 +16,7 @@
 
 import pytest
 from datetime import datetime
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, patch
 
 from secops.chronicle import rule_exclusion
 from secops.chronicle.client import ChronicleClient
@@ -60,7 +60,7 @@ def test_list_rule_exclusions(chronicle_client, response_mock):
         url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements",
         params={"pageSize": 50, "pageToken": "test-token"},
         json=None,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
 
@@ -91,7 +91,7 @@ def test_get_rule_exclusion_with_id(chronicle_client, response_mock):
         url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id",
         params=None,
         json=None,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
 
@@ -114,7 +114,7 @@ def test_get_rule_exclusion_with_full_resource_name(
         url=f"{chronicle_client.base_url}/{full_name}",
         params=None,
         json=None,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
 
@@ -156,7 +156,7 @@ def test_create_rule_exclusion(chronicle_client, response_mock):
         url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements",
         params=None,
         json=expected_body,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
 
@@ -198,7 +198,7 @@ def test_create_rule_exclusion_with_display_name(
         url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements",
         params=None,
         json=expected_body,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
 
@@ -235,7 +235,7 @@ def test_create_rule_exclusion_with_complex_query(
         url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements",
         params=None,
         json=expected_body,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
 
@@ -285,7 +285,7 @@ def test_patch_rule_exclusion(chronicle_client, response_mock):
         url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id",
         params={"updateMask": "display_name,type,query"},
         json=expected_body,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
 
@@ -313,7 +313,7 @@ def test_patch_rule_exclusion_with_partial_update(
         url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id",
         params={"updateMask": "display_name"},
         json=expected_body,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
 
@@ -344,7 +344,7 @@ def test_patch_rule_exclusion_with_full_resource_name(
         url=f"{chronicle_client.base_url}/{full_name}",
         params={"updateMask": "query"},
         json=expected_body,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
 
@@ -371,7 +371,7 @@ def test_patch_rule_exclusion_with_no_update_mask(
         url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id",
         params={},
         json=expected_body,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
 
@@ -424,7 +424,7 @@ def test_compute_rule_exclusion_activity_specific(
         ":computeFindingsRefinementActivity",
         params=None,
         json=expected_body,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
 
@@ -448,7 +448,7 @@ def test_get_rule_exclusion_deployment(chronicle_client, response_mock):
         "findingsRefinements/exclusion-id/deployment",
         params=None,
         json=None,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
 
@@ -490,7 +490,7 @@ def test_update_rule_exclusion_deployment(chronicle_client, response_mock):
             "updateMask": "enabled,archived,detection_exclusion_application"
         },
         json=expected_body,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
 
@@ -524,7 +524,7 @@ def test_update_rule_exclusion_deployment_disable(
         url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id/deployment",
         params={"updateMask": "enabled"},
         json=expected_body,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
 
@@ -557,7 +557,7 @@ def test_update_rule_exclusion_deployment_with_archived(
         url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}/findingsRefinements/exclusion-id/deployment",
         params={"updateMask": "archived"},
         json=expected_body,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
 
@@ -597,7 +597,7 @@ def test_update_rule_exclusion_deployment_with_full_resource_name(
         url=f"{chronicle_client.base_url}/{full_name}/deployment",
         params={"updateMask": "enabled"},
         json=expected_body,
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
 

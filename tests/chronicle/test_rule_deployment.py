@@ -15,7 +15,7 @@
 """Unit tests for rule deployment updates."""
 
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, patch
 
 from secops.chronicle.rule import (
     update_rule_deployment,
@@ -64,7 +64,7 @@ def test_update_rule_deployment_enabled(chronicle_client, response_mock):
         url=_deployment_url(chronicle_client, rule_id),
         params={"update_mask": "enabled"},
         json={"enabled": True},
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
     assert res == {"ok": True}
@@ -90,7 +90,7 @@ def test_update_rule_deployment_multiple_fields(
         url=_deployment_url(chronicle_client, rule_id),
         params={"update_mask": "enabled,alerting,runFrequency"},
         json={"enabled": True, "alerting": False, "runFrequency": "LIVE"},
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
     assert res == {"ok": True}
@@ -108,7 +108,7 @@ def test_update_rule_deployment_archived_only(chronicle_client, response_mock):
         url=_deployment_url(chronicle_client, rule_id),
         params={"update_mask": "archived"},
         json={"archived": True},
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
     assert res == {"ok": True}
@@ -144,7 +144,7 @@ def test_enable_rule_wrapper(chronicle_client, response_mock):
         url=_deployment_url(chronicle_client, rule_id),
         params={"update_mask": "enabled"},
         json={"enabled": False},
-        headers=None,
+        headers=ANY,
         timeout=None
     )
     assert res == {"ok": True}
@@ -162,7 +162,7 @@ def test_set_rule_alerting_wrapper(chronicle_client, response_mock):
         url=_deployment_url(chronicle_client, rule_id),
         params={"update_mask": "alerting"},
         json={"alerting": True},
-        headers=None,
+        headers=ANY,
         timeout=None,
     )
     assert res == {"ok": True}

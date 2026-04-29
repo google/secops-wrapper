@@ -14,7 +14,9 @@
 #
 """Google SecOps SDK for Python."""
 
-__version__ = "0.1.2"
+from importlib.metadata import version as _metadata_version
+
+__version__ = _metadata_version("secops")
 
 from secops.auth import SecOpsAuth
 from secops.client import SecOpsClient

@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 from typing import Any
-from unittest.mock import Mock
+from unittest.mock import ANY, Mock
 
 import pytest
 import requests
@@ -25,9 +25,10 @@ from google.auth.exceptions import GoogleAuthError
 from secops.chronicle.models import APIVersion
 from secops.chronicle.utils.request_utils import (
     DEFAULT_PAGE_SIZE,
+    _build_api_client_header,
+    chronicle_paginated_request,
     chronicle_request,
     chronicle_request_bytes,
-    chronicle_paginated_request,
 )
 from secops.exceptions import APIError
 
@@ -87,7 +88,7 @@ def test_chronicle_request_success_json(client: Mock) -> None:
         url="https://example.test/chronicle/instances/instance-1/curatedRules",
         params={"pageSize": 10},
         json=None,
-        headers=None,
+        headers={"x-goog-api-client": ANY},
         timeout=None,
     )
 
@@ -683,7 +684,7 @@ def test_chronicle_request_bytes_success_returns_content_and_stream_true(client:
         method="GET",
         url="https://example.test/chronicle/instances/instance-1/integrations/foo:export",
         params={"alt": "media"},
-        headers={"Accept": "application/zip"},
+        headers={"x-goog-api-client": ANY, "Accept": "application/zip"},
         timeout=None,
         stream=True,
     )
@@ -834,3 +835,87 @@ def test_chronicle_request_bytes_non_json_error_body_is_truncated(client: Mock) 
     msg = str(exc_info.value)
     assert "status=500" in msg
     assert "truncated" in msg
+
+
+# ---------------------------------------------------------------------------
+# x-goog-api-client header injection tests
+# ---------------------------------------------------------------------------
+
+
+def test_chronicle_request_injects_api_client_header(client: Mock) -> None:
+    response = _mock_response(status_code=200, json_value={"ok": True})
+    client.session.request.return_value = response
+
+    chronicle_request(
+        client=client,
+        method="GET",
+        endpoint_path="rules/rule123:copy",
+        api_version=APIVersion.V1,
+    )
+
+    _, kwargs = client.session.request.call_args
+    header = kwargs["headers"]["x-goog-api-client"]
+    assert "gl-python/" in header
+    assert f"rest/requests@{requests.__version__}" in header
+    assert "secops-wrapper/" in header
+    assert "api/rules/rule123:copy" in header
+
+
+def test_chronicle_request_caller_headers_merged(client: Mock) -> None:
+    response = _mock_response(status_code=200, json_value={"ok": True})
+    client.session.request.return_value = response
+
+    chronicle_request(
+        client=client,
+        method="GET",
+        endpoint_path="rules",
+        api_version=APIVersion.V1,
+        headers={"X-Custom": "value"},
+    )
+
+    _, kwargs = client.session.request.call_args
+    assert "x-goog-api-client" in kwargs["headers"]
+    assert kwargs["headers"]["X-Custom"] == "value"
+
+
+def test_chronicle_request_bytes_injects_api_client_header(client: Mock) -> None:
+    resp = _mock_response(status_code=200)
+    resp.content = b"bytes"
+    client.session.request.return_value = resp
+
+    chronicle_request_bytes(
+        client=client,
+        method="GET",
+        endpoint_path=":exportSomething",
+        api_version=APIVersion.V1,
+    )
+
+    _, kwargs = client.session.request.call_args
+    header = kwargs["headers"]["x-goog-api-client"]
+    assert "gl-python/" in header
+    assert "secops-wrapper/" in header
+    assert "api/exportSomething" in header
+
+
+@pytest.mark.parametrize(
+    "endpoint_path, expected_api_token",
+    [
+        (":udmSearch", "api/udmSearch"),
+        (":validateQuery", "api/validateQuery"),
+        ("rules", "api/rules"),
+        ("rules/rule123", "api/rules/rule123"),
+        ("rules/rule123:copy", "api/rules/rule123:copy"),
+        ("cases:merge", "api/cases:merge"),
+        ("legacy:legacyListCases", "api/legacy:legacyListCases"),
+        ("logTypes/SYSLOG/parsers/pid:activate", "api/logTypes/SYSLOG/parsers/pid:activate"),
+    ],
+)
+def test_build_api_client_header_endpoint_token(
+    endpoint_path: str, expected_api_token: str
+) -> None:
+    header = _build_api_client_header(endpoint_path)
+    parts = header.split(" ")
+    assert parts[0].startswith("gl-python/")
+    assert parts[1].startswith("rest/requests@")
+    assert parts[2].startswith("secops-wrapper/")
+    assert parts[3] == expected_api_token

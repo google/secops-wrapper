@@ -14,13 +14,17 @@
 #
 """Helper functions for Chronicle."""
 
+import platform
+from importlib.metadata import version as _metadata_version
 from typing import TYPE_CHECKING, Any, Optional
 
 import requests
 from google.auth.exceptions import GoogleAuthError
 
-from secops.exceptions import APIError
 from secops.chronicle.models import APIVersion
+from secops.exceptions import APIError
+
+_LIBRARY_VERSION = _metadata_version("secops")
 
 if TYPE_CHECKING:
     from secops.chronicle.client import ChronicleClient
@@ -28,6 +32,31 @@ if TYPE_CHECKING:
 
 DEFAULT_PAGE_SIZE = 1000
 MAX_BODY_CHARS = 2000
+
+
+def _build_api_client_header(endpoint_path: str) -> str:
+    """Build the x-goog-api-client header value for a request.
+
+    Constructs a space-separated token string following the Google API client
+    header convention. A leading ':' is stripped from RPC-style endpoint paths
+    (e.g. ':udmSearch' becomes 'udmSearch').
+
+    Args:
+        endpoint_path: The API endpoint path passed to the request function,
+            e.g. 'rules/rule123:copy' or ':udmSearch'.
+
+    Returns:
+        Header value string in the format:
+        'gl-python/{version} rest/requests@{version} secops-wrapper/{version}
+        api/{endpoint}'.
+    """
+    endpoint = endpoint_path.lstrip(":")
+    return (
+        f"gl-python/{platform.python_version()}"
+        f" rest/requests@{requests.__version__}"
+        f" secops-wrapper/{_LIBRARY_VERSION}"
+        f" api/{endpoint}"
+    )
 
 
 def _safe_body_preview(text: str | None, limit: int = MAX_BODY_CHARS) -> str:
@@ -242,6 +271,12 @@ def chronicle_request(
     else:
         url = f'{base}/{endpoint_path.lstrip("/")}'
 
+    # Merge x-goog-api-client with any caller-supplied headers.
+    # Caller-supplied values take precedence.
+    merged_headers = {"x-goog-api-client": _build_api_client_header(endpoint_path)}
+    if headers:
+        merged_headers.update(headers)
+
     # init request response
     response = None
 
@@ -251,7 +286,7 @@ def chronicle_request(
             url=url,
             params=params,
             json=json,
-            headers=headers,
+            headers=merged_headers,
             timeout=timeout,
         )
     except GoogleAuthError as exc:
@@ -357,12 +392,16 @@ def chronicle_request_bytes(
     else:
         url = f'{base}/{endpoint_path.lstrip("/")}'
 
+    merged_headers = {"x-goog-api-client": _build_api_client_header(endpoint_path)}
+    if headers:
+        merged_headers.update(headers)
+
     try:
         response = client.session.request(
             method=method,
             url=url,
             params=params,
-            headers=headers,
+            headers=merged_headers,
             timeout=timeout,
             stream=True,
         )
