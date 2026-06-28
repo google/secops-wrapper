@@ -33,8 +33,9 @@ jobs:
         uses: 'google-github-actions/run-gemini-cli@v0' # ratchet:exclude
         id: 'gemini_pr_review'
         env:
-          ISSUE_TITLE: '${{ github.event.pull_request.title || github.event.issue.title }}'
-          ISSUE_BODY: '${{ github.event.pull_request.body || github.event.issue.body }}'
+          # ISSUE_TITLE and ISSUE_BODY intentionally omitted: passing raw GitHub event
+          # content directly as env vars is a prompt-injection vector. The gemini-cli
+          # agent must fetch issue/PR content via the GitHub API using PULL_REQUEST_NUMBER.
           PULL_REQUEST_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
           PR_OWNER: 'google'
           PR_REPO: 'secops-wrapper'
