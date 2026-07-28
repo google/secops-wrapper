@@ -283,6 +283,9 @@ from secops.chronicle.rule_exclusion import (
     patch_rule_exclusion as _patch_rule_exclusion,
 )
 from secops.chronicle.rule_exclusion import (
+    test_rule_exclusion as _test_rule_exclusion,
+)
+from secops.chronicle.rule_exclusion import (
     update_rule_exclusion_deployment as _update_rule_exclusion_deployment,
 )
 from secops.chronicle.rule_retrohunt import (
@@ -4317,6 +4320,46 @@ class ChronicleClient:
             exclusion_id=exclusion_id,
             start_time=start_time,
             end_time=end_time,
+        )
+
+    def test_rule_exclusion(
+        self,
+        refinement_type: str,
+        query: str,
+        start_time: datetime,
+        end_time: datetime,
+        detection_exclusion_application: str | dict[str, Any] | None = None,
+        outcome_filters: str | list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        """Test a rule exclusion without creating or deploying it.
+
+        Args:
+            refinement_type: The type of the Findings refinement
+                    Must be one of:
+                    - DETECTION_EXCLUSION
+                    - FINDINGS_REFINEMENT_TYPE_UNSPECIFIED
+            query: The query for the findings refinement.
+            start_time: Start of the time window to test
+            end_time: End of the time window to test
+            detection_exclusion_application: The resources which the detection
+                exclusion is applied to. Must be either valid JSON or JSON
+                string.
+            outcome_filters: Optional outcome filters as a list or JSON string.
+
+        Returns:
+            Dictionary containing tested findings refinement activity
+
+        Raises:
+            APIError: If the API request fails
+        """
+        return _test_rule_exclusion(
+            self,
+            refinement_type=RuleExclusionType[refinement_type],
+            query=query,
+            start_time=start_time,
+            end_time=end_time,
+            detection_exclusion_application=detection_exclusion_application,
+            outcome_filters=outcome_filters,
         )
 
     def get_rule_exclusion_deployment(

@@ -431,6 +431,99 @@ def test_compute_rule_exclusion_activity_specific(
     assert result == {"testKey": "testValue"}
 
 
+# --- test_rule_exclusion Tests ---
+
+
+def test_test_rule_exclusion(chronicle_client, response_mock):
+    """Test test_rule_exclusion function."""
+    chronicle_client.session.request.return_value = response_mock
+    start_time = datetime(2026, 1, 29, 15, 28, 13, 975619)
+    end_time = datetime(2026, 4, 29, 15, 28, 13, 975619)
+
+    detection_exclusion_application = {
+        "curatedRules": [
+            "projects/test-project/locations/us/instances/test-customer/"
+            "curatedRules/ur_123"
+        ]
+    }
+    outcome_filters = [{"field": "principal.ip", "value": "8.8.8.8"}]
+
+    result = rule_exclusion.test_rule_exclusion(
+        client=chronicle_client,
+        refinement_type=rule_exclusion.RuleExclusionType.DETECTION_EXCLUSION,
+        query='ip = "8.8.8.8"',
+        start_time=start_time,
+        end_time=end_time,
+        detection_exclusion_application=detection_exclusion_application,
+        outcome_filters=outcome_filters,
+    )
+
+    expected_body = {
+        "type": "DETECTION_EXCLUSION",
+        "query": 'ip = "8.8.8.8"',
+        "outcomeFilters": outcome_filters,
+        "interval": {
+            "startTime": "2026-01-29T15:28:13.975619Z",
+            "endTime": "2026-04-29T15:28:13.975619Z",
+        },
+        "detectionExclusionApplication": detection_exclusion_application,
+    }
+
+    chronicle_client.session.request.assert_called_once_with(
+        method="POST",
+        url=f"{chronicle_client.base_url}/{chronicle_client.instance_id}"
+        ":testFindingsRefinement",
+        params=None,
+        json=expected_body,
+        headers=ANY,
+        timeout=None,
+    )
+
+    assert result == {"testKey": "testValue"}
+
+
+def test_test_rule_exclusion_with_json_strings(
+    chronicle_client, response_mock
+):
+    """Test test_rule_exclusion parses JSON string fields."""
+    chronicle_client.session.request.return_value = response_mock
+
+    result = rule_exclusion.test_rule_exclusion(
+        client=chronicle_client,
+        refinement_type=rule_exclusion.RuleExclusionType.DETECTION_EXCLUSION,
+        query='metadata.event_type = "NETWORK_CONNECTION"',
+        start_time=datetime(2026, 1, 1),
+        end_time=datetime(2026, 1, 2),
+        detection_exclusion_application='{"rules": ["rules/ru_123"]}',
+        outcome_filters='[{"field": "security_result.action"}]',
+    )
+
+    request_body = chronicle_client.session.request.call_args.kwargs["json"]
+    assert request_body["detectionExclusionApplication"] == {
+        "rules": ["rules/ru_123"]
+    }
+    assert request_body["outcomeFilters"] == [
+        {"field": "security_result.action"}
+    ]
+    assert result == {"testKey": "testValue"}
+
+
+def test_test_rule_exclusion_error(chronicle_client, response_mock):
+    """Test test_rule_exclusion function with error response."""
+    response_mock.status_code = 400
+    response_mock.text = "Bad Request"
+    chronicle_client.session.request.return_value = response_mock
+
+    with pytest.raises(APIError, match="Failed to test rule exclusion"):
+        rule_exclusion.test_rule_exclusion(
+            client=chronicle_client,
+            refinement_type=rule_exclusion.RuleExclusionType.DETECTION_EXCLUSION,
+            query='ip = "8.8.8.8"',
+            start_time=datetime(2026, 1, 1),
+            end_time=datetime(2026, 1, 2),
+        )
+
+
 # --- get_rule_exclusion_deployment Tests ---
 
 
