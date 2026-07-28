@@ -111,7 +111,9 @@ def setup_rule_exclusion_command(subparsers):
         required=True,
         help="Rule exclusion refinement type",
     )
-    test_parser.add_argument("--query", required=True, help="Rule exclusion query")
+    test_parser.add_argument(
+        "--query", required=True, help="Rule exclusion query"
+    )
     add_time_range_args(test_parser)
     test_parser.add_argument(
         "--detection-exclusion-application",
