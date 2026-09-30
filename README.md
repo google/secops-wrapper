@@ -1,7 +1,10 @@
 # Google SecOps SDK for Python
 
 [![PyPI version](https://img.shields.io/pypi/v/secops.svg)](https://pypi.org/project/secops/)
+[![Maintenance](https://img.shields.io/badge/Repo%20Status-Maintenance%20Mode-yellow.svg)](https://github.com/google/secops-wrapper)
 
+> [!WARNING]
+> **Maintenance Mode Notice:** The `secops-wrapper` project is currently in maintenance mode. We are no longer accepting new feature requests or actively developing new features. However, we will continue to review and provide critical security patches and stability updates.
 
 A Python SDK for interacting with Google Security Operations products, currently supporting Chronicle/SecOps SIEM.
 This wraps the API for common use cases, including UDM searches, entity lookups, IoCs, alert management, case management, and detection rule management.
