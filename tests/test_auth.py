@@ -13,8 +13,12 @@
 # limitations under the License.
 #
 """Tests for authentication functionality."""
+import logging
+
 import pytest
-from secops.auth import SecOpsAuth
+from urllib3.response import HTTPResponse
+
+from secops.auth import LogRetry, SecOpsAuth
 from secops.exceptions import AuthenticationError
 
 # Marked tests for integration as ADC and Service Account Information 
@@ -86,3 +90,43 @@ def test_bearer_token_credentials_accepted():
 
     auth = SecOpsAuth(credentials=creds)
     assert auth.credentials is creds
+
+
+def test_increment_response_logs_warning(
+    caplog: pytest.LogCaptureFixture,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    retry = LogRetry(total=1)
+    response = HTTPResponse(status=503)
+
+    with caplog.at_level(logging.WARNING, logger="secops.auth"):
+        retry.increment(method="GET", url="/events", response=response)
+
+    assert caplog.record_tuples == [
+        (
+            "secops.auth",
+            logging.WARNING,
+            "Retrying GET /events for 503 status code....",
+        )
+    ]
+    assert capsys.readouterr().err == ""
+
+
+def test_increment_error_logs_warning(
+    caplog: pytest.LogCaptureFixture,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    retry = LogRetry(total=1)
+    error = RuntimeError("connection failed")
+
+    with caplog.at_level(logging.WARNING, logger="secops.auth"):
+        retry.increment(method="GET", url="/events", error=error)
+
+    assert caplog.record_tuples == [
+        (
+            "secops.auth",
+            logging.WARNING,
+            "Retrying GET /events due to error: connection failed",
+        )
+    ]
+    assert capsys.readouterr().err == ""

@@ -14,6 +14,7 @@
 #
 """Authentication handling for Google SecOps SDK."""
 
+import logging
 import sys
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
@@ -31,6 +32,8 @@ from urllib3 import BaseHTTPResponse
 from urllib3.connectionpool import ConnectionPool
 
 from secops.exceptions import AuthenticationError
+
+logger = logging.getLogger(__name__)
 
 # Use built-in HTTPMethod from http if Python 3.11+,
 # otherwise create a compatible version
@@ -128,15 +131,13 @@ class LogRetry(Retry):
             Retry object with incremented retry counters.
         """
         if response:
-            print(
+            logger.warning(  # pylint: disable=logging-fstring-interpolation
                 f"Retrying {method} {url} for {response.status} "
-                f"status code....",
-                file=sys.stderr,
+                f"status code...."
             )
         else:
-            print(
-                f"Retrying {method} {url} due to error: {error}",
-                file=sys.stderr,
+            logger.warning(  # pylint: disable=logging-fstring-interpolation
+                f"Retrying {method} {url} due to error: {error}"
             )
 
         return super().increment(
