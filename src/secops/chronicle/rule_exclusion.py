@@ -17,7 +17,7 @@
 import json
 import sys
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated, Any
 
 from secops.chronicle.utils.format_utils import (
@@ -173,6 +173,80 @@ def create_rule_exclusion(
         endpoint_path="findingsRefinements",
         json=body,
         error_message="Failed to create rule exclusion",
+    )
+
+
+def _format_timestamp(dt: datetime) -> str:
+    """Format a datetime for Chronicle API timestamp fields."""
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def _parse_json_field(
+    value: str | dict[str, Any] | list[dict[str, Any]] | None,
+    field_name: str,
+) -> dict[str, Any] | list[dict[str, Any]] | None:
+    """Parse JSON strings while allowing already-parsed values."""
+    if value is None or isinstance(value, (dict, list)):
+        return value
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON string for {field_name}: {e}") from e
+
+
+def test_rule_exclusion(
+    client,
+    refinement_type: RuleExclusionType,
+    query: str,
+    start_time: datetime,
+    end_time: datetime,
+    detection_exclusion_application: str | dict[str, Any] | None = None,
+    outcome_filters: str | list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Test a rule exclusion without creating or deploying it.
+
+    Args:
+        client: ChronicleClient instance
+        refinement_type: The type of the Findings refinement
+        query: The query for the findings refinement
+        start_time: Start of the time window to test
+        end_time: End of the time window to test
+        detection_exclusion_application: Resources the detection exclusion
+            applies to. Must be a dictionary or valid JSON string.
+        outcome_filters: Optional outcome filters as a list or JSON string.
+
+    Returns:
+        Dictionary containing tested findings refinement activity
+
+    Raises:
+        APIError: If the API request fails
+    """
+    body = remove_none_values(
+        {
+            "type": refinement_type,
+            "query": query,
+            "outcomeFilters": _parse_json_field(
+                outcome_filters, "outcome_filters"
+            ),
+            "interval": {
+                "startTime": _format_timestamp(start_time),
+                "endTime": _format_timestamp(end_time),
+            },
+            "detectionExclusionApplication": _parse_json_field(
+                detection_exclusion_application,
+                "detection_exclusion_application",
+            ),
+        }
+    )
+
+    return chronicle_request(
+        client,
+        method="POST",
+        endpoint_path=":testFindingsRefinement",
+        json=body,
+        error_message="Failed to test rule exclusion",
     )
 
 

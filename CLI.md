@@ -1507,6 +1507,16 @@ secops rule-exclusion update-deployment \
   --archived false \
   --detection-exclusion-application '"{\"curatedRules\": [],\"curatedRuleSets\": [],\"rules\": []}'
 ```
+
+Test a rule exclusion before creating or deploying it
+```bash
+secops rule-exclusion test \
+  --type "DETECTION_EXCLUSION" \
+  --query '(ip="8.8.8.8")' \
+  --time-window 168 \
+  --detection-exclusion-application '{"curatedRules":["projects/my-project/locations/us/instances/my-instance/curatedRules/ur_123"]}'
+```
+
 Compute rule exclusion activity for specific exclusion
 ```bash
 secops rule-exclusion compute-activity \

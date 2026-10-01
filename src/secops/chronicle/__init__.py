@@ -180,6 +180,7 @@ from secops.chronicle.rule_exclusion import (
     get_rule_exclusion_deployment,
     list_rule_exclusions,
     patch_rule_exclusion,
+    test_rule_exclusion,
     update_rule_exclusion_deployment,
 )
 from secops.chronicle.rule_retrohunt import (
@@ -311,6 +312,7 @@ __all__ = [
     "list_rule_exclusions",
     "patch_rule_exclusion",
     "compute_rule_exclusion_activity",
+    "test_rule_exclusion",
     "get_rule_exclusion_deployment",
     "update_rule_exclusion_deployment",
     # UDM Mapping

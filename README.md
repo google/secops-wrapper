@@ -2596,6 +2596,22 @@ chronicle.update_rule_exclusion_deployment(
     }
 )
 
+# Test a rule exclusion before creating or deploying it
+end_time = datetime.utcnow()
+start_time = end_time - timedelta(days=7)
+
+test_result = chronicle.test_rule_exclusion(
+    refinement_type=RuleExclusionType.DETECTION_EXCLUSION,
+    query='(ip = "8.8.8.8")',
+    start_time=start_time,
+    end_time=end_time,
+    detection_exclusion_application={
+        "curatedRules": [
+            "projects/my-project/locations/us/instances/my-instance/curatedRules/ur_123"
+        ]
+    },
+)
+
 # Compute rule exclusion Activity for provided time period
 end_time = datetime.utcnow()
 start_time = end_time - timedelta(days=7)

@@ -21,6 +21,7 @@ from secops.cli.utils.common_args import (
     add_time_range_args,
 )
 from secops.cli.utils.formatters import output_formatter
+from secops.cli.utils.input_utils import load_json_or_file
 from secops.cli.utils.time_utils import get_time_range
 
 
@@ -98,6 +99,38 @@ def setup_rule_exclusion_command(subparsers):
     )
     add_time_range_args(activity_parser)
     activity_parser.set_defaults(func=handle_rule_exclusion_activity_command)
+
+    # Test rule exclusion command
+    test_parser = re_subparsers.add_parser(
+        "test", help="Test a rule exclusion without deploying it"
+    )
+    test_parser.add_argument(
+        "--type",
+        dest="refinement_type",
+        choices=["DETECTION_EXCLUSION", "FINDINGS_REFINEMENT_TYPE_UNSPECIFIED"],
+        required=True,
+        help="Rule exclusion refinement type",
+    )
+    test_parser.add_argument(
+        "--query", required=True, help="Rule exclusion query"
+    )
+    add_time_range_args(test_parser)
+    test_parser.add_argument(
+        "--detection-exclusion-application",
+        "--detection_exclusion_application",
+        dest="detection_exclusion_application",
+        help=(
+            "Detection exclusion application as JSON string or path to a JSON "
+            "file"
+        ),
+    )
+    test_parser.add_argument(
+        "--outcome-filters",
+        "--outcome_filters",
+        dest="outcome_filters",
+        help="Outcome filters as JSON string or path to a JSON file",
+    )
+    test_parser.set_defaults(func=handle_rule_exclusion_test_command)
 
     # Get rule exclusion deployment command
     get_deployment_parser = re_subparsers.add_parser(
@@ -202,6 +235,35 @@ def handle_rule_exclusion_activity_command(args, chronicle):
 
         result = chronicle.compute_rule_exclusion_activity(
             exclusion_id=args.id, start_time=start_time, end_time=end_time
+        )
+        output_formatter(result, args.output)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_rule_exclusion_test_command(args, chronicle):
+    """Handle rule exclusion test command."""
+    try:
+        start_time, end_time = get_time_range(args)
+        detection_exclusion_application = (
+            load_json_or_file(args.detection_exclusion_application)
+            if args.detection_exclusion_application
+            else None
+        )
+        outcome_filters = (
+            load_json_or_file(args.outcome_filters)
+            if args.outcome_filters
+            else None
+        )
+
+        result = chronicle.test_rule_exclusion(
+            refinement_type=args.refinement_type,
+            query=args.query,
+            start_time=start_time,
+            end_time=end_time,
+            detection_exclusion_application=detection_exclusion_application,
+            outcome_filters=outcome_filters,
         )
         output_formatter(result, args.output)
     except Exception as e:  # pylint: disable=broad-exception-caught
