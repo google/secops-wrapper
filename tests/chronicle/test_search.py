@@ -237,7 +237,7 @@ class TestChronicleUdmSearch(unittest.TestCase):
 
         self.assertEqual(result["events"], [])
         self.assertEqual(result["total_events"], 0)
-        self.assertFalse(result["more_data_available"])
+        self.assertTrue(result["more_data_available"])
         self.assertIn("stats", result)
         self.assertEqual(
             result["stats"],
@@ -248,15 +248,88 @@ class TestChronicleUdmSearch(unittest.TestCase):
                     {"principal.ip": "10.0.0.2", "login_count": 7},
                 ],
                 "total_rows": 2,
-                "too_many_results": True,
             },
         )
 
     @mock.patch("secops.chronicle.search.chronicle_request")
-    def test_search_udm_stats_defaults_too_many_results_false(
+    def test_search_udm_empty_stats_payload_preserved(
         self, mock_chronicle_request: mock.MagicMock
     ) -> None:
-        """Test too_many_results defaults to False when omitted in stats."""
+        """Test zero-row outcome: stats payloads remain distinguishable."""
+        mock_chronicle_request.return_value = {"stats": {}}
+
+        empty_result = search_udm(
+            client=self.client,
+            query=(
+                'metadata.event_type = "USER_LOGIN"\n'
+                "outcome:\n  $event_count = count(metadata.id)"
+            ),
+            start_time=self.start_time,
+            end_time=self.end_time,
+        )
+
+        self.assertFalse(empty_result["more_data_available"])
+        self.assertEqual(
+            empty_result["stats"],
+            {"columns": [], "rows": [], "total_rows": 0},
+        )
+
+        mock_chronicle_request.return_value = {
+            "stats": {
+                "results": [
+                    {"column": "principal.ip"},
+                    {"column": "login_count"},
+                ]
+            }
+        }
+
+        header_only_result = search_udm(
+            client=self.client,
+            query=(
+                'metadata.event_type = "USER_LOGIN"\n'
+                "match:\n  principal.ip\n"
+                "outcome:\n  $login_count = count(metadata.id)"
+            ),
+            start_time=self.start_time,
+            end_time=self.end_time,
+        )
+
+        self.assertFalse(header_only_result["more_data_available"])
+        self.assertEqual(
+            header_only_result["stats"],
+            {
+                "columns": ["principal.ip", "login_count"],
+                "rows": [],
+                "total_rows": 0,
+            },
+        )
+
+    @mock.patch("secops.chronicle.search.chronicle_request")
+    def test_search_udm_ignores_non_dict_stats_value(
+        self, mock_chronicle_request: mock.MagicMock
+    ) -> None:
+        """Test malformed non-dict stats payloads do not raise errors."""
+        mock_chronicle_request.return_value = {
+            "events": [],
+            "stats": "unexpected",
+        }
+
+        result = search_udm(
+            client=self.client,
+            query="test",
+            start_time=self.start_time,
+            end_time=self.end_time,
+        )
+
+        self.assertEqual(result["events"], [])
+        self.assertFalse(result["more_data_available"])
+        self.assertNotIn("stats", result)
+
+    @mock.patch("secops.chronicle.search.chronicle_request")
+    def test_search_udm_as_list_with_stats_returns_empty_events_list(
+        self, mock_chronicle_request: mock.MagicMock
+    ) -> None:
+        """Test as_list=True returns empty event list on stats responses."""
         mock_chronicle_request.return_value = {
             "stats": {
                 "results": [
@@ -276,17 +349,10 @@ class TestChronicleUdmSearch(unittest.TestCase):
             ),
             start_time=self.start_time,
             end_time=self.end_time,
+            as_list=True,
         )
 
-        self.assertEqual(
-            result["stats"],
-            {
-                "columns": ["event_count"],
-                "rows": [{"event_count": 5}],
-                "total_rows": 1,
-                "too_many_results": False,
-            },
-        )
+        self.assertEqual(result, [])
 
 
 if __name__ == "__main__":

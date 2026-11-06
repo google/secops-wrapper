@@ -18,6 +18,7 @@ import pytest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 from secops.chronicle.nl_search import translate_nl_to_udm, nl_search
+from secops.chronicle.search import search_udm
 from secops.exceptions import APIError
 import unittest.mock
 
@@ -248,8 +249,6 @@ def test_nl_search_max_retries_exceeded(
 
 def test_nl_search_preserves_stats_from_outcome_query(mock_client):
     """Test nl_search returns stats when translation emits an outcome: query."""
-    from secops.chronicle.search import search_udm
-
     mock_client.search_udm.side_effect = lambda **kwargs: search_udm(
         mock_client, **kwargs
     )
@@ -296,9 +295,9 @@ def test_nl_search_preserves_stats_from_outcome_query(mock_client):
 
     assert result["events"] == []
     assert result["total_events"] == 0
+    assert result["more_data_available"] is False
     assert result["stats"] == {
         "columns": ["target.user.userid", "login_count"],
         "rows": [{"target.user.userid": "alice", "login_count": 15}],
         "total_rows": 1,
-        "too_many_results": False,
     }

@@ -72,8 +72,9 @@ def nl_search(
         max_attempts: Maximum number of polling attempts
 
     Returns:
-        Dict containing the search results with events, and an optional
-        stats dict when the translated query returns aggregations
+        Dict with events, total_events, more_data_available, and an
+        optional stats dict containing columns, rows, and total_rows
+        when the translated query returns statistical results.
 
     Raises:
         APIError: If the API request fails after retries

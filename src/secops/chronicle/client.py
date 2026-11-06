@@ -969,14 +969,18 @@ class ChronicleClient:
             max_attempts: Maximum number of polling attempts (default: 30)
             timeout: Timeout in seconds for each API request (default: 30)
             debug: Print debug information during execution
-            as_list: If True, return a list of events instead of a dict
-                with events list and nextPageToken.
+            as_list: If True, return only the list of events; statistical
+                results in stats are omitted when as_list is True.
 
         Returns:
-            If as_list is True: List of Events.
-            If as_list is False: Dict with events list, total_events,
-                more_data_available, and an optional stats dict when the
-                query returns statistical aggregation results.
+            If as_list is True: List of matched UDM events, or an empty list
+                if the query returned only statistical results.
+            If as_list is False: Dict with events, total_events,
+                more_data_available, and an optional stats dict containing
+                columns, rows, and total_rows matching get_stats() when the
+                query returns statistical results. For dedicated statistical
+                queries with custom max_values or a 120s default timeout,
+                use get_stats().
 
         Raises:
             APIError: If the API request fails
@@ -3361,9 +3365,9 @@ class ChronicleClient:
             max_attempts: Maximum number of polling attempts
 
         Returns:
-            Dict containing the search results with events, and an
-            optional stats dict when the translated query returns
-            aggregations
+            Dict with events, total_events, more_data_available, and an
+            optional stats dict containing columns, rows, and total_rows
+            when the translated query returns statistical results.
 
         Raises:
             APIError: If the API request fails
