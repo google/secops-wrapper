@@ -1265,6 +1265,8 @@ The natural language search feature supports various query patterns:
 - "Show login failures in the last hour"
 - "Display connections to IP address 192.168.1.100"
 
+When a natural language prompt translates into a statistical aggregation query, the returned dictionary includes a `stats` key with `columns`, `rows`, and `total_rows` matching `get_stats()`, while `events` is empty.
+
 If the natural language cannot be translated to a valid UDM query, an `APIError` will be raised with a message indicating that no valid query could be generated.
 
 ### Entity Summary

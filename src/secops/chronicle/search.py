@@ -18,6 +18,7 @@ from datetime import datetime
 from typing import Any, TYPE_CHECKING
 
 from secops.chronicle.models import APIVersion
+from secops.chronicle.stats import process_stats_results
 from secops.chronicle.utils.request_utils import (
     chronicle_request,
 )
@@ -51,12 +52,18 @@ def search_udm(
                         for backwards compatibility)
         timeout: Timeout in seconds for each API request (default: 30)
         debug: Print debug information during execution
-        as_list: Whether to return results as a list or dictionary
+        as_list: If True, return only the list of events; statistical
+            results in stats are omitted when as_list is True.
 
     Returns:
-        If as_list is True: List of Events.
-        If as_list is False: Dict with event list, total number of event and
-            flag to check if more data is available.
+        If as_list is True: List of matched UDM events, or an empty list
+            if the query returned only statistical results.
+        If as_list is False: Dict with events, total_events,
+            more_data_available, and an optional stats dict containing
+            columns, rows, and total_rows matching get_stats() when the
+            query returns statistical results. For dedicated statistical
+            queries with custom max_values or a 120s default timeout,
+            use get_stats().
 
     Raises:
         APIError: If the API request fails
@@ -93,8 +100,17 @@ def search_udm(
         return result.get("events", [])
 
     events = result.get("events", [])
-    return {
+    raw_stats = result.get("stats")
+    has_stats_dict = isinstance(raw_stats, dict)
+    more_data_available = bool(
+        result.get("moreDataAvailable", False)
+        or (has_stats_dict and raw_stats.get("tooManyResults", False))
+    )
+    response: dict[str, Any] = {
         "events": events,
         "total_events": len(events),
-        "more_data_available": result.get("moreDataAvailable", False),
+        "more_data_available": more_data_available,
     }
+    if has_stats_dict:
+        response["stats"] = process_stats_results(raw_stats)
+    return response
