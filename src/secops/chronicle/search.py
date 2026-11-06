@@ -18,6 +18,7 @@ from datetime import datetime
 from typing import Any, TYPE_CHECKING
 
 from secops.chronicle.models import APIVersion
+from secops.chronicle.stats import process_stats_results
 from secops.chronicle.utils.request_utils import (
     chronicle_request,
 )
@@ -55,8 +56,9 @@ def search_udm(
 
     Returns:
         If as_list is True: List of Events.
-        If as_list is False: Dict with event list, total number of event and
-            flag to check if more data is available.
+        If as_list is False: Dict with events list, total_events,
+            more_data_available, and an optional stats dict when the
+            query returns statistical aggregation results.
 
     Raises:
         APIError: If the API request fails
@@ -93,8 +95,16 @@ def search_udm(
         return result.get("events", [])
 
     events = result.get("events", [])
-    return {
+    response: dict[str, Any] = {
         "events": events,
         "total_events": len(events),
         "more_data_available": result.get("moreDataAvailable", False),
     }
+    if result.get("stats") is not None:
+        raw_stats = result["stats"]
+        stats_summary = process_stats_results(raw_stats)
+        stats_summary["too_many_results"] = raw_stats.get(
+            "tooManyResults", False
+        )
+        response["stats"] = stats_summary
+    return response

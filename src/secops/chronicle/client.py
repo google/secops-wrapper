@@ -974,8 +974,9 @@ class ChronicleClient:
 
         Returns:
             If as_list is True: List of Events.
-            If as_list is False: Dict with event list, total number of event and
-                flag to check if more data is available.
+            If as_list is False: Dict with events list, total_events,
+                more_data_available, and an optional stats dict when the
+                query returns statistical aggregation results.
 
         Raises:
             APIError: If the API request fails
@@ -3360,7 +3361,9 @@ class ChronicleClient:
             max_attempts: Maximum number of polling attempts
 
         Returns:
-            Dict containing the search results with events
+            Dict containing the search results with events, and an
+            optional stats dict when the translated query returns
+            aggregations
 
         Raises:
             APIError: If the API request fails

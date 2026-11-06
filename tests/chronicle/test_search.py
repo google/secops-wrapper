@@ -77,6 +77,7 @@ class TestChronicleUdmSearch(unittest.TestCase):
         self.assertEqual(result["events"], [])
         self.assertEqual(result["total_events"], 0)
         self.assertFalse(result["more_data_available"])
+        self.assertNotIn("stats", result)
 
     @mock.patch("secops.chronicle.search.chronicle_request")
     @mock.patch("builtins.print")
@@ -194,6 +195,98 @@ class TestChronicleUdmSearch(unittest.TestCase):
         self.assertEqual(result["events"], [])
         self.assertEqual(result["total_events"], 0)
         self.assertFalse(result["more_data_available"])
+        self.assertNotIn("stats", result)
+
+    @mock.patch("secops.chronicle.search.chronicle_request")
+    def test_search_udm_includes_processed_stats_when_present(
+        self, mock_chronicle_request: mock.MagicMock
+    ) -> None:
+        """Test that stats payloads from outcome: queries are preserved."""
+        mock_chronicle_request.return_value = {
+            "stats": {
+                "results": [
+                    {
+                        "column": "principal.ip",
+                        "values": [
+                            {"value": {"stringVal": "10.0.0.1"}},
+                            {"value": {"stringVal": "10.0.0.2"}},
+                        ],
+                    },
+                    {
+                        "column": "login_count",
+                        "values": [
+                            {"value": {"int64Val": "42"}},
+                            {"value": {"int64Val": "7"}},
+                        ],
+                    },
+                ],
+                "tooManyResults": True,
+            }
+        }
+
+        result = search_udm(
+            client=self.client,
+            query=(
+                'metadata.event_type = "USER_LOGIN"\n'
+                "match:\n  principal.ip\n"
+                "outcome:\n  $login_count = count(metadata.id)"
+            ),
+            start_time=self.start_time,
+            end_time=self.end_time,
+        )
+
+        self.assertEqual(result["events"], [])
+        self.assertEqual(result["total_events"], 0)
+        self.assertFalse(result["more_data_available"])
+        self.assertIn("stats", result)
+        self.assertEqual(
+            result["stats"],
+            {
+                "columns": ["principal.ip", "login_count"],
+                "rows": [
+                    {"principal.ip": "10.0.0.1", "login_count": 42},
+                    {"principal.ip": "10.0.0.2", "login_count": 7},
+                ],
+                "total_rows": 2,
+                "too_many_results": True,
+            },
+        )
+
+    @mock.patch("secops.chronicle.search.chronicle_request")
+    def test_search_udm_stats_defaults_too_many_results_false(
+        self, mock_chronicle_request: mock.MagicMock
+    ) -> None:
+        """Test too_many_results defaults to False when omitted in stats."""
+        mock_chronicle_request.return_value = {
+            "stats": {
+                "results": [
+                    {
+                        "column": "event_count",
+                        "values": [{"value": {"int64Val": "5"}}],
+                    }
+                ]
+            }
+        }
+
+        result = search_udm(
+            client=self.client,
+            query=(
+                'metadata.event_type = "USER_LOGIN"\n'
+                "outcome:\n  $event_count = count(metadata.id)"
+            ),
+            start_time=self.start_time,
+            end_time=self.end_time,
+        )
+
+        self.assertEqual(
+            result["stats"],
+            {
+                "columns": ["event_count"],
+                "rows": [{"event_count": 5}],
+                "total_rows": 1,
+                "too_many_results": False,
+            },
+        )
 
 
 if __name__ == "__main__":

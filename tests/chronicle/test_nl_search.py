@@ -244,3 +244,61 @@ def test_nl_search_max_retries_exceeded(
 
     # Verify sleep was called 10 times
     assert mock_sleep.call_count == 10
+
+
+def test_nl_search_preserves_stats_from_outcome_query(mock_client):
+    """Test nl_search returns stats when translation emits an outcome: query."""
+    from secops.chronicle.search import search_udm
+
+    mock_client.search_udm.side_effect = lambda **kwargs: search_udm(
+        mock_client, **kwargs
+    )
+
+    translate_resp = MagicMock()
+    translate_resp.status_code = 200
+    translate_resp.json.return_value = {
+        "query": (
+            'metadata.event_type = "USER_LOGIN"\n'
+            "match:\n  target.user.userid\n"
+            "outcome:\n  $login_count = count(metadata.id)"
+        )
+    }
+
+    udm_search_resp = MagicMock()
+    udm_search_resp.status_code = 200
+    udm_search_resp.json.return_value = {
+        "stats": {
+            "results": [
+                {
+                    "column": "target.user.userid",
+                    "values": [{"value": {"stringVal": "alice"}}],
+                },
+                {
+                    "column": "login_count",
+                    "values": [{"value": {"int64Val": "15"}}],
+                },
+            ],
+            "tooManyResults": False,
+        }
+    }
+
+    mock_client.session.request.side_effect = [translate_resp, udm_search_resp]
+
+    start_time = datetime.now(timezone.utc) - timedelta(hours=24)
+    end_time = datetime.now(timezone.utc)
+
+    result = nl_search(
+        mock_client,
+        "count user logins by user in the last 24 hours",
+        start_time,
+        end_time,
+    )
+
+    assert result["events"] == []
+    assert result["total_events"] == 0
+    assert result["stats"] == {
+        "columns": ["target.user.userid", "login_count"],
+        "rows": [{"target.user.userid": "alice", "login_count": 15}],
+        "total_rows": 1,
+        "too_many_results": False,
+    }
