@@ -20,7 +20,7 @@ import json
 import re
 import uuid
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from secops.chronicle.log_types import is_valid_log_type
@@ -756,6 +756,13 @@ def extract_forwarder_id(forwarder_name: str) -> str:
     return segments[-1]
 
 
+def _to_utc(value: datetime) -> datetime:
+    """Return ``value`` in UTC, treating a naive datetime as UTC."""
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
 def ingest_log(
     client: "ChronicleClient",
     log_type: str,
@@ -807,8 +814,8 @@ def ingest_log(
             "Use force_log_type=True to override."
         )
 
-    # Get current time as default for log_entry_time and collection_time
-    now = datetime.now()
+    # Get current UTC time as default for log_entry_time and collection_time
+    now = datetime.now(timezone.utc)
 
     # If log_entry_time is not provided, use current time
     if log_entry_time is None:
@@ -817,6 +824,11 @@ def ingest_log(
     # If collection_time is not provided, use current time
     if collection_time is None:
         collection_time = now
+
+    # The API expects UTC. Naive datetimes are treated as UTC (as before);
+    # aware ones are converted, so they can be compared and formatted with Z.
+    log_entry_time = _to_utc(log_entry_time)
+    collection_time = _to_utc(collection_time)
 
     # Validate that collection_time is not before log_entry_time
     if collection_time < log_entry_time:

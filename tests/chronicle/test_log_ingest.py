@@ -419,6 +419,81 @@ def test_ingest_log_invalid_timestamps(chronicle_client):
         )
 
 
+def _sent_log(mock_request):
+    """Return the first log entry sent in the ingest request payload."""
+    call = mock_request.call_args_list[-1]
+    return call.kwargs["json"]["inline_source"]["logs"][0]
+
+
+def test_ingest_log_default_timestamps_are_utc(
+    chronicle_client, mock_forwarders_list_response, mock_ingest_response
+):
+    """Default timestamps use UTC, not the machine's local time (#229)."""
+    utc_now = datetime(2026, 1, 2, 12, 0, 0, tzinfo=timezone.utc)
+    local_tz = timezone(timedelta(hours=-8))
+
+    class FakeDatetime(datetime):
+        """datetime whose local clock is 8 hours behind UTC."""
+
+        @classmethod
+        def now(cls, tz=None):
+            if tz is None:
+                return utc_now.astimezone(local_tz).replace(tzinfo=None)
+            return utc_now.astimezone(tz)
+
+    with (
+        patch.object(
+            chronicle_client.session,
+            "request",
+            side_effect=[mock_forwarders_list_response, mock_ingest_response],
+        ) as mock_request,
+        patch(
+            "secops.chronicle.log_ingest.is_valid_log_type", return_value=True
+        ),
+        patch("secops.chronicle.log_ingest.datetime", FakeDatetime),
+    ):
+        ingest_log(
+            client=chronicle_client,
+            log_type="OKTA",
+            log_message="{}",
+        )
+
+    sent = _sent_log(mock_request)
+    assert sent["log_entry_time"] == "2026-01-02T12:00:00.000000Z"
+    assert sent["collection_time"] == "2026-01-02T12:00:00.000000Z"
+
+
+def test_ingest_log_aware_timestamp_converted_to_utc(
+    chronicle_client, mock_forwarders_list_response, mock_ingest_response
+):
+    """An aware log_entry_time works with the default collection_time and
+    is converted to UTC before it is sent (#229)."""
+    plus_one = timezone(timedelta(hours=1))
+    log_entry_time = datetime.now(plus_one) - timedelta(minutes=5)
+
+    with (
+        patch.object(
+            chronicle_client.session,
+            "request",
+            side_effect=[mock_forwarders_list_response, mock_ingest_response],
+        ) as mock_request,
+        patch(
+            "secops.chronicle.log_ingest.is_valid_log_type", return_value=True
+        ),
+    ):
+        ingest_log(
+            client=chronicle_client,
+            log_type="OKTA",
+            log_message="{}",
+            log_entry_time=log_entry_time,
+        )
+
+    expected = log_entry_time.astimezone(timezone.utc).strftime(
+        "%Y-%m-%dT%H:%M:%S.%fZ"
+    )
+    assert _sent_log(mock_request)["log_entry_time"] == expected
+
+
 def test_ingest_log_invalid_log_type(chronicle_client):
     """Test log ingestion with invalid log type."""
     test_log = {"test": "log", "message": "Test message"}
